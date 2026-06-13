@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Card, Button, Spin, Empty, Descriptions, Input, Space, message, DatePicker } from 'antd';
+import { Table, Tag, Card, Button, Spin, Empty, Descriptions, Input, Space, message, DatePicker, Modal } from 'antd';
 import { loadRecordsFromDB } from '@/lib/db';
 import { ExtendedHosoRecord, getXmlDataList } from '@/lib/xml';
-import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { getDepartments } from '@/actions/department';
@@ -44,6 +44,13 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
     const [deptMap, setDeptMap] = useState<Record<string, string>>({});
     const [staffMap, setStaffMap] = useState<Record<string, { ho_ten: string, trinh_do: string }>>({});
+
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSavingDoctor, setIsSavingDoctor] = useState(false);
+    const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
+    const [isSaveModalVisibleDoctor, setIsSaveModalVisibleDoctor] = useState(false);
+    const [saveNote, setSaveNote] = useState('');
+    const [saveFileName, setSaveFileName] = useState('');
 
     useEffect(() => {
         getDepartments().then(depts => {
@@ -559,6 +566,128 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         saveAs(blob, `${safeName}_${new Date().getTime()}.xlsx`);
     };
 
+    const handleSaveToServer = () => {
+        const dataToExport = getFilteredData();
+        if (dataToExport.length === 0) {
+            message.warning("Không có dữ liệu để lưu");
+            return;
+        }
+        const ruleName = rule.name || 'bao_cao_trung_lap';
+        const safeName = ruleName.replace(/[/\\?%*:|"<>]/g, '-');
+        setSaveFileName(`${safeName}_${new Date().getTime()}`);
+        setSaveNote('');
+        setIsSaveModalVisible(true);
+    };
+
+    const confirmSaveToServer = async () => {
+        setIsSaveModalVisible(false);
+        setIsSaving(true);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Báo cáo trùng lặp');
+
+            const columns = [
+                { header: 'STT', key: 'stt', width: 5 },
+                { header: 'Mã LK', key: 'MA_LK', width: 15 },
+                { header: 'Mã BN', key: 'MA_BN', width: 15 },
+                { header: 'Mã Thẻ BHYT', key: 'MA_THE_BHYT', width: 20 },
+                { header: 'Họ Tên', key: 'HO_TEN', width: 25 },
+                { header: 'Mã Khoa', key: 'MA_KHOA', width: 10 },
+                { header: 'Tên Khoa', key: 'TEN_KHOA', width: 20 },
+                { header: 'Mã Bác sĩ', key: 'MA_BAC_SI', width: 15 },
+                { header: 'Tên Bác sĩ', key: 'TEN_BAC_SI', width: 25 },
+                { header: 'Trình độ', key: 'TRINH_DO', width: 15 },
+                { header: 'Người Thực Hiện', key: 'NGUOI_THUC_HIEN', width: 15 },
+                { header: 'Tên Người TH', key: 'TEN_NGUOI_THUC_HIEN', width: 25 },
+                { header: rule.logicConfig?.filter?.MA_NHOM == 15 || rule.slug?.includes('giuong') ? 'Mã Giường' : 'Mã Máy', key: 'KEY_VALUE', width: 15 },
+                { header: 'Số Lượng', key: 'SOLUONG', width: 10 },
+                { header: 'Tỷ lệ BH', key: 'TYLE_BH', width: 10 },
+                { header: 'Tỷ lệ DV', key: 'TYLE_DV', width: 10 },
+                { header: 'Ngày Vào', key: 'NGAY_VAO', width: 20 },
+                { header: 'Ngày Ra', key: 'NGAY_RA', width: 20 },
+                { header: 'Ngày YL', key: 'NGAY_YL', width: 20 },
+                { header: 'Ngày TH YL', key: 'NGAY_TH_YL', width: 20 },
+                { header: 'Ngày KQ', key: 'NGAY_KQ', width: 20 },
+                { header: 'Mã DV', key: 'MA_DICH_VU', width: 15 },
+                { header: 'Tên Dịch Vụ', key: 'TEN_DICH_VU', width: 30 },
+            ];
+            sheet.columns = columns;
+
+            const dataToExport = getFilteredData();
+            if (dataToExport.length === 0) {
+                message.warning("Không có dữ liệu để lưu");
+                return;
+            }
+
+            dataToExport.forEach((item, index) => {
+                const row = sheet.addRow({
+                    stt: index + 1,
+                    MA_LK: item.MA_LK,
+                    MA_BN: item.MA_BN,
+                    MA_THE_BHYT: item.MA_THE_BHYT,
+                    HO_TEN: item.HO_TEN,
+                    MA_KHOA: item.MA_KHOA,
+                    TEN_KHOA: item.TEN_KHOA,
+                    MA_BAC_SI: item.MA_BAC_SI,
+                    TEN_BAC_SI: item.TEN_BAC_SI,
+                    TRINH_DO: item.TRINH_DO,
+                    NGUOI_THUC_HIEN: item.NGUOI_THUC_HIEN,
+                    TEN_NGUOI_THUC_HIEN: item.TEN_NGUOI_THUC_HIEN,
+                    KEY_VALUE: item.KEY_VALUE ? String(item.KEY_VALUE).split('-')[0] : '',
+                    SOLUONG: item.SOLUONG,
+                    TYLE_BH: item.TYLE_BH,
+                    TYLE_DV: item.TYLE_DV,
+                    NGAY_VAO: formatDateTime(item.NGAY_VAO),
+                    NGAY_RA: formatDateTime(item.NGAY_RA),
+                    NGAY_YL: formatDateTime(item.NGAY_YL),
+                    NGAY_TH_YL: item.NGAY_TH_YL ? formatDateTime(item.NGAY_TH_YL) : '',
+                    NGAY_KQ: formatDateTime(item.NGAY_KQ),
+                    MA_DICH_VU: item.MA_DICH_VU,
+                    TEN_DICH_VU: item.TEN_DICH_VU
+                });
+
+                if (item.rowColor) {
+                    row.eachCell((cell) => {
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FF' + item.rowColor.replace('#', '').toUpperCase() }
+                        };
+                    });
+                }
+            });
+
+            sheet.getRow(1).font = { bold: true };
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            const safeName = (saveFileName || (rule.name || 'bao_cao_trung_lap')).replace(/[^a-zA-Z0-9.\-_]/g, '_');
+            const fileName = `${safeName}.xlsx`;
+
+            const formData = new FormData();
+            formData.append('file', blob, fileName);
+            formData.append('note', saveNote);
+
+            const res = await fetch('/api/saved-reports', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                message.success('Đã lưu file lên máy chủ thành công!');
+            } else {
+                message.error('Lỗi khi lưu file: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error saving to server:', error);
+            message.error('Có lỗi xảy ra khi lưu file');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleExportExcelDoctor = async () => {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Báo cáo trùng Bác Sĩ');
@@ -621,6 +750,108 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         const ruleName = rule.name || 'bao_cao_trung_bac_si';
         const safeName = ruleName.replace(/[/\\?%*:|"<>]/g, '-');
         saveAs(blob, `${safeName}_${new Date().getTime()}.xlsx`);
+    };
+
+    const handleSaveToServerDoctor = () => {
+        const dataToExport = getFilteredDoctorData();
+        if (dataToExport.length === 0) {
+            message.warning("Không có dữ liệu để lưu");
+            return;
+        }
+        const ruleName = rule.name || 'bao_cao_trung_bac_si';
+        const safeName = ruleName.replace(/[/\\?%*:|"<>]/g, '-');
+        setSaveFileName(`${safeName}_${new Date().getTime()}`);
+        setSaveNote('');
+        setIsSaveModalVisibleDoctor(true);
+    };
+
+    const confirmSaveToServerDoctor = async () => {
+        setIsSaveModalVisibleDoctor(false);
+        setIsSavingDoctor(true);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Báo cáo trùng Bác Sĩ');
+
+            const columns = [
+                { header: 'STT', key: 'stt', width: 5 },
+                { header: 'Mã LK', key: 'MA_LK', width: 15 },
+                { header: 'Mã BN', key: 'MA_BN', width: 15 },
+                { header: 'Họ Tên', key: 'HO_TEN', width: 25 },
+                { header: 'Mã Bác sĩ', key: 'MA_BS', width: 15 },
+                { header: 'Họ Tên BS', key: 'TEN_BAC_SI', width: 25 },
+                { header: 'Trình độ', key: 'TRINH_DO', width: 15 },
+                { header: 'Ngày chỉ định', key: 'THOI_GIAN_YL', width: 20 },
+                { header: 'Loại', key: 'TYPE', width: 10 },
+                { header: 'Mã', key: 'MA_LOAI', width: 15 },
+                { header: 'Tên Dịch Vụ / Thuốc', key: 'TEN_LOAI', width: 35 },
+                { header: 'Mã Khoa', key: 'MA_KHOA', width: 10 },
+                { header: 'Tên Khoa', key: 'TEN_KHOA', width: 20 },
+            ];
+            sheet.columns = columns;
+
+            const dataToExport = getFilteredDoctorData();
+            if (dataToExport.length === 0) {
+                message.warning("Không có dữ liệu để lưu");
+                return;
+            }
+
+            dataToExport.forEach((item, index) => {
+                const row = sheet.addRow({
+                    stt: index + 1,
+                    MA_LK: item.MA_LK,
+                    MA_BN: item.MA_BN,
+                    HO_TEN: item.HO_TEN,
+                    MA_BS: item.MA_BS,
+                    TEN_BAC_SI: item.TEN_BAC_SI,
+                    TRINH_DO: item.TRINH_DO,
+                    THOI_GIAN_YL: formatDateTime(item.THOI_GIAN_YL),
+                    TYPE: item.TYPE,
+                    MA_LOAI: item.MA_LOAI,
+                    TEN_LOAI: item.TEN_LOAI,
+                    MA_KHOA: item.MA_KHOA,
+                    TEN_KHOA: item.TEN_KHOA
+                });
+
+                if (item.rowColor) {
+                    row.eachCell((cell) => {
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FF' + item.rowColor.replace('#', '').toUpperCase() }
+                        };
+                    });
+                }
+            });
+
+            sheet.getRow(1).font = { bold: true };
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            const safeName = (saveFileName || (rule.name || 'bao_cao_trung_bac_si')).replace(/[^a-zA-Z0-9.\-_]/g, '_');
+            const fileName = `${safeName}.xlsx`;
+
+            const formData = new FormData();
+            formData.append('file', blob, fileName);
+            formData.append('note', saveNote);
+
+            const res = await fetch('/api/saved-reports', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                message.success('Đã lưu file lên máy chủ thành công!');
+            } else {
+                message.error('Lỗi khi lưu file: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error saving to server:', error);
+            message.error('Có lỗi xảy ra khi lưu file');
+        } finally {
+            setIsSavingDoctor(false);
+        }
     };
 
     // --- Logic Handlers (Old) ---
@@ -1031,6 +1262,15 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcelDoctor}>Xuất Excel</Button>
                         <Button
                             type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveToServerDoctor}
+                            loading={isSavingDoctor}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            Lưu máy chủ
+                        </Button>
+                        <Button
+                            type="primary"
                             danger
                             icon={<ScanOutlined />}
                             onClick={scanDoctorDuplicates}
@@ -1051,6 +1291,34 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         style: { backgroundColor: record.rowColor || undefined }
                     })}
                 />
+                <Modal
+                    title="Nhập thông tin cho báo cáo lưu"
+                    open={isSaveModalVisibleDoctor}
+                    onOk={confirmSaveToServerDoctor}
+                    onCancel={() => setIsSaveModalVisibleDoctor(false)}
+                    okText="Lưu"
+                    cancelText="Hủy"
+                >
+                    <div className="space-y-4">
+                        <div>
+                            <div className="mb-1 font-medium text-slate-600">Tên file (không bao gồm .xlsx)</div>
+                            <Input
+                                placeholder="Nhập tên file"
+                                value={saveFileName}
+                                onChange={(e) => setSaveFileName(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <div className="mb-1 font-medium text-slate-600">Ghi chú (tùy chọn)</div>
+                            <Input.TextArea
+                                rows={4}
+                                placeholder="Nhập ghi chú (VD: số liệu từ ngày... đến ngày...)"
+                                value={saveNote}
+                                onChange={(e) => setSaveNote(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
             </div>
         );
     }
@@ -1108,6 +1376,15 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
                         <Button
                             type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveToServer}
+                            loading={isSaving}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            Lưu máy chủ
+                        </Button>
+                        <Button
+                            type="primary"
                             danger
                             icon={<ScanOutlined />}
                             onClick={scanDuplicates}
@@ -1128,6 +1405,34 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         style: { backgroundColor: record.rowColor || undefined }
                     })}
                 />
+                <Modal
+                    title="Nhập thông tin cho báo cáo lưu"
+                    open={isSaveModalVisible}
+                    onOk={confirmSaveToServer}
+                    onCancel={() => setIsSaveModalVisible(false)}
+                    okText="Lưu"
+                    cancelText="Hủy"
+                >
+                    <div className="space-y-4">
+                        <div>
+                            <div className="mb-1 font-medium text-slate-600">Tên file (không bao gồm .xlsx)</div>
+                            <Input
+                                placeholder="Nhập tên file"
+                                value={saveFileName}
+                                onChange={(e) => setSaveFileName(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <div className="mb-1 font-medium text-slate-600">Ghi chú (tùy chọn)</div>
+                            <Input.TextArea
+                                rows={4}
+                                placeholder="Nhập ghi chú (VD: số liệu từ ngày... đến ngày...)"
+                                value={saveNote}
+                                onChange={(e) => setSaveNote(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
             </div>
         );
     }

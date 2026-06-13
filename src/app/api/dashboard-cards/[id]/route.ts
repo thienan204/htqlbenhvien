@@ -14,31 +14,22 @@ export async function PUT(req: Request, context: any) {
         const resolvedParams = await params;
         const id = resolvedParams.id;
 
-        // Ensure no empty strings for optional fields
-        if (data.permissionCode === '') data.permissionCode = null;
-        if (data.path === '') data.path = null;
-        if (data.targetPath === '') data.targetPath = null;
-        if (data.icon === '') data.icon = null;
-        if (data.parentId === '') data.parentId = null;
-        if (data.isSpecialGroup === '') data.isSpecialGroup = null;
-
-        const updatedMenu = await prisma.menu.update({
+        const updatedCard = await prisma.dashboardCard.update({
             where: { id },
             data: {
                 title: data.title,
-                path: data.path,
-                targetPath: data.targetPath,
+                description: data.description,
                 icon: data.icon,
-                parentId: data.parentId,
+                href: data.href,
+                bgColor: data.bgColor,
+                borderColor: data.borderColor,
+                hoverColor: data.hoverColor,
                 order: data.order,
-                permissionCode: data.permissionCode,
                 isActive: data.isActive,
-                isSpecialGroup: data.isSpecialGroup,
-                showInPaths: data.showInPaths || [],
             }
         });
         
-        return NextResponse.json(updatedMenu);
+        return NextResponse.json(updatedCard);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -55,12 +46,7 @@ export async function DELETE(req: Request, context: any) {
         const resolvedParams = await params;
         const id = resolvedParams.id;
 
-        // Xoá cả menu con (nếu có)
-        await prisma.menu.deleteMany({
-            where: { parentId: id }
-        });
-
-        await prisma.menu.delete({
+        await prisma.dashboardCard.delete({
             where: { id }
         });
 

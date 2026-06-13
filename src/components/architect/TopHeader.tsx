@@ -13,9 +13,10 @@ import { useAuth } from '@/contexts/AuthContext';
 interface TopHeaderProps {
     onToggleSidebar: () => void;
     isSidebarOpen: boolean;
+    hideToggle?: boolean;
 }
 
-const TopHeader = ({ onToggleSidebar, isSidebarOpen }: TopHeaderProps) => {
+const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProps) => {
     const router = useRouter();
     const { user } = useAuth();
 
@@ -27,13 +28,14 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen }: TopHeaderProps) => {
             `}
         >
             <div className="flex items-center gap-4">
-                <Button
-                    shape="circle"
-                    icon={<AppstoreOutlined className="text-slate-500" />}
-                    className="border-none shadow-none bg-transparent hover:bg-slate-100"
-                    onClick={onToggleSidebar}
-                />
-
+                {!hideToggle && (
+                    <Button
+                        shape="circle"
+                        icon={<AppstoreOutlined className="text-slate-500" />}
+                        className="border-none shadow-none bg-transparent hover:bg-slate-100"
+                        onClick={onToggleSidebar}
+                    />
+                )}
             </div>
 
             <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
@@ -45,6 +47,11 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen }: TopHeaderProps) => {
                                 label: 'Menu Builder',
                                 icon: <AppstoreOutlined />,
                                 onClick: () => router.push('/admin/menus')
+                            }, {
+                                key: 'dashboard-builder',
+                                label: 'Dashboard Builder',
+                                icon: <AppstoreOutlined />,
+                                onClick: () => router.push('/admin/dashboard-cards')
                             }, {
                                 type: 'divider' as const
                             }] : []),

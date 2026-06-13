@@ -21,16 +21,19 @@ export default function MainLayout({ children, rules, menus = [] }: MainLayoutPr
 
     return (
         <>
-            <SidebarClient rules={rules} menus={menus} isOpen={isSidebarOpen} />
+            {pathname !== '/' && (
+                <SidebarClient rules={rules} menus={menus} isOpen={isSidebarOpen} />
+            )}
             <TopHeader
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-                isSidebarOpen={isSidebarOpen}
+                isSidebarOpen={isSidebarOpen && pathname !== '/'}
+                hideToggle={pathname === '/'}
             />
 
             <div
                 className={`
                     pt-[60px] min-h-screen bg-slate-50 transition-all duration-300 ease-in-out
-                    ${isSidebarOpen ? 'pl-[280px]' : 'pl-0'}
+                    ${(isSidebarOpen && pathname !== '/') ? 'pl-[280px]' : 'pl-0'}
                 `}
             >
                 {children}

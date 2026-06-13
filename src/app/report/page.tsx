@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Tag, message, Card, Breadcrumb, Select, Space, Tooltip } from 'antd';
-import { FileExcelOutlined, ArrowLeftOutlined, FilterOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, message, Card, Breadcrumb, Select, Space, Tooltip, Modal, Input } from 'antd';
+import { FileExcelOutlined, ArrowLeftOutlined, FilterOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ExcelJS from 'exceljs';
@@ -69,6 +69,10 @@ export default function ReportPage() {
     const [fullDataSource, setFullDataSource] = useState<ReportRow[]>([]);
     const [departments, setDepartments] = useState<Record<string, string>>({});
     const [filterType, setFilterType] = useState<'ALL' | 'ERROR' | 'VALID'>(initialFilter);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
+    const [saveNote, setSaveNote] = useState('');
+    const [saveFileName, setSaveFileName] = useState('');
 
     useEffect(() => {
         const fetchDepts = async () => {
@@ -250,6 +254,83 @@ export default function ReportPage() {
         saveAs(blob, `Bao_cao_${filterType}_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
+    const handleSaveToServer = () => {
+        if (filteredDataSource.length === 0) {
+            message.warning("Không có dữ liệu để lưu");
+            return;
+        }
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}${now.getSeconds().toString().padStart(2,'0')}`;
+        setSaveFileName(`Bao_cao_${filterType}_${timestamp}`);
+        setSaveNote('');
+        setIsSaveModalVisible(true);
+    };
+
+    const confirmSaveToServer = async () => {
+        setIsSaveModalVisible(false);
+        setIsSaving(true);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Báo cáo lỗi');
+            worksheet.columns = [
+                { header: 'STT', key: 'stt', width: 5 },
+                { header: 'Mã BN', key: 'ma_bn', width: 14 },
+                { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
+                { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
+                { header: 'Họ tên', key: 'ho_ten', width: 25 },
+                { header: 'Ngày vào', key: 'ngay_vao', width: 16 },
+                { header: 'Ngày ra', key: 'ngay_ra', width: 16 },
+                { header: 'Ngày YL', key: 'ngay_yl', width: 16 },
+                { header: 'Ngày TH YL', key: 'ngay_th_yl', width: 16 },
+                { header: 'Ngày KQ', key: 'ngay_kq', width: 16 },
+                { header: 'Ngày Vào Nội Trú', key: 'ngay_vao_noi_tru', width: 16 },
+                { header: 'Mã DV/Thuốc', key: 'ma_dv', width: 15 },
+                { header: 'Chi tiết lỗi', key: 'chi_tiet_loi', width: 60 },
+                { header: 'Tên DV/Thuốc', key: 'ten_dv', width: 40 },
+                { header: 'Đơn giá BH', key: 'don_gia_bh', width: 15 },
+                { header: 'Mã LK', key: 'ma_lk', width: 14 },
+                { header: 'Mã thẻ', key: 'ma_the', width: 20 },
+                { header: 'Mã đối tượng KCB', key: 'ma_doituong_kcb', width: 15 },
+            ];
+            worksheet.getRow(1).font = { bold: true };
+
+            filteredDataSource.forEach((row, idx) => {
+                worksheet.addRow({
+                    ...row,
+                    stt: idx + 1,
+                    ten_khoa: departments[row.ma_khoa] || ''
+                });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const safeName = (saveFileName || `Bao_cao_${filterType}`).replace(/[^a-zA-Z0-9.\-_]/g, '_');
+            const fileName = `${safeName}.xlsx`;
+
+            const formData = new FormData();
+            formData.append('file', blob, fileName);
+            formData.append('note', saveNote);
+
+            const res = await fetch('/api/saved-reports', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                message.success('Đã lưu file lên máy chủ thành công!');
+            } else {
+                message.error('Lỗi khi lưu file: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error saving to server:', error);
+            message.error('Có lỗi xảy ra khi lưu file');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const renderCopyable = (text: string) => {
         if (!text) return text;
         return (
@@ -389,6 +470,15 @@ export default function ReportPage() {
                             >
                                 Xuất Excel
                             </Button>
+                            <Button
+                                type="primary"
+                                icon={<CloudUploadOutlined />}
+                                onClick={handleSaveToServer}
+                                loading={isSaving}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Lưu máy chủ
+                            </Button>
                         </Space>
                     }
                     variant="borderless"
@@ -416,6 +506,35 @@ export default function ReportPage() {
                         bordered
                     />
                 </Card>
+
+                <Modal
+                    title="Nhập thông tin cho báo cáo lưu"
+                    open={isSaveModalVisible}
+                    onOk={confirmSaveToServer}
+                    onCancel={() => setIsSaveModalVisible(false)}
+                    okText="Lưu"
+                    cancelText="Hủy"
+                >
+                    <div className="space-y-4">
+                        <div>
+                            <div className="mb-1 font-medium text-slate-600">Tên file (không bao gồm .xlsx)</div>
+                            <Input
+                                placeholder="Nhập tên file"
+                                value={saveFileName}
+                                onChange={(e) => setSaveFileName(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <div className="mb-1 font-medium text-slate-600">Ghi chú (tùy chọn)</div>
+                            <Input.TextArea
+                                rows={4}
+                                placeholder="Nhập ghi chú (VD: số liệu từ ngày... đến ngày...)"
+                                value={saveNote}
+                                onChange={(e) => setSaveNote(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
             </div>
         </div>
     );

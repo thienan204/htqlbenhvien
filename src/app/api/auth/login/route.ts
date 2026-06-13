@@ -17,6 +17,7 @@ export async function POST(request: Request) {
         let finalUserName = '';
         let finalRole = 'USER';
         let finalMaKhoa = null;
+        let finalStaffId: string | null = null;
         let finalPermissions: string[] = [];
 
         // Hardcode admin account bypass
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
             finalUserName = user.name || user.username;
             finalRole = user.role;
             finalMaKhoa = user.ma_khoa;
+            finalStaffId = user.staffId;
 
             // We no longer fetch permissions here to avoid stale data in JWT.
             // Permissions will be fetched on-the-fly by the server action `getCurrentUser`.
@@ -57,7 +59,8 @@ export async function POST(request: Request) {
             id: finalUserId,
             username: username,
             role: finalRole,
-            ma_khoa: finalMaKhoa
+            ma_khoa: finalMaKhoa,
+            staffId: finalStaffId
         })
             .setProtectedHeader({ alg })
             .setIssuedAt()

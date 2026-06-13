@@ -7,7 +7,10 @@ export async function GET(request: Request) {
     try {
         const staff = await prisma.staff.findMany({
             include: {
-                department: true // Include department connection to display `ten_khoa`
+                department: true,
+                chuc_danh_ref: true,
+                trinh_do_ref: true,
+                chuc_vu_ref: true
             },
             orderBy: {
                 ma_bac_si: 'asc'
@@ -34,16 +37,12 @@ export async function POST(request: Request) {
                     where: { ma_bac_si: item.ma_bac_si },
                     update: {
                         ho_ten: item.ho_ten,
-                        trinh_do: item.trinh_do || null,
-                        chuc_danh: item.chuc_danh || null,
                         so_dien_thoai: item.so_dien_thoai || null,
                         ma_khoa: item.ma_khoa
                     },
                     create: {
                         ma_bac_si: item.ma_bac_si,
                         ho_ten: item.ho_ten,
-                        trinh_do: item.trinh_do || null,
-                        chuc_danh: item.chuc_danh || null,
                         so_dien_thoai: item.so_dien_thoai || null,
                         ma_khoa: item.ma_khoa
                     }
@@ -54,7 +53,7 @@ export async function POST(request: Request) {
         }
 
         // Handle Single Object (For Form Add/Update)
-        const { id, ho_ten, ma_bac_si, trinh_do, chuc_danh, so_dien_thoai, ma_khoa } = body;
+        const { id, ho_ten, ma_bac_si, so_dien_thoai, dia_chi, ma_khoa, trinh_do_id, chuc_danh_id } = body;
 
         if (!ho_ten || !ma_bac_si || !ma_khoa) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -64,13 +63,13 @@ export async function POST(request: Request) {
             // Update existing
             const updated = await prisma.staff.update({
                 where: { id },
-                data: { ho_ten, ma_bac_si, trinh_do, chuc_danh, so_dien_thoai, ma_khoa }
+                data: { ho_ten, ma_bac_si, so_dien_thoai, dia_chi, ma_khoa, trinh_do_id, chuc_danh_id }
             });
             return NextResponse.json(updated);
         } else {
             // Create new
             const created = await prisma.staff.create({
-                data: { ho_ten, ma_bac_si, trinh_do, chuc_danh, so_dien_thoai, ma_khoa }
+                data: { ho_ten, ma_bac_si, so_dien_thoai, dia_chi, ma_khoa, trinh_do_id, chuc_danh_id }
             });
             return NextResponse.json(created);
         }

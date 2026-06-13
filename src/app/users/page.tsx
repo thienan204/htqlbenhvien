@@ -11,6 +11,7 @@ interface User {
     name: string | null;
     role: string;
     ma_khoa: string | null;
+    staffId: string | null;
     telegram_id: string | null;
     createdAt: string;
 }
@@ -18,6 +19,7 @@ interface User {
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
+    const [allStaffs, setAllStaffs] = useState<any[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -66,10 +68,23 @@ export default function UsersPage() {
         }
     };
 
+    const fetchAllStaffs = async () => {
+        try {
+            const res = await fetch('/api/staff');
+            if (res.ok) {
+                const data = await res.json();
+                setAllStaffs(data);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải danh sách Nhân viên', error);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
         fetchDepartments();
         fetchRoles();
+        fetchAllStaffs();
     }, []);
 
     const handleSave = async (values: any) => {
@@ -129,6 +144,7 @@ export default function UsersPage() {
                 name: user.name,
                 role: user.role,
                 ma_khoa: user.ma_khoa,
+                staffId: user.staffId,
                 telegram_id: user.telegram_id,
                 password: '' // Không show password cũ
             });
@@ -235,6 +251,7 @@ export default function UsersPage() {
                 onOk={() => form.submit()}
                 okText="Lưu"
                 cancelText="Hủy"
+                forceRender
             >
                 <Form form={form} layout="vertical" onFinish={handleSave}>
                     <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true, message: 'Bắt buộc nhập' }]}>
@@ -272,6 +289,29 @@ export default function UsersPage() {
                             </Select>
                         </Form.Item>
                     )}
+
+                    <Form.Item name="staffId" label="Liên kết với Nhân viên (Tài khoản cá nhân)" help="Chọn để gán tài khoản này cho một nhân viên cụ thể (giúp tự động chốt tên khi báo lỗi).">
+                        <Select 
+                            showSearch 
+                            optionFilterProp="children" 
+                            placeholder="Chọn nhân viên..." 
+                            allowClear
+                            onChange={(val) => {
+                                if (val) {
+                                    const staff = allStaffs.find(s => s.id === val);
+                                    if (staff && !form.getFieldValue('name')) {
+                                        form.setFieldsValue({ name: staff.ho_ten });
+                                    }
+                                }
+                            }}
+                        >
+                            {allStaffs.map(s => (
+                                <Select.Option key={s.id} value={s.id}>
+                                    {s.ho_ten} {s.chuc_danh ? `(${s.chuc_danh})` : ''} - {departments.find(d => d.ma_khoa === s.ma_khoa)?.ten_khoa || s.ma_khoa}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
 
                     <Form.Item name="telegram_id" label="Tài khoản Telegram (@username hoặc ID)" help="Chỉ dành cho phòng IT để Bot tag tên trên nhóm khi có yêu cầu mới (ví dụ: @mocthao)">
                         <Input placeholder="@username" />

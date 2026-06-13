@@ -36,6 +36,14 @@ model ValidationRule {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+model FormConfig {
+  id        String   @id @default(cuid())
+  formId    String   @unique
+  layout    String?  @db.Text
+  settings  String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model User {
   id        String   @id @default(cuid())
@@ -49,6 +57,10 @@ model User {
   // Quản lý ca trực (Dành riêng cho Role CNTT)
   isAvailable Boolean  @default(false)
   dutyOrder   Int      @default(999)
+
+  // Liên kết với Hồ sơ Nhân viên (Dành cho tài khoản cá nhân)
+  staffId     String?  @unique
+  staff       Staff?   @relation(fields: [staffId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,13 +101,83 @@ model Staff {
   id              String   @id @default(cuid())
   ho_ten          String
   ma_bac_si       String   @unique
-  trinh_do        String?
-  chuc_danh       String?
+  // Bỏ đi các trường String tĩnh
+  // trinh_do        String?
+  // chuc_danh       String?
+  
   so_dien_thoai   String?
+  dia_chi         String?
   ma_khoa         String
   department      Department @relation(fields: [ma_khoa], references: [ma_khoa])
+  
+  // Các quan hệ Danh mục SystemCategory
+  trinh_do_id        String?
+  trinh_do_ref       SystemCategory? @relation("StaffQualification", fields: [trinh_do_id], references: [id])
+  
+  chuc_danh_id       String?
+  chuc_danh_ref      SystemCategory? @relation("StaffJobTitle", fields: [chuc_danh_id], references: [id])
+
+  vi_tri_viec_lam_id String?
+  vi_tri_ref         SystemCategory? @relation("StaffJobPosition", fields: [vi_tri_viec_lam_id], references: [id])
+  
+  chuc_vu_id         String?
+  chuc_vu_ref        SystemCategory? @relation("StaffPosition", fields: [chuc_vu_id], references: [id])
+  
+  loai_hop_dong_id   String?
+  loai_hop_dong_ref  SystemCategory? @relation("StaffContractType", fields: [loai_hop_dong_id], references: [id])
+
+  gioi_tinh_id       String?
+  gioi_tinh_ref      SystemCategory? @relation("StaffGender", fields: [gioi_tinh_id], references: [id])
+
+  ngay_sinh          DateTime?
+
+  // Liên kết 1-Nhiều tới bảng Chứng chỉ hành nghề (Mảng các CCHN)
+  certificates       PracticingCertificate[]
+
+  // Liên kết với Tài khoản (1-1)
+  user            User?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model SystemCategory {
+  id          String   @id @default(cuid())
+  type        String   // VD: 'GENDER', 'LOAI_HOP_DONG', 'VI_TRI_VIEC_LAM', 'TRINH_DO', 'CHUC_DANH', 'CHUC_VU'
+  code        String   
+  name        String   
+  description String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  
+  // Liên kết động tới bảng Staff
+  staff_hop_dong   Staff[] @relation("StaffContractType")
+  staff_vi_tri     Staff[] @relation("StaffJobPosition")
+  staff_chuc_danh  Staff[] @relation("StaffJobTitle")
+  staff_trinh_do   Staff[] @relation("StaffQualification")
+  staff_chuc_vu    Staff[] @relation("StaffPosition")
+  staff_gioi_tinh  Staff[] @relation("StaffGender") 
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, code]) 
+}
+
+model PracticingCertificate {
+  id                 String   @id @default(cuid())
+  staffId            String   
+  staff              Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  
+  so_cchn            String   // "Số chứng chỉ hành nghề đăng ký với BHYT"
+  ngay_cap           DateTime? // "Ngày cấp"
+  chuc_danh_cchn     String?  // "CDNN trong CCHN"
+  pham_vi_hanh_nghe  String?  // "Phạm vi hành nghề"
+  pham_vi_bo_sung    String?  // "Phạm vi chuyên môn bổ sung"
+  dich_vu_ky_thuat   String?  // "Dịch vụ kỹ thuật khác"
+  isActive           Boolean  @default(true) // Đánh dấu CCHN nào đang được sử dụng chính
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model DuplicateRule {
@@ -335,6 +417,23 @@ model ITRequest {
   startedAt       DateTime?
   resolvedAt      DateTime?
   
+  // Chat Messages
+  messages        RequestMessage[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RequestMessage {
+  id              String   @id @default(cuid())
+  itRequestId     String
+  itRequest       ITRequest @relation(fields: [itRequestId], references: [id], onDelete: Cascade)
+  senderId        String   // ID người gửi (có thể là ID của User)
+  senderName      String?  // Tên người gửi hiển thị
+  content         String?  @db.Text // Nội dung chat
+  imageUrl        String?  // Ảnh đính kèm nếu có
+  isSystem        Boolean  @default(false) // Có phải tin nhắn tự động từ hệ thống không
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -388,6 +487,26 @@ model Menu {
   permissionCode  String?  // Mã quyền (vd: MENU_DOC_FILE_EXCEL) để link với bảng Role
   isActive        Boolean  @default(true)
   isSpecialGroup  String?  // Dùng để đánh dấu các nhóm đặc biệt (như nhóm "Chuyên đề" tự động load từ bảng SpecializedRule)
+  showInPaths     String[] @default([]) // Chứa tiền tố đường dẫn module (vd: ['/xml-checker'])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DashboardCard {
+  id              String   @id @default(cuid())
+  title           String   // Tiêu đề (VD: Quản lý Nhân sự)
+  description     String?  // Mô tả chi tiết
+  icon            String?  // Tên Icon (VD: TeamOutlined)
+  href            String   // Đường dẫn (VD: /staff)
+  
+  // Giao diện thẻ
+  bgColor         String?  // VD: bg-cyan-50
+  borderColor     String?  // VD: border-cyan-200
+  hoverColor      String?  // VD: hover:border-cyan-500
+  
+  order           Int      @default(0) // Số thứ tự hiển thị
+  isActive        Boolean  @default(true) // Trạng thái Bật/Tắt
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

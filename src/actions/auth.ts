@@ -10,6 +10,7 @@ export type UserPayload = {
     username: string;
     role: string;
     ma_khoa?: string;
+    staffId?: string;
     permissions?: any;
 };
 
@@ -48,6 +49,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             username: payload.username as string,
             role: payload.role as string,
             ma_khoa: payload.ma_khoa as string | undefined,
+            staffId: payload.staffId as string | undefined,
             permissions
         };
     } catch (error) {

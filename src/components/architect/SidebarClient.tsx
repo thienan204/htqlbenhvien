@@ -17,7 +17,15 @@ export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClie
     const { user, hasPermission } = useAuth();
     const pathname = usePathname();
 
-    const rootMenus = menus.filter(m => !m.parentId).sort((a, b) => a.order - b.order);
+    const allRootMenus = menus.filter(m => !m.parentId).sort((a, b) => a.order - b.order);
+    
+    const rootMenus = allRootMenus.filter(group => {
+        // Nếu không có showInPaths (mảng rỗng), mặc định hiển thị ở mọi nơi
+        if (!group.showInPaths || group.showInPaths.length === 0) return true;
+        
+        // Nếu URL khớp với bất kỳ tiền tố nào trong showInPaths thì hiển thị
+        return group.showInPaths.some((prefix: string) => pathname.startsWith(prefix));
+    });
 
     const renderIcon = (iconName: string | null) => {
         if (!iconName) return null;
@@ -55,11 +63,15 @@ export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClie
 
                     // Lọc những menu con mà user có quyền xem
                     const visibleChildren = children.filter(child => {
-                        // Nếu menu ko có permissionCode, mặc định chỉ Admin xem được hoặc theo logic cũ
+                        // 1. Lọc theo showInPaths
+                        if (child.showInPaths && child.showInPaths.length > 0) {
+                            const isPathMatch = child.showInPaths.some((prefix: string) => pathname.startsWith(prefix));
+                            if (!isPathMatch) return false;
+                        }
+
+                        // 2. Lọc theo quyền
                         if (!child.permissionCode) {
-                            // Nếu menu là trang chủ (path: /) thì ai cũng xem được
                             if (child.path === '/') return true;
-                            // Ngược lại chỉ có ADMIN
                             return user?.role === 'ADMIN'; 
                         }
                         return hasPermission(child.permissionCode);

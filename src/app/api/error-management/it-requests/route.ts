@@ -174,7 +174,17 @@ export async function POST(request: Request) {
                 ma_khoa,
                 assigneeId: finalAssignee,
                 dynamicFields: dynamicFields || {},
-                status: 'PENDING'
+                status: 'PENDING',
+                messages: {
+                    create: [
+                        {
+                            senderId: nguoi_bao_id || user.id,
+                            senderName: dynamicFields['Người báo'] || user.name || user.username,
+                            content: ten_loi,
+                            imageUrl: dynamicFields['Hình ảnh đính kèm'] && dynamicFields['Hình ảnh đính kèm'].length > 0 ? dynamicFields['Hình ảnh đính kèm'][0] : null
+                        }
+                    ]
+                }
             }
         });
 

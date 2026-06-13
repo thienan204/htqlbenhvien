@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Button, Radio, message, Card, Upload, Modal } from 'antd';
-import { ArrowLeftOutlined, BugOutlined, PlusOutlined, CameraOutlined, PictureOutlined } from '@ant-design/icons';
+import { Form, Input, Select, Button, Radio, message, Card, Upload, Modal, Tabs, Tooltip, Dropdown } from 'antd';
+import { ArrowLeftOutlined, BugOutlined, PlusOutlined, CameraOutlined, PictureOutlined, MessageOutlined, FormOutlined, SendOutlined, AudioOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -26,6 +26,22 @@ export default function CreateITRequestPage() {
     const [fileList, setFileList] = useState<any[]>([]);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
+
+    // Chat UI State
+    const [activeTab, setActiveTab] = useState('chat');
+    const [chatText, setChatText] = useState('');
+    const [isListening, setIsListening] = useState(false);
+    const [chatLoading, setChatLoading] = useState(false);
+    const [selectedQuickReply, setSelectedQuickReply] = useState('');
+    const [savedStaffId, setSavedStaffId] = useState<string | null>(null);
+
+    const quickReplies = [
+        '🖨️ Máy in hỏng / kẹt giấy',
+        '🌐 Mất kết nối mạng',
+        '💻 Máy tính không lên nguồn',
+        '🏥 Lỗi bệnh án / Thanh toán',
+        '🔑 Quên mật khẩu HIS'
+    ];
 
     const resizeImage = (file: File): Promise<Blob> => {
         return new Promise((resolve, reject) => {
@@ -131,12 +147,14 @@ export default function CreateITRequestPage() {
         };
         initData();
         
+        const lastStaffId = user?.staffId || localStorage.getItem('last_it_request_staff_id');
+        setSavedStaffId(lastStaffId);
         form.setFieldsValue({
             category: 'SOFTWARE',
             trang_thai_ba: 'Đang điều trị',
-            nguoi_bao_id: localStorage.getItem('last_it_request_staff_id') || undefined
+            nguoi_bao_id: lastStaffId || undefined
         });
-    }, [form, isAdmin]);
+    }, [form, isAdmin, user?.staffId]);
 
     const fetchConfiguredFields = async () => {
         try {
@@ -260,6 +278,254 @@ export default function CreateITRequestPage() {
         }
     };
 
+    const handleVoiceInput = () => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            message.warning("Trình duyệt không hỗ trợ nhận diện giọng nói!");
+            return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'vi-VN';
+        recognition.continuous = false;
+        
+        recognition.onstart = () => setIsListening(true);
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setChatText(prev => prev ? prev + ' ' + transcript : transcript);
+        };
+        recognition.onend = () => setIsListening(false);
+        
+        if (isListening) recognition.stop();
+        else recognition.start();
+    };
+
+    const handleFileChange = (e: any) => {
+        if (e.target.files && e.target.files.length > 0) {
+            uploadProps.customRequest({ file: e.target.files[0] });
+        }
+        e.target.value = '';
+    };
+
+    const handleCreateFromChat = async () => {
+        if (!chatText.trim()) return message.warning("Vui lòng nhập mô tả sự cố!");
+        
+        let staffId = savedStaffId;
+        if (!staffId && departmentStaff.length > 0) {
+            staffId = departmentStaff[0].id;
+            setSavedStaffId(staffId);
+            localStorage.setItem('last_it_request_staff_id', staffId);
+        }
+        
+        if (!staffId) return message.warning("Không xác định được người báo, vui lòng kiểm tra lại thông tin!");
+        
+        setChatLoading(true);
+
+        // Auto parser
+        let category = 'SOFTWARE';
+        const lowerText = chatText.toLowerCase();
+        const hardwareKeywords = ['máy in', 'in', 'chuột', 'phím', 'bàn phím', 'mạng', 'màn hình', 'nguồn', 'máy tính', 'ổ cứng'];
+        if (hardwareKeywords.some(kw => lowerText.includes(kw))) {
+            category = 'HARDWARE';
+        }
+
+        // Extract patientCode (8-10 digits)
+        const patientMatch = chatText.match(/\b\d{8,10}\b/);
+        const ma_ba = patientMatch ? patientMatch[0] : null;
+
+        const staff = departmentStaff.find(s => s.id === staffId);
+        
+        const dynamicObj: any = {
+            'Ghi chú': 'Tạo tự động từ Chat',
+            'SĐT': staff?.so_dien_thoai || '',
+            'Người báo': staff?.ho_ten || ''
+        };
+
+        if (fileList.length > 0) {
+            dynamicObj['Hình ảnh đính kèm'] = fileList.map(f => f.url);
+        }
+
+        try {
+            const res = await fetch('/api/error-management/it-requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ma_ba: ma_ba,
+                    category: category,
+                    ten_loi: chatText,
+                    ma_khoa: isAdmin ? (user?.ma_khoa || departments[0]?.ma_khoa) : 'KHOA_HIENTAI', 
+                    assigneeId: null, // Auto assign
+                    dynamicFields: dynamicObj,
+                    nguoi_bao_id: staffId,
+                    sdt: staff?.so_dien_thoai || ''
+                })
+            });
+
+            if (res.ok) {
+                message.success('Gửi yêu cầu thành công!');
+                router.push('/error-management/it-requests');
+            } else {
+                const err = await res.json();
+                message.error(err.error || 'Gửi yêu cầu thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối');
+        } finally {
+            setChatLoading(false);
+        }
+    };
+
+    const renderChatTab = () => (
+        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-inner flex flex-col min-h-[400px]">
+            {/* Thanh thông tin người báo trong Chat Tab */}
+            <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm mb-4">
+                <div className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                    <span>👤 Người báo:</span>
+                    {user?.staffId ? (
+                        <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                            {departmentStaff.find((s: any) => s.id === user.staffId)?.ho_ten || 'Tài khoản cá nhân'}
+                        </span>
+                    ) : (
+                        <Select
+                            size="small"
+                            value={savedStaffId}
+                            onChange={(val) => {
+                                setSavedStaffId(val);
+                                localStorage.setItem('last_it_request_staff_id', val);
+                                form.setFieldsValue({ nguoi_bao_id: val });
+                            }}
+                            className="min-w-[150px]"
+                            placeholder="Chọn tên nhân viên"
+                            variant="borderless"
+                            options={departmentStaff.map((s: any) => ({
+                                value: s.id,
+                                label: s.ho_ten
+                            }))}
+                            showSearch
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                        />
+                    )}
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+                <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                        <BugOutlined />
+                    </div>
+                    <div className="bg-white p-3 sm:p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-[14px] sm:text-[15px] text-slate-700 max-w-[85%]">
+                        Chào bạn! Bạn đang gặp sự cố gì? 
+                        <br/><span className="text-slate-500 text-[13px] mt-1 block">Hãy chọn nhanh gợi ý bên dưới, đọc vào Micro, hoặc gõ chữ nhé.</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Replies */}
+            <div className="flex overflow-x-auto gap-2 pb-2 mb-2 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {quickReplies.map(reply => (
+                    <div 
+                        key={reply} 
+                        onClick={() => setChatText(reply)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-medium border cursor-pointer transition-colors shadow-sm shrink-0
+                            ${chatText === reply ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}
+                        `}
+                    >
+                        {reply}
+                    </div>
+                ))}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                {fileList.length > 0 && (
+                    <div className="px-3 pt-2 pb-1">
+                        <Upload {...uploadProps} />
+                    </div>
+                )}
+                <div className="flex items-end gap-2">
+                    <div className="flex gap-1 sm:gap-2 px-1 pb-1">
+                        <Dropdown 
+                            trigger={['click']}
+                            menu={{
+                                items: [
+                                    {
+                                        key: '1',
+                                        label: (
+                                            <label className="flex items-center gap-3 py-1 cursor-pointer w-full text-slate-700">
+                                                <PictureOutlined className="text-lg text-blue-500" />
+                                                <span className="font-medium text-[14px]">Chọn từ thư viện</span>
+                                                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                                            </label>
+                                        )
+                                    },
+                                    {
+                                        key: '2',
+                                        label: (
+                                            <label className="flex items-center gap-3 py-1 cursor-pointer w-full text-slate-700">
+                                                <CameraOutlined className="text-lg text-green-500" />
+                                                <span className="font-medium text-[14px]">Chụp ảnh (Điện thoại)</span>
+                                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                                            </label>
+                                        )
+                                    }
+                                ]
+                            }}
+                        >
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors">
+                                <PictureOutlined className="text-xl" />
+                            </div>
+                        </Dropdown>
+                    </div>
+
+                    <Input.TextArea 
+                        value={chatText}
+                        onChange={e => setChatText(e.target.value)}
+                        placeholder="Mô tả sự cố của bạn ở đây..." 
+                        autoSize={{ minRows: 1, maxRows: 4 }}
+                        className="flex-1 !border-none !shadow-none !ring-0 !bg-transparent text-[15px] py-2 px-1"
+                        onPressEnter={(e) => {
+                            if (!e.shiftKey) {
+                                e.preventDefault();
+                                handleCreateFromChat();
+                            }
+                        }}
+                    />
+
+                    <div className="flex gap-2 p-1">
+                        <Tooltip title="Nhập bằng giọng nói">
+                            <Button 
+                                type={isListening ? 'primary' : 'default'} 
+                                danger={isListening}
+                                shape="circle" 
+                                size="large" 
+                                icon={<AudioOutlined className={isListening ? 'animate-pulse' : ''} />} 
+                                onClick={handleVoiceInput}
+                                className="border-none bg-slate-100 hover:bg-slate-200 shadow-none"
+                            />
+                        </Tooltip>
+                        <Button 
+                            type="primary" 
+                            shape="circle" 
+                            size="large" 
+                            icon={<SendOutlined />} 
+                            onClick={handleCreateFromChat}
+                            loading={chatLoading}
+                            className="bg-blue-600"
+                        />
+                    </div>
+                </div>
+            </div>
+            
+            {!savedStaffId && departmentStaff.length > 0 && (
+                 <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800 flex items-center justify-between">
+                     <span>Lần đầu sử dụng, vui lòng chọn tên của bạn (tại tab Điền Form) để hệ thống ghi nhớ nhé!</span>
+                     <Button size="small" onClick={() => setActiveTab('form')}>Sang Tab Form</Button>
+                 </div>
+            )}
+        </div>
+    );
+
+
     return (
         <div className="w-full max-w-4xl mx-auto px-4 sm:px-[30px] py-4 sm:py-6 space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
@@ -279,8 +545,24 @@ export default function CreateITRequestPage() {
                 </div>
             </div>
 
-            <Card className="shadow-sm rounded-2xl border-slate-100">
-                <Form form={form} layout="vertical" onFinish={handleCreateTicket}>
+            <Tabs 
+                activeKey={activeTab} 
+                onChange={setActiveTab}
+                type="card" 
+                className="mt-2"
+                items={[
+                    {
+                        key: 'chat',
+                        label: <span className="font-medium px-2 py-1 flex items-center gap-2"><MessageOutlined /> Tạo Nhanh (Khuyên dùng)</span>,
+                        children: renderChatTab()
+                    },
+                    {
+                        key: 'form',
+                        label: <span className="font-medium px-2 py-1 flex items-center gap-2"><FormOutlined /> Điền Form (Truyền thống)</span>,
+                        forceRender: true,
+                        children: (
+                            <Card className="shadow-sm rounded-b-2xl rounded-tr-2xl border-slate-200 border-t-0">
+                                <Form form={form} layout="vertical" onFinish={handleCreateTicket}>
                     <Form.Item name="category" noStyle>
                         <Radio.Group className="w-full mb-6 flex rounded-lg p-1 bg-slate-100" optionType="button" buttonStyle="solid">
                             <Radio.Button value="SOFTWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
@@ -398,12 +680,19 @@ export default function CreateITRequestPage() {
                                             </Form.Item>
                                         )}
 
-                                        <Form.Item name="nguoi_bao_id" label={<span className="font-semibold">{isAdmin ? "Người báo" : "Người báo (Chọn Tên bạn)"}</span>} rules={[{ required: true, message: 'Vui lòng chọn tên' }]} className="mb-0">
+                                        <Form.Item name="nguoi_bao_id" label={<span className="font-semibold">{isAdmin ? "Người báo" : "Người báo"}</span>} rules={[{ required: true, message: 'Vui lòng chọn tên' }]} className="mb-0">
                                             <Select 
                                                 showSearch 
                                                 placeholder="Tìm tên nhân viên..." 
                                                 virtual={false}
+                                                disabled={!!user?.staffId}
                                                 optionFilterProp="children"
+                                                onChange={(val) => {
+                                                    if (!user?.staffId) {
+                                                        localStorage.setItem('last_it_request_staff_id', val);
+                                                        setSavedStaffId(val);
+                                                    }
+                                                }}
                                             >
                                                 {departmentStaff.map(s => (
                                                     <Select.Option key={s.id} value={s.id}>{s.ho_ten} {s.chuc_danh ? `(${s.chuc_danh})` : ''}</Select.Option>
@@ -435,6 +724,10 @@ export default function CreateITRequestPage() {
                     </Form.Item>
                 </Form>
             </Card>
+                        )
+                    }
+                ]}
+            />
 
             <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
                 <img alt="Preview" style={{ width: '100%', marginTop: '20px', borderRadius: '8px' }} src={previewImage} />

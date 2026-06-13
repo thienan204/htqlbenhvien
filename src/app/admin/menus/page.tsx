@@ -19,6 +19,7 @@ interface MenuNode {
     permissionCode: string | null;
     isActive: boolean;
     isSpecialGroup: string | null;
+    showInPaths?: string[];
     children?: MenuNode[];
 }
 
@@ -428,10 +429,29 @@ export default function MenuBuilderPage() {
                                         tooltip="Dùng để tự động tải các danh sách chuyên đề vào nhóm này"
                                     >
                                         <Select placeholder="Bình thường" allowClear>
-                                            <Option value="SPECIALIZED_RULES">Nhóm Danh Sách Chuyên Đề</Option>
+                                            <Option value="SPECIALIZED_RULES">NhNhóm Danh Sách Chuyên Đề</Option>
                                         </Select>
                                     </Form.Item>
                                 </div>
+
+                                <Form.Item 
+                                    name="showInPaths" 
+                                    label="Hiển thị khi truy cập các Module (URL) nào?"
+                                    tooltip="Nhập tiền tố URL (VD: /xml-checker) rồi ấn Enter. Để trống nếu muốn hiển thị ở mọi nơi (giữ tính tương thích)."
+                                >
+                                    <Select
+                                        mode="tags"
+                                        placeholder="VD: /xml-checker (ấn Enter để thêm)"
+                                        style={{ width: '100%' }}
+                                        tokenSeparators={[',']}
+                                        options={[
+                                            { value: '/xml-checker', label: '/xml-checker (Kiểm tra XML)' },
+                                            { value: '/error-management', label: '/error-management (Xử lý Lỗi IT)' },
+                                            { value: '/staff', label: '/staff (Quản lý Nhân sự)' },
+                                            { value: '/chuyen-de', label: '/chuyen-de (Chuyên đề)' }
+                                        ]}
+                                    />
+                                </Form.Item>
 
                                 <Form.Item name="order" hidden><Input /></Form.Item>
 
