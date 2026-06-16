@@ -1,0 +1,233 @@
+[
+  {
+    "id": "cmqcdxstd000611nekd0mombb",
+    "type": "GENDER",
+    "code": "NAM",
+    "name": "Nam",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-13T13:22:36.959Z",
+    "updatedAt": "2026-06-13T13:22:36.959Z"
+  },
+  {
+    "id": "cmqcdy7kr000711neyxqowj4w",
+    "type": "GENDER",
+    "code": "NU",
+    "name": "Nữ",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-13T13:22:56.090Z",
+    "updatedAt": "2026-06-13T13:22:56.090Z"
+  },
+  {
+    "id": "cmqcdyggf000811ne70orfpsk",
+    "type": "GENDER",
+    "code": "BHD",
+    "name": "BHD",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-13T13:23:07.600Z",
+    "updatedAt": "2026-06-13T13:23:07.600Z"
+  },
+  {
+    "id": "cmqce71ft000b11nel9iwomjl",
+    "type": "CHUC_VU",
+    "code": "TRUONG_KHOA",
+    "name": "Trưởng khoa",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-13T13:29:48.042Z",
+    "updatedAt": "2026-06-13T13:29:48.042Z"
+  },
+  {
+    "id": "cmqce79e0000c11nerifise2u",
+    "type": "CHUC_VU",
+    "code": "PHO_TRUONG_KHOA",
+    "name": "Phó trưởng khoa",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-13T13:29:58.342Z",
+    "updatedAt": "2026-06-13T13:29:58.342Z"
+  },
+  {
+    "id": "cmqd9lveh000mr7gvs4idbdvv",
+    "type": "NHOM_THIET_BI",
+    "code": "TIN_HOC",
+    "name": "Tin học",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T04:09:08.147Z",
+    "updatedAt": "2026-06-14T04:09:08.147Z"
+  },
+  {
+    "id": "cmqd9ud9d000qr7gvb40s2u1f",
+    "type": "CATEGORY_GROUP",
+    "code": "DON_VI_TINH",
+    "name": "Đơn vị tính",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T04:15:44.543Z",
+    "updatedAt": "2026-06-14T04:15:44.543Z"
+  },
+  {
+    "id": "cmqd9y8sx000rr7gv2eh4mbed",
+    "type": "DON_VI_TINH",
+    "code": "CAI",
+    "name": "Cái",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T04:18:45.391Z",
+    "updatedAt": "2026-06-14T04:18:45.391Z"
+  },
+  {
+    "id": "cmqd9yelb000sr7gvv7mzhl7w",
+    "type": "DON_VI_TINH",
+    "code": "CHIEC",
+    "name": "Chiếc",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T04:18:52.895Z",
+    "updatedAt": "2026-06-14T04:18:52.895Z"
+  },
+  {
+    "id": "cmqdf2cxr000vr7gv13m9qm9z",
+    "type": "CATEGORY_GROUP",
+    "code": "HANG_SAN_XUAT",
+    "name": "Hãng sản xuất",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:41:55.452Z",
+    "updatedAt": "2026-06-14T06:41:55.452Z"
+  },
+  {
+    "id": "cmqdf2xjh000wr7gvdhagfn8h",
+    "type": "CATEGORY_GROUP",
+    "code": "NUOC_SAN_XUAT",
+    "name": "Nước sản xuất",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:42:22.155Z",
+    "updatedAt": "2026-06-14T06:42:22.155Z"
+  },
+  {
+    "id": "cmqdf3gvg000xr7gvkazio1d7",
+    "type": "CATEGORY_GROUP",
+    "code": "NGUON_KINH_PHI",
+    "name": "Nguồn kinh phí",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:42:47.211Z",
+    "updatedAt": "2026-06-14T06:42:47.211Z"
+  },
+  {
+    "id": "cmqdf3xel000yr7gvinboahe2",
+    "type": "CATEGORY_GROUP",
+    "code": "DON_VI_CUNG_UNG",
+    "name": "Đơn vị cung ứng",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:43:08.636Z",
+    "updatedAt": "2026-06-14T06:43:08.636Z"
+  },
+  {
+    "id": "cmqdf49pa000zr7gvgykajxv9",
+    "type": "DON_VI_CUNG_UNG",
+    "code": "DON_VI_CUGN_CUNG",
+    "name": "don vị cugn cung",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:43:24.573Z",
+    "updatedAt": "2026-06-14T06:43:24.573Z"
+  },
+  {
+    "id": "cmqdf4j040010r7gvp2wpa9ch",
+    "type": "DANH_MUC_THIET_BI",
+    "code": "CANON_2900",
+    "name": "Canon 2900",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:43:36.628Z",
+    "updatedAt": "2026-06-14T09:46:54.961Z"
+  },
+  {
+    "id": "cmqdf4tob0011r7gvfluou76r",
+    "type": "LOAI_THIET_BI",
+    "code": "LAOI_THIET_BI",
+    "name": "laoi thiet bị",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:43:50.459Z",
+    "updatedAt": "2026-06-14T06:43:50.459Z"
+  },
+  {
+    "id": "cmqdf53lc0012r7gvmcrfg2a1",
+    "type": "HANG_SAN_XUAT",
+    "code": "HANG_SAN_XUAT",
+    "name": "Hang sản xuat",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:44:03.312Z",
+    "updatedAt": "2026-06-14T06:44:03.312Z"
+  },
+  {
+    "id": "cmqdf5srq0013r7gv42th5ksj",
+    "type": "NGUON_KINH_PHI",
+    "code": "NGUON_KINH_PHI",
+    "name": "Nguôn kinh phí",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:44:35.942Z",
+    "updatedAt": "2026-06-14T06:44:35.942Z"
+  },
+  {
+    "id": "cmqdf5zyn0014r7gvliyzy7pd",
+    "type": "NUOC_SAN_XUAT",
+    "code": "NUOC_SSAN_XUAT",
+    "name": "Nươc ssan xuat",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T06:44:45.261Z",
+    "updatedAt": "2026-06-14T06:44:45.261Z"
+  },
+  {
+    "id": "cmqdk0khv00036gvupsn7j7fg",
+    "type": "CATEGORY_GROUP",
+    "code": "NHA_CUNG_CAP",
+    "name": "Nhà cung cấp",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T09:00:30.017Z",
+    "updatedAt": "2026-06-14T09:00:30.017Z"
+  },
+  {
+    "id": "cmqdk2efa00056gvusweg7c18",
+    "type": "NHA_CUNG_CAP",
+    "code": "CTY_A",
+    "name": "Cty a",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-14T09:01:55.462Z",
+    "updatedAt": "2026-06-14T09:01:55.462Z"
+  }
+]

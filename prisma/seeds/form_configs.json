@@ -1,0 +1,58 @@
+[
+  {
+    "id": "cmqcc0ctn000011necrl9z7b9",
+    "formId": "staff_form",
+    "layout": "[{\"id\":\"ma_bac_si\",\"widthPercent\":36,\"customLabel\":\"Mã NV\",\"labelRatio\":21},{\"id\":\"ho_ten\",\"widthPercent\":50},{\"id\":\"ngay_sinh\",\"widthPercent\":33},{\"id\":\"gioi_tinh_id\",\"widthPercent\":33},{\"id\":\"so_dien_thoai\",\"widthPercent\":33},{\"id\":\"dia_chi\",\"widthPercent\":100},{\"id\":\"ma_khoa\",\"widthPercent\":50},{\"id\":\"loai_hop_dong_id\",\"widthPercent\":50},{\"id\":\"chuc_vu_id\",\"widthPercent\":50},{\"id\":\"vi_tri_viec_lam_id\",\"widthPercent\":50},{\"id\":\"chuc_danh_id\",\"widthPercent\":50},{\"id\":\"trinh_do_id\",\"widthPercent\":50}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":70}",
+    "createdAt": "2026-06-13T12:28:36.967Z",
+    "updatedAt": "2026-06-13T12:56:48.584Z"
+  },
+  {
+    "id": "cmqcdhyg2000411ne5tkmt0hm",
+    "formId": "system_category_form",
+    "layout": "[{\"id\":\"code\",\"widthPercent\":100},{\"id\":\"name\",\"widthPercent\":100},{\"id\":\"description\",\"widthPercent\":100},{\"id\":\"order\",\"widthPercent\":50},{\"id\":\"isActive\",\"widthPercent\":50}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":50}",
+    "createdAt": "2026-06-13T13:10:17.762Z",
+    "updatedAt": "2026-06-13T13:10:25.789Z"
+  },
+  {
+    "id": "cmqcjnkne0000r7gvfdajmjlv",
+    "formId": "warehouse_form",
+    "layout": "[{\"id\":\"code\",\"widthPercent\":50},{\"id\":\"name\",\"widthPercent\":50},{\"id\":\"department_id\",\"widthPercent\":50},{\"id\":\"warehouse_type\",\"widthPercent\":50},{\"id\":\"storekeeper_id\",\"widthPercent\":50},{\"id\":\"room\",\"widthPercent\":50},{\"id\":\"status\",\"widthPercent\":100}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-13T16:02:37.511Z",
+    "updatedAt": "2026-06-13T16:02:37.511Z"
+  },
+  {
+    "id": "cmqcjs37q0001r7gvr4y09jkm",
+    "formId": "equipment_form",
+    "layout": "[{\"id\":\"ma_vttb\",\"widthPercent\":14,\"customLabel\":\"Mã \",\"labelRatio\":37},{\"id\":\"ten_vttb\",\"widthPercent\":86,\"labelRatio\":17},{\"id\":\"warehouse_id\",\"widthPercent\":30,\"labelRatio\":28},{\"id\":\"category_id\",\"widthPercent\":30,\"labelRatio\":34},{\"id\":\"group_id\",\"widthPercent\":40,\"labelRatio\":23},{\"id\":\"type_id\",\"widthPercent\":50},{\"id\":\"donvitinh\",\"widthPercent\":33,\"labelRatio\":23},{\"id\":\"dongia\",\"widthPercent\":33,\"labelRatio\":23},{\"id\":\"kyhieu\",\"widthPercent\":33,\"labelRatio\":29},{\"id\":\"serial\",\"widthPercent\":50,\"labelRatio\":18},{\"id\":\"status\",\"widthPercent\":50,\"labelRatio\":31},{\"id\":\"vattu_hay_tb\",\"widthPercent\":33,\"labelRatio\":39},{\"id\":\"manufacturer_id\",\"widthPercent\":33,\"labelRatio\":28},{\"id\":\"country_id\",\"widthPercent\":33,\"labelRatio\":30},{\"id\":\"production_year_id\",\"widthPercent\":33,\"labelRatio\":25},{\"id\":\"funding_source_id\",\"widthPercent\":33,\"labelRatio\":26},{\"id\":\"vat\",\"widthPercent\":25,\"labelRatio\":21},{\"id\":\"dongia_vat\",\"widthPercent\":25,\"labelRatio\":40},{\"id\":\"dv_cungung\",\"widthPercent\":25,\"labelRatio\":41},{\"id\":\"quanly_serial\",\"widthPercent\":33,\"labelRatio\":29},{\"id\":\"bao_hanh\",\"widthPercent\":33,\"labelRatio\":29},{\"id\":\"ngay_bdbh\",\"widthPercent\":33,\"labelRatio\":29},{\"id\":\"ngay_ktbh\",\"widthPercent\":33,\"labelRatio\":26},{\"id\":\"pp_tinh_khauhao\",\"widthPercent\":33,\"labelRatio\":30},{\"id\":\"thoigian_khauhao\",\"widthPercent\":33,\"labelRatio\":27},{\"id\":\"ten_ketoan\",\"widthPercent\":33,\"labelRatio\":27}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":80}",
+    "createdAt": "2026-06-13T16:06:08.198Z",
+    "updatedAt": "2026-06-15T02:52:15.890Z"
+  },
+  {
+    "id": "cmqdjnb0x00006gvu4w4b3cj2",
+    "formId": "import_voucher_master",
+    "layout": "[{\"id\":\"voucher_code\",\"widthPercent\":25,\"labelRatio\":34},{\"id\":\"to_warehouse_id\",\"widthPercent\":25,\"labelRatio\":40},{\"id\":\"supplier_name\",\"widthPercent\":25,\"labelRatio\":29},{\"id\":\"document_number\",\"widthPercent\":25,\"labelRatio\":18},{\"id\":\"document_date\",\"widthPercent\":25,\"labelRatio\":23},{\"id\":\"deliverer_name\",\"widthPercent\":25,\"labelRatio\":33},{\"id\":\"received_date\",\"widthPercent\":25,\"labelRatio\":33}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-14T08:50:11.214Z",
+    "updatedAt": "2026-06-14T09:01:23.451Z"
+  },
+  {
+    "id": "cmqdjniqh00016gvugygtv12g",
+    "formId": "import_voucher_detail",
+    "layout": "[{\"id\":\"ten_vttb\",\"widthPercent\":33},{\"id\":\"quantity\",\"widthPercent\":17},{\"id\":\"dongia\",\"widthPercent\":17},{\"id\":\"vat\",\"widthPercent\":17},{\"id\":\"dongia_vat\",\"widthPercent\":17},{\"id\":\"thanh_tien\",\"widthPercent\":17}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-14T08:50:21.210Z",
+    "updatedAt": "2026-06-14T08:50:21.210Z"
+  },
+  {
+    "id": "cmqes5ub30000983zl5vh8y9a",
+    "formId": "export_voucher_master",
+    "layout": "[{\"id\":\"voucher_code\",\"widthPercent\":25},{\"id\":\"sub_type\",\"widthPercent\":25},{\"id\":\"from_warehouse_id\",\"widthPercent\":25},{\"id\":\"to_warehouse_id\",\"widthPercent\":25},{\"id\":\"document_date\",\"widthPercent\":25},{\"id\":\"deliverer_name\",\"widthPercent\":25}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-15T05:36:19.114Z",
+    "updatedAt": "2026-06-15T05:36:19.114Z"
+  }
+]

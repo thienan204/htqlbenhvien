@@ -27,6 +27,21 @@ async function main() {
         orderBy: { createdAt: 'asc' }
     });
 
+    // Export Menus
+    const menus = await prisma.menu.findMany({ orderBy: { id: 'asc' } });
+    
+    // Export Roles
+    const roles = await prisma.role.findMany({ orderBy: { id: 'asc' } });
+
+    // Export System Categories
+    const systemCategories = await prisma.systemCategory.findMany({ orderBy: { id: 'asc' } });
+
+    // Export Dashboard Cards
+    const dashboardCards = await prisma.dashboardCard.findMany({ orderBy: { id: 'asc' } });
+
+    // Export Form Configs
+    const formConfigs = await prisma.formConfig.findMany({ orderBy: { id: 'asc' } });
+
     // Export Departments
     const departments = await prisma.department.findMany({
         orderBy: { ma_khoa: 'asc' }
@@ -37,6 +52,21 @@ async function main() {
     if (!fs.existsSync(seedsDir)) {
         fs.mkdirSync(seedsDir, { recursive: true });
     }
+
+    fs.writeFileSync(path.join(seedsDir, 'menus.json'), JSON.stringify(menus, null, 2));
+    console.log(`Exported ${menus.length} menus to prisma/seeds/menus.json`);
+
+    fs.writeFileSync(path.join(seedsDir, 'roles.json'), JSON.stringify(roles, null, 2));
+    console.log(`Exported ${roles.length} roles to prisma/seeds/roles.json`);
+
+    fs.writeFileSync(path.join(seedsDir, 'system_categories.json'), JSON.stringify(systemCategories, null, 2));
+    console.log(`Exported ${systemCategories.length} system categories to prisma/seeds/system_categories.json`);
+
+    fs.writeFileSync(path.join(seedsDir, 'dashboard_cards.json'), JSON.stringify(dashboardCards, null, 2));
+    console.log(`Exported ${dashboardCards.length} dashboard cards to prisma/seeds/dashboard_cards.json`);
+
+    fs.writeFileSync(path.join(seedsDir, 'form_configs.json'), JSON.stringify(formConfigs, null, 2));
+    console.log(`Exported ${formConfigs.length} form configs to prisma/seeds/form_configs.json`);
 
     fs.writeFileSync(
         path.join(seedsDir, 'rules.json'),

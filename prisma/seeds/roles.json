@@ -1,0 +1,112 @@
+[
+  {
+    "id": "cmq37miqm0000ihffvzvqseey",
+    "code": "ADMIN",
+    "name": "Quản trị viên",
+    "description": "Có toàn quyền truy cập hệ thống",
+    "permissions": null,
+    "createdAt": "2026-06-07T03:15:57.407Z",
+    "updatedAt": "2026-06-07T03:15:57.407Z"
+  },
+  {
+    "id": "cmq37mire0001ihffjgy8bgsc",
+    "code": "CNTT",
+    "name": "Phòng CNTT",
+    "description": "Quyền xử lý lỗi hệ thống",
+    "permissions": {
+      "MENU_STAFF": {},
+      "MENU_IT_DUTY": {},
+      "MENU_XML_RULES": {},
+      "MENU_CATALOG_01": {},
+      "MENU_CATALOG_02": {},
+      "MENU_CATALOG_03": {},
+      "MENU_CATALOG_04": {},
+      "MENU_CATALOG_05": {},
+      "MENU_CATALOG_06": {},
+      "MENU_XML_ERRORS": {},
+      "MENU_DEPARTMENTS": {},
+      "MENU_EXCEL_RULES": {
+        "EDIT": false,
+        "VIEW": false,
+        "DELETE": false
+      },
+      "MENU_DOC_FILE_EXCEL": {
+        "EDIT": false,
+        "VIEW": false,
+        "DELETE": false
+      },
+      "MENU_ERROR_REQUESTS": {
+        "EDIT": true,
+        "VIEW": true,
+        "DELETE": false
+      },
+      "MENU_SPECIALIZED_RULES": {}
+    },
+    "createdAt": "2026-06-07T03:15:57.434Z",
+    "updatedAt": "2026-06-10T04:07:01.363Z"
+  },
+  {
+    "id": "cmq37mirk0002ihff7p113uj4",
+    "code": "KHOA",
+    "name": "Khoa / Phòng ban",
+    "description": "Quyền xem và giải trình lỗi của Khoa",
+    "permissions": {
+      "MENU_STAFF": {},
+      "MENU_IT_DUTY": {},
+      "MENU_XML_RULES": {},
+      "MENU_CATALOG_01": {},
+      "MENU_CATALOG_02": {},
+      "MENU_CATALOG_03": {},
+      "MENU_CATALOG_04": {},
+      "MENU_CATALOG_05": {},
+      "MENU_CATALOG_06": {},
+      "MENU_XML_ERRORS": {},
+      "MENU_DEPARTMENTS": {},
+      "MENU_EXCEL_RULES": {
+        "EDIT": false,
+        "VIEW": false,
+        "DELETE": false
+      },
+      "MENU_DOC_FILE_EXCEL": {
+        "VIEW": true
+      },
+      "MENU_ERROR_REQUESTS": {
+        "EDIT": true,
+        "VIEW": true,
+        "DELETE": false
+      },
+      "MENU_SPECIALIZED_RULES": {}
+    },
+    "createdAt": "2026-06-07T03:15:57.440Z",
+    "updatedAt": "2026-06-10T03:57:35.765Z"
+  },
+  {
+    "id": "cmq8ur03f0001g44vlr38rnf1",
+    "code": "GUEST",
+    "name": "GUEST ",
+    "description": "Role này không cần login vẫn vào được",
+    "permissions": {
+      "MENU_STAFF": {},
+      "MENU_IT_DUTY": {},
+      "MENU_IT_REPORT": {},
+      "MENU_XML_RULES": {},
+      "MENU_CATALOG_01": {},
+      "MENU_CATALOG_02": {},
+      "MENU_CATALOG_03": {},
+      "MENU_CATALOG_04": {},
+      "MENU_CATALOG_05": {},
+      "MENU_CATALOG_06": {},
+      "MENU_XML_ERRORS": {},
+      "MENU_DEPARTMENTS": {},
+      "MENU_EXCEL_RULES": {},
+      "MENU_DOC_FILE_EXCEL": {
+        "VIEW": true
+      },
+      "MENU_ERROR_REQUESTS": {},
+      "MENU_IMAGE_MANAGEMENT": {},
+      "MENU_SPECIALIZED_RULES": {}
+    },
+    "createdAt": "2026-06-11T02:02:08.571Z",
+    "updatedAt": "2026-06-11T02:03:31.085Z"
+  }
+]
