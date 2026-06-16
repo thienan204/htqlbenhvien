@@ -1,40 +1,36 @@
 #!/bin/bash
 
 echo "==================================================="
-echo "🚀 BẮT ĐẦU CẬP NHẬT MÃ NGUỒN VÀ DATABASE"
+echo "🚀 BẮT ĐẦU CẬP NHẬT MÃ NGUỒN VÀ DATABASE (HTQLBENHVIEN)"
 echo "==================================================="
 
 echo ""
-echo "📥 Bước 1: Kéo mã nguồn mới nhất từ GitHub (Tự động xử lý xung đột)..."
-# Tự động sao lưu an toàn file .env (chứa cấu hình database mật)
+echo "📥 Bước 1: Kéo mã nguồn mới nhất từ GitHub..."
+# Tự động sao lưu an toàn file .env
 if [ -f .env ]; then
   cp .env .env.backup
 fi
 
-# Ép đồng bộ mã nguồn 100% giống với Github (Bỏ qua mọi sửa đổi lặt vặt trên server gây nghẽn lệnh pull)
-git fetch origin main
-git reset --hard origin/main
+# Ép đồng bộ mã nguồn 100% giống với Github nhánh htqlbenhvien
+git fetch origin htqlbenhvien
+git reset --hard origin/htqlbenhvien
 
 # Đắp lại file .env vào hệ thống sau khi reset
 if [ -f .env.backup ]; then
   mv .env.backup .env
 fi
-echo ""
-echo "🏗️ Bước 2: Build lại hệ thống với Code và Môi trường mới..."
-docker compose build --no-cache app
 
 echo ""
-echo "🔄 Bước 3: Khởi động lại Server..."
-docker compose up -d
+echo "🏗️ Bước 2: Build lại hệ thống với Code mới..."
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d --build
 
 echo ""
-echo "🗄️ Bước 4: Chạy cấu hình Database (Đẩy cấu trúc bảng mới vào DB)..."
-# Ép cấu trúc mới vào CSDL và bỏ qua rác generate do trong build đã có. (Chạy trên container MỚI NHẤT sau khi khởi động)
-docker compose exec app npx -y prisma@5.22.0 db push --skip-generate
+echo "🗄️ Bước 3: Chạy cấu hình Database (Đẩy cấu trúc bảng mới vào DB)..."
+docker exec htqlbenhvien-app npx -y prisma@5.22.0 db push --skip-generate
 
 echo ""
 echo "==================================================="
 echo "✅ HOÀN TẤT! HỆ THỐNG ĐÃ ĐƯỢC CẬP NHẬT THÀNH CÔNG."
+echo "Truy cập: http://192.168.3.98/htqlbenhvien"
 echo "==================================================="
-
-
