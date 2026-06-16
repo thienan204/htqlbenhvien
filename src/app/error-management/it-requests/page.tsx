@@ -31,6 +31,8 @@ interface ITUser {
     isAvailable: boolean;
 }
 
+import { getBasePath } from '@/utils/config';
+
 const TicketImage = ({ url }: { url: string }) => {
     const [hasError, setHasError] = useState(false);
 
@@ -42,9 +44,11 @@ const TicketImage = ({ url }: { url: string }) => {
         );
     }
 
+    const fullUrl = url.startsWith('http') ? url : `${getBasePath()}${url}`;
+
     return (
         <AntImage 
-            src={url} 
+            src={fullUrl} 
             width={40} 
             height={40} 
             className="object-cover rounded border border-slate-200 cursor-pointer"

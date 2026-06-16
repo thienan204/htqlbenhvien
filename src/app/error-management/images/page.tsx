@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import Link from 'next/link';
+import { getBasePath } from '@/utils/config';
 
 dayjs.extend(isBetween);
 
@@ -218,7 +219,7 @@ export default function ImageManagementPage() {
                                     </div>
                                     <div className="aspect-square flex items-center justify-center overflow-hidden p-1 relative">
                                         <Image
-                                            src={img.url}
+                                            src={img.url.startsWith('http') ? img.url : `${getBasePath()}${img.url}`}
                                             alt={img.name}
                                             className="object-cover rounded w-full h-full"
                                             fallback="https://via.placeholder.com/150?text=Lỗi+Ảnh"

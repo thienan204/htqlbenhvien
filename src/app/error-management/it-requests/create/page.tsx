@@ -6,6 +6,7 @@ import { ArrowLeftOutlined, BugOutlined, PlusOutlined, CameraOutlined, PictureOu
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { getBasePath } from '@/utils/config';
 
 export default function CreateITRequestPage() {
     const [form] = Form.useForm();
@@ -751,7 +752,7 @@ export default function CreateITRequestPage() {
             />
 
             <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
-                <img alt="Preview" style={{ width: '100%', marginTop: '20px', borderRadius: '8px' }} src={previewImage} />
+                <img alt="Preview" style={{ width: '100%', marginTop: '20px', borderRadius: '8px' }} src={previewImage?.startsWith('http') || previewImage?.startsWith('blob') || previewImage?.startsWith('data') ? previewImage : `${getBasePath()}${previewImage}`} />
             </Modal>
         </div>
     );
