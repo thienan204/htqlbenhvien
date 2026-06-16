@@ -24,6 +24,7 @@ import prisma from "@/lib/prisma";
 import MainLayout from "@/components/architect/MainLayout";
 import { getCurrentUser } from "@/actions/auth";
 import { AuthProvider } from "@/contexts/AuthContext";
+import FetchInterceptor from "@/components/FetchInterceptor";
 
 async function getSpecializedRules() {
   try {
@@ -88,6 +89,7 @@ export default async function RootLayout({
       >
         <AntdRegistry>
           <AuthProvider user={user} guestPermissions={guestPermissions}>
+            <FetchInterceptor />
             {/* Main Layout Wrapper */}
             <MainLayout rules={rules} menus={menus}>
               {children}
