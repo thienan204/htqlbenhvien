@@ -65,7 +65,7 @@ export default async function RootLayout({
   }
 
   // Fetch Menus
-  let menus = [];
+  let menus: any[] = [];
   try {
     menus = await prisma.menu.findMany({
       where: { isActive: true },
