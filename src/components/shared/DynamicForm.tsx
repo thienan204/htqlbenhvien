@@ -676,7 +676,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                 content: { padding: 0, borderRadius: '16px', overflow: 'hidden' },
                 header: { padding: '16px 24px', margin: 0, borderBottom: '1px solid #f0f0f0' },
                 body: { padding: 0 }
-            }}
+            } as any}
             onCancel={onClose}
             open={open}
             footer={footerContent}
