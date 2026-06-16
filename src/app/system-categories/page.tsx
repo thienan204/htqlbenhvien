@@ -280,7 +280,7 @@ export default function SystemCategoriesPage() {
         XLSX.writeFile(wb, `Mau_Import_Danh_Muc.xlsx`);
     };
 
-    const allTypes = [...HARDCODED_TYPES];
+    const allTypes: any[] = [...HARDCODED_TYPES];
     customTypes.forEach(ct => {
         if (!allTypes.find(t => t.key === ct.key)) {
             allTypes.push(ct);
