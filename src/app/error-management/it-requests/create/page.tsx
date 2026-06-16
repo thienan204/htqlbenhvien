@@ -334,7 +334,7 @@ export default function CreateITRequestPage() {
         if (!staffId && departmentStaff.length > 0) {
             staffId = departmentStaff[0].id;
             setSavedStaffId(staffId);
-            localStorage.setItem('last_it_request_staff_id', staffId);
+            localStorage.setItem('last_it_request_staff_id', staffId as string);
         }
         
         if (!staffId) return message.warning("Không xác định được người báo, vui lòng kiểm tra lại thông tin!");
