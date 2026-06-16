@@ -104,6 +104,21 @@ export async function DELETE(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
+        // Lấy thông tin danh mục sắp xóa
+        const categoryToDelete = await prisma.systemCategory.findUnique({ where: { id } });
+        if (!categoryToDelete) return NextResponse.json({ error: 'Không tìm thấy danh mục' }, { status: 404 });
+
+        // Nếu đang xóa một Nhóm danh mục (CATEGORY_GROUP)
+        if (categoryToDelete.type === 'CATEGORY_GROUP') {
+            const childCount = await prisma.systemCategory.count({
+                where: { type: categoryToDelete.code }
+            });
+            
+            if (childCount > 0) {
+                return NextResponse.json({ error: `Không thể xóa nhóm này vì đang chứa ${childCount} danh mục con` }, { status: 400 });
+            }
+        }
+
         await prisma.systemCategory.delete({ where: { id } });
 
         return NextResponse.json({ success: true });

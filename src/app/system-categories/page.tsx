@@ -8,13 +8,20 @@ import * as XLSX from 'xlsx';
 
 const { Sider, Content } = Layout;
 
-const CATEGORY_TYPES = [
+const HARDCODED_TYPES = [
     { key: 'LOAI_HOP_DONG', label: 'Loại Hợp đồng', icon: <BookOutlined /> },
     { key: 'VI_TRI_VIEC_LAM', label: 'Vị trí Việc làm', icon: <PartitionOutlined /> },
     { key: 'TRINH_DO', label: 'Trình độ Chuyên môn', icon: <BookOutlined /> },
     { key: 'CHUC_DANH', label: 'Chức danh Nghề nghiệp', icon: <TagsOutlined /> },
     { key: 'CHUC_VU', label: 'Chức vụ', icon: <IdcardOutlined /> },
     { key: 'GENDER', label: 'Giới tính', icon: <UserOutlined /> },
+    { key: 'DANH_MUC_THIET_BI', label: 'Phân loại Thiết bị', icon: <TagsOutlined /> },
+    { key: 'NHOM_THIET_BI', label: 'Nhóm Thiết bị', icon: <PartitionOutlined /> },
+    { key: 'LOAI_THIET_BI', label: 'Loại Thiết bị', icon: <BookOutlined /> },
+    { key: 'TEN_THIET_BI', label: 'Tên Thiết bị', icon: <TagsOutlined /> },
+    { key: 'NHA_CUNG_CAP', label: 'Nhà cung cấp / Đơn vị', icon: <BookOutlined /> },
+    { key: 'HANG_SAN_XUAT', label: 'Hãng sản xuất', icon: <BookOutlined /> },
+    { key: 'NGUON_KINH_PHI', label: 'Nguồn kinh phí', icon: <BookOutlined /> },
 ];
 
 export default function SystemCategoriesPage() {
@@ -23,6 +30,68 @@ export default function SystemCategoriesPage() {
     const [selectedType, setSelectedType] = useState('LOAI_HOP_DONG');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [customTypes, setCustomTypes] = useState<any[]>([]);
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+
+    const handleDeleteGroup = async (id: string) => {
+        try {
+            const res = await fetch(`/api/system-categories?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                message.success('Xóa nhóm danh mục thành công');
+                fetchCustomTypes();
+                // Nếu nhóm bị xóa đang được chọn, chuyển về LOAI_HOP_DONG
+                setSelectedType(prev => {
+                    // Cần fetch lại hoặc xử lý sau, tạm thời cứ giữ hoặc chuyển về mặc định
+                    return 'LOAI_HOP_DONG';
+                });
+            } else {
+                const err = await res.json();
+                message.error(err.error || 'Không thể xóa nhóm này');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối');
+        }
+    };
+
+    const fetchCustomTypes = async () => {
+        try {
+            const res = await fetch(`/api/system-categories?type=CATEGORY_GROUP`);
+            if (res.ok) {
+                const data = await res.json();
+                setCustomTypes(data.map((item: any) => ({
+                    key: item.code,
+                    label: (
+                        <div className="flex justify-between items-center group w-full pr-2">
+                            <span>{item.name}</span>
+                            <Popconfirm 
+                                title="Xóa nhóm này?" 
+                                onConfirm={(e) => { 
+                                    e?.stopPropagation(); 
+                                    handleDeleteGroup(item.id); 
+                                }}
+                                onCancel={(e) => e?.stopPropagation()}
+                                okText="Xóa" 
+                                cancelText="Hủy"
+                            >
+                                <DeleteOutlined 
+                                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity" 
+                                    onClick={(e) => e.stopPropagation()} 
+                                />
+                            </Popconfirm>
+                        </div>
+                    ),
+                    icon: <TagsOutlined />,
+                    title: item.name // Set title for tooltip/display
+                })));
+            }
+        } catch (error) {
+            console.error('Lỗi tải nhóm danh mục', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchCustomTypes();
+    }, []);
 
     const fetchCategories = async (type: string) => {
         setLoading(true);
@@ -211,7 +280,13 @@ export default function SystemCategoriesPage() {
         XLSX.writeFile(wb, `Mau_Import_Danh_Muc.xlsx`);
     };
 
-    const currentTypeLabel = CATEGORY_TYPES.find(t => t.key === selectedType)?.label;
+    const allTypes = [...HARDCODED_TYPES];
+    customTypes.forEach(ct => {
+        if (!allTypes.find(t => t.key === ct.key)) {
+            allTypes.push(ct);
+        }
+    });
+    const currentTypeLabel = allTypes.find(t => t.key === selectedType)?.title || allTypes.find(t => t.key === selectedType)?.label;
 
     const columns = [
         {
@@ -279,9 +354,14 @@ export default function SystemCategoriesPage() {
                         mode="inline"
                         selectedKeys={[selectedType]}
                         onClick={(e) => setSelectedType(e.key)}
-                        items={CATEGORY_TYPES}
+                        items={allTypes}
                         className="border-none"
                     />
+                    <div className="p-4 border-t border-slate-100">
+                        <Button type="dashed" block icon={<PlusOutlined />} onClick={() => setIsGroupModalOpen(true)}>
+                            Thêm Nhóm Danh Mục
+                        </Button>
+                    </div>
                 </Sider>
                 <Content>
                     <Card 
@@ -328,6 +408,42 @@ export default function SystemCategoriesPage() {
                     { id: 'description', label: 'Ghi chú (Tùy chọn)', type: 'textarea', span: 24 },
                     { id: 'order', label: 'Thứ tự sắp xếp', type: 'number', span: 12 },
                     { id: 'isActive', label: 'Trạng thái hoạt động', type: 'switch', span: 12, valuePropName: 'checked' }
+                ]}
+            />
+
+            <DynamicForm
+                formId="system_category_group_form"
+                title="Thêm Nhóm Danh mục Mới"
+                open={isGroupModalOpen}
+                onClose={() => setIsGroupModalOpen(false)}
+                onSubmit={async (values) => {
+                    let code = values.code;
+                    if (!code && values.name) {
+                        code = values.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                    }
+                    const payload = { ...values, code, type: 'CATEGORY_GROUP', isActive: true, order: 0 };
+                    try {
+                        const res = await fetch('/api/system-categories', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) {
+                            message.success('Thêm nhóm danh mục thành công');
+                            setIsGroupModalOpen(false);
+                            fetchCustomTypes();
+                        } else {
+                            const err = await res.json();
+                            message.error(err.error || 'Lỗi lưu nhóm danh mục');
+                        }
+                    } catch (error) {
+                        message.error('Lỗi kết nối');
+                    }
+                }}
+                fieldsConfig={[
+                    { id: 'name', label: 'Tên Nhóm Danh mục', type: 'input', required: true, span: 24 },
+                    { id: 'code', label: 'Mã Nhóm (Tự động tạo nếu để trống, viết hoa không dấu)', type: 'input', span: 24 },
+                    { id: 'description', label: 'Ghi chú', type: 'textarea', span: 24 },
                 ]}
             />
         </div>

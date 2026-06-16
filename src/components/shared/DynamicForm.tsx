@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Input, Select, DatePicker, Row, Col, message, Button, Space, Tooltip, InputNumber, Switch } from 'antd';
-import { SettingOutlined, CheckOutlined, DragOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Select, DatePicker, Row, Col, message, Button, Space, Tooltip, InputNumber, Switch, AutoComplete, Card } from 'antd';
+import { SettingOutlined, CheckOutlined, DragOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import dayjs from 'dayjs';
 
 export interface FieldConfig {
     id: string;
     label: string;
-    type: 'input' | 'date' | 'select' | 'textarea' | 'number' | 'switch';
+    type: 'input' | 'date' | 'year' | 'select' | 'textarea' | 'number' | 'switch' | 'autocomplete';
     required?: boolean;
     span?: number;
     options?: { value: string | number; label: string }[];
     valuePropName?: string;
+    onBlur?: (e: any, form: any) => void;
 }
 
 export interface DynamicFormProps {
@@ -21,13 +22,19 @@ export interface DynamicFormProps {
     title: React.ReactNode;
     open: boolean;
     onClose: () => void;
-    onSubmit: (values: any) => Promise<void>;
+    onSubmit: (values: any) => Promise<boolean | void>;
     fieldsConfig: FieldConfig[];
     initialData?: any;
+    onValuesChange?: (changedValues: any, allValues: any, form: any) => void;
+    mode?: 'modal' | 'inline';
+    hideFooter?: boolean;
+    formInstance?: any;
+    disabled?: boolean;
 }
 
-export default function DynamicForm({ formId, title, open, onClose, onSubmit, fieldsConfig, initialData }: DynamicFormProps) {
-    const [form] = Form.useForm();
+export default function DynamicForm({ formId, title, open, onClose, onSubmit, fieldsConfig, initialData, onValuesChange, mode = 'modal', hideFooter = false, formInstance, disabled = false }: DynamicFormProps) {
+    const [internalForm] = Form.useForm();
+    const form = formInstance || internalForm;
     const [loading, setLoading] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [fields, setFields] = useState<any[]>([]);
@@ -42,6 +49,8 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [dragEnabledIndex, setDragEnabledIndex] = useState<number | null>(null);
+    const [isAddFieldModalOpen, setIsAddFieldModalOpen] = useState(false);
+    const [addFieldForm] = Form.useForm();
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -58,13 +67,20 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     }
                     if (data.layout) {
                         const savedFields = JSON.parse(data.layout);
-                        if (Array.isArray(savedFields) && savedFields.length === fieldsConfig.length) {
+                        if (Array.isArray(savedFields)) {
                             const restoredFields = savedFields.map((savedF: any) => {
                                 const original = fieldsConfig.find(f => f.id === savedF.id);
-                                return original ? { ...original, ...savedF } : null;
+                                if (original) return { ...original, ...savedF };
+                                if (savedF.isCustomField) return savedF;
+                                return null;
                             }).filter(Boolean);
-                            if (restoredFields.length === fieldsConfig.length) {
-                                setFields(restoredFields);
+
+                            const existingIds = new Set(restoredFields.map((f: any) => f.id));
+                            const newFields = fieldsConfig.filter(f => !existingIds.has(f.id));
+                            const finalFields = [...restoredFields, ...newFields.map(f => ({ ...f, widthPercent: Math.round(((f.span || 24) / 24) * 100) }))];
+
+                            if (finalFields.length > 0) {
+                                setFields(finalFields);
                                 return;
                             }
                         }
@@ -122,6 +138,12 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
     const changeFieldLabelRatio = (index: number, labelRatio: number | null) => {
         const newFields = [...fields];
         newFields[index] = { ...newFields[index], labelRatio };
+        setFields(newFields);
+    };
+
+    const deleteCustomField = (index: number) => {
+        const newFields = [...fields];
+        newFields.splice(index, 1);
         setFields(newFields);
     };
 
@@ -227,8 +249,25 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
         const inputVariant = isCompact ? 'borderless' : 'outlined';
         
         switch (field.type) {
+            case 'autocomplete':
+                return (
+                    <AutoComplete
+                        options={field.options || []}
+                        placeholder={`Nhập hoặc chọn ${field.label.toLowerCase()}...`}
+                        className={fullWidthClass}
+                        size={inputSize}
+                        variant={inputVariant}
+                        filterOption={(inputValue, option) =>
+                            (option?.label?.toString() || '').toLowerCase().includes(inputValue.toLowerCase()) || 
+                            (option?.value?.toString() || '').toLowerCase().includes(inputValue.toLowerCase())
+                        }
+                        onBlur={(e) => field.onBlur && field.onBlur(e, form)}
+                    />
+                );
             case 'date': 
-                return <DatePicker format="DD/MM/YYYY" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} />;
+                return <DatePicker format="DD/MM/YYYY" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+            case 'year': 
+                return <DatePicker picker="year" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} onBlur={(e) => field.onBlur && field.onBlur(e, form)} placeholder="Chọn năm..." />;
             case 'select':
                 return (
                     <Select
@@ -240,70 +279,53 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                         size={inputSize}
                         variant={inputVariant}
                         options={field.options || []}
+                        onBlur={(e) => field.onBlur && field.onBlur(e, form)}
                     />
                 );
             case 'textarea':
-                return <Input.TextArea placeholder={`Nhập ${field.label.toLowerCase()}...`} className={`${fullWidthClass} !h-auto`} rows={isCompact ? 2 : 3} variant={inputVariant} />;
+                return <Input.TextArea placeholder={`Nhập ${field.label.toLowerCase()}...`} className={`${fullWidthClass} !h-auto`} rows={isCompact ? 2 : 3} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'number':
-                return <InputNumber placeholder={`Nhập số...`} className={fullWidthClass} size={inputSize} variant={inputVariant} min={0} />;
+                return <InputNumber placeholder={`Nhập số...`} className={fullWidthClass} size={inputSize} variant={inputVariant} min={0} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'switch':
                 return <Switch checkedChildren="Bật" unCheckedChildren="Tắt" size={isCompact ? 'small' : 'default'} />;
             case 'input':
             default:
-                return <Input placeholder={`Nhập ${field.label.toLowerCase()}...`} className={fullWidthClass} size={inputSize} variant={inputVariant} />;
+                return <Input placeholder={`Nhập ${field.label.toLowerCase()}...`} className={fullWidthClass} size={inputSize} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
         }
     };
 
-    return (
-        <Modal
-            title={
-                <div className="flex justify-between items-center w-full pr-6 pt-1">
-                    <span className="text-xl font-bold">{title}</span>
-                    <Space>
-                        {isAdmin && (
-                            <Tooltip title="Tự sắp xếp vị trí các trường nhập liệu">
-                                <Button 
-                                    type={isEditMode ? "primary" : "default"} 
-                                    icon={isEditMode ? <CheckOutlined /> : <SettingOutlined />} 
-                                    onClick={toggleEditMode}
-                                    className={isEditMode ? "bg-green-500" : ""}
-                                >
-                                    {isEditMode ? "Hoàn tất Cấu hình" : "Cấu hình Form"}
-                                </Button>
-                            </Tooltip>
-                        )}
-                    </Space>
-                </div>
-            }
-            centered
-            width={`${formWidth}vw`}
-            styles={{ 
-                content: { 
-                    padding: 0,
-                    borderRadius: '16px', 
-                    overflow: 'hidden' 
-                },
-                header: {
-                    padding: '16px 24px',
-                    margin: 0,
-                    borderBottom: '1px solid #f0f0f0'
-                },
-                body: {
-                    padding: 0
-                }
-            }}
-            onCancel={onClose}
-            open={open}
-            footer={
-                <div className="flex justify-end p-4 border-t border-slate-100 bg-white">
-                    <Space>
-                        <Button onClick={onClose} size="large">Hủy</Button>
-                        <Button type="primary" onClick={() => form.submit()} loading={loading} size="large">Lưu Hồ sơ</Button>
-                    </Space>
-                </div>
-            }
-        >
-            <div className="w-full bg-slate-50 p-8">
+    const headerContent = (
+        <div className="flex justify-between items-center w-full pr-6 pt-1">
+            <span className="text-xl font-bold">{title}</span>
+            <Space>
+                {isAdmin && (
+                    <Tooltip title="Tự sắp xếp vị trí các trường nhập liệu">
+                        <Button 
+                            type={isEditMode ? "primary" : "default"} 
+                            icon={isEditMode ? <CheckOutlined /> : <SettingOutlined />} 
+                            onClick={toggleEditMode}
+                            className={isEditMode ? "bg-green-500" : ""}
+                        >
+                            {isEditMode ? "Hoàn tất Cấu hình" : "Cấu hình Form"}
+                        </Button>
+                    </Tooltip>
+                )}
+            </Space>
+        </div>
+    );
+
+    const footerContent = !hideFooter && (
+        <div className="flex justify-end p-4 border-t border-slate-100 bg-white">
+            <Space>
+                {mode === 'modal' && <Button onClick={onClose} size="large">Hủy</Button>}
+                <Button type="primary" onClick={() => form.submit()} loading={loading} size="large">Lưu</Button>
+            </Space>
+        </div>
+    );
+
+    const formBodyContent = (
+        <>
+            <div className={`w-full bg-slate-50 ${mode === 'modal' ? 'p-8' : 'p-4'}`}>
                 {isEditMode && (
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 flex flex-wrap gap-4 justify-between items-center">
                         <div className="flex-1 min-w-[200px]">
@@ -322,6 +344,9 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                             <Button type="primary" ghost size="small" onClick={() => setFormLayout(formLayout === 'vertical' ? 'horizontal' : 'vertical')}>
                                 Chuyển sang Label {formLayout === 'vertical' ? 'Nằm ngang' : 'Nằm trên'}
                             </Button>
+                            <Button size="small" type="dashed" className="border-blue-400 text-blue-600 font-medium" icon={<PlusOutlined />} onClick={() => setIsAddFieldModalOpen(true)}>
+                                Thêm Trường
+                            </Button>
                             <div className="flex items-center ml-2 border-l pl-4 border-blue-200">
                                 <span className="text-xs font-medium mr-2">Độ rộng Form:</span>
                                 <InputNumber 
@@ -339,16 +364,58 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     </div>
                 )}
                 
+                <style>{`
+                    .dynamic-form-tooltip-error .ant-form-item-explain {
+                        position: absolute;
+                        z-index: 50;
+                        top: calc(100% + 4px);
+                        left: 10px;
+                        width: max-content;
+                        max-width: calc(100% - 20px);
+                        pointer-events: none;
+                    }
+                    .dynamic-form-tooltip-error .ant-form-item-explain-error {
+                        background-color: rgba(239, 68, 68, 0.95);
+                        color: white;
+                        padding: 5px 10px;
+                        border-radius: 6px;
+                        font-size: 12px;
+                        line-height: 1.4;
+                        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+                        animation: tooltipFadeIn 0.2s ease-out forwards;
+                        position: relative;
+                        white-space: normal;
+                    }
+                    .dynamic-form-tooltip-error .ant-form-item-explain-error::before {
+                        content: '';
+                        position: absolute;
+                        top: -5px;
+                        left: 12px;
+                        border-width: 0 5px 5px 5px;
+                        border-style: solid;
+                        border-color: transparent transparent rgba(239, 68, 68, 0.95) transparent;
+                    }
+                    .dynamic-form-tooltip-error .ant-form-item-with-help {
+                        margin-bottom: 0 !important;
+                    }
+                    @keyframes tooltipFadeIn {
+                        from { opacity: 0; transform: translateY(-4px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                `}</style>
+
                 <Form 
                     form={form} 
                     layout={formLayout} 
                     size={isCompact ? 'small' : 'large'}
                     labelAlign={labelAlign}
                     onFinish={handleSave}
+                    onValuesChange={(changed, all) => onValuesChange && onValuesChange(changed, all, form)}
                     requiredMark={false}
                     labelCol={formLayout === 'horizontal' && !isCompact ? { span: 8 } : undefined}
                     wrapperCol={formLayout === 'horizontal' && !isCompact ? { span: 16 } : undefined}
-                    className={isCompact ? "compact-form" : ""}
+                    className={`dynamic-form-tooltip-error ${isCompact ? "compact-form" : ""}`}
+                    disabled={disabled}
                 >
                     <Row gutter={isCompact ? [2, 2] : [24, 24]}>
                         {fields.map((field, index) => {
@@ -359,7 +426,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                                 : '';
                                 
                             return (
-                                <Col style={{ flex: `0 0 max(${field.widthPercent}%, 250px)`, maxWidth: `max(${field.widthPercent}%, 250px)` }} key={field.id}>
+                                <Col style={{ flex: `0 0 ${field.widthPercent}%`, maxWidth: `${field.widthPercent}%` }} key={field.id}>
                                     <div 
                                         draggable={isEditMode && dragEnabledIndex === index}
                                     onDragStart={(e) => {
@@ -403,10 +470,10 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                                         if (element) element.style.opacity = '1';
                                     }}
                                     id={`field-${index}`}
-                                    className={`relative flex flex-col justify-start transition-all duration-200 ${
+                                    className={`h-full relative flex flex-col justify-start transition-all duration-200 ${
                                         isEditMode 
                                             ? 'outline outline-1 outline-dashed outline-blue-400 outline-offset-2 bg-white/40 rounded-sm z-10' 
-                                            : `ring-1 ring-inset ring-slate-200/80 bg-white rounded-sm hover:ring-slate-300 overflow-hidden [&_.ant-select-selector]:!h-[24px] [&_.ant-select-selection-item]:!leading-[24px] [&_.ant-select-selection-search-input]:!h-[24px] ${labelBgClass}`
+                                            : `ring-1 ring-inset ring-slate-200/80 bg-white rounded-sm hover:ring-slate-300 [&_.ant-select-selector]:!h-[24px] [&_.ant-select-selection-item]:!leading-[24px] [&_.ant-select-selection-search-input]:!h-[24px] ${labelBgClass}`
                                     } ${
                                         draggedIndex === index ? 'scale-95 z-0' : ''
                                     } ${
@@ -493,6 +560,9 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-0.5">
+                                                {field.isCustomField && (
+                                                    <Button size="small" type="text" danger icon={<DeleteOutlined className="text-[12px]" />} onClick={() => deleteCustomField(index)} title="Xóa trường tự tạo" />
+                                                )}
                                                 <div 
                                                     data-drag-handle="true"
                                                     onMouseEnter={() => setDragEnabledIndex(index)}
@@ -523,6 +593,93 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     </Row>
                 </Form>
             </div>
+
+            <Modal
+                title={<div className="text-blue-600 text-lg font-bold">Thêm Trường Dữ Liệu Tự Tạo</div>}
+                open={isAddFieldModalOpen}
+                onCancel={() => setIsAddFieldModalOpen(false)}
+                okText="Thêm Trường"
+                cancelText="Hủy"
+                onOk={() => {
+                    addFieldForm.validateFields().then(values => {
+                        const newId = `custom_${values.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}_${Date.now()}`;
+                        const newField: any = {
+                            id: newId,
+                            label: values.label,
+                            type: values.type,
+                            span: 24,
+                            widthPercent: 100,
+                            isCustomField: true
+                        };
+                        if (values.type === 'select' && values.options) {
+                            newField.options = values.options.split(',').map((opt: string) => ({ value: opt.trim(), label: opt.trim() }));
+                        }
+                        setFields([...fields, newField]);
+                        setIsAddFieldModalOpen(false);
+                        addFieldForm.resetFields();
+                        message.success('Đã thêm trường mới. Hãy kéo thả để sắp xếp lại!');
+                    });
+                }}
+            >
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg mb-4 text-blue-800 text-sm">
+                    Trường dữ liệu này sẽ được lưu linh hoạt trong hệ thống và bạn có thể sắp xếp ở bất kỳ đâu trên form.
+                </div>
+                <Form form={addFieldForm} layout="vertical">
+                    <Form.Item name="label" label="Tên trường (Label)" rules={[{ required: true, message: 'Vui lòng nhập tên trường' }]}>
+                        <Input placeholder="Ví dụ: Màu sắc, Năm bảo dưỡng..." />
+                    </Form.Item>
+                    <Form.Item name="type" label="Loại dữ liệu" initialValue="input">
+                        <Select>
+                            <Select.Option value="input">Văn bản ngắn (Text)</Select.Option>
+                            <Select.Option value="number">Số (Number)</Select.Option>
+                            <Select.Option value="date">Ngày tháng (Date)</Select.Option>
+                            <Select.Option value="year">Năm (Year)</Select.Option>
+                            <Select.Option value="textarea">Đoạn văn dài (Textarea)</Select.Option>
+                            <Select.Option value="select">Danh sách chọn (Select Dropdown)</Select.Option>
+                            <Select.Option value="switch">Công tắc (Yes/No)</Select.Option>
+                        </Select>
+                    </Form.Item>
+                    <Form.Item noStyle dependencies={['type']}>
+                        {({ getFieldValue }) => {
+                            if (getFieldValue('type') === 'select') {
+                                return (
+                                    <Form.Item name="options" label="Danh sách lựa chọn" rules={[{ required: true, message: 'Vui lòng nhập các lựa chọn' }]} help="Nhập các lựa chọn cách nhau bằng dấu phẩy (Ví dụ: Đỏ, Xanh, Vàng)">
+                                        <Input placeholder="Đỏ, Xanh, Vàng" />
+                                    </Form.Item>
+                                );
+                            }
+                            return null;
+                        }}
+                    </Form.Item>
+                </Form>
+            </Modal>
+        </>
+    );
+
+    if (mode === 'inline') {
+        return (
+            <Card title={headerContent} className="mb-6 shadow-sm border-slate-200">
+                {formBodyContent}
+                {footerContent}
+            </Card>
+        );
+    }
+
+    return (
+        <Modal
+            title={headerContent}
+            style={{ top: 40 }}
+            width={`${formWidth}vw`}
+            styles={{ 
+                content: { padding: 0, borderRadius: '16px', overflow: 'hidden' },
+                header: { padding: '16px 24px', margin: 0, borderBottom: '1px solid #f0f0f0' },
+                body: { padding: 0 }
+            }}
+            onCancel={onClose}
+            open={open}
+            footer={footerContent}
+        >
+            {formBodyContent}
         </Modal>
     );
 }

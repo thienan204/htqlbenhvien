@@ -1,0 +1,9 @@
+# Quy tắc tự động tạo tài liệu (Documentation Rule)
+
+Sau mỗi lần hoàn thành một tính năng mới hoặc thay đổi lớn về mã nguồn, AI bắt buộc phải:
+1. Tự động tóm tắt lại các thay đổi, cách hoạt động và hướng dẫn sử dụng.
+2. Lưu thẳng nội dung này thành một file Markdown (.md) vào trong thư mục `docs/` của dự án để lưu trữ vĩnh viễn. 
+3. Không chỉ dùng file artifact (tạm thời) mà phải tạo file vật lý để lưu lại cho tương lai.
+
+# Quy tắc Phát triển Dự án (Development Guidelines)
+Bắt buộc AI phải đọc và tuân thủ tuyệt đối các nguyên tắc được định nghĩa trong file `docs/DEVELOPMENT_GUIDELINES.md` trước khi bắt đầu bất kỳ một task nào. Mọi hành động lập trình đều phải tuân theo bộ luật tối thượng trong file này (Đặc biệt là nguyên tắc luôn phải trình bày kế hoạch và chờ User xác nhận mới được code).

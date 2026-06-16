@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Form, Input, Select, Button, Radio, message, Card, Upload, Modal, Tabs, Tooltip, Dropdown } from 'antd';
 import { ArrowLeftOutlined, BugOutlined, PlusOutlined, CameraOutlined, PictureOutlined, MessageOutlined, FormOutlined, SendOutlined, AudioOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -32,6 +32,7 @@ export default function CreateITRequestPage() {
     const [chatText, setChatText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [chatLoading, setChatLoading] = useState(false);
+    const recognitionRef = useRef<any>(null);
     const [selectedQuickReply, setSelectedQuickReply] = useState('');
     const [savedStaffId, setSavedStaffId] = useState<string | null>(null);
 
@@ -279,12 +280,19 @@ export default function CreateITRequestPage() {
     };
 
     const handleVoiceInput = () => {
+        if (isListening && recognitionRef.current) {
+            recognitionRef.current.stop();
+            return;
+        }
+
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
             message.warning("Trình duyệt không hỗ trợ nhận diện giọng nói!");
             return;
         }
+
         const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
         recognition.lang = 'vi-VN';
         recognition.continuous = false;
         
@@ -293,10 +301,23 @@ export default function CreateITRequestPage() {
             const transcript = event.results[0][0].transcript;
             setChatText(prev => prev ? prev + ' ' + transcript : transcript);
         };
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error', event.error);
+            setIsListening(false);
+            if (event.error === 'not-allowed') {
+                message.error("Vui lòng cấp quyền sử dụng Micro cho trình duyệt!");
+            } else if (event.error !== 'no-speech') {
+                message.error("Lỗi nhận diện giọng nói: " + event.error);
+            }
+        };
         recognition.onend = () => setIsListening(false);
         
-        if (isListening) recognition.stop();
-        else recognition.start();
+        try {
+            recognition.start();
+        } catch (error) {
+            console.error("Error starting speech recognition", error);
+            setIsListening(false);
+        }
     };
 
     const handleFileChange = (e: any) => {

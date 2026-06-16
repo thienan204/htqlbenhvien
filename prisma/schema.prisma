@@ -92,7 +92,9 @@ model DraftRule {
 model Department {
   ma_khoa         String   @id
   ten_khoa        String
+  type            String   @default("CLINICAL") // 'CLINICAL' (Lâm sàng) hoặc 'MANAGEMENT' (Phòng quản lý)
   staff           Staff[]
+  warehouses      Warehouse[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -136,6 +138,10 @@ model Staff {
 
   // Liên kết với Tài khoản (1-1)
   user            User?
+  
+  // Liên kết Quản lý kho
+  storekeeper_warehouses Warehouse[]
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -510,4 +516,143 @@ model DashboardCard {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Warehouse {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  department_id   String
+  department      Department @relation(fields: [department_id], references: [ma_khoa])
+  warehouse_type  String   // KHO_CHINH, KHO_KHOA
+  room            String?
+  storekeeper_id  String?
+  storekeeper     Staff?   @relation(fields: [storekeeper_id], references: [id])
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
+
+  equipments      Equipment[]
+  vouchersAsFrom  InventoryVoucher[] @relation("FromWarehouse")
+  vouchersAsTo    InventoryVoucher[] @relation("ToWarehouse")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Equipment {
+  id                 String   @id @default(cuid())
+  ma_vttb            String   @unique
+  ten_vttb           String
+  qr_code            String   @unique
+  quantity           Int      @default(1) // Cho vật tư tiêu hao
+  
+  // Phân loại (Trỏ đến SystemCategory)
+  category_id        String?  
+  group_id           String?
+  type_id            String?
+  manufacturer_id    String?
+  country_id         String?
+  production_year_id String?
+  funding_source_id  String?
+
+  donvitinh          String?
+  vattu_hay_tb       String? // VAT_TU, THIET_BI
+  kyhieu             String?
+  serial             String?
+  quanly_serial      Boolean  @default(false)
+  dongia             Float?
+  vat                Float?
+  dongia_vat         Float?
+  dv_cungung         String?
+  bao_hanh           Boolean  @default(false)
+  ngay_bdbh          DateTime?
+  ngay_ktbh          DateTime?
+  pp_tinh_khauhao    String?
+  thoigian_khauhao   Int?
+  ten_ketoan         String?
+
+  status             String   @default("TRONG_KHO") // TRONG_KHO, DANG_SU_DUNG, BAO_HONG, THANH_LY
+  warehouse_id       String
+  warehouse          Warehouse @relation(fields: [warehouse_id], references: [id])
+  
+  custom_fields      Json?    // Chứa dữ liệu động
+
+  voucher_id         String?  // Trỏ đến phiếu nhập kho đã sinh ra thiết bị này
+  voucher            InventoryVoucher? @relation(fields: [voucher_id], references: [id])
+
+  maintenanceLogs    MaintenanceLog[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model InventoryVoucher {
+  id                String   @id @default(cuid())
+  voucher_code      String   @unique
+  type              String   // NHAP_KHO, XUAT_KHO, LUAN_CHUYEN, TRA_HANG
+  sub_type          String?  // NHAP_MOI, NHAP_HOAN_TRA, XUAT_SU_DUNG, XUAT_CHUYEN_KHO, XUAT_TRA_NCC
+  
+  // Dùng khi nhập từ nhà cung cấp
+  supplier_name     String?
+  document_number   String?
+  document_date     DateTime?
+  deliverer_name    String?
+  deliverer_address String?
+  received_date     DateTime?
+
+  // Kho điều chuyển
+  from_warehouse_id String?
+  from_warehouse    Warehouse? @relation("FromWarehouse", fields: [from_warehouse_id], references: [id])
+  to_warehouse_id   String?
+  to_warehouse      Warehouse? @relation("ToWarehouse", fields: [to_warehouse_id], references: [id])
+  
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  created_by        String   // Tên hoặc ID người lập
+  
+  details           InventoryVoucherDetail[]
+  equipments        Equipment[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model InventoryVoucherDetail {
+  id               String   @id @default(cuid())
+  voucher_id       String
+  voucher          InventoryVoucher @relation(fields: [voucher_id], references: [id], onDelete: Cascade)
+  
+  ten_vttb         String
+  category_id      String?
+  group_id         String?
+  type_id          String?
+  
+  quantity         Int      @default(1)
+  dongia           Float?
+  vat              Float?
+  dongia_vat       Float?
+  thanh_tien       Float?
+
+  // Lưu thông tin hãng SX, năm... lúc nhập vào
+  manufacturer_id  String?
+  country_id       String?
+  funding_source_id String?
+  serial_numbers   String?  @db.Text
+  is_auto_generate Boolean  @default(true)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model MaintenanceLog {
+  id                  String   @id @default(cuid())
+  equipment_id        String
+  equipment           Equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade)
+  
+  reported_by         String?  // ID khoa báo hỏng hoặc tên
+  issue_description   String   @db.Text
+  handled_by          String?  // ID người sửa
+  status              String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  cost                Float?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

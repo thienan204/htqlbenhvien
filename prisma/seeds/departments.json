@@ -2,330 +2,385 @@
   {
     "ma_khoa": "K01",
     "ten_khoa": "Khoa Khám bệnh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.436Z",
     "updatedAt": "2026-01-18T03:24:06.436Z"
   },
   {
     "ma_khoa": "K02",
     "ten_khoa": "Khoa cấp cứu",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.455Z",
     "updatedAt": "2026-01-20T09:32:26.966Z"
   },
   {
     "ma_khoa": "K03",
     "ten_khoa": "Khoa Nội tổng hợp",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.457Z",
     "updatedAt": "2026-01-18T03:24:06.457Z"
   },
   {
     "ma_khoa": "K04",
     "ten_khoa": "Khoa Nội tim mạch",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.460Z",
     "updatedAt": "2026-01-18T03:24:06.460Z"
   },
   {
     "ma_khoa": "K05",
     "ten_khoa": "Khoa Nội tiêu hoá",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.462Z",
     "updatedAt": "2026-01-18T03:24:06.462Z"
   },
   {
     "ma_khoa": "K06",
     "ten_khoa": "Khoa Nội cơ - xương - khớp",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.464Z",
     "updatedAt": "2026-01-18T03:24:06.464Z"
   },
   {
     "ma_khoa": "K07",
     "ten_khoa": "Khoa Nội thận - tiết niệu",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.466Z",
     "updatedAt": "2026-01-18T03:24:06.466Z"
   },
   {
     "ma_khoa": "K08",
     "ten_khoa": "Khoa Nội tiết",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.469Z",
     "updatedAt": "2026-01-18T03:24:06.469Z"
   },
   {
     "ma_khoa": "K09",
     "ten_khoa": "Khoa Dị ứng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.471Z",
     "updatedAt": "2026-01-18T03:24:06.471Z"
   },
   {
     "ma_khoa": "K10",
     "ten_khoa": "Khoa Huyết học lâm sàng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.473Z",
     "updatedAt": "2026-01-18T03:24:06.473Z"
   },
   {
     "ma_khoa": "K11",
     "ten_khoa": "Khoa Truyền nhiễm",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.476Z",
     "updatedAt": "2026-01-18T03:24:06.476Z"
   },
   {
     "ma_khoa": "K12",
     "ten_khoa": "Khoa Lao",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.478Z",
     "updatedAt": "2026-01-18T03:24:06.478Z"
   },
   {
     "ma_khoa": "K13",
     "ten_khoa": "Khoa Da liễu",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.480Z",
     "updatedAt": "2026-01-18T03:24:06.480Z"
   },
   {
     "ma_khoa": "K14",
     "ten_khoa": "Khoa Thần kinh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.483Z",
     "updatedAt": "2026-01-18T03:24:06.483Z"
   },
   {
     "ma_khoa": "K1415",
     "ten_khoa": "Khoa Tâm thần - Thần kinh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T08:49:53.071Z",
     "updatedAt": "2026-01-18T08:49:53.071Z"
   },
   {
     "ma_khoa": "K15",
     "ten_khoa": "Khoa Tâm thần",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.485Z",
     "updatedAt": "2026-01-18T03:24:06.485Z"
   },
   {
     "ma_khoa": "K16",
     "ten_khoa": "Khoa Y học cổ truyền",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.487Z",
     "updatedAt": "2026-01-18T03:24:06.487Z"
   },
   {
     "ma_khoa": "K17",
     "ten_khoa": "Khoa Lão học",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.489Z",
     "updatedAt": "2026-01-18T03:24:06.489Z"
   },
   {
     "ma_khoa": "K1706",
     "ten_khoa": "Khoa lão-cơ xương khớp",
+    "type": "CLINICAL",
     "createdAt": "2026-01-19T00:11:34.874Z",
     "updatedAt": "2026-01-19T00:11:34.874Z"
   },
   {
     "ma_khoa": "K18",
     "ten_khoa": "Khoa Nhi",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.491Z",
     "updatedAt": "2026-01-18T03:24:06.491Z"
   },
   {
     "ma_khoa": "K19",
     "ten_khoa": "Khoa Ngoại tổng hợp",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.493Z",
     "updatedAt": "2026-01-18T03:24:06.493Z"
   },
   {
     "ma_khoa": "K20",
     "ten_khoa": "Khoa Ngoại thần kinh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.495Z",
     "updatedAt": "2026-01-18T03:24:06.495Z"
   },
   {
     "ma_khoa": "K2021",
     "ten_khoa": "Khoa ngoại thần kinh lồng ngực",
+    "type": "CLINICAL",
     "createdAt": "2026-01-19T00:12:29.409Z",
     "updatedAt": "2026-01-19T00:12:29.409Z"
   },
   {
     "ma_khoa": "K21",
     "ten_khoa": "Khoa Ngoại lồng ngực",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.497Z",
     "updatedAt": "2026-01-18T03:24:06.497Z"
   },
   {
     "ma_khoa": "K22",
     "ten_khoa": "Khoa Ngoại tiêu hoá",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.499Z",
     "updatedAt": "2026-01-18T03:24:06.499Z"
   },
   {
     "ma_khoa": "K23",
     "ten_khoa": "Khoa Ngoại thận - tiết niệu",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.501Z",
     "updatedAt": "2026-01-18T03:24:06.501Z"
   },
   {
     "ma_khoa": "K24",
     "ten_khoa": "Khoa ngoại chấn thương bỏng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.503Z",
     "updatedAt": "2026-01-19T00:13:36.031Z"
   },
   {
     "ma_khoa": "K25",
     "ten_khoa": "Khoa Bỏng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.505Z",
     "updatedAt": "2026-01-18T03:24:06.505Z"
   },
   {
     "ma_khoa": "K26",
     "ten_khoa": "Khoa Phẫu thuật - Gây mê hồi sức",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.506Z",
     "updatedAt": "2026-01-18T03:24:06.506Z"
   },
   {
     "ma_khoa": "K27",
     "ten_khoa": "Khoa Phụ sản",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.508Z",
     "updatedAt": "2026-01-18T03:24:06.508Z"
   },
   {
     "ma_khoa": "K28",
     "ten_khoa": "Khoa Tai - Mũi - Họng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.510Z",
     "updatedAt": "2026-01-18T03:24:06.510Z"
   },
   {
     "ma_khoa": "K29",
     "ten_khoa": "Khoa Răng - Hàm - Mặt",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.512Z",
     "updatedAt": "2026-01-18T03:24:06.512Z"
   },
   {
     "ma_khoa": "K30",
     "ten_khoa": "Khoa Mắt",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.515Z",
     "updatedAt": "2026-01-18T03:24:06.515Z"
   },
   {
     "ma_khoa": "K31",
     "ten_khoa": "Khoa Vật lý trị liệu - Phục hồi chức năng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.516Z",
     "updatedAt": "2026-01-18T03:24:06.516Z"
   },
   {
     "ma_khoa": "K32",
     "ten_khoa": "Khoa Y học hạt nhân",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.518Z",
     "updatedAt": "2026-01-18T03:24:06.518Z"
   },
   {
     "ma_khoa": "K33",
     "ten_khoa": "Khoa Ung bướu (điều trị tia xạ)",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.520Z",
     "updatedAt": "2026-01-18T03:24:06.520Z"
   },
   {
     "ma_khoa": "K34",
     "ten_khoa": "Khoa Truyền máu",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.522Z",
     "updatedAt": "2026-01-18T03:24:06.522Z"
   },
   {
     "ma_khoa": "K35",
     "ten_khoa": "Khoa Lọc máu nhân tạo",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.524Z",
     "updatedAt": "2026-01-18T03:24:06.524Z"
   },
   {
     "ma_khoa": "K36",
     "ten_khoa": "Khoa Huyết học",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.526Z",
     "updatedAt": "2026-01-18T03:24:06.526Z"
   },
   {
     "ma_khoa": "K37",
     "ten_khoa": "Khoa Sinh hoá",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.528Z",
     "updatedAt": "2026-01-18T03:24:06.528Z"
   },
   {
     "ma_khoa": "K38",
     "ten_khoa": "Khoa Vi sinh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.530Z",
     "updatedAt": "2026-01-18T03:24:06.530Z"
   },
   {
     "ma_khoa": "K39",
     "ten_khoa": "Khoa Chẩn đoán hình ảnh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.533Z",
     "updatedAt": "2026-01-18T03:24:06.533Z"
   },
   {
     "ma_khoa": "K40",
     "ten_khoa": "Khoa Thăm dò chức năng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.535Z",
     "updatedAt": "2026-01-18T03:24:06.535Z"
   },
   {
     "ma_khoa": "K41",
     "ten_khoa": "Khoa Nội soi",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.537Z",
     "updatedAt": "2026-01-18T03:24:06.537Z"
   },
   {
     "ma_khoa": "K42",
     "ten_khoa": "Khoa Giải phẫu bệnh",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.539Z",
     "updatedAt": "2026-01-18T03:24:06.539Z"
   },
   {
     "ma_khoa": "K43",
     "ten_khoa": "Khoa Chống nhiễm khuẩn",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.541Z",
     "updatedAt": "2026-01-18T03:24:06.541Z"
   },
   {
     "ma_khoa": "K44",
     "ten_khoa": "Khoa Dược",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.543Z",
     "updatedAt": "2026-01-18T03:24:06.543Z"
   },
   {
     "ma_khoa": "K45",
     "ten_khoa": "Khoa Dinh dưỡng",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.544Z",
     "updatedAt": "2026-01-18T03:24:06.544Z"
   },
   {
     "ma_khoa": "K46",
     "ten_khoa": "Khoa Sinh học phân tử",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.546Z",
     "updatedAt": "2026-01-18T03:24:06.546Z"
   },
   {
     "ma_khoa": "K47",
     "ten_khoa": "Khoa Xét nghiệm",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.548Z",
     "updatedAt": "2026-01-18T03:24:06.548Z"
   },
   {
     "ma_khoa": "K48",
     "ten_khoa": "Khoa hồi sức tích cực",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.550Z",
     "updatedAt": "2026-01-18T03:24:06.550Z"
   },
   {
     "ma_khoa": "K4849",
     "ten_khoa": "Khoa hồi sức tích cực chống độc",
+    "type": "CLINICAL",
     "createdAt": "2026-01-19T00:10:54.713Z",
     "updatedAt": "2026-01-19T00:10:54.713Z"
   },
   {
     "ma_khoa": "K49",
     "ten_khoa": "Khoa Chống độc",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.552Z",
     "updatedAt": "2026-01-18T03:24:06.552Z"
   },
   {
     "ma_khoa": "K50",
     "ten_khoa": "Khoa Nội hô hấp",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.554Z",
     "updatedAt": "2026-01-18T03:24:06.554Z"
   },
   {
     "ma_khoa": "K99",
     "ten_khoa": "Khoa Điều trị COVID-19",
+    "type": "CLINICAL",
     "createdAt": "2026-01-18T03:24:06.557Z",
     "updatedAt": "2026-01-18T03:24:06.557Z"
   }
