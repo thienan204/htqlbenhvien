@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { readFile, stat } from 'fs/promises';
 import { join } from 'path';
 
-export async function GET(request: Request, { params }: { params: { path: string[] } }) {
+export async function GET(request: Request, context: { params: Promise<{ path: string[] }> }) {
+    const params = await context.params;
     const pathArray = params.path || [];
     
     // Ngăn chặn path traversal
