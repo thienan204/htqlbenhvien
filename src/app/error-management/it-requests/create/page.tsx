@@ -114,7 +114,8 @@ export default function CreateITRequestPage() {
                         uid: file.uid || Date.now().toString(),
                         name: file.name,
                         status: 'done',
-                        url: data.url
+                        url: data.url,
+                        thumbUrl: `${getBasePath()}${data.url}`
                     }]);
                     onSuccess && onSuccess(data.url);
                 } else {
