@@ -15,6 +15,7 @@ export interface FieldConfig {
     options?: { value: string | number; label: string }[];
     valuePropName?: string;
     onBlur?: (e: any, form: any) => void;
+    placeholder?: string;
 }
 
 export interface DynamicFormProps {
@@ -253,7 +254,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                 return (
                     <AutoComplete
                         options={field.options || []}
-                        placeholder={`Nhập hoặc chọn ${field.label.toLowerCase()}...`}
+                        placeholder={field.placeholder || `Nhập hoặc chọn ${field.label.toLowerCase()}...`}
                         className={fullWidthClass}
                         size={inputSize}
                         variant={inputVariant}
@@ -273,7 +274,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     <Select
                         showSearch
                         allowClear
-                        placeholder={`Chọn ${field.label.toLowerCase()}...`}
+                        placeholder={field.placeholder || `Chọn ${field.label.toLowerCase()}...`}
                         optionFilterProp="children"
                         className={fullWidthClass}
                         size={inputSize}
@@ -283,14 +284,14 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     />
                 );
             case 'textarea':
-                return <Input.TextArea placeholder={`Nhập ${field.label.toLowerCase()}...`} className={`${fullWidthClass} !h-auto`} rows={isCompact ? 2 : 3} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <Input.TextArea placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`} className={`${fullWidthClass} !h-auto`} rows={isCompact ? 2 : 3} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'number':
-                return <InputNumber placeholder={`Nhập số...`} className={fullWidthClass} size={inputSize} variant={inputVariant} min={0} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <InputNumber placeholder={field.placeholder || `Nhập số...`} className={fullWidthClass} size={inputSize} variant={inputVariant} min={0} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'switch':
                 return <Switch checkedChildren="Bật" unCheckedChildren="Tắt" size={isCompact ? 'small' : 'default'} />;
             case 'input':
             default:
-                return <Input placeholder={`Nhập ${field.label.toLowerCase()}...`} className={fullWidthClass} size={inputSize} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <Input placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`} className={fullWidthClass} size={inputSize} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
         }
     };
 
