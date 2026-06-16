@@ -23,9 +23,14 @@ async function importData(modelName, filename) {
 
     for (const item of data) {
         try {
-            const whereClause = modelName === 'department' 
-                ? { ma_khoa: item.ma_khoa }
-                : { id: item.id };
+            let whereClause = { id: item.id };
+            if (modelName === 'department') whereClause = { ma_khoa: item.ma_khoa };
+            else if (modelName === 'user') whereClause = { username: item.username };
+            else if (modelName === 'staff') whereClause = { ma_bac_si: item.ma_bac_si };
+            else if (modelName === 'role') whereClause = { code: item.code };
+            else if (modelName === 'warehouse') whereClause = { code: item.code };
+            else if (modelName === 'equipment') whereClause = { ma_vttb: item.ma_vttb };
+            else if (modelName === 'inventoryVoucher') whereClause = { voucher_code: item.voucher_code };
 
             await prisma[modelName].upsert({
                 where: whereClause,
