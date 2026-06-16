@@ -458,10 +458,10 @@ export default function MenuBuilderPage() {
                                 <Divider className="my-4" />
 
                                 <div className="flex justify-end gap-3">
-                                    {isEditing && (
+                                    {isEditing && selectedNode && (
                                         <Button onClick={() => handleAddNode(selectedNode.parentId)}>Tạo mới cùng cấp</Button>
                                     )}
-                                    {isEditing && !selectedNode.parentId && (
+                                    {isEditing && selectedNode && !selectedNode.parentId && (
                                         <Button onClick={() => handleAddNode(selectedNode.id)}>Thêm menu con</Button>
                                     )}
                                     <Button type="primary" onClick={handleSave} icon={<SaveOutlined />} loading={loading}>
