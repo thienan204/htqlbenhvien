@@ -23,8 +23,12 @@ async function importData(modelName, filename) {
 
     for (const item of data) {
         try {
+            const whereClause = modelName === 'department' 
+                ? { ma_khoa: item.ma_khoa }
+                : { id: item.id };
+
             await prisma[modelName].upsert({
-                where: { id: item.id || item.ma_khoa || undefined },
+                where: whereClause,
                 update: item,
                 create: item
             });
