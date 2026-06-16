@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cmqdu5m93000392lj3l0vft0y",
+    "voucher_code": "PN-1781444629007",
+    "type": "NHAP_KHO",
+    "sub_type": null,
+    "supplier_name": "Cty a",
+    "document_number": null,
+    "document_date": null,
+    "deliverer_name": null,
+    "deliverer_address": null,
+    "received_date": null,
+    "from_warehouse_id": null,
+    "to_warehouse_id": "cmqd3rhh70003r7gvrifsmiba",
+    "status": "APPROVED",
+    "created_by": "Admin",
+    "createdAt": "2026-06-14T13:44:21.734Z",
+    "updatedAt": "2026-06-14T13:44:21.734Z"
+  }
+]

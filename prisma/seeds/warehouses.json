@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cmqd3rhh70003r7gvrifsmiba",
+    "code": "CNTT.KTBTH",
+    "name": "Kho thiết bị tin học",
+    "department_id": "K99",
+    "warehouse_type": "KHO_KHOA",
+    "room": null,
+    "storekeeper_id": "cmmud581i00vjk7r1t58jxl97",
+    "status": "ACTIVE",
+    "createdAt": "2026-06-14T01:25:32.345Z",
+    "updatedAt": "2026-06-14T01:25:32.345Z"
+  }
+]

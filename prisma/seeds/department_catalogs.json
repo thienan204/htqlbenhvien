@@ -1,0 +1,18 @@
+[
+  {
+    "id": "42f860bf-3900-43df-8618-8c7ca54b48f2",
+    "STT": null,
+    "MA_KHOA": "K01",
+    "TEN_KHOA": "Khoa Nội",
+    "BAN_KHAM": 2,
+    "GIUONG_PD": 50,
+    "GIUONG_TK": 48,
+    "GIUONG_HSTC": 5,
+    "GIUONG_HSCC": 2,
+    "TU_NGAY": "20240101",
+    "DEN_NGAY": "20241231",
+    "MA_CSKCB": "01001",
+    "createdAt": "2026-03-25T07:09:06.114Z",
+    "updatedAt": "2026-03-25T07:09:06.114Z"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "cmqdu5m9c000492lj22wly84k",
+    "voucher_id": "cmqdu5m93000392lj3l0vft0y",
+    "ten_vttb": "Laptop2026",
+    "category_id": null,
+    "group_id": null,
+    "type_id": null,
+    "quantity": 3,
+    "dongia": 1000000,
+    "vat": 0,
+    "dongia_vat": 1000000,
+    "thanh_tien": 3000000,
+    "manufacturer_id": null,
+    "country_id": null,
+    "funding_source_id": null,
+    "serial_numbers": "123123,321312,33123",
+    "is_auto_generate": true,
+    "createdAt": "2026-06-14T13:44:21.744Z",
+    "updatedAt": "2026-06-14T13:44:21.744Z"
+  }
+]

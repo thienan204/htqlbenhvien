@@ -1,0 +1,101 @@
+[
+  {
+    "id": "cmqbsvddy0001ls1b6qjpoen1",
+    "itRequestId": "cmqbsvddy0000ls1bd97yjra0",
+    "senderId": "cmmud575f00h5k7r12ek18jlj",
+    "senderName": "khoahs",
+    "content": "🖨️ Máy in hỏng / kẹt giấy",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-13T03:32:51.719Z",
+    "updatedAt": "2026-06-13T03:32:51.719Z"
+  },
+  {
+    "id": "cmqbsxjan0003ls1b5cm7dc5q",
+    "itRequestId": "cmqbsxjan0002ls1bu590sm59",
+    "senderId": "cmmud575f00h5k7r12ek18jlj",
+    "senderName": "khoahs",
+    "content": "máy tính hỏng",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-13T03:34:32.687Z",
+    "updatedAt": "2026-06-13T03:34:32.687Z"
+  },
+  {
+    "id": "cmqbtc0yn0005ls1b0g9di9um",
+    "itRequestId": "cmqbtc0ym0004ls1bwaz9w004",
+    "senderId": "cmmud575f00h5k7r12ek18jlj",
+    "senderName": "khoahs",
+    "content": "nội mạng ở khóa nội thần",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-13T03:45:48.767Z",
+    "updatedAt": "2026-06-13T03:45:48.767Z"
+  },
+  {
+    "id": "cmqbtcg5s0007ls1b18q3f87p",
+    "itRequestId": "cmqbtcg5s0006ls1bkhhpvjee",
+    "senderId": "cmmud575f00h5k7r12ek18jlj",
+    "senderName": "khoahs",
+    "content": "lấy lấy lại bệnh nhân của bệnh án ba0002 923184",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-13T03:46:08.465Z",
+    "updatedAt": "2026-06-13T03:46:08.465Z"
+  },
+  {
+    "id": "cmqbtdn4h0009ls1bydupzko9",
+    "itRequestId": "cmqbtdn4h0008ls1bq1gm6ueu",
+    "senderId": "cmmud575f00h5k7r12ek18jlj",
+    "senderName": "khoahs",
+    "content": "yêu cầu mở bình an ở phần Hành Trình Phá Nội Trú  mã bệnh án làm pa 928135",
+    "imageUrl": "/uploads/tickets/1781322422298-Screenshot_1.png",
+    "isSystem": false,
+    "createdAt": "2026-06-13T03:47:04.145Z",
+    "updatedAt": "2026-06-13T03:47:04.145Z"
+  },
+  {
+    "id": "cmqg13auz0001xb826xew3fwg",
+    "itRequestId": "cmqg13auv0000xb82hufs81i9",
+    "senderId": "cmmud57iq00mvk7r1iwhbqru2",
+    "senderName": "Hoàng Mạnh Cương",
+    "content": "🖨️ Máy in hỏng / kẹt giấy",
+    "imageUrl": "/uploads/tickets/1781577207343-17815771999593229361186489569202.jpg",
+    "isSystem": false,
+    "createdAt": "2026-06-16T02:34:03.320Z",
+    "updatedAt": "2026-06-16T02:34:03.320Z"
+  },
+  {
+    "id": "cmqg13ym10003xb82m08894vm",
+    "itRequestId": "cmqg13ym10002xb82l0nnixoz",
+    "senderId": "cmmud581i00vjk7r1t58jxl97",
+    "senderName": "Nguyễn Thu Thủy",
+    "content": "Alo alo.",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-16T02:34:34.105Z",
+    "updatedAt": "2026-06-16T02:34:34.105Z"
+  },
+  {
+    "id": "cmqg158590005xb829bpkpu4u",
+    "itRequestId": "cmqg158590004xb82cp2o4aqw",
+    "senderId": "cmmud57iq00mvk7r1iwhbqru2",
+    "senderName": "Hoàng Mạnh Cương",
+    "content": "🌐 Mất kết nối mạng",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-16T02:35:33.118Z",
+    "updatedAt": "2026-06-16T02:35:33.118Z"
+  },
+  {
+    "id": "cmqg1bovk0007xb82gqa2zmdj",
+    "itRequestId": "cmqg1bovk0006xb82grvrzejm",
+    "senderId": "cmmud581i00vjk7r1t58jxl97",
+    "senderName": "Nguyễn Thu Thủy",
+    "content": "🌐 Mất kết nối mạng Hay mực cho tôi đấy.",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-16T02:40:34.736Z",
+    "updatedAt": "2026-06-16T02:40:34.736Z"
+  }
+]

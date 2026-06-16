@@ -47,6 +47,27 @@ async function main() {
         orderBy: { ma_khoa: 'asc' }
     });
 
+    // ----------------------------------------------------
+    // Export Data (Staff, User, Warehouse, Equipment, etc.)
+    // ----------------------------------------------------
+    const staff = await prisma.staff.findMany({ orderBy: { id: 'asc' } });
+    const users = await prisma.user.findMany({ orderBy: { id: 'asc' } });
+    const practicingCertificates = await prisma.practicingCertificate.findMany({ orderBy: { id: 'asc' } });
+    const warehouses = await prisma.warehouse.findMany({ orderBy: { id: 'asc' } });
+    const equipments = await prisma.equipment.findMany({ orderBy: { id: 'asc' } });
+    const inventoryVouchers = await prisma.inventoryVoucher.findMany({ orderBy: { id: 'asc' } });
+    const inventoryVoucherDetails = await prisma.inventoryVoucherDetail.findMany({ orderBy: { id: 'asc' } });
+    const maintenanceLogs = await prisma.maintenanceLog.findMany({ orderBy: { id: 'asc' } });
+    const itRequests = await prisma.iTRequest.findMany({ orderBy: { id: 'asc' } });
+    const requestMessages = await prisma.requestMessage.findMany({ orderBy: { id: 'asc' } });
+    const xmlErrorRecords = await prisma.xmlErrorRecord.findMany({ orderBy: { id: 'asc' } });
+    const departmentCatalogs = await prisma.departmentCatalog.findMany({ orderBy: { id: 'asc' } });
+    const mau02Catalogs = await prisma.mau02Catalog.findMany({ orderBy: { id: 'asc' } });
+    const mau03Catalogs = await prisma.mau03Catalog.findMany({ orderBy: { id: 'asc' } });
+    const mau04Catalogs = await prisma.mau04Catalog.findMany({ orderBy: { id: 'asc' } });
+    const mau05Catalogs = await prisma.mau05Catalog.findMany({ orderBy: { id: 'asc' } });
+    const mau06Catalogs = await prisma.mau06Catalog.findMany({ orderBy: { id: 'asc' } });
+
     // Write to files
     const seedsDir = path.join(__dirname, '../prisma/seeds');
     if (!fs.existsSync(seedsDir)) {
@@ -97,6 +118,31 @@ async function main() {
         JSON.stringify(departments, null, 2)
     );
     console.log(`Exported ${departments.length} departments to prisma/seeds/departments.json`);
+
+    const additionalExports = [
+        { name: 'staff.json', data: staff },
+        { name: 'users.json', data: users },
+        { name: 'practicing_certificates.json', data: practicingCertificates },
+        { name: 'warehouses.json', data: warehouses },
+        { name: 'equipments.json', data: equipments },
+        { name: 'inventory_vouchers.json', data: inventoryVouchers },
+        { name: 'inventory_voucher_details.json', data: inventoryVoucherDetails },
+        { name: 'maintenance_logs.json', data: maintenanceLogs },
+        { name: 'it_requests.json', data: itRequests },
+        { name: 'request_messages.json', data: requestMessages },
+        { name: 'xml_error_records.json', data: xmlErrorRecords },
+        { name: 'department_catalogs.json', data: departmentCatalogs },
+        { name: 'mau02_catalogs.json', data: mau02Catalogs },
+        { name: 'mau03_catalogs.json', data: mau03Catalogs },
+        { name: 'mau04_catalogs.json', data: mau04Catalogs },
+        { name: 'mau05_catalogs.json', data: mau05Catalogs },
+        { name: 'mau06_catalogs.json', data: mau06Catalogs },
+    ];
+
+    for (const exp of additionalExports) {
+        fs.writeFileSync(path.join(seedsDir, exp.name), JSON.stringify(exp.data, null, 2));
+        console.log(`Exported ${exp.data.length} records to prisma/seeds/${exp.name}`);
+    }
 }
 
 main()
