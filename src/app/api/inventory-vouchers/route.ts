@@ -166,10 +166,11 @@ export async function POST(req: Request) {
                         where: { id: d.equipment_id },
                         data: { quantity: equipment.quantity - d.quantity }
                       });
+                      const { id: _eqId, createdAt: _eqCA, updatedAt: _eqUA, custom_fields: _eqCF, ...eqData } = equipment;
                       await tx.equipment.create({
                         data: {
-                          ...equipment,
-                          id: undefined,
+                          ...eqData,
+                          custom_fields: _eqCF ? JSON.parse(JSON.stringify(_eqCF)) : undefined,
                           ma_vttb: `${voucher_code}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
                           qr_code: crypto.randomUUID(),
                           warehouse_id: to_warehouse_id,
@@ -204,10 +205,11 @@ export async function POST(req: Request) {
                         where: { id: d.equipment_id },
                         data: { quantity: equipment.quantity - d.quantity }
                       });
+                      const { id: _eqId, createdAt: _eqCA, updatedAt: _eqUA, custom_fields: _eqCF, ...eqData } = equipment;
                       await tx.equipment.create({
                         data: {
-                          ...equipment,
-                          id: undefined,
+                          ...eqData,
+                          custom_fields: _eqCF ? JSON.parse(JSON.stringify(_eqCF)) : undefined,
                           ma_vttb: `${voucher_code}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
                           qr_code: crypto.randomUUID(),
                           quantity: d.quantity,
