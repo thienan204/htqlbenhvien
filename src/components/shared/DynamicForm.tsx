@@ -16,6 +16,7 @@ export interface FieldConfig {
     valuePropName?: string;
     onBlur?: (e: any, form: any) => void;
     placeholder?: string;
+    defaultValue?: any;
 }
 
 export interface DynamicFormProps {

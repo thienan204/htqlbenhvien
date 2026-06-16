@@ -179,8 +179,8 @@ export default function CreateImportVoucherPage() {
 
     const [submitStatus, setSubmitStatus] = useState<'PENDING' | 'APPROVED'>('PENDING');
 
-    const handleFormSubmit = (values: any) => {
-        onFinishMaster(values, submitStatus);
+    const handleFormSubmit = async (values: any) => {
+        await onFinishMaster(values, submitStatus);
     };
 
     return (

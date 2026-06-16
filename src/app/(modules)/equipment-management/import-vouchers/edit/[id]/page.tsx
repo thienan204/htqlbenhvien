@@ -207,8 +207,8 @@ export default function EditImportVoucherPage() {
 
     const [submitAction, setSubmitAction] = useState<'UPDATE' | 'APPROVE'>('UPDATE');
 
-    const handleFormSubmit = (values: any) => {
-        onFinishMaster(values, submitAction);
+    const handleFormSubmit = async (values: any) => {
+        await onFinishMaster(values, submitAction);
     };
 
     if (pageLoading) return <div className="p-12 text-center"><Spin size="large" /></div>;
