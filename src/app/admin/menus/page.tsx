@@ -5,6 +5,7 @@ import { Tree, Card, Button, Form, Input, Select, Switch, message, Modal, Spin, 
 import { PlusOutlined, DeleteOutlined, SaveOutlined, ReloadOutlined, EditOutlined, DragOutlined } from '@ant-design/icons';
 import type { TreeDataNode, TreeProps } from 'antd';
 import * as Icons from '@ant-design/icons';
+import { getBasePath } from '@/utils/config';
 
 const { Option } = Select;
 
@@ -77,7 +78,7 @@ export default function MenuBuilderPage() {
     const fetchMenus = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/menus');
+            const res = await fetch(`${getBasePath()}/api/menus`);
             if (res.ok) {
                 const data = await res.json();
                 setMenus(data);
@@ -199,7 +200,7 @@ export default function MenuBuilderPage() {
 
         // Gửi API update batch
         try {
-            const res = await fetch('/api/menus', {
+            const res = await fetch(`${getBasePath()}/api/menus`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
@@ -249,7 +250,7 @@ export default function MenuBuilderPage() {
             const values = await form.validateFields();
             setLoading(true);
 
-            const url = isCreating ? '/api/menus' : `/api/menus/${selectedNode?.id}`;
+            const url = isCreating ? `${getBasePath()}/api/menus` : `${getBasePath()}/api/menus/${selectedNode?.id}`;
             const method = isCreating ? 'POST' : 'PUT';
 
             const res = await fetch(url, {
@@ -275,7 +276,7 @@ export default function MenuBuilderPage() {
     const handleDelete = async () => {
         if (!selectedNode) return;
         try {
-            const res = await fetch(`/api/menus/${selectedNode.id}`, { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/menus/${selectedNode.id}`, { method: 'DELETE' });
             if (res.ok) {
                 message.success('Đã xóa Menu');
                 setSelectedNode(null);
