@@ -26,6 +26,7 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [form] = Form.useForm();
     const [selectedRole, setSelectedRole] = useState<string>('USER');
+    const [mounted, setMounted] = useState(false);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -81,6 +82,7 @@ export default function UsersPage() {
     };
 
     useEffect(() => {
+        setMounted(true);
         fetchUsers();
         fetchDepartments();
         fetchRoles();
@@ -244,8 +246,9 @@ export default function UsersPage() {
                 />
             </Card>
 
-            <Modal
-                title={selectedUser ? "Cập nhật Tài khoản" : "Tạo Tài khoản mới"}
+            {mounted && (
+                <Modal
+                    title={selectedUser ? "Cập nhật Tài khoản" : "Tạo Tài khoản mới"}
                 open={isModalVisible}
                 onCancel={() => setIsModalVisible(false)}
                 onOk={() => form.submit()}
@@ -318,6 +321,7 @@ export default function UsersPage() {
                     </Form.Item>
                 </Form>
             </Modal>
+            )}
         </div>
     );
 }

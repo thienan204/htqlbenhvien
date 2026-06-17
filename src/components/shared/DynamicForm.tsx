@@ -17,6 +17,7 @@ export interface FieldConfig {
     onBlur?: (e: any, form: any) => void;
     placeholder?: string;
     defaultValue?: any;
+    disabled?: boolean;
 }
 
 export interface DynamicFormProps {
@@ -259,6 +260,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                         className={fullWidthClass}
                         size={inputSize}
                         variant={inputVariant}
+                        disabled={field.disabled}
                         filterOption={(inputValue, option) =>
                             (option?.label?.toString() || '').toLowerCase().includes(inputValue.toLowerCase()) || 
                             (option?.value?.toString() || '').toLowerCase().includes(inputValue.toLowerCase())
@@ -267,14 +269,15 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     />
                 );
             case 'date': 
-                return <DatePicker format="DD/MM/YYYY" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <DatePicker disabled={field.disabled} format="DD/MM/YYYY" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'year': 
-                return <DatePicker picker="year" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} onBlur={(e) => field.onBlur && field.onBlur(e, form)} placeholder="Chọn năm..." />;
+                return <DatePicker disabled={field.disabled} picker="year" className={fullWidthClass} size={inputSize} variant={inputVariant} style={{ height: isCompact ? 24 : undefined }} onBlur={(e) => field.onBlur && field.onBlur(e, form)} placeholder="Chọn năm..." />;
             case 'select':
                 return (
                     <Select
                         showSearch
                         allowClear
+                        disabled={field.disabled}
                         placeholder={field.placeholder || `Chọn ${field.label.toLowerCase()}...`}
                         optionFilterProp="label"
                         filterOption={(input, option) =>
@@ -288,14 +291,14 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     />
                 );
             case 'textarea':
-                return <Input.TextArea placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`} className={`${fullWidthClass} !h-auto`} rows={isCompact ? 2 : 3} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <Input.TextArea disabled={field.disabled} placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`} className={`${fullWidthClass} !h-auto`} rows={isCompact ? 2 : 3} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'number':
-                return <InputNumber placeholder={field.placeholder || `Nhập số...`} className={fullWidthClass} size={inputSize} variant={inputVariant} min={0} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <InputNumber disabled={field.disabled} placeholder={field.placeholder || `Nhập số...`} className={fullWidthClass} size={inputSize} variant={inputVariant} min={0} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
             case 'switch':
-                return <Switch checkedChildren="Bật" unCheckedChildren="Tắt" size={isCompact ? 'small' : 'default'} />;
+                return <Switch disabled={field.disabled} checkedChildren="Bật" unCheckedChildren="Tắt" size={isCompact ? 'small' : 'default'} />;
             case 'input':
             default:
-                return <Input placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`} className={fullWidthClass} size={inputSize} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
+                return <Input disabled={field.disabled} placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`} className={fullWidthClass} size={inputSize} variant={inputVariant} onBlur={(e) => field.onBlur && field.onBlur(e, form)} />;
         }
     };
 
