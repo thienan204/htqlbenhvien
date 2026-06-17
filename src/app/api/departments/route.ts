@@ -57,12 +57,27 @@ export async function DELETE(request: Request) {
         const ma_khoa = searchParams.get('ma_khoa');
         if (!ma_khoa) return NextResponse.json({ error: 'Missing ma_khoa' }, { status: 400 });
 
+        // Check constraints manually to provide specific error message
+        const staffCount = await prisma.staff.count({ where: { ma_khoa } });
+        const warehouseCount = await prisma.warehouse.count({ where: { department_id: ma_khoa } });
+
+        if (staffCount > 0 || warehouseCount > 0) {
+            let msgParts = [];
+            if (staffCount > 0) msgParts.push(`${staffCount} Nhân sự`);
+            if (warehouseCount > 0) msgParts.push(`${warehouseCount} Kho vật tư`);
+            return NextResponse.json({ 
+                error: `Không thể xóa vì Khoa/Phòng này đang chứa ${msgParts.join(' và ')}. Vui lòng chuyển dữ liệu sang khoa khác trước khi xóa.` 
+            }, { status: 400 });
+        }
+
         await prisma.department.delete({ where: { ma_khoa } });
         return NextResponse.json({ success: true });
     } catch (error: any) {
-        if (error.code === 'P2003') {
-            return NextResponse.json({ error: 'Không thể xóa Khoa/Phòng này vì đang có Nhân viên hoặc dữ liệu liên quan!' }, { status: 400 });
+        console.error("Delete department error:", error);
+        const errStr = String(error?.message || '');
+        if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001') || errStr.includes('Foreign key constraint')) {
+            return NextResponse.json({ error: 'Không thể xóa Khoa/Phòng này vì đang có Nhân sự hoặc dữ liệu liên quan!' }, { status: 400 });
         }
-        return NextResponse.json({ error: 'Lỗi khi xóa' }, { status: 500 });
+        return NextResponse.json({ error: 'Lỗi khi xóa: ' + (error?.message || 'Unknown error') }, { status: 500 });
     }
 }
