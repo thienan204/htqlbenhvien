@@ -276,7 +276,10 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                         showSearch
                         allowClear
                         placeholder={field.placeholder || `Chọn ${field.label.toLowerCase()}...`}
-                        optionFilterProp="children"
+                        optionFilterProp="label"
+                        filterOption={(input, option) =>
+                            (option?.label?.toString() || '').toLowerCase().includes(input.toLowerCase())
+                        }
                         className={fullWidthClass}
                         size={inputSize}
                         variant={inputVariant}
