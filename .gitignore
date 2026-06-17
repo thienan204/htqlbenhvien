@@ -39,3 +39,9 @@ next-env.d.ts
 debug-api.js
 test-prisma-constructor.js
 api-*.txt
+
+# custom test & debug scripts
+/scripts/
+*debug*.js
+*test*.js
+*.log
