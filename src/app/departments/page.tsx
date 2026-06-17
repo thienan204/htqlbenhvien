@@ -73,12 +73,13 @@ export default function DepartmentPage() {
 
     const handleDelete = async (ma_khoa: string) => {
         try {
-            const res = await fetch(`/api/departments?ma_khoa=${ma_khoa}`, { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/departments?ma_khoa=${ma_khoa}`, { method: 'DELETE' });
             if (res.ok) {
                 message.success('Xóa thành công');
                 fetchDepartments();
             } else {
-                message.error('Lỗi khi xóa');
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Lỗi khi xóa');
             }
         } catch (error) {
             message.error('Lỗi kết nối');

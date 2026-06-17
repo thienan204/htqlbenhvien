@@ -59,7 +59,10 @@ export async function DELETE(request: Request) {
 
         await prisma.department.delete({ where: { ma_khoa } });
         return NextResponse.json({ success: true });
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+    } catch (error: any) {
+        if (error.code === 'P2003') {
+            return NextResponse.json({ error: 'Không thể xóa Khoa/Phòng này vì đang có Nhân viên hoặc dữ liệu liên quan!' }, { status: 400 });
+        }
+        return NextResponse.json({ error: 'Lỗi khi xóa' }, { status: 500 });
     }
 }
