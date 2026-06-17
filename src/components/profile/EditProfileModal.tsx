@@ -69,7 +69,7 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
             open={open}
             onCancel={onClose}
             footer={null}
-            destroyOnClose
+            destroyOnHidden
             width={500}
         >
             <Form

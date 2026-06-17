@@ -49,7 +49,7 @@ export default function ChangePasswordModal({ open, onClose }: ChangePasswordMod
             open={open}
             onCancel={onClose}
             footer={null}
-            destroyOnClose
+            destroyOnHidden
             width={400}
         >
             <Form
