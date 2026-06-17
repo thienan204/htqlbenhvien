@@ -192,8 +192,12 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     });
 
     return NextResponse.json({ message: "Đã xóa phiếu thành công" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting voucher:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const errStr = String(error?.message || '');
+    if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001')) {
+        return NextResponse.json({ error: 'Không thể xóa vì Phiếu này đang được dùng bởi dữ liệu khác!' }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Lỗi khi xóa: " + (error?.message || 'Unknown error') }, { status: 500 });
   }
 }

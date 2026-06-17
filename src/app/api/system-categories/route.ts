@@ -119,10 +119,66 @@ export async function DELETE(request: Request) {
             }
         }
 
+        // Check foreign keys across models
+        const staffCount = await prisma.staff.count({
+            where: {
+                OR: [
+                    { trinh_do_id: id },
+                    { chuc_danh_id: id },
+                    { vi_tri_viec_lam_id: id },
+                    { chuc_vu_id: id },
+                    { loai_hop_dong_id: id },
+                    { gioi_tinh_id: id }
+                ]
+            }
+        });
+
+        const equipmentCount = await prisma.equipment.count({
+            where: {
+                OR: [
+                    { category_id: id },
+                    { group_id: id },
+                    { type_id: id },
+                    { manufacturer_id: id },
+                    { country_id: id },
+                    { production_year_id: id },
+                    { funding_source_id: id }
+                ]
+            }
+        });
+
+        const voucherDetailCount = await prisma.inventoryVoucherDetail.count({
+            where: {
+                OR: [
+                    { category_id: id },
+                    { group_id: id },
+                    { type_id: id },
+                    { manufacturer_id: id },
+                    { country_id: id },
+                    { funding_source_id: id }
+                ]
+            }
+        });
+
+        if (staffCount > 0 || equipmentCount > 0 || voucherDetailCount > 0) {
+            let msgParts = [];
+            if (staffCount > 0) msgParts.push(`${staffCount} Nhân sự`);
+            if (equipmentCount > 0) msgParts.push(`${equipmentCount} Thiết bị/Vật tư`);
+            if (voucherDetailCount > 0) msgParts.push(`${voucherDetailCount} Chi tiết phiếu kho`);
+            return NextResponse.json({ 
+                error: `Không thể xóa vì Danh mục này đang được dùng bởi ${msgParts.join(', ')}.` 
+            }, { status: 400 });
+        }
+
         await prisma.systemCategory.delete({ where: { id } });
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
-        return NextResponse.json({ error: 'Không thể xóa danh mục đang được sử dụng' }, { status: 400 });
+        console.error("Delete category error:", error);
+        const errStr = String(error?.message || '');
+        if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001')) {
+            return NextResponse.json({ error: 'Không thể xóa vì Danh mục này đang được dùng bởi dữ liệu khác!' }, { status: 400 });
+        }
+        return NextResponse.json({ error: 'Lỗi khi xóa: ' + (error?.message || 'Unknown error') }, { status: 500 });
     }
 }

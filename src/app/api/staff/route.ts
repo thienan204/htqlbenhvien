@@ -90,6 +90,15 @@ export async function DELETE(request: Request) {
             // Bulk delete
             const ids = idsParam.split(',').filter(Boolean);
             if (ids.length > 0) {
+                const userCount = await prisma.user.count({ where: { staffId: { in: ids } } });
+                const warehouseCount = await prisma.warehouse.count({ where: { storekeeper_id: { in: ids } } });
+
+                if (userCount > 0 || warehouseCount > 0) {
+                    return NextResponse.json({ 
+                        error: `Không thể xóa hàng loạt vì có Nhân sự đang liên kết với Tài khoản hoặc Kho vật tư.` 
+                    }, { status: 400 });
+                }
+
                 await prisma.staff.deleteMany({
                     where: { id: { in: ids } }
                 });
@@ -101,13 +110,29 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Missing staff ID or IDs' }, { status: 400 });
         }
 
+        const userCount = await prisma.user.count({ where: { staffId: id } });
+        const warehouseCount = await prisma.warehouse.count({ where: { storekeeper_id: id } });
+
+        if (userCount > 0 || warehouseCount > 0) {
+            let msgParts = [];
+            if (userCount > 0) msgParts.push(`${userCount} Tài khoản`);
+            if (warehouseCount > 0) msgParts.push(`${warehouseCount} Kho vật tư`);
+            return NextResponse.json({ 
+                error: `Không thể xóa vì Nhân sự này đang liên kết với ${msgParts.join(' và ')}. Vui lòng hủy liên kết trước.` 
+            }, { status: 400 });
+        }
+
         await prisma.staff.delete({
             where: { id }
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error deleting staff:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        const errStr = String(error?.message || '');
+        if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001')) {
+            return NextResponse.json({ error: 'Không thể xóa vì Nhân sự này đang được dùng bởi dữ liệu khác!' }, { status: 400 });
+        }
+        return NextResponse.json({ error: 'Lỗi khi xóa: ' + (error?.message || 'Unknown error') }, { status: 500 });
     }
 }
