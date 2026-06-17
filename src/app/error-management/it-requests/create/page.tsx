@@ -199,10 +199,18 @@ export default function CreateITRequestPage() {
             if (res.ok) {
                 const data = await res.json();
                 setAllStaffs(data);
+                let currentStaffList = data;
                 if (user && user.role === 'KHOA') {
-                    setDepartmentStaff(data.filter((s: any) => s.ma_khoa === user.ma_khoa));
-                } else {
-                    setDepartmentStaff(data);
+                    currentStaffList = data.filter((s: any) => s.ma_khoa === user.ma_khoa);
+                }
+                setDepartmentStaff(currentStaffList);
+
+                // Verify if the saved staff ID is still valid
+                const lastId = form.getFieldValue('nguoi_bao_id');
+                if (lastId && !currentStaffList.some((s: any) => s.id === lastId)) {
+                    form.setFieldsValue({ nguoi_bao_id: undefined });
+                    setSavedStaffId(undefined);
+                    localStorage.removeItem('last_it_request_staff_id');
                 }
             }
         } catch (error) {
@@ -410,7 +418,7 @@ export default function CreateITRequestPage() {
                     ) : (
                         <Select
                             size="small"
-                            value={savedStaffId}
+                            value={departmentStaff.some((s: any) => s.id === savedStaffId) ? savedStaffId : undefined}
                             onChange={(val) => {
                                 setSavedStaffId(val);
                                 localStorage.setItem('last_it_request_staff_id', val);
