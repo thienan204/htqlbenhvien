@@ -461,7 +461,7 @@ export default function CreateITRequestPage() {
                     <div 
                         key={reply} 
                         onClick={() => setChatText(reply)}
-                        className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-medium border cursor-pointer transition-colors shadow-sm
+                        className={`max-w-full whitespace-normal leading-relaxed text-center px-4 py-2 rounded-2xl text-[13px] font-medium border cursor-pointer transition-colors shadow-sm
                             ${chatText === reply ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}
                         `}
                     >
