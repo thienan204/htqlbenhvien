@@ -456,12 +456,12 @@ export default function CreateITRequestPage() {
             </div>
 
             {/* Quick Replies */}
-            <div className="flex overflow-x-auto gap-2 pb-2 mb-2 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex flex-wrap gap-2 mb-2">
                 {(chatCategory === 'SOFTWARE' ? softwareErrors : hardwareErrors).map(reply => (
                     <div 
                         key={reply} 
                         onClick={() => setChatText(reply)}
-                        className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-medium border cursor-pointer transition-colors shadow-sm shrink-0
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-medium border cursor-pointer transition-colors shadow-sm
                             ${chatText === reply ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}
                         `}
                     >
