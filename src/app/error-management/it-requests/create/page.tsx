@@ -36,14 +36,7 @@ export default function CreateITRequestPage() {
     const recognitionRef = useRef<any>(null);
     const [selectedQuickReply, setSelectedQuickReply] = useState('');
     const [savedStaffId, setSavedStaffId] = useState<string | null>(null);
-
-    const quickReplies = [
-        '🖨️ Máy in hỏng / kẹt giấy',
-        '🌐 Mất kết nối mạng',
-        '💻 Máy tính không lên nguồn',
-        '🏥 Lỗi bệnh án / Thanh toán',
-        '🔑 Quên mật khẩu HIS'
-    ];
+    const [chatCategory, setChatCategory] = useState<string>('SOFTWARE');
 
     const resizeImage = (file: File): Promise<Blob> => {
         return new Promise((resolve, reject) => {
@@ -351,13 +344,7 @@ export default function CreateITRequestPage() {
         
         setChatLoading(true);
 
-        // Auto parser
-        let category = 'SOFTWARE';
-        const lowerText = chatText.toLowerCase();
-        const hardwareKeywords = ['máy in', 'in', 'chuột', 'phím', 'bàn phím', 'mạng', 'màn hình', 'nguồn', 'máy tính', 'ổ cứng'];
-        if (hardwareKeywords.some(kw => lowerText.includes(kw))) {
-            category = 'HARDWARE';
-        }
+        let category = chatCategory;
 
         // Extract patientCode (8-10 digits)
         const patientMatch = chatText.match(/\b\d{8,10}\b/);
@@ -440,6 +427,22 @@ export default function CreateITRequestPage() {
                 </div>
             </div>
 
+            {/* Category Selection for Chat Tab */}
+            <Radio.Group 
+                value={chatCategory} 
+                onChange={(e) => setChatCategory(e.target.value)}
+                className="w-full mb-4 flex rounded-lg p-1 bg-white border border-slate-200 shadow-sm" 
+                optionType="button" 
+                buttonStyle="solid"
+            >
+                <Radio.Button value="SOFTWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'SOFTWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
+                    Bệnh án
+                </Radio.Button>
+                <Radio.Button value="HARDWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'HARDWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
+                    Thiết bị/Sửa chữa
+                </Radio.Button>
+            </Radio.Group>
+
             <div className="flex-1 overflow-y-auto mb-4 space-y-4">
                 <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
@@ -454,7 +457,7 @@ export default function CreateITRequestPage() {
 
             {/* Quick Replies */}
             <div className="flex overflow-x-auto gap-2 pb-2 mb-2 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {quickReplies.map(reply => (
+                {(chatCategory === 'SOFTWARE' ? softwareErrors : hardwareErrors).map(reply => (
                     <div 
                         key={reply} 
                         onClick={() => setChatText(reply)}
