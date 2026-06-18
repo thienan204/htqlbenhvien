@@ -209,7 +209,7 @@ export default function CreateITRequestPage() {
                 const lastId = form.getFieldValue('nguoi_bao_id');
                 if (lastId && !currentStaffList.some((s: any) => s.id === lastId)) {
                     form.setFieldsValue({ nguoi_bao_id: undefined });
-                    setSavedStaffId(undefined);
+                    setSavedStaffId(null);
                     localStorage.removeItem('last_it_request_staff_id');
                 }
             }
