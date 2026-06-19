@@ -74,7 +74,12 @@ const XML_FIELDS: Record<string, string[]> = {
         'CHAN_DOAN', 'PP_DIEU_TRI', 'LOI_DAN_BS', 'GHI_CHU', 'MA_TTDV', 'NGAY_CT', 'MA_THE_TAM',
         'HO_TEN_CHA', 'HO_TEN_ME', 'NGUOI_GIAM_HO', 'MA_BS'
     ],
-    'XML8': ['MA_LK', 'MA_LO', 'CO_SO_SX', 'HAN_DUNG', 'SO_LUONG'],
+    'XML8': [
+        'MA_LK', 'MA_LOAI_KCB', 'HO_TEN_CHA', 'HO_TEN_ME', 'NGUOI_GIAM_HO',
+        'DON_VI', 'NGAY_VAO', 'NGAY_RA', 'CHAN_DOAN_VAO', 'CHAN_DOAN_RV',
+        'QT_BENHLY', 'TOMTAT_KQ', 'PP_DIEUTRI', 'NGAY_SINHCON', 'NGAY_CONCHET',
+        'SO_CONCHET', 'KET_QUA_DTRI', 'GHI_CHU', 'MA_TTDV', 'NGAY_CT', 'MA_THE_TAM', 'DU_PHONG'
+    ],
     'XML9': [
         'MA_LK', 'MA_BHXH_NND', 'MA_THE_NND', 'HO_TEN_NND', 'NGAYSINH_NND', 'MA_DANTOC_NND',
         'SO_CCCD_NND', 'NGAYCAP_CCCD_NND', 'NOICAP_CCCD_NND', 'NOI_CU_TRU_NND', 'MA_QUOCTICH',
@@ -593,19 +598,14 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                                     const fields = XML_FIELDS[type] || [];
                                                     return (
                                                         <Form.Item name="field" label="Trường dữ liệu" style={{ marginBottom: 0 }}>
-                                                            <Select
-                                                                showSearch
-                                                                placeholder="Chọn trường dữ liệu"
-                                                                optionFilterProp="children"
+                                                            <AutoComplete
+                                                                placeholder="Chọn hoặc gõ tên trường dữ liệu"
                                                                 allowClear
-                                                                filterOption={(input, option) =>
-                                                                    (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
+                                                                options={fields.map(f => ({ value: f, label: f }))}
+                                                                filterOption={(inputValue, option) =>
+                                                                    (option?.value as string)?.toUpperCase().includes(inputValue.toUpperCase())
                                                                 }
-                                                            >
-                                                                {fields.map(f => (
-                                                                    <Option key={f} value={f}>{f}</Option>
-                                                                ))}
-                                                            </Select>
+                                                            />
                                                         </Form.Item>
                                                     );
                                                 }}
@@ -830,19 +830,14 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                                 const fields = XML_FIELDS[type] || [];
                                                 return (
                                                     <Form.Item name="field" label="Trường dữ liệu" style={{ marginBottom: 0 }}>
-                                                        <Select
-                                                            showSearch
-                                                            placeholder="Chọn trường dữ liệu"
-                                                            optionFilterProp="children"
+                                                        <AutoComplete
+                                                            placeholder="Chọn hoặc gõ tên trường dữ liệu"
                                                             allowClear
-                                                            filterOption={(input, option) =>
-                                                                (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
+                                                            options={fields.map(f => ({ value: f, label: f }))}
+                                                            filterOption={(inputValue, option) =>
+                                                                (option?.value as string)?.toUpperCase().includes(inputValue.toUpperCase())
                                                             }
-                                                        >
-                                                            {fields.map(f => (
-                                                                <Option key={f} value={f}>{f}</Option>
-                                                            ))}
-                                                        </Select>
+                                                        />
                                                     </Form.Item>
                                                 );
                                             }}

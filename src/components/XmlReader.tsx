@@ -405,9 +405,100 @@ export default function XmlReader() {
         fileList: []
     };
 
+    const handleSaveErrorsToDB = async () => {
+        const targetRecords = getFilteredRecords();
+        if (targetRecords.length === 0) {
+            message.warning("Không có dữ liệu để lưu");
+            return;
+        }
+
+        const errorsToSave: any[] = [];
+        targetRecords.forEach((record) => {
+            const errors = record.validationResults.filter(v => v.isError);
+            if (errors.length > 0) {
+                const ngayVaoNoiTru = record.summary?.NGAY_VAO_NOI_TRU;
+                errors.forEach(err => {
+                    let code = '';
+                    let name = '';
+                    let ngayYL = null;
+                    let ngayTHYL = null;
+                    let ngayKQ = null;
+                    let maKhoa = renderValue(record.summary?.MA_KHOA);
+
+                    if (err.xmlType && err.index !== undefined) {
+                        const group = record.groups.find(g => g.type === err.xmlType);
+                        if (group) {
+                            const list = getXmlDataList(group);
+                            const item = list[err.index];
+                            if (item) {
+                                code = item.MA_DICH_VU || item.MA_THUOC || item.MA_VAT_TU || '';
+                                name = item.TEN_DICH_VU || item.TEN_THUOC || item.TEN_VAT_TU || '';
+                                ngayYL = item.NGAY_YL;
+                                ngayTHYL = item.NGAY_TH_YL;
+                                ngayKQ = item.NGAY_KQ;
+                                if (item.MA_KHOA) maKhoa = renderValue(item.MA_KHOA);
+                            }
+                        }
+                    }
+
+                    errorsToSave.push({
+                        ma_lk: renderValue(record.summary?.MA_LK),
+                        ma_bn: renderValue(record.summary?.MA_BN),
+                        ma_khoa: maKhoa,
+                        ho_ten: renderValue(record.summary?.HO_TEN),
+                        ma_the: renderValue(record.summary?.MA_THE_BHYT),
+                        ngay_vao: record.summary?.NGAY_VAO,
+                        ngay_ra: record.summary?.NGAY_RA,
+                        ngay_yl: ngayYL,
+                        ngay_th_yl: ngayTHYL,
+                        ngay_kq: ngayKQ,
+                        ngay_vao_noi_tru: ngayVaoNoiTru,
+                        ma_dv: renderValue(code),
+                        ten_dv: renderValue(name),
+                        ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
+                        chi_tiet_loi: `[${err.xmlType}] ${err.message || err.ruleName}`,
+                        sourceType: 'XML'
+                    });
+                });
+            }
+        });
+
+        if (errorsToSave.length === 0) {
+            message.info("Không có hồ sơ nào bị lỗi để lưu");
+            return;
+        }
+
+        try {
+            message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrors' });
+            const res = await fetch('/api/error-management/xml-errors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ errors: errorsToSave })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                message.success({ content: `Lưu thành công ${data.count} lỗi vào hệ thống!`, key: 'saveErrors' });
+            } else {
+                const err = await res.json();
+                message.error({ content: `Lỗi: ${err.error}`, key: 'saveErrors' });
+            }
+        } catch (error) {
+            message.error({ content: 'Không thể kết nối đến máy chủ', key: 'saveErrors' });
+        }
+    };
+
     // --- Header Actions ---
     const renderHeaderActions = () => (
         <div className="flex justify-end gap-3 mb-4">
+            <Button
+                onClick={handleSaveErrorsToDB}
+                icon={<CloudUploadOutlined />}
+                type="primary"
+                className="bg-blue-600 shadow-md shadow-blue-200"
+            >
+                Lưu lỗi vào CSDL
+            </Button>
             <Button
                 onClick={() => router.push('/report')}
                 icon={<FileExcelOutlined />}

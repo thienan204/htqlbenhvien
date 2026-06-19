@@ -104,14 +104,45 @@ export class ValidationEngine {
                 const listPath = XML_LIST_PATHS[rule.xmlType];
 
                 if (rule.xmlType === 'XML1' || !listPath) {
+                    // Nếu không phải XML1 và dữ liệu của XML này hoàn toàn trống -> Bỏ qua không kiểm tra
+                    if (rule.xmlType !== 'XML1') {
+                        const xmlData = rootContext[rule.xmlType];
+                        if (!xmlData || (typeof xmlData === 'object' && Object.keys(xmlData).length === 0) || (typeof xmlData === 'string' && xmlData.trim() === '')) {
+                            return; // Skip rule
+                        }
+                    }
+
                     // Single object validation (XML1 or others)
-                    // For XML1, we might want to unwrap TONG_HOP
-                    // Merge fields from the specific XML type (e.g. XML1 fields) into top level
-                    // so that context['MA_TTDV'] works for Null Checks.
+                    // Merge fields from the specific XML type into top level
+                    let xmlDataForContext = rootContext[rule.xmlType] || {};
+                    if (xmlDataForContext && typeof xmlDataForContext === 'object') {
+                        const keys = Object.keys(xmlDataForContext);
+                        // Unwrap if it has exactly one child object (e.g. CHI_TIEU_DU_LIEU_TOM_TAT_HO_SO_BENH_AN)
+                        if (keys.length === 1 && typeof xmlDataForContext[keys[0]] === 'object' && !Array.isArray(xmlDataForContext[keys[0]])) {
+                            xmlDataForContext = xmlDataForContext[keys[0]];
+                        }
+                    }
+
                     let context = {
                         ...rootContext,
-                        ...(rootContext[rule.xmlType] || {})
+                        ...xmlDataForContext
                     };
+
+                    if (rule.conditionField && rule.conditionValue) {
+                        const parts = rule.conditionField.split('.');
+                        let conditionVal: any = context;
+                        for(const part of parts) {
+                            if (conditionVal === undefined || conditionVal === null) break;
+                            conditionVal = conditionVal[part];
+                        }
+
+                        const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                        const valStr = this.getDataValue(conditionVal);
+
+                        if (!valStr || !allowedValues.includes(valStr)) {
+                            return; // Bỏ qua, điều kiện không thỏa mãn
+                        }
+                    }
 
                     let isError = false;
 
@@ -387,7 +418,39 @@ export class ValidationEngine {
             const listPath = XML_LIST_PATHS[rule.xmlType];
 
             if (rule.xmlType === 'XML1' || !listPath) {
-                const context = { ...rootContext, ...rootContext[rule.xmlType] || {} };
+                if (rule.xmlType !== 'XML1') {
+                    const xmlData = rootContext[rule.xmlType];
+                    if (!xmlData || (typeof xmlData === 'object' && Object.keys(xmlData).length === 0) || (typeof xmlData === 'string' && xmlData.trim() === '')) {
+                        return { isMatch: false };
+                    }
+                }
+
+                let xmlDataForContext = rootContext[rule.xmlType] || {};
+                if (xmlDataForContext && typeof xmlDataForContext === 'object') {
+                    const keys = Object.keys(xmlDataForContext);
+                    if (keys.length === 1 && typeof xmlDataForContext[keys[0]] === 'object' && !Array.isArray(xmlDataForContext[keys[0]])) {
+                        xmlDataForContext = xmlDataForContext[keys[0]];
+                    }
+                }
+
+                const context = { ...rootContext, ...xmlDataForContext };
+
+                if (rule.conditionField && rule.conditionValue) {
+                    const parts = rule.conditionField.split('.');
+                    let conditionVal: any = context;
+                    for(const part of parts) {
+                        if (conditionVal === undefined || conditionVal === null) break;
+                        conditionVal = conditionVal[part];
+                    }
+
+                    const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                    const valStr = this.getDataValue(conditionVal);
+
+                    if (!valStr || !allowedValues.includes(valStr)) {
+                        return { isMatch: false }; // Bỏ qua, điều kiện không thỏa mãn
+                    }
+                }
+
                 try {
                     const result = checkLogic(context);
                     return { isMatch: result };

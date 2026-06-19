@@ -139,6 +139,58 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         setResults(validationResults);
     };
 
+    const handleSaveErrorsToDB = async () => {
+        let targetRecords = [];
+        if (isDuplicateDoctorMode) {
+            targetRecords = getFilteredDoctorData();
+        } else if (isDuplicateBedMode) {
+            targetRecords = getFilteredData();
+        } else {
+            targetRecords = results;
+        }
+
+        if (targetRecords.length === 0) {
+            message.warning("Không có dữ liệu để lưu");
+            return;
+        }
+
+        const errorsToSave = targetRecords.map(item => ({
+            ma_lk: item.MA_LK || '',
+            ma_bn: item.MA_BN || '',
+            ma_khoa: item.MA_KHOA || '',
+            ho_ten: item.HO_TEN || '',
+            ma_the: item.MA_THE_BHYT || item.MA_THE || '',
+            ngay_vao: item.NGAY_VAO || null,
+            ngay_ra: item.NGAY_RA || null,
+            ngay_yl: item.NGAY_YL || item.THOI_GIAN_YL || null,
+            ngay_th_yl: item.NGAY_TH_YL || null,
+            ngay_kq: item.NGAY_KQ || null,
+            ma_dv: item.MA_DICH_VU || item.MA_LOAI || '',
+            ten_dv: item.TEN_DICH_VU || item.TEN_LOAI || '',
+            chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || ''} - Phát hiện lỗi/Trùng lặp`,
+            sourceType: 'CHUYEN_DE'
+        }));
+
+        try {
+            message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrors' });
+            const res = await fetch('/api/error-management/xml-errors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ errors: errorsToSave })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                message.success({ content: `Lưu thành công ${data.count} lỗi vào hệ thống!`, key: 'saveErrors' });
+            } else {
+                const err = await res.json();
+                message.error({ content: `Lỗi: ${err.error}`, key: 'saveErrors' });
+            }
+        } catch (error) {
+            message.error({ content: 'Không thể kết nối đến máy chủ', key: 'saveErrors' });
+        }
+    };
+
     // --- Duplicate Bed Logic ---
 
     // 1. Prepare Data for Table View
@@ -1267,7 +1319,15 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             loading={isSavingDoctor}
                             className="bg-blue-600 hover:bg-blue-700"
                         >
-                            Lưu máy chủ
+                            Lưu Excel máy chủ
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveErrorsToDB}
+                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                        >
+                            Lưu lỗi vào CSDL
                         </Button>
                         <Button
                             type="primary"
@@ -1381,7 +1441,15 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             loading={isSaving}
                             className="bg-blue-600 hover:bg-blue-700"
                         >
-                            Lưu máy chủ
+                            Lưu Excel máy chủ
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveErrorsToDB}
+                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                        >
+                            Lưu lỗi vào CSDL
                         </Button>
                         <Button
                             type="primary"
@@ -1440,7 +1508,19 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     // Generic View
     return (
         <div className="space-y-6">
-            <Card title={`Kết quả kiểm tra (${records.length} hồ sơ)`} extra={<Button icon={<ReloadOutlined />} onClick={fetchData}>Chạy lại</Button>}>
+            <Card title={`Kết quả kiểm tra (${records.length} hồ sơ)`} extra={
+                <Space>
+                    <Button icon={<ReloadOutlined />} onClick={fetchData}>Chạy lại</Button>
+                    <Button
+                        type="primary"
+                        icon={<CloudUploadOutlined />}
+                        onClick={handleSaveErrorsToDB}
+                        className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                    >
+                        Lưu lỗi vào CSDL
+                    </Button>
+                </Space>
+            }>
                 {results.length === 0 ? (
                     <div className="text-center py-8 text-green-600 container-none">
                         <CheckCircleOutlined style={{ fontSize: 48 }} className="mb-4" />

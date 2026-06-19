@@ -460,8 +460,10 @@ model XmlErrorRecord {
   ngay_vao_noi_tru  DateTime?
   ma_dv             String?
   ten_dv            String?
+  don_gia_bh        String?
   ma_doituong_kcb   String?
   chi_tiet_loi      String?  @db.Text
+  sourceType        String   @default("XML") // XML, CHUYEN_DE
 
   status            String   @default("PENDING") // PENDING, EXPLAINED
   departmentNote    String?  @db.Text // Giải trình của khoa
