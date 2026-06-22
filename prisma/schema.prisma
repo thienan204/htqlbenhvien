@@ -462,6 +462,11 @@ model XmlErrorRecord {
   ten_dv            String?
   don_gia_bh        String?
   ma_doituong_kcb   String?
+  ma_may            String?
+  ma_bac_si         String?
+  ten_bac_si        String?
+  nguoi_th          String?
+  ten_nguoi_th      String?
   chi_tiet_loi      String?  @db.Text
   sourceType        String   @default("XML") // XML, CHUYEN_DE
 
@@ -469,6 +474,11 @@ model XmlErrorRecord {
   departmentNote    String?  @db.Text // Giải trình của khoa
   adminNote         String?  @db.Text // Ghi chú của Admin
   
+  // Liên kết với IT Request
+  itRequestId       String?
+  itRequestPingCount Int      @default(0)
+  itResolved        Boolean  @default(false)
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

@@ -167,7 +167,12 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             ngay_kq: item.NGAY_KQ || null,
             ma_dv: item.MA_DICH_VU || item.MA_LOAI || '',
             ten_dv: item.TEN_DICH_VU || item.TEN_LOAI || '',
-            chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || ''} - Phát hiện lỗi/Trùng lặp`,
+            ma_may: item.MA_MAY || item.KEY_VALUE || '',
+            ma_bac_si: item.MA_BAC_SI || '',
+            ten_bac_si: item.TEN_BAC_SI || '',
+            nguoi_th: item.NGUOI_THUC_HIEN || '',
+            ten_nguoi_th: item.TEN_NGUOI_THUC_HIEN || '',
+            chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || ''} - Phát hiện lỗi/Trùng lặp${item.groupId ? ` [Nhóm: ${item.groupId}]` : ''}`,
             sourceType: 'CHUYEN_DE'
         }));
 

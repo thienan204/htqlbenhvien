@@ -82,11 +82,62 @@ export async function POST(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt } = body;
+        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action } = body;
         
         let ma_khoa = body.ma_khoa;
         if (!['ADMIN', 'CNTT'].includes(user.role)) {
             ma_khoa = user.ma_khoa; // Ghi đè bằng mã khoa thực tế
+        }
+
+        if (action === 'PING' && xmlErrorId) {
+            const errorRecord = await prisma.xmlErrorRecord.findUnique({ where: { id: xmlErrorId } });
+            if (!errorRecord || !errorRecord.itRequestId) {
+                return NextResponse.json({ error: 'Không tìm thấy phiếu IT đã tạo' }, { status: 400 });
+            }
+            
+            // Increment ping count
+            const newPingCount = (errorRecord.itRequestPingCount || 0) + 1;
+            await prisma.xmlErrorRecord.update({
+                where: { id: xmlErrorId },
+                data: { itRequestPingCount: newPingCount }
+            });
+
+            const nguoiBaoName = dynamicFields ? dynamicFields['Người báo'] : (user as any).name || user.username;
+            const ghiChu = dynamicFields?.['Ghi chú'] ? `\n\nGhi chú thêm: ${dynamicFields['Ghi chú']}` : '';
+
+            // Add message to ITRequest
+            await prisma.iTRequest.update({
+                where: { id: errorRecord.itRequestId },
+                data: {
+                    messages: {
+                        create: [
+                            {
+                                senderId: nguoi_bao_id || user.id,
+                                senderName: nguoiBaoName,
+                                content: `🔴 KHOA ĐANG HỐI THÚC XỬ LÝ LỖI NÀY! (Gửi lại lần ${newPingCount})${ghiChu}`
+                            }
+                        ]
+                    }
+                }
+            });
+
+            // Gửi Telegram ping
+            const dept = await prisma.department.findUnique({ where: { ma_khoa } });
+            const tenKhoa = dept?.ten_khoa || ma_khoa;
+            let telegramMsg = `🔴 <b>HỐI THÚC XỬ LÝ (Lần ${newPingCount})</b>\n\n`;
+            telegramMsg += `🏢 <b>Khoa:</b> ${tenKhoa}\n`;
+            telegramMsg += `👤 <b>Người báo:</b> ${nguoiBaoName}\n`;
+            telegramMsg += `📝 <b>Bệnh án:</b> ${ma_ba}\n`;
+            telegramMsg += `❌ <b>Lỗi:</b> ${ten_loi}\n`;
+            if (dynamicFields?.['Ghi chú']) {
+                telegramMsg += `🗒 <b>Ghi chú gửi lại:</b> ${dynamicFields['Ghi chú']}\n`;
+            }
+
+            if (TELEGRAM_CHAT_ID) {
+                await sendTelegramMessage(telegramMsg, TELEGRAM_CHAT_ID);
+            }
+            
+            return NextResponse.json({ success: true, pingCount: newPingCount });
         }
 
         if (!ten_loi || !ma_khoa) {
@@ -243,6 +294,17 @@ export async function POST(request: Request) {
             await sendTelegramMessage(dmMsg, assigneeUser.telegram_id);
         }
 
+        // Lưu ngược itRequestId vào XmlErrorRecord nếu có xmlErrorId
+        if (xmlErrorId) {
+            await prisma.xmlErrorRecord.update({
+                where: { id: xmlErrorId },
+                data: {
+                    itRequestId: newRequest.id,
+                    itRequestPingCount: 1
+                }
+            });
+        }
+
         return NextResponse.json(newRequest);
     } catch (error: any) {
         console.error('Error POST it-requests:', error);
@@ -349,6 +411,21 @@ export async function PUT(request: Request) {
                 resolvedAt: newResolvedAt
             }
         });
+
+        // Đồng bộ trạng thái về bảng XmlErrorRecord nếu IT đánh dấu Hoàn thành
+        if (newStatus === 'RESOLVED' && ticket.status !== 'RESOLVED') {
+            const errorRecord = await prisma.xmlErrorRecord.findFirst({ where: { itRequestId: id } });
+            if (errorRecord) {
+                await prisma.xmlErrorRecord.update({
+                    where: { id: errorRecord.id },
+                    data: {
+                        status: 'EXPLAINED',
+                        itResolved: true,
+                        adminNote: it_note !== undefined ? `[CNTT] ${it_note}` : (ticket.it_note ? `[CNTT] ${ticket.it_note}` : 'CNTT đã xử lý')
+                    }
+                });
+            }
+        }
 
         return NextResponse.json(updated);
     } catch (error) {
