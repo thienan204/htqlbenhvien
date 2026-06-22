@@ -93,7 +93,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Thiếu thông tin bắt buộc' }, { status: 400 });
         }
 
+        const isManager = (user as any).isManager || user.role === 'ADMIN';
+
         let finalAssignee = assigneeId || null;
+        if (!isManager && assigneeId) {
+            finalAssignee = null; // Từ chối assign ngay lúc tạo nếu không phải manager
+        }
 
         // Tự động cập nhật số điện thoại vào bảng Staff
         let finalSdt = sdt || '';
@@ -263,6 +268,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        const isManager = (user as any).isManager || user.role === 'ADMIN';
+
         if (action === 'ACCEPT_TRANSFER') {
             const updated = await prisma.iTRequest.update({
                 where: { id },
@@ -291,6 +298,9 @@ export async function PUT(request: Request) {
 
         if (action === 'TRANSFER') {
             if (!transferToId) return NextResponse.json({ error: 'Missing transferToId' }, { status: 400 });
+            if (!isManager && ticket.assigneeId !== user.id) {
+                return NextResponse.json({ error: 'Không có quyền chuyển giao phiếu của người khác' }, { status: 403 });
+            }
             const updated = await prisma.iTRequest.update({
                 where: { id },
                 data: {
@@ -306,6 +316,21 @@ export async function PUT(request: Request) {
         let newStartedAt = ticket.startedAt;
         let newResolvedAt = ticket.resolvedAt;
         const newStatus = status !== undefined ? status : ticket.status;
+
+        // Phân quyền đổi assignee (Giao việc / Tự nhận)
+        if (assigneeId !== undefined && assigneeId !== ticket.assigneeId) {
+            const isUnassigned = !ticket.assigneeId;
+            const isMyTicket = ticket.assigneeId === user.id;
+
+            if (!isManager) {
+                if (isUnassigned && assigneeId !== user.id) {
+                    return NextResponse.json({ error: 'Bạn chỉ có thể tự nhận việc, không thể giao cho người khác' }, { status: 403 });
+                }
+                if (!isUnassigned && !isMyTicket) {
+                    return NextResponse.json({ error: 'Bạn không có quyền thay đổi người xử lý của phiếu này' }, { status: 403 });
+                }
+            }
+        }
 
         if (newStatus === 'IN_PROGRESS' && ticket.status !== 'IN_PROGRESS' && !newStartedAt) {
             newStartedAt = new Date();

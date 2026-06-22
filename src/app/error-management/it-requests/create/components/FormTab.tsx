@@ -6,6 +6,7 @@ interface FormTabProps {
     form: any;
     handleCreateTicket: (values: any) => void;
     isAdmin: boolean;
+    isManager: boolean;
     softwareErrors: string[];
     hardwareErrors: string[];
     departments: any[];
@@ -24,6 +25,7 @@ export function FormTab({
     form,
     handleCreateTicket,
     isAdmin,
+    isManager,
     softwareErrors,
     hardwareErrors,
     departments,
@@ -177,7 +179,7 @@ export function FormTab({
                                     </Form.Item>
                                 </div>
                                 
-                                {isAdmin && (
+                                {isManager && (
                                     <div className="mt-6">
                                         <Form.Item name="assigneeId" label={<span className="font-semibold">Chỉ định người xử lý (Tùy chọn)</span>} className="mb-0">
                                             <Select placeholder="Để trống hệ thống tự chia việc" allowClear>

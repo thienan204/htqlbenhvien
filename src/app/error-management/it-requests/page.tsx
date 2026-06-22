@@ -118,6 +118,7 @@ export default function ITRequestsPage() {
                 visible={isActionModalVisible}
                 ticket={selectedTicket}
                 itUsers={itUsers}
+                user={user}
                 onCancel={() => setIsActionModalVisible(false)}
                 onOk={(values) => handleUpdateTicket(values, selectedTicket, () => setIsActionModalVisible(false))}
             />

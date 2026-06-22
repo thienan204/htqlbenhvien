@@ -18,6 +18,7 @@ export default function CreateITRequestPage() {
     const router = useRouter();
     const { user } = useAuth();
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'CNTT';
+    const isManager = user?.isManager || user?.role === 'ADMIN';
 
     const [activeTab, setActiveTab] = useState('chat');
     const [loading, setLoading] = useState(false);
@@ -158,6 +159,7 @@ export default function CreateITRequestPage() {
                                 form={form}
                                 handleCreateTicket={handleCreateTicket}
                                 isAdmin={isAdmin}
+                                isManager={isManager}
                                 softwareErrors={softwareErrors}
                                 hardwareErrors={hardwareErrors}
                                 departments={departments}

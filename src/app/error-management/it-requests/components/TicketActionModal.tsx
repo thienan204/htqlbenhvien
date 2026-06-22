@@ -8,6 +8,7 @@ interface TicketActionModalProps {
     onOk: (values: any) => void;
     ticket: Ticket | null;
     itUsers: ITUser[];
+    user?: any;
 }
 
 export const TicketActionModal: React.FC<TicketActionModalProps> = ({
@@ -15,9 +16,22 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     onCancel,
     onOk,
     ticket,
-    itUsers
+    itUsers,
+    user
 }) => {
     const [actionForm] = Form.useForm();
+
+    const isManager = user?.isManager || user?.role === 'ADMIN';
+    const isMyTicket = ticket?.assigneeId === user?.id;
+    const isUnassigned = !ticket?.assigneeId;
+
+    const canChangeAssignee = isManager || isMyTicket || isUnassigned;
+
+    let availableUsers = itUsers;
+    if (!isManager && isUnassigned) {
+        // Nhân viên thường chỉ có thể tự nhận việc nếu phiếu chưa ai nhận
+        availableUsers = itUsers.filter(u => u.id === user?.id);
+    }
 
     useEffect(() => {
         if (visible && ticket) {
@@ -51,10 +65,10 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                         <Select.Option value="RESOLVED">Hoàn thành</Select.Option>
                     </Select>
                 </Form.Item>
-                {/* Admins có thể chuyển assign */}
+                {/* Phân quyền chọn Người xử lý */}
                 <Form.Item name="assigneeId" label="Người xử lý" extra="Nếu bạn chọn người khác, phiếu sẽ vào trạng thái Chờ chuyển giao cho đến khi người đó xác nhận.">
-                    <Select allowClear>
-                        {itUsers.map(u => (
+                    <Select allowClear disabled={!canChangeAssignee}>
+                        {availableUsers.map(u => (
                             <Select.Option key={u.id} value={u.id}>{u.name || u.username}</Select.Option>
                         ))}
                     </Select>
