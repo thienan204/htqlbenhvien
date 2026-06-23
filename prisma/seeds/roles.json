@@ -51,21 +51,33 @@
     "name": "Khoa / Phòng ban",
     "description": "Quyền xem và giải trình lỗi của Khoa",
     "permissions": {
+      "roles": {},
+      "users": {},
       "MENU_STAFF": {},
       "MENU_IT_DUTY": {},
+      "MENU_IT_REPORT": {},
       "MENU_XML_RULES": {},
+      "menu_bcnhapkho": {},
       "MENU_CATALOG_01": {},
       "MENU_CATALOG_02": {},
       "MENU_CATALOG_03": {},
       "MENU_CATALOG_04": {},
       "MENU_CATALOG_05": {},
       "MENU_CATALOG_06": {},
-      "MENU_XML_ERRORS": {},
+      "MENU_XML_ERRORS": {
+        "EDIT": false,
+        "VIEW": false,
+        "DELETE": false
+      },
       "MENU_DEPARTMENTS": {},
       "MENU_EXCEL_RULES": {
         "EDIT": false,
         "VIEW": false,
         "DELETE": false
+      },
+      "lOI_XML_CHUYENDE": {
+        "EDIT": true,
+        "VIEW": true
       },
       "MENU_DOC_FILE_EXCEL": {
         "VIEW": true
@@ -75,10 +87,11 @@
         "VIEW": true,
         "DELETE": false
       },
+      "MENU_IMAGE_MANAGEMENT": {},
       "MENU_SPECIALIZED_RULES": {}
     },
     "createdAt": "2026-06-07T03:15:57.440Z",
-    "updatedAt": "2026-06-10T03:57:35.765Z"
+    "updatedAt": "2026-06-19T03:13:18.902Z"
   },
   {
     "id": "cmq8ur03f0001g44vlr38rnf1",

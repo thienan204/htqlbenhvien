@@ -53,6 +53,22 @@
     "layout": "[{\"id\":\"voucher_code\",\"widthPercent\":25},{\"id\":\"sub_type\",\"widthPercent\":25},{\"id\":\"from_warehouse_id\",\"widthPercent\":25},{\"id\":\"to_warehouse_id\",\"widthPercent\":25},{\"id\":\"document_date\",\"widthPercent\":25},{\"id\":\"deliverer_name\",\"widthPercent\":25}]",
     "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
     "createdAt": "2026-06-15T05:36:19.114Z",
-    "updatedAt": "2026-06-15T05:36:19.114Z"
+    "updatedAt": "2026-06-18T00:56:14.851Z"
+  },
+  {
+    "id": "cmqi34wza00018uck43z9sk54",
+    "formId": "profile_update_form",
+    "layout": "[{\"id\":\"username\",\"widthPercent\":50},{\"id\":\"name\",\"widthPercent\":50},{\"id\":\"telegram_id\",\"widthPercent\":100}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-17T13:06:50.227Z",
+    "updatedAt": "2026-06-17T13:06:50.227Z"
+  },
+  {
+    "id": "cmqishcjw00058uckd6e7p91c",
+    "formId": "export_voucher_detail",
+    "layout": "[{\"id\":\"equipment_id\",\"widthPercent\":25},{\"id\":\"ten_vttb\",\"widthPercent\":25},{\"id\":\"quantity\",\"widthPercent\":25}]",
+    "settings": "{\"layout\":\"vertical\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-18T00:56:20.685Z",
+    "updatedAt": "2026-06-18T00:56:20.685Z"
   }
 ]

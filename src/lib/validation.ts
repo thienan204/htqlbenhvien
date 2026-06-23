@@ -133,7 +133,16 @@ export class ValidationEngine {
                         let conditionVal: any = context;
                         for(const part of parts) {
                             if (conditionVal === undefined || conditionVal === null) break;
-                            conditionVal = conditionVal[part];
+                            if (conditionVal[part] !== undefined) {
+                                conditionVal = conditionVal[part];
+                            } else {
+                                const actualKey = Object.keys(conditionVal).find(k => k.toLowerCase() === part.toLowerCase());
+                                if (actualKey) {
+                                    conditionVal = conditionVal[actualKey];
+                                } else {
+                                    conditionVal = undefined;
+                                }
+                            }
                         }
 
                         const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
@@ -184,6 +193,10 @@ export class ValidationEngine {
                                 // Check Generic Condition if specified
                                 if (rule.conditionField && rule.conditionValue) {
                                     let conditionVal = item[rule.conditionField];
+                                    if (conditionVal === undefined) {
+                                        const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.conditionField?.toLowerCase());
+                                        if (actualKey) conditionVal = item[actualKey];
+                                    }
                                     const allowedValues = rule.conditionValue.split(',').map((s: string) => s.trim());
                                     const valStr = conditionVal !== null && conditionVal !== undefined ? String(conditionVal).trim() : '';
                                     if (!valStr || !allowedValues.includes(valStr)) return;
@@ -250,18 +263,14 @@ export class ValidationEngine {
                             list.forEach((item, index) => {
                                 // Check Generic Condition if specified
                                 if (rule.conditionField && rule.conditionValue) {
-                                    // Helper to safe get value from item or context
-                                    // We can reuse the getVal logic but it's inside evaluateRuleCode. 
-                                    // Simple access for now: check item then root
                                     let conditionVal = item[rule.conditionField];
                                     if (conditionVal === undefined) {
-                                        // Check if it's a nested path or in root context? 
-                                        // For simplicity in list items, we usually check fields on the item itself (e.g. MA_NHOM)
-                                        // But let's support robust checking if needed.
+                                        const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.conditionField?.toLowerCase());
+                                        if (actualKey) conditionVal = item[actualKey];
                                     }
 
                                     // Support comma-separated list of allowed values
-                                    const allowedValues = rule.conditionValue.split(',').map((s: string) => s.trim());
+                                    const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
 
                                     // Check if value exists and matches one of the allowed values
                                     // We convert to string and trim to handle cases like " 1" or type mismatches
@@ -435,16 +444,25 @@ export class ValidationEngine {
 
                 const context = { ...rootContext, ...xmlDataForContext };
 
-                if (rule.conditionField && rule.conditionValue) {
-                    const parts = rule.conditionField.split('.');
-                    let conditionVal: any = context;
-                    for(const part of parts) {
-                        if (conditionVal === undefined || conditionVal === null) break;
-                        conditionVal = conditionVal[part];
-                    }
+                    if (rule.conditionField && rule.conditionValue) {
+                        const parts = rule.conditionField.split('.');
+                        let conditionVal: any = context;
+                        for(const part of parts) {
+                            if (conditionVal === undefined || conditionVal === null) break;
+                            if (conditionVal[part] !== undefined) {
+                                conditionVal = conditionVal[part];
+                            } else {
+                                const actualKey = Object.keys(conditionVal).find(k => k.toLowerCase() === part.toLowerCase());
+                                if (actualKey) {
+                                    conditionVal = conditionVal[actualKey];
+                                } else {
+                                    conditionVal = undefined;
+                                }
+                            }
+                        }
 
-                    const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
-                    const valStr = this.getDataValue(conditionVal);
+                        const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                        const valStr = this.getDataValue(conditionVal);
 
                     if (!valStr || !allowedValues.includes(valStr)) {
                         return { isMatch: false }; // Bỏ qua, điều kiện không thỏa mãn
@@ -471,6 +489,10 @@ export class ValidationEngine {
                 for (const item of list) {
                     if (rule.conditionField && rule.conditionValue) {
                         let conditionVal = item[rule.conditionField];
+                        if (conditionVal === undefined) {
+                            const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.conditionField?.toLowerCase());
+                            if (actualKey) conditionVal = item[actualKey];
+                        }
                         const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
                         const valStr = this.getDataValue(conditionVal);
                         if (!valStr || !allowedValues.includes(valStr)) continue;
@@ -524,6 +546,10 @@ export class ValidationEngine {
                 for (const item of list) {
                     if (rule.conditionField && rule.conditionValue) {
                         let conditionVal = item[rule.conditionField];
+                        if (conditionVal === undefined) {
+                            const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.conditionField?.toLowerCase());
+                            if (actualKey) conditionVal = item[actualKey];
+                        }
                         // USE HELPER HERE + Split by regex
                         const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
                         const valStr = this.getDataValue(conditionVal);

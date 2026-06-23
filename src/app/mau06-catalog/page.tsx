@@ -177,6 +177,18 @@ export default function Mau06CatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
+                        <Popconfirm
+                            title="Xóa toàn bộ danh mục?"
+                            description="Hành động này sẽ xóa sạch dữ liệu hiện tại. Bạn có chắc chắn?"
+                            onConfirm={handleDeleteAll}
+                            okText="Có, Xóa hết"
+                            cancelText="Không"
+                            okButtonProps={{ danger: true }}
+                        >
+                            <Button danger type="primary" icon={<DeleteOutlined />}>
+                                Xóa toàn bộ
+                            </Button>
+                        </Popconfirm>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600">Tải file mẫu</Button>
                         <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">
                             <Button type="default" icon={<UploadOutlined />} className="bg-blue-50 border-blue-200 text-blue-700">Import Excel</Button>

@@ -1,0 +1,38 @@
+[
+    {
+        "id": "01-tong-quan",
+        "title": "Tổng quan Hệ thống",
+        "icon": "AppstoreOutlined",
+        "file": "01-tong-quan.md"
+    },
+    {
+        "id": "04-quan-ly-kho",
+        "title": "Quản lý Vật tư & Kho",
+        "icon": "DatabaseOutlined",
+        "file": "04-quan-ly-kho.md"
+    },
+    {
+        "id": "05-quan-ly-danh-muc",
+        "title": "Quản lý Danh mục (Mẫu 03, 04)",
+        "icon": "ProfileOutlined",
+        "file": "05-quan-ly-danh-muc.md"
+    },
+    {
+        "id": "02-rule-engine-xml",
+        "title": "Validation XML (Rule Engine)",
+        "icon": "SafetyCertificateOutlined",
+        "file": "02-rule-engine-xml.md"
+    },
+    {
+        "id": "03-yeu-cau-cntt",
+        "title": "Quản lý Yêu cầu CNTT",
+        "icon": "ToolOutlined",
+        "file": "03-yeu-cau-cntt.md"
+    },
+    {
+        "id": "06-server-nginx",
+        "title": "Quản trị Server & Nginx",
+        "icon": "CloudServerOutlined",
+        "file": "06-server-nginx.md"
+    }
+]

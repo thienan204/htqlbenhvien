@@ -17,6 +17,7 @@ interface RuleSettingsProps {
     onSave: (rules: ValidationRule[]) => void;
     sampleRecords?: HosoRecord[];
     isModal?: boolean;
+    masterData?: Record<string, Set<string>>;
 }
 
 const XML_TYPE_LABELS: Record<string, string> = {
@@ -101,7 +102,7 @@ const XML_FIELDS: Record<string, string[]> = {
 
 const XML_TYPES = Array.from({ length: 15 }, (_, i) => `XML${i + 1}`);
 
-export default function RuleSettings({ isOpen, onClose, rules: initialRules, onSave, sampleRecords, isModal = true }: RuleSettingsProps) {
+export default function RuleSettings({ isOpen, onClose, rules: initialRules, onSave, sampleRecords, isModal = true, masterData = {} }: RuleSettingsProps) {
     const [rules, setRules] = useState<ValidationRule[]>(initialRules.length > 0 ? initialRules : DEFAULT_RULES);
     const [editingRule, setEditingRule] = useState<ValidationRule | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -132,7 +133,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
             return;
         }
 
-        const validator = new ValidationEngine([]);
+        const validator = new ValidationEngine([], masterData);
         let matchCount = 0;
         const errors: string[] = [];
 

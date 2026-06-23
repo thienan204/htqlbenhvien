@@ -15,6 +15,16 @@ export async function GET() {
     }
 }
 
+export async function DELETE() {
+    try {
+        const result = await prisma.mau03Catalog.deleteMany({});
+        return NextResponse.json({ success: true, count: result.count });
+    } catch (error) {
+        console.error('Error deleting mau03 catalog:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();

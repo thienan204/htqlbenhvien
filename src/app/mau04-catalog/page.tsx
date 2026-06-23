@@ -66,6 +66,24 @@ export default function Mau04CatalogPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        try {
+            setLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau04-catalog`, { method: 'DELETE' });
+            if (res.ok) {
+                const result = await res.json();
+                message.success(`Đã xóa thành công ${result.count} dòng dữ liệu.`);
+                fetchData();
+            } else {
+                message.error('Xóa toàn bộ thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi khi xóa toàn bộ');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSave = async (values: any) => {
         try {
             const url = editingRecord ? `${getBasePath()}/api/mau04-catalog/${editingRecord.id}` : `${getBasePath()}/api/mau04-catalog`;
@@ -183,6 +201,16 @@ export default function Mau04CatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
+                        <Popconfirm 
+                            title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
+                            description="Hành động này sẽ xóa sạch danh mục và không thể hoàn tác. Bạn có chắc chắn không?"
+                            onConfirm={handleDeleteAll} 
+                            okText="Có, Xóa hết" 
+                            cancelText="Không"
+                            okButtonProps={{ danger: true }}
+                        >
+                            <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
+                        </Popconfirm>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600">Tải file mẫu</Button>
                         <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">
                             <Button type="default" icon={<UploadOutlined />} className="bg-blue-50 border-blue-200 text-blue-700">Import Excel</Button>

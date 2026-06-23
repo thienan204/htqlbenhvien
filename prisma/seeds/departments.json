@@ -350,38 +350,10 @@
     "updatedAt": "2026-01-18T03:24:06.548Z"
   },
   {
-    "ma_khoa": "K48",
-    "ten_khoa": "Khoa hồi sức tích cực",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.550Z",
-    "updatedAt": "2026-01-18T03:24:06.550Z"
-  },
-  {
     "ma_khoa": "K4849",
     "ten_khoa": "Khoa hồi sức tích cực chống độc",
     "type": "CLINICAL",
     "createdAt": "2026-01-19T00:10:54.713Z",
     "updatedAt": "2026-01-19T00:10:54.713Z"
-  },
-  {
-    "ma_khoa": "K49",
-    "ten_khoa": "Khoa Chống độc",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.552Z",
-    "updatedAt": "2026-01-18T03:24:06.552Z"
-  },
-  {
-    "ma_khoa": "K50",
-    "ten_khoa": "Khoa Nội hô hấp",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.554Z",
-    "updatedAt": "2026-01-18T03:24:06.554Z"
-  },
-  {
-    "ma_khoa": "K99",
-    "ten_khoa": "Khoa Điều trị COVID-19",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.557Z",
-    "updatedAt": "2026-01-18T03:24:06.557Z"
   }
 ]

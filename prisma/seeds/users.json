@@ -96,5 +96,33 @@
     "staffId": null,
     "createdAt": "2026-06-09T08:03:37.206Z",
     "updatedAt": "2026-06-10T13:55:32.452Z"
+  },
+  {
+    "id": "cmqhtkeuy000dxb82gx1og6t0",
+    "username": "hmcuong",
+    "password": "$2b$10$xsTdfLoH.e3IbuPGVCh9dejEMaKuEDD7yOEt1ViQ7orwYEdU0CXdi",
+    "name": "Hoàng Mạnh Cương",
+    "role": "KHOA",
+    "ma_khoa": "K4849",
+    "telegram_id": null,
+    "isAvailable": false,
+    "dutyOrder": 999,
+    "staffId": "cmmud57iq00mvk7r1iwhbqru2",
+    "createdAt": "2026-06-17T08:38:57.082Z",
+    "updatedAt": "2026-06-17T13:02:20.597Z"
+  },
+  {
+    "id": "cmqoharlq000b9ekdabc0g6ek",
+    "username": "khoanhi",
+    "password": "$2b$10$bPWnLLUvUG6v.rA0hJj9PeNwVmuXKBD.qR1bUOIHrFKGU8N121EbK",
+    "name": null,
+    "role": "KHOA",
+    "ma_khoa": "K18",
+    "telegram_id": null,
+    "isAvailable": false,
+    "dutyOrder": 999,
+    "staffId": null,
+    "createdAt": "2026-06-22T00:29:54.877Z",
+    "updatedAt": "2026-06-22T00:29:54.877Z"
   }
 ]

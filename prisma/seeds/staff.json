@@ -2689,9 +2689,9 @@
     "id": "cmmud56mq008tk7r13xk0oxk4",
     "ho_ten": "Nguyễn Thị Chanh",
     "ma_bac_si": "000857/LS-CCHN",
-    "so_dien_thoai": null,
+    "so_dien_thoai": "0936607983",
     "dia_chi": null,
-    "ma_khoa": "K01",
+    "ma_khoa": "K18",
     "trinh_do_id": null,
     "chuc_danh_id": null,
     "vi_tri_viec_lam_id": null,
@@ -2700,7 +2700,7 @@
     "gioi_tinh_id": null,
     "ngay_sinh": null,
     "createdAt": "2026-03-17T08:41:23.666Z",
-    "updatedAt": "2026-03-17T08:41:23.666Z"
+    "updatedAt": "2026-06-22T07:51:14.660Z"
   },
   {
     "id": "cmmud56mu008vk7r1835q4jyt",
@@ -6962,12 +6962,12 @@
     "trinh_do_id": null,
     "chuc_danh_id": null,
     "vi_tri_viec_lam_id": null,
-    "chuc_vu_id": null,
+    "chuc_vu_id": "cmqce71ft000b11nel9iwomjl",
     "loai_hop_dong_id": null,
     "gioi_tinh_id": null,
     "ngay_sinh": null,
     "createdAt": "2026-03-17T08:41:24.819Z",
-    "updatedAt": "2026-06-09T08:07:13.678Z"
+    "updatedAt": "2026-06-17T13:02:20.673Z"
   },
   {
     "id": "cmmud57iv00mxk7r1aiqwj6pl",
@@ -7451,7 +7451,7 @@
     "ma_bac_si": "000131/LS-GPHN",
     "so_dien_thoai": null,
     "dia_chi": null,
-    "ma_khoa": "K01",
+    "ma_khoa": "K03",
     "trinh_do_id": null,
     "chuc_danh_id": null,
     "vi_tri_viec_lam_id": null,
@@ -7460,7 +7460,7 @@
     "gioi_tinh_id": null,
     "ngay_sinh": null,
     "createdAt": "2026-03-17T08:41:24.946Z",
-    "updatedAt": "2026-03-17T08:41:24.946Z"
+    "updatedAt": "2026-06-17T06:58:06.703Z"
   },
   {
     "id": "cmmud57me00ojk7r1qwyyyaet",
@@ -9610,7 +9610,7 @@
     "ma_bac_si": "000002/LS-GPHN",
     "so_dien_thoai": null,
     "dia_chi": null,
-    "ma_khoa": "K01",
+    "ma_khoa": "K4849",
     "trinh_do_id": null,
     "chuc_danh_id": null,
     "vi_tri_viec_lam_id": null,
@@ -9619,7 +9619,7 @@
     "gioi_tinh_id": null,
     "ngay_sinh": null,
     "createdAt": "2026-03-17T08:41:25.495Z",
-    "updatedAt": "2026-06-13T13:24:53.803Z"
+    "updatedAt": "2026-06-17T08:35:57.373Z"
   },
   {
     "id": "cmmud581n00vlk7r1up22b1lx",

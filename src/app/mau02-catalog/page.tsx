@@ -232,6 +232,18 @@ export default function Mau02CatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
+                        <Popconfirm
+                            title="Xóa toàn bộ danh mục?"
+                            description="Hành động này sẽ xóa sạch dữ liệu hiện tại. Bạn có chắc chắn?"
+                            onConfirm={handleDeleteAll}
+                            okText="Có, Xóa hết"
+                            cancelText="Không"
+                            okButtonProps={{ danger: true }}
+                        >
+                            <Button danger type="primary" icon={<DeleteOutlined />}>
+                                Xóa toàn bộ
+                            </Button>
+                        </Popconfirm>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600 hover:bg-green-50">
                             Tải file Excel mẫu
                         </Button>

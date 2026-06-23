@@ -1,36 +1,5 @@
 [
   {
-    "id": "cmq3jcglw0000hp52ot09q7kp",
-    "name": "IT Config",
-    "slug": "it-request-fields-config",
-    "description": null,
-    "isActive": true,
-    "order": 0,
-    "ruleType": "SYSTEM_CONFIG",
-    "logicConfig": {
-      "assignmentMode": "C",
-      "hardwareErrors": [
-        "Máy tính không lên",
-        "Hết mực in / Kẹt giấy",
-        "Mất mạng Internet",
-        "Lỗi bàn phím / Chuột",
-        "Khác",
-        "Chỉnh sửa lỗi báo cáo"
-      ],
-      "maxImageSizeMB": 10,
-      "softwareErrors": [
-        "Huỷ ký số",
-        "Huỷ chữ ký lãnh đạo",
-        "Lấy lại bệnh nhân",
-        "Khác",
-        "Huỷ ký số giấy ra viện"
-      ]
-    },
-    "sqlQuery": null,
-    "createdAt": "2026-06-07T08:44:03.475Z",
-    "updatedAt": "2026-06-10T07:12:19.084Z"
-  },
-  {
     "id": "cml7t7c6c0000ook5q6yqi80x",
     "name": "Trùng mã giường",
     "slug": "kiem-tra-trung-ma-giuong",

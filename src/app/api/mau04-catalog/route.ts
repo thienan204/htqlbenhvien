@@ -96,3 +96,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export async function DELETE() {
+    try {
+        const result = await prisma.mau04Catalog.deleteMany({});
+        return NextResponse.json({ success: true, count: result.count });
+    } catch (error) {
+        console.error('Error deleting all mau04 catalog records:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

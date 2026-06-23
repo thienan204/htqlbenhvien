@@ -97,5 +97,137 @@
     "isSystem": false,
     "createdAt": "2026-06-16T02:40:34.736Z",
     "updatedAt": "2026-06-16T02:40:34.736Z"
+  },
+  {
+    "id": "cmqht8lox0009xb822a1rtsx1",
+    "itRequestId": "cmqht8lov0008xb82hwnx294e",
+    "senderId": "cmmud579h00izk7r12oh5indt",
+    "senderName": "khoahs",
+    "content": "🖨️ Máy in hỏng / kẹt giấy",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-17T08:29:46.060Z",
+    "updatedAt": "2026-06-17T08:29:46.060Z"
+  },
+  {
+    "id": "cmqhtb5ye000bxb82w3j2satv",
+    "itRequestId": "cmqhtb5ye000axb82ztdfusj7",
+    "senderId": "cmmud57iq00mvk7r1iwhbqru2",
+    "senderName": "Hoàng Mạnh Cương",
+    "content": "🖨️ Máy in hỏng / kẹt giấy tại khoa hồi sức",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-17T08:31:45.639Z",
+    "updatedAt": "2026-06-17T08:31:45.639Z"
+  },
+  {
+    "id": "cmqkcvwh0000xq7ln2e0w9m5e",
+    "itRequestId": "cmqkcvwh0000wq7lnzl83ovoj",
+    "senderId": "cmmud57iq00mvk7r1iwhbqru2",
+    "senderName": "Hoàng Mạnh Cương",
+    "content": "Huỷ chữ ký lãnh đạo",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-19T03:15:18.180Z",
+    "updatedAt": "2026-06-19T03:15:18.180Z"
+  },
+  {
+    "id": "cmqkcyumc000zq7ln7ft1k56j",
+    "itRequestId": "cmqkcyumc000yq7ln440s9xy4",
+    "senderId": "cmmud57iq00mvk7r1iwhbqru2",
+    "senderName": "Hoàng Mạnh Cương",
+    "content": "Hết mực in / Kẹt giấy",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-19T03:17:35.748Z",
+    "updatedAt": "2026-06-19T03:17:35.748Z"
+  },
+  {
+    "id": "cmqowcccy00ugxj5fqr59snvl",
+    "itRequestId": "cmqowcccx00ufxj5ffxsw7mq7",
+    "senderId": "admin-hardcoded",
+    "senderName": "admin",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: DƯƠNG DUY BẢO",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T07:31:02.673Z",
+    "updatedAt": "2026-06-22T07:31:02.673Z"
+  },
+  {
+    "id": "cmqowdlaj00uixj5fj5xocfvk",
+    "itRequestId": "cmqowdlaj00uhxj5fnjsso8ux",
+    "senderId": "cmqoharlq000b9ekdabc0g6ek",
+    "senderName": "khoanhi",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: DƯƠNG DUY BẢO",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T07:32:00.908Z",
+    "updatedAt": "2026-06-22T07:32:00.908Z"
+  },
+  {
+    "id": "cmqox1wlp00ukxj5f5lha409x",
+    "itRequestId": "cmqox1wlp00ujxj5f9q9culpk",
+    "senderId": "cmmud56mq008tk7r13xk0oxk4",
+    "senderName": "Nguyễn Thị Chanh",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: HOÀNG TỐ UYÊN",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T07:50:55.310Z",
+    "updatedAt": "2026-06-22T07:50:55.310Z"
+  },
+  {
+    "id": "cmqox2pb300umxj5fv97blbvy",
+    "itRequestId": "cmqox2pb300ulxj5fupzh62ml",
+    "senderId": "cmmud56mq008tk7r13xk0oxk4",
+    "senderName": "Nguyễn Thị Chanh",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: DƯƠNG TUẤN TÚ",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T07:51:32.511Z",
+    "updatedAt": "2026-06-22T07:51:32.511Z"
+  },
+  {
+    "id": "cmqoyosfv00uoxj5fojczn3fb",
+    "itRequestId": "cmqoyosfv00unxj5fjjm1cwih",
+    "senderId": "cmmud56mq008tk7r13xk0oxk4",
+    "senderName": "Nguyễn Thị Chanh",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: DƯƠNG DUY BẢO",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T08:36:42.619Z",
+    "updatedAt": "2026-06-22T08:36:42.619Z"
+  },
+  {
+    "id": "cmqoyw23g0001uuzts6k3ccl4",
+    "itRequestId": "cmqoyw23d0000uuzt7rlxlw7i",
+    "senderId": "cmmud56mq008tk7r13xk0oxk4",
+    "senderName": "Nguyễn Thị Chanh",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: DƯƠNG DUY BẢO",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T08:42:21.720Z",
+    "updatedAt": "2026-06-22T08:42:21.720Z"
+  },
+  {
+    "id": "cmqoywb530002uuzt0950xxac",
+    "itRequestId": "cmqoyw23d0000uuzt7rlxlw7i",
+    "senderId": "cmqoharlq000b9ekdabc0g6ek",
+    "senderName": "khoanhi",
+    "content": "🔴 KHOA ĐANG HỐI THÚC XỬ LÝ LỖI NÀY! (Gửi lại lần 2)",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T08:42:33.447Z",
+    "updatedAt": "2026-06-22T08:42:33.447Z"
+  },
+  {
+    "id": "cmqoyzp1t0004uuzt94tspvoq",
+    "itRequestId": "cmqoyzp1t0003uuzt7zhyv1f9",
+    "senderId": "cmmud56mq008tk7r13xk0oxk4",
+    "senderName": "Nguyễn Thị Chanh",
+    "content": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: DƯƠNG DUY BẢO",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-06-22T08:45:11.442Z",
+    "updatedAt": "2026-06-22T08:45:11.442Z"
   }
 ]
