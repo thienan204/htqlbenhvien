@@ -66,6 +66,23 @@ export default function Mau02CatalogPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        try {
+            setLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau02-catalog`, { method: 'DELETE' });
+            if (res.ok) {
+                message.success('Đã xóa toàn bộ danh mục');
+                fetchData();
+            } else {
+                message.error('Xóa thất bại');
+            }
+        } catch (error) {
+            message.error('Xóa thất bại');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSave = async (values: any) => {
         try {
             if (editingRecord) {

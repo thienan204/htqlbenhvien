@@ -66,6 +66,23 @@ export default function Mau05CatalogPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        try {
+            setLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau05-catalog`, { method: 'DELETE' });
+            if (res.ok) {
+                message.success('Đã xóa toàn bộ danh mục');
+                fetchData();
+            } else {
+                message.error('Xóa thất bại');
+            }
+        } catch (error) {
+            message.error('Xóa thất bại');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSave = async (values: any) => {
         try {
             const url = editingRecord ? `${getBasePath()}/api/mau05-catalog/${editingRecord.id}` : `${getBasePath()}/api/mau05-catalog`;
