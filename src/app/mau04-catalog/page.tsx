@@ -13,6 +13,8 @@ export default function Mau04CatalogPage() {
     const [editingRecord, setEditingRecord] = useState<any>(null);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(15);
 
     const fetchData = async () => {
         setLoading(true);
@@ -159,7 +161,7 @@ export default function Mau04CatalogPage() {
     };
 
     const columns = [
-        { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => index + 1 },
+        { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1 },
         { title: 'Mã Vật Tư', dataIndex: 'MA_VAT_TU', width: 120 },
         { title: 'Tên Vật Tư', dataIndex: 'TEN_VAT_TU', width: 250 },
         { title: 'Nhóm VTYT', dataIndex: 'NHOM_VAT_TU', width: 200 },
@@ -197,7 +199,7 @@ export default function Mau04CatalogPage() {
             <Card title={<span className="text-xl font-bold text-slate-700">Danh mục Thiết bị y tế, Vật tư (Mẫu 04/DM)</span>} className="flex-1 drop-shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <Space>
-                        <Input.Search placeholder="Tìm Mã VTYT, Tên VTYT..." allowClear onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} />
+                        <Input.Search placeholder="Tìm Mã VTYT, Tên VTYT..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
@@ -224,7 +226,15 @@ export default function Mau04CatalogPage() {
                     dataSource={filteredData}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 15 }}
+                    pagination={{ 
+                        current: currentPage,
+                        pageSize: pageSize, 
+                        showSizeChanger: true,
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        }
+                    }}
                     size="middle"
                     bordered
                     scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}

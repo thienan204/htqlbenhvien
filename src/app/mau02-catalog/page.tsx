@@ -13,6 +13,8 @@ export default function Mau02CatalogPage() {
     const [editingRecord, setEditingRecord] = useState<any>(null);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(15);
 
     const fetchData = async () => {
         setLoading(true);
@@ -191,7 +193,7 @@ export default function Mau02CatalogPage() {
             key: 'stt',
             width: 60,
             align: 'center' as const,
-            render: (_: any, __: any, index: number) => index + 1
+            render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1
         },
         { title: 'Họ Tên', dataIndex: 'HO_TEN', width: 180 },
         { title: 'Giới tính', dataIndex: 'GIOI_TINH', width: 90, render: (val: any) => val === 1 ? 'Nam' : (val === 2 ? 'Nữ' : 'Chưa XĐ') },
@@ -242,8 +244,8 @@ export default function Mau02CatalogPage() {
                         <Input.Search
                             placeholder="Tìm Họ tên, Mã CCHN, Mã khoa..."
                             allowClear
-                            onSearch={setSearchText}
-                            onChange={e => setSearchText(e.target.value)}
+                            onSearch={(value) => { setSearchText(value); setCurrentPage(1); }}
+                            onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }}
                             style={{ width: 350 }}
                         />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
@@ -280,7 +282,15 @@ export default function Mau02CatalogPage() {
                     dataSource={filteredData}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 15, showSizeChanger: true }}
+                    pagination={{ 
+                        current: currentPage,
+                        pageSize: pageSize, 
+                        showSizeChanger: true,
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        }
+                    }}
                     size="middle"
                     bordered
                     scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
