@@ -24,7 +24,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
                     if (isAdmin) {
                         playNotificationSound();
                         notification.info({
-                            message: 'Có lỗi mới chờ tiếp nhận!',
+                            title: 'Có lỗi mới chờ tiếp nhận!',
                             description: 'Có một lỗi mới vừa được gửi lên chưa có người xử lý.',
                             placement: 'bottomRight',
                         });
@@ -34,7 +34,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
                 if (isPolling && myTickets.length > lastMyTicketCount && lastMyTicketCount !== 0) {
                     playNotificationSound();
                     notification.success({
-                        message: 'Việc mới được phân công!',
+                        title: 'Việc mới được phân công!',
                         description: 'Bạn vừa nhận được một yêu cầu hỗ trợ mới, vui lòng kiểm tra.',
                         placement: 'bottomRight',
                     });

@@ -1,6 +1,7 @@
 export interface Ticket {
     id: string;
     ma_ba: string;
+    category: string;
     ten_loi: string;
     ma_khoa: string;
     status: string;
