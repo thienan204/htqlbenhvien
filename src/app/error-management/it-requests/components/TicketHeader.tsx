@@ -10,6 +10,7 @@ interface TicketHeaderProps {
     togglingAvailability: boolean;
     onToggleAvailability: (checked: boolean) => void;
     onCreateRequest: () => void;
+    onOpenSettings: () => void;
 }
 
 export const TicketHeader: React.FC<TicketHeaderProps> = ({
@@ -18,7 +19,8 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
     isAvailable,
     togglingAvailability,
     onToggleAvailability,
-    onCreateRequest
+    onCreateRequest,
+    onOpenSettings
 }) => {
     return (
         <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
@@ -33,14 +35,23 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-stretch sm:items-center mt-4 sm:mt-0">
                 {user?.role === 'CNTT' && (
-                    <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-50 px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg border border-slate-200 w-full sm:w-auto">
-                        <span className="text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
-                        <Switch 
-                            checked={isAvailable}
-                            loading={togglingAvailability}
-                            onChange={onToggleAvailability}
-                            checkedChildren="Bật"
-                            unCheckedChildren="Tắt"
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-50 px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg border border-slate-200 w-full sm:w-auto">
+                            <span className="text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
+                            <Switch 
+                                checked={isAvailable}
+                                loading={togglingAvailability}
+                                onChange={onToggleAvailability}
+                                checkedChildren="Bật"
+                                unCheckedChildren="Tắt"
+                            />
+                        </div>
+                        <Button 
+                            icon={<SettingOutlined />} 
+                            onClick={onOpenSettings} 
+                            title="Cài đặt cảnh báo"
+                            size="large"
+                            className="text-slate-500 hover:text-blue-500"
                         />
                     </div>
                 )}

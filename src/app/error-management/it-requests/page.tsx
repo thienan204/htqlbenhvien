@@ -9,6 +9,7 @@ import { TicketHeader } from './components/TicketHeader';
 import { TicketTable } from './components/TicketTable';
 import { TicketActionModal } from './components/TicketActionModal';
 import { EditTicketModal } from './components/EditTicketModal';
+import { NotificationSettingsModal } from './components/NotificationSettingsModal';
 import { useITMasterData } from './hooks/useITMasterData';
 import { useTickets } from './hooks/useTickets';
 import { Ticket } from './types';
@@ -20,6 +21,7 @@ export default function ITRequestsPage() {
 
     const [isActionModalVisible, setIsActionModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('MINE');
     const [togglingAvailability, setTogglingAvailability] = useState(false);
@@ -82,6 +84,7 @@ export default function ITRequestsPage() {
                 togglingAvailability={togglingAvailability}
                 onToggleAvailability={handleToggleAvailability}
                 onCreateRequest={() => router.push('/error-management/it-requests/create')}
+                onOpenSettings={() => setIsSettingsVisible(true)}
             />
 
             {isAdmin && (
@@ -137,6 +140,11 @@ export default function ITRequestsPage() {
                     setIsEditModalVisible(false);
                     fetchTickets();
                 }}
+            />
+
+            <NotificationSettingsModal 
+                visible={isSettingsVisible}
+                onCancel={() => setIsSettingsVisible(false)}
             />
         </div>
     );

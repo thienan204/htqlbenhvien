@@ -1,5 +1,30 @@
 export const playNotificationSound = () => {
     try {
+        if (typeof window === 'undefined') return;
+
+        // Check if muted
+        const isMuted = localStorage.getItem('it_notification_muted') === 'true';
+        if (isMuted) return;
+
+        // Check for custom audio
+        const customAudio = localStorage.getItem('it_notification_audio');
+        if (customAudio) {
+            const audio = new Audio(customAudio);
+            audio.play().catch(e => {
+                console.error('Lỗi khi phát âm thanh tùy chỉnh', e);
+                playFallbackSound(); // Play fallback if custom fails
+            });
+            return;
+        }
+
+        playFallbackSound();
+    } catch (e) {
+        console.error('Audio play failed', e);
+    }
+};
+
+const playFallbackSound = () => {
+    try {
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
@@ -17,6 +42,6 @@ export const playNotificationSound = () => {
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.5);
     } catch (e) {
-        console.error('Audio play failed', e);
+        console.error('Fallback audio failed', e);
     }
 };

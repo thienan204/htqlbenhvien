@@ -3,6 +3,22 @@ import { message, notification } from 'antd';
 import { Ticket } from '../types';
 import { playNotificationSound } from '@/utils/audioUtils';
 
+const showNativeNotification = (title: string, body: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        const notif = new Notification(title, {
+            body,
+            icon: '/favicon.ico',
+            tag: 'it-request-notification',
+            requireInteraction: true, // Yêu cầu người dùng phải đóng (chỉ một số trình duyệt hỗ trợ)
+            silent: true // Tắt tiếng của HĐH vì trình duyệt đã tự phát nhạc (audioUtils)
+        });
+        notif.onclick = () => {
+            window.focus();
+            notif.close();
+        };
+    }
+};
+
 export const useTickets = (user: any, isAdmin: boolean) => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(false);
@@ -28,6 +44,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
                             description: 'Có một lỗi mới vừa được gửi lên chưa có người xử lý.',
                             placement: 'bottomRight',
                         });
+                        showNativeNotification('Có lỗi mới chờ tiếp nhận!', 'Có một lỗi mới vừa được gửi lên chưa có người xử lý.');
                     }
                 }
 
@@ -38,6 +55,29 @@ export const useTickets = (user: any, isAdmin: boolean) => {
                         description: 'Bạn vừa nhận được một yêu cầu hỗ trợ mới, vui lòng kiểm tra.',
                         placement: 'bottomRight',
                     });
+                    showNativeNotification('Việc mới được phân công!', 'Bạn vừa nhận được một yêu cầu hỗ trợ mới, vui lòng kiểm tra.');
+                }
+
+                // Cảnh báo liên tục nếu có việc chưa nhận (PENDING hoặc TRANSFERRING)
+                const unacceptedTickets = data.filter((t: any) => 
+                    (t.assigneeId === user?.id && t.status === 'PENDING') || 
+                    (t.transferToId === user?.id && t.status === 'TRANSFERRING')
+                );
+
+                if (unacceptedTickets.length > 0) {
+                    if (isPolling) {
+                        playNotificationSound();
+                        showNativeNotification('🚨 Nhắc nhở: Có việc chưa tiếp nhận!', `Bạn đang có ${unacceptedTickets.length} yêu cầu cần xử lý. Vui lòng bấm "Nhận việc"!`);
+                    }
+                    notification.warning({
+                        key: 'unaccepted-ticket-warning',
+                        title: '🚨 Nhắc nhở: Có việc chưa tiếp nhận!',
+                        description: `Bạn đang có ${unacceptedTickets.length} yêu cầu cần xử lý. Vui lòng bấm "Nhận việc"!`,
+                        placement: 'bottomRight',
+                        duration: 10, // Tồn tại 10s, vòng lặp 15s sẽ gọi lại nếu vẫn chưa nhận
+                    });
+                } else {
+                    notification.destroy('unaccepted-ticket-warning');
                 }
 
                 setLastUnassignedCount(unassignedTickets.length);
