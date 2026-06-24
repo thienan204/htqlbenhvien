@@ -74,6 +74,10 @@ export default function CreateITRequestPage() {
             dynamicObj['Hình ảnh đính kèm'] = fileList.map((f: any) => f.url);
         }
 
+        if (values.ke_hoach) {
+            dynamicObj['Kế hoạch xử lý'] = values.ke_hoach;
+        }
+
         try {
             const res = await fetch('/api/error-management/it-requests', {
                 method: 'POST',

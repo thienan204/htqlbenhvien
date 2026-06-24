@@ -179,15 +179,21 @@ export function FormTab({
                                     </Form.Item>
                                 </div>
                                 
-                                {isManager && (
-                                    <div className="mt-6">
-                                        <Form.Item name="assigneeId" label={<span className="font-semibold">Chỉ định người xử lý (Tùy chọn)</span>} className="mb-0">
-                                            <Select placeholder="Để trống hệ thống tự chia việc" allowClear>
-                                                {itUsers.map((u: any) => (
-                                                    <Select.Option key={u.id} value={u.id}>{u.name || u.username}</Select.Option>
-                                                ))}
-                                            </Select>
-                                        </Form.Item>
+                                {isAdmin && (
+                                    <div className="mt-6 bg-purple-50/50 p-6 rounded-xl border border-purple-100">
+                                        <div className="font-bold text-purple-800 mb-4 uppercase text-sm">Khu vực dành cho Quản lý / Trưởng phòng</div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <Form.Item name="assigneeId" label={<span className="font-semibold text-purple-700">Chỉ định người xử lý (Giao việc)</span>} className="mb-0">
+                                                <Select placeholder="Để trống hệ thống tự chia việc" allowClear>
+                                                    {itUsers.map((u: any) => (
+                                                        <Select.Option key={u.id} value={u.id}>{u.name || u.username}</Select.Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                            <Form.Item name="ke_hoach" label={<span className="font-semibold text-purple-700">Kế hoạch / Chỉ đạo thực hiện</span>} className="mb-0">
+                                                <Input.TextArea rows={2} placeholder="Nhập yêu cầu, thời hạn hoặc hướng dẫn xử lý..." />
+                                            </Form.Item>
+                                        </div>
                                     </div>
                                 )}
 

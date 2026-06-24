@@ -3,19 +3,32 @@ import { message, notification } from 'antd';
 import { Ticket } from '../types';
 import { playNotificationSound } from '@/utils/audioUtils';
 
+let activeNativeNotification: Notification | null = null;
+
 const showNativeNotification = (title: string, body: string) => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        // Tạm thời bỏ kiểm tra tab ẩn để test xem Windows có chặn trình duyệt không
+        // if (document.visibilityState === 'visible') return;
+
+        // Đóng thông báo cũ để HĐH chịu hiển thị popup mới
+        if (activeNativeNotification) {
+            activeNativeNotification.close();
+        }
+
         const notif = new Notification(title, {
             body,
             icon: '/favicon.ico',
-            tag: 'it-request-notification',
-            requireInteraction: true, // Yêu cầu người dùng phải đóng (chỉ một số trình duyệt hỗ trợ)
-            silent: true // Tắt tiếng của HĐH vì trình duyệt đã tự phát nhạc (audioUtils)
+            tag: 'it-request-notification-' + Date.now(), // Đổi tag liên tục để ép popup nổi lên
+            requireInteraction: true, 
+            silent: true 
         });
+        
         notif.onclick = () => {
             window.focus();
             notif.close();
         };
+        
+        activeNativeNotification = notif;
     }
 };
 

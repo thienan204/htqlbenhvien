@@ -76,6 +76,9 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
         console.error('Error saving staff:', error);
+        if (error?.code === 'P2002' || String(error?.message || '').includes('Unique constraint failed')) {
+            return NextResponse.json({ error: 'Mã nhân viên (Mã Bác sĩ) này đã tồn tại trong hệ thống. Vui lòng nhập mã khác!' }, { status: 400 });
+        }
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
