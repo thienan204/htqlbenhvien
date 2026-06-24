@@ -191,6 +191,7 @@ export default function Mau01CatalogPage() {
     };
 
     const columns = [
+        {
             title: 'STT',
             key: 'stt',
             width: 60,
