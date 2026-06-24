@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber } from 'antd';
+import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -240,7 +240,31 @@ export default function ITConfigPage() {
             key: 'GENERAL',
             label: 'Cấu hình chung',
             children: (
-                <div className="space-y-6 max-w-md mt-4">
+                <div className="space-y-6 max-w-lg mt-4">
+                    <Card size="small" title="Chế độ phân công công việc" className="border border-slate-200">
+                        <div className="flex flex-col gap-3">
+                            <Radio.Group 
+                                value={assignmentMode} 
+                                onChange={e => setAssignmentMode(e.target.value)}
+                                className="flex flex-col gap-2"
+                            >
+                                <Radio value="A">
+                                    <span className="font-medium text-slate-700">Tự do nhận việc</span>
+                                    <div className="text-xs text-slate-500">Ticket gửi lên ở trạng thái chờ, nhân viên CNTT ai rảnh thì chủ động click "Nhận việc".</div>
+                                </Radio>
+                                <Radio value="B">
+                                    <span className="font-medium text-slate-700">Trưởng nhóm điều phối</span>
+                                    <div className="text-xs text-slate-500">Ticket gửi lên không phân công ai. Chỉ Admin/Trưởng phòng mới có quyền gán việc cho nhân viên.</div>
+                                </Radio>
+                                <Radio value="C">
+                                    <span className="font-medium text-slate-700">Tự động phân công (Thông minh)</span>
+                                    <div className="text-xs text-slate-500">Hệ thống tự động tìm nhân viên đang Online và rảnh việc nhất trong ngày để gán ngay lập tức.</div>
+                                </Radio>
+                            </Radio.Group>
+                            <Button type="primary" onClick={handleSaveGeneralConfig} className="w-fit mt-2">Lưu cấu hình</Button>
+                        </div>
+                    </Card>
+
                     <Card size="small" title="Giới hạn ảnh đính kèm" className="border border-slate-200">
                         <div className="flex gap-2 items-center">
                             <InputNumber 
@@ -250,7 +274,7 @@ export default function ITConfigPage() {
                                 onChange={val => setMaxImageSizeMB(val || 10)} 
                             />
                             <span className="text-slate-500 font-medium">MB</span>
-                            <Button type="primary" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
+                            <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Dung lượng tối đa (MB) cho mỗi ảnh khi tải lên. Khuyến nghị 10MB để tránh treo trình duyệt. Hệ thống sẽ tự nén lại sau khi chọn.</div>
                     </Card>

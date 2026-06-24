@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TicketHeader } from './components/TicketHeader';
 import { TicketTable } from './components/TicketTable';
 import { TicketActionModal } from './components/TicketActionModal';
+import { EditTicketModal } from './components/EditTicketModal';
 import { useITMasterData } from './hooks/useITMasterData';
 import { useTickets } from './hooks/useTickets';
 import { Ticket } from './types';
@@ -18,6 +19,7 @@ export default function ITRequestsPage() {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'CNTT';
 
     const [isActionModalVisible, setIsActionModalVisible] = useState(false);
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('MINE');
     const [togglingAvailability, setTogglingAvailability] = useState(false);
@@ -111,6 +113,10 @@ export default function ITRequestsPage() {
                         setSelectedTicket(ticket);
                         setIsActionModalVisible(true);
                     }}
+                    onEditClick={(ticket) => {
+                        setSelectedTicket(ticket);
+                        setIsEditModalVisible(true);
+                    }}
                 />
             </Card>
 
@@ -121,6 +127,16 @@ export default function ITRequestsPage() {
                 user={user}
                 onCancel={() => setIsActionModalVisible(false)}
                 onOk={(values) => handleUpdateTicket(values, selectedTicket, () => setIsActionModalVisible(false))}
+            />
+
+            <EditTicketModal
+                visible={isEditModalVisible}
+                ticket={selectedTicket}
+                onCancel={() => setIsEditModalVisible(false)}
+                onSuccess={() => {
+                    setIsEditModalVisible(false);
+                    fetchTickets();
+                }}
             />
         </div>
     );

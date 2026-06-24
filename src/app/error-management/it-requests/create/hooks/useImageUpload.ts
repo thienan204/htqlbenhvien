@@ -105,6 +105,7 @@ export function useImageUpload(maxImageSizeMB: number) {
 
     return {
         fileList,
+        setFileList,
         previewOpen,
         previewImage,
         setPreviewOpen,

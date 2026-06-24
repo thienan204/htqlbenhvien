@@ -318,7 +318,7 @@ export async function PUT(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { id, status, it_note, assigneeId, transferToId, action } = body;
+        const { id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields } = body;
 
         if (!id) return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
 
@@ -331,6 +331,28 @@ export async function PUT(request: Request) {
         }
 
         const isManager = (user as any).isManager || user.role === 'ADMIN';
+
+        if (action === 'EDIT_REQUEST') {
+            if (ticket.status !== 'PENDING') {
+                return NextResponse.json({ error: 'Chỉ có thể sửa yêu cầu khi đang ở trạng thái Chờ xử lý' }, { status: 400 });
+            }
+            
+            // Hợp nhất dynamicFields cũ và mới để giữ lại 'Hình ảnh đính kèm' nếu có
+            const mergedDynamicFields = {
+                ...(ticket.dynamicFields as any || {}),
+                ...(dynamicFields || {})
+            };
+
+            const updated = await prisma.iTRequest.update({
+                where: { id },
+                data: {
+                    ten_loi: ten_loi || ticket.ten_loi,
+                    category: category || ticket.category,
+                    dynamicFields: mergedDynamicFields
+                }
+            });
+            return NextResponse.json(updated);
+        }
 
         if (action === 'ACCEPT_TRANSFER') {
             const updated = await prisma.iTRequest.update({

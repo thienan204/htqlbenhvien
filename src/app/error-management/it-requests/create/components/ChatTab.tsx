@@ -166,6 +166,7 @@ export function ChatTab({
                             className="min-w-[150px]"
                             placeholder="Chọn tên nhân viên"
                             variant="borderless"
+                            virtual={false}
                             options={departmentStaff.map((s: any) => ({
                                 value: s.id,
                                 label: s.ho_ten

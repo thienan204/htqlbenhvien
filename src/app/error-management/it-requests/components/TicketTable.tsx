@@ -15,6 +15,7 @@ interface TicketTableProps {
     onFetchTickets: () => void;
     onDeleteTicket: (id: string) => void;
     onProcessClick: (ticket: Ticket) => void;
+    onEditClick?: (ticket: Ticket) => void;
 }
 
 export const TicketTable: React.FC<TicketTableProps> = ({
@@ -26,7 +27,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     assignmentMode,
     onFetchTickets,
     onDeleteTicket,
-    onProcessClick
+    onProcessClick,
+    onEditClick
 }) => {
     
     const handleReceiveTicket = async (id: string) => {
@@ -211,22 +213,34 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         )}
 
                         {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && (
-                            <Popconfirm 
-                                title="Xóa yêu cầu?" 
-                                description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
-                                onConfirm={() => onDeleteTicket(record.id)}
-                                disabled={record.status !== 'PENDING'}
-                                okText="Xóa"
-                                cancelText="Hủy"
-                            >
-                                <Button 
-                                    size="small" 
-                                    danger 
-                                    icon={<DeleteOutlined />} 
+                            <Space size="small">
+                                {record.status === 'PENDING' && onEditClick && (
+                                    <Button 
+                                        size="small" 
+                                        type="primary" 
+                                        className="bg-blue-600 hover:bg-blue-500"
+                                        onClick={() => onEditClick(record)}
+                                    >
+                                        Sửa
+                                    </Button>
+                                )}
+                                <Popconfirm 
+                                    title="Xóa yêu cầu?" 
+                                    description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
+                                    onConfirm={() => onDeleteTicket(record.id)}
                                     disabled={record.status !== 'PENDING'}
-                                    title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : ''}
-                                />
-                            </Popconfirm>
+                                    okText="Xóa"
+                                    cancelText="Hủy"
+                                >
+                                    <Button 
+                                        size="small" 
+                                        danger 
+                                        icon={<DeleteOutlined />} 
+                                        disabled={record.status !== 'PENDING'}
+                                        title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : ''}
+                                    />
+                                </Popconfirm>
+                            </Space>
                         )}
                     </Space>
                 );
