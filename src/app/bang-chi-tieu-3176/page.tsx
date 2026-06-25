@@ -33,10 +33,10 @@ export default function BangChiTieuPage() {
             key: 'kieuDuLieu',
             width: 100,
             render: (text, record) => (
-                <Space direction="vertical" size={0}>
+                <div className="flex flex-col">
                     <Text>{text}</Text>
                     {record.kichThuocToiDa && <Text type="secondary" className="text-xs">Max: {record.kichThuocToiDa}</Text>}
-                </Space>
+                </div>
             )
         },
         {
