@@ -545,7 +545,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                                 <Select onChange={() => {
                                                     // Reset field when type changes
                                                     const currentFields = form.getFieldsValue();
-                                                    if (currentFields.field && !XML_FIELDS[currentFields.xmlType]?.includes(currentFields.field)) {
+                                                    const fieldsList = dynamicXmlFields[currentFields.xmlType] || [];
+                                                    if (currentFields.field && !fieldsList.includes(currentFields.field)) {
                                                         form.setFieldsValue({ field: '' });
                                                     }
                                                 }}>
@@ -557,7 +558,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                             <Form.Item shouldUpdate={(prev, curr) => prev.xmlType !== curr.xmlType} style={{ marginBottom: 12 }}>
                                                 {() => {
                                                     const type = form.getFieldValue('xmlType') || 'XML1';
-                                                    const fields = XML_FIELDS[type] || [];
+                                                    const fields = dynamicXmlFields[type] || [];
                                                     return (
                                                         <Form.Item name="field" label="Trường dữ liệu" style={{ marginBottom: 0 }}>
                                                             <AutoComplete
