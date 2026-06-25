@@ -38,13 +38,9 @@ const XML_TYPE_LABELS: Record<string, string> = {
     'XML15': 'XML15_LAO'
 };
 
-import { xmlDictionaryData } from '@/data/xml-dictionary';
+import { getBasePath } from '@/utils/config';
 
-const XML_FIELDS: Record<string, string[]> = Object.keys(xmlDictionaryData).reduce((acc, key) => {
-    acc[key] = xmlDictionaryData[key].map(item => item.chiTieu);
-    return acc;
-}, {} as Record<string, string[]>);
-
+// XML_FIELDS will be fetched dynamically, not statically.
 const XML_TYPES = Array.from({ length: 15 }, (_, i) => `XML${i + 1}`);
 
 export default function RuleSettings({ isOpen, onClose, rules: initialRules, onSave, sampleRecords, isModal = true, masterData = {} }: RuleSettingsProps) {
@@ -56,10 +52,30 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
     const [form] = Form.useForm();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isGuideModalVisible, setIsGuideModalVisible] = useState(false);
+    const [dynamicXmlFields, setDynamicXmlFields] = useState<Record<string, string[]>>({});
 
     useEffect(() => {
         setRules(initialRules);
     }, [initialRules]);
+
+    useEffect(() => {
+        const fetchDictionary = async () => {
+            try {
+                const res = await fetch(`${getBasePath()}/api/xml-dictionary`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const fieldsMap: Record<string, string[]> = {};
+                    Object.keys(data).forEach(key => {
+                        fieldsMap[key] = data[key].map((item: any) => item.chiTieu);
+                    });
+                    setDynamicXmlFields(fieldsMap);
+                }
+            } catch (err) {
+                console.error("Failed to load dictionary fields", err);
+            }
+        };
+        fetchDictionary();
+    }, []);
 
     useEffect(() => {
         if (isEditModalOpen && editingRule) {
@@ -761,7 +777,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                             <Select onChange={() => {
                                                 // Reset field when type changes
                                                 const currentFields = form.getFieldsValue();
-                                                if (currentFields.field && !XML_FIELDS[currentFields.xmlType]?.includes(currentFields.field)) {
+                                                const fieldsList = dynamicXmlFields[currentFields.xmlType] || [];
+                                                if (currentFields.field && !fieldsList.includes(currentFields.field)) {
                                                     form.setFieldsValue({ field: '' });
                                                 }
                                             }}>
@@ -773,7 +790,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                         <Form.Item shouldUpdate={(prev, curr) => prev.xmlType !== curr.xmlType} style={{ marginBottom: 12 }}>
                                             {() => {
                                                 const type = form.getFieldValue('xmlType') || 'XML1';
-                                                const fields = XML_FIELDS[type] || [];
+                                                const fields = dynamicXmlFields[type] || [];
                                                 return (
                                                     <Form.Item name="field" label="Trường dữ liệu" style={{ marginBottom: 0 }}>
                                                         <AutoComplete

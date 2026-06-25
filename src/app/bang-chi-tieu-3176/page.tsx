@@ -1,17 +1,123 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Tabs, Table, Tag, Typography, Card, Space, Input } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Tabs, Table, Tag, Typography, Card, Space, Input, Button, Modal, Form, Select, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, BookOutlined } from '@ant-design/icons';
-import { xmlDictionaryData, XmlDictionaryItem } from '@/data/xml-dictionary';
+import { SearchOutlined, BookOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 
 const { Text, Paragraph } = Typography;
+const { Option } = Select;
+const { TextArea } = Input;
+
+export interface XmlDictionaryItem {
+    stt: number;
+    chiTieu: string;
+    kieuDuLieu: string;
+    kichThuocToiDa: string;
+    dienGiai130: string;
+    dinhChinh4750: string;
+    dieuChinh: string;
+}
 
 export default function BangChiTieuPage() {
     const [searchText, setSearchText] = useState('');
+    const [data, setData] = useState<Record<string, XmlDictionaryItem[]>>({});
+    const [loading, setLoading] = useState(true);
+    
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingXmlType, setEditingXmlType] = useState<string>('XML1');
+    const [editingItem, setEditingItem] = useState<XmlDictionaryItem | null>(null);
+    const [form] = Form.useForm();
 
-    const columns: ColumnsType<XmlDictionaryItem> = [
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/xml-dictionary');
+            if (res.ok) {
+                const json = await res.json();
+                setData(json);
+            }
+        } catch (error) {
+            message.error('Không thể tải dữ liệu từ điển.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleAdd = (xmlType: string) => {
+        setEditingXmlType(xmlType);
+        setEditingItem(null);
+        form.resetFields();
+        form.setFieldsValue({
+            stt: (data[xmlType]?.length || 0) + 1,
+            kieuDuLieu: 'Chuỗi',
+            kichThuocToiDa: '',
+            dienGiai130: '',
+            dinhChinh4750: '',
+            dieuChinh: ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (xmlType: string, record: XmlDictionaryItem) => {
+        setEditingXmlType(xmlType);
+        setEditingItem(record);
+        form.setFieldsValue(record);
+        setIsModalOpen(true);
+    };
+
+    const handleSave = async () => {
+        try {
+            const values = await form.validateFields();
+            
+            const newData = { ...data };
+            if (!newData[editingXmlType]) {
+                newData[editingXmlType] = [];
+            }
+
+            if (editingItem) {
+                // Update
+                newData[editingXmlType] = newData[editingXmlType].map(item => 
+                    item.chiTieu === editingItem.chiTieu ? { ...values, stt: Number(values.stt) } : item
+                );
+            } else {
+                // Add
+                // Check if chiTieu already exists
+                if (newData[editingXmlType].some(item => item.chiTieu === values.chiTieu)) {
+                    message.error(`Trường ${values.chiTieu} đã tồn tại trong ${editingXmlType}!`);
+                    return;
+                }
+                newData[editingXmlType].push({ ...values, stt: Number(values.stt) });
+            }
+
+            // Sort by STT
+            newData[editingXmlType].sort((a, b) => a.stt - b.stt);
+
+            // Save to server
+            const res = await fetch('/api/xml-dictionary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newData)
+            });
+
+            if (res.ok) {
+                setData(newData);
+                message.success('Đã lưu thành công!');
+                setIsModalOpen(false);
+            } else {
+                message.error('Lỗi khi lưu dữ liệu.');
+            }
+        } catch (error) {
+            console.error('Validation Failed:', error);
+        }
+    };
+
+    const columns = (xmlType: string): ColumnsType<XmlDictionaryItem> => [
         {
             title: 'STT',
             dataIndex: 'stt',
@@ -72,15 +178,28 @@ export default function BangChiTieuPage() {
                 if (text.toLowerCase().includes('xóa')) return <Tag color="red" className="font-bold">{text}</Tag>;
                 return <Tag color="blue">{text}</Tag>;
             }
+        },
+        {
+            title: 'Hành động',
+            key: 'action',
+            width: 80,
+            align: 'center',
+            render: (_, record) => (
+                <Button 
+                    type="text" 
+                    icon={<EditOutlined className="text-blue-500" />} 
+                    onClick={() => handleEdit(xmlType, record)} 
+                />
+            )
         }
     ];
 
-    const tabItems = Object.keys(xmlDictionaryData).map(xmlType => {
-        const data = xmlDictionaryData[xmlType];
+    const tabItems = Object.keys(data).map(xmlType => {
+        const xmlData = data[xmlType] || [];
         
-        const filteredData = data.filter(item => 
+        const filteredData = xmlData.filter(item => 
             item.chiTieu.toLowerCase().includes(searchText.toLowerCase()) ||
-            item.dienGiai130.toLowerCase().includes(searchText.toLowerCase())
+            (item.dienGiai130 && item.dienGiai130.toLowerCase().includes(searchText.toLowerCase()))
         );
 
         return {
@@ -88,15 +207,25 @@ export default function BangChiTieuPage() {
             label: xmlType,
             children: (
                 <div className="bg-white rounded-b-xl border border-t-0 border-slate-200 p-4">
+                    <div className="mb-4 flex justify-end">
+                        <Button 
+                            type="primary" 
+                            icon={<PlusOutlined />} 
+                            onClick={() => handleAdd(xmlType)}
+                        >
+                            Thêm chỉ tiêu {xmlType}
+                        </Button>
+                    </div>
                     <Table
-                        columns={columns}
+                        columns={columns(xmlType)}
                         dataSource={filteredData}
                         rowKey="chiTieu"
                         pagination={false}
                         bordered
                         size="small"
+                        loading={loading}
                         rowClassName={(record, index) => index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}
-                        scroll={{ y: 'calc(100vh - 280px)', x: 'max-content' }}
+                        scroll={{ y: 'calc(100vh - 330px)', x: 'max-content' }}
                     />
                 </div>
             )
@@ -136,6 +265,52 @@ export default function BangChiTieuPage() {
                     tabBarStyle={{ marginBottom: 0 }}
                 />
             </div>
+
+            <Modal
+                title={editingItem ? `Chỉnh sửa ${editingItem.chiTieu} (${editingXmlType})` : `Thêm mới chỉ tiêu (${editingXmlType})`}
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                onOk={handleSave}
+                width={800}
+                okText="Lưu lại"
+                cancelText="Hủy bỏ"
+            >
+                <Form form={form} layout="vertical" className="mt-4">
+                    <div className="grid grid-cols-4 gap-4">
+                        <Form.Item name="stt" label="STT" rules={[{ required: true }]}>
+                            <Input type="number" />
+                        </Form.Item>
+                        <Form.Item name="chiTieu" label="Tên Trường (Chỉ tiêu)" rules={[{ required: true }]} className="col-span-3">
+                            <Input disabled={!!editingItem} placeholder="VD: MA_LK" />
+                        </Form.Item>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Form.Item name="kieuDuLieu" label="Kiểu dữ liệu" rules={[{ required: true }]}>
+                            <Select>
+                                <Option value="Chuỗi">Chuỗi</Option>
+                                <Option value="Số">Số</Option>
+                                <Option value="Ngày tháng">Ngày tháng</Option>
+                            </Select>
+                        </Form.Item>
+                        <Form.Item name="kichThuocToiDa" label="Kích thước tối đa">
+                            <Input placeholder="VD: 100" />
+                        </Form.Item>
+                    </div>
+                    <Form.Item name="dienGiai130" label="Diễn giải theo QĐ 130/4750">
+                        <TextArea rows={4} placeholder="Nhập diễn giải chi tiết..." />
+                    </Form.Item>
+                    <Form.Item name="dinhChinh4750" label="Đính chính theo QĐ 3176">
+                        <TextArea rows={2} placeholder="Nội dung thay đổi (nếu có)..." />
+                    </Form.Item>
+                    <Form.Item name="dieuChinh" label="Điều chỉnh (Ghi chú)">
+                        <Select allowClear placeholder="Chọn trạng thái">
+                            <Option value="Mới">Mới</Option>
+                            <Option value="Sửa đổi">Sửa đổi</Option>
+                            <Option value="Bãi bỏ">Bãi bỏ</Option>
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
 
             <style jsx global>{`
                 .custom-tabs .ant-tabs-nav {
