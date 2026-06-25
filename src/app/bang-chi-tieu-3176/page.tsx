@@ -119,6 +119,19 @@ export default function BangChiTieuPage() {
 
     const columns = (xmlType: string): ColumnsType<XmlDictionaryItem> => [
         {
+            title: 'Hành động',
+            key: 'action',
+            width: 80,
+            align: 'center',
+            render: (_, record) => (
+                <Button 
+                    type="text" 
+                    icon={<EditOutlined className="text-blue-500" />} 
+                    onClick={() => handleEdit(xmlType, record)} 
+                />
+            )
+        },
+        {
             title: 'STT',
             dataIndex: 'stt',
             key: 'stt',
@@ -178,19 +191,6 @@ export default function BangChiTieuPage() {
                 if (text.toLowerCase().includes('xóa')) return <Tag color="red" className="font-bold">{text}</Tag>;
                 return <Tag color="blue">{text}</Tag>;
             }
-        },
-        {
-            title: 'Hành động',
-            key: 'action',
-            width: 80,
-            align: 'center',
-            render: (_, record) => (
-                <Button 
-                    type="text" 
-                    icon={<EditOutlined className="text-blue-500" />} 
-                    onClick={() => handleEdit(xmlType, record)} 
-                />
-            )
         }
     ];
 
