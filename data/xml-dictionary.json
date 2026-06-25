@@ -1,0 +1,2080 @@
+{
+  "XML1": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "100",
+      "dienGiai130": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY)).",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "STT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "10",
+      "dienGiai130": "Là số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu.",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_BN",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "100",
+      "dienGiai130": "Là mã người bệnh theo quy định của cơ sở KBCB",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "HO_TEN",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "255",
+      "dienGiai130": "Là họ và tên của người bệnh.\n- Lưu ý: Trường hợp trẻ sau khi sinh ra được hưởng quyền lợi BHYT theo quy định của Luật BHYT nhưng chưa được cơ quan BHXH cấp thẻ BHYT do chưa làm thủ tục cấp giấy khai sinh thì cơ sở KBCB thực hiện ghi họ và tên của trẻ theo quy định tại điểm b khoản 1 Điều 10 Thông tư số 30/2020/TT-BYT ngày 31 tháng 12 năm 2020 của Bộ trưởng Bộ Y tế quy định chi tiết và hướng dẫn biện pháp thi hành một số điều của Luật BHYT, cụ thể:\n+ Nếu trẻ sơ sinh có mẹ hoặc cha (bố): ghi theo họ và tên của mẹ hoặc của cha (bố);\n+ Nếu trẻ sơ sinh không có mẹ hoặc cha (bố) nhưng có người giám hộ: ghi theo họ và tên của người giám hộ;\n+ Nếu trẻ sơ sinh không có người nhận hoặc bỏ rơi tại cơ sở khám bệnh, chữa bệnh: ghi theo họ và tên của người ghi trong biên bản bàn giao.",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "NGAY_SINH",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "12",
+      "dienGiai130": "Ngày sinh",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "GIOI_TINH",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "1",
+      "dienGiai130": "Giới tính",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "DIA_CHI",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "1024",
+      "dienGiai130": "Địa chỉ",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "MA_THE",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Mã thẻ",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "MA_THE_BHYT",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Mã thẻ BHYT",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "MA_DKBD",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "5",
+      "dienGiai130": "Ghi mã cơ sở KBCB nơi người bệnh đăng ký ban đầu ghi trên thẻ BHYT, gồm có 05 ký tự. Lưu ý đối với một số trường hợp sau:- Trường hợp người bệnh chưa có thẻ BHYT nhưng được cơ quan BHXH cấp mã thẻ tạm thời: Ghi theo 02 ký tự cuối của mã đơn vị hành chính của tỉnh, thành phố trực thuộc Trung ương nơi người bệnh cư trú (Quy định tại Phụ lục 1 Thông tư số 07/2016/TT-BCA ngày 01 tháng 2 năm 2016 của Bộ trưởng Bộ Công an) + 000. Ví dụ: Hà Nội thì ghi là 01000.- Riêng đối với trẻ em hoặc người đã hiến bộ phận cơ thể người thì thực hiện theo quy định tại Điều 10 Thông tư số 30/2020/TT-BYT;- Trường hợp người bệnh không KBCB BHYT thì để trống trường thông tin này.",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "GT_THE_TU",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "8",
+      "dienGiai130": "Ghi thời điểm thẻ BHYT bắt đầu có giá trị sử dụng, gồm 08 ký tự, bao gồm: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày.\nLưu ý đối với một số trường hợp sau:\n- Trường hợp người bệnh KBCB BHYT nhưng chưa có thẻ BHYT: Thay thời điểm thẻ BHYT có giá trị bằng thời gian người bệnh vào cơ sở KBCB (gồm 08 ký tự, bao gồm: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày);\n- Trường hợp thẻ BHYT các đối tượng có mã QN, HC, LS, XK, CY, CA do BHXH Bộ Quốc phòng, BHXH Bộ Công an cấp mà không tra cứu được thì ghi thời điểm thẻ có giá trị sử dụng ghi trên thẻ giấy;\n- Trường hợp người bệnh không KBCB BHYT thì để trống trường thông tin này.",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "GT_THE_DEN",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "8",
+      "dienGiai130": "Ghi thời điểm thẻ BHYT hết giá trị sử dụng",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 13,
+      "chiTieu": "MIEN_CUNG_CT",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "8",
+      "dienGiai130": "Miễn cùng chi trả",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 14,
+      "chiTieu": "TEN_BENH",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "2000",
+      "dienGiai130": "Tên bệnh",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 15,
+      "chiTieu": "MA_BENH",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "7",
+      "dienGiai130": "Mã bệnh",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 16,
+      "chiTieu": "MA_BENHKHAC",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "255",
+      "dienGiai130": "Mã bệnh khác",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 17,
+      "chiTieu": "MA_LYDO_VVIEN",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "1",
+      "dienGiai130": "Lý do vào viện",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 18,
+      "chiTieu": "MA_NOI_CHUYEN",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "5",
+      "dienGiai130": "Mã nơi chuyển",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 19,
+      "chiTieu": "MA_TAI_NAN",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "1",
+      "dienGiai130": "Mã tai nạn",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 20,
+      "chiTieu": "NGAY_VAO",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "12",
+      "dienGiai130": "Ngày vào",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 21,
+      "chiTieu": "NGAY_RA",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "12",
+      "dienGiai130": "Ngày ra",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 22,
+      "chiTieu": "SO_NGAY_DTRI",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "4",
+      "dienGiai130": "Số ngày điều trị",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 23,
+      "chiTieu": "KET_QUA_DTRI",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "1",
+      "dienGiai130": "Kết quả điều trị",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 24,
+      "chiTieu": "TINH_TRANG_RV",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "1",
+      "dienGiai130": "Tình trạng ra viện",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 25,
+      "chiTieu": "NGAY_TTOAN",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "12",
+      "dienGiai130": "Ngày thanh toán",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 26,
+      "chiTieu": "T_TONGCHI",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tổng chi",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 27,
+      "chiTieu": "T_XETNGHIEM",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền xét nghiệm",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 28,
+      "chiTieu": "T_CDHA",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền CĐHA",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 29,
+      "chiTieu": "T_THUOC",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền thuốc",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 30,
+      "chiTieu": "T_MAU",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền máu",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 31,
+      "chiTieu": "T_PTTT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền PTTT",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 32,
+      "chiTieu": "T_VTYT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền VTYT",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 33,
+      "chiTieu": "T_DVKT_TYLE",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền DVKT tỷ lệ",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 34,
+      "chiTieu": "T_THUOC_TYLE",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền thuốc tỷ lệ",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 35,
+      "chiTieu": "T_VTYT_TYLE",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền VTYT tỷ lệ",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 36,
+      "chiTieu": "T_KHAM",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền khám",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 37,
+      "chiTieu": "T_GIUONG",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền giường",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 38,
+      "chiTieu": "T_VCHUYEN",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Tiền vận chuyển",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 39,
+      "chiTieu": "T_BNTT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Bệnh nhân thanh toán",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 40,
+      "chiTieu": "T_BHTT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Bảo hiểm thanh toán",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 41,
+      "chiTieu": "T_NGUONKHAC",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Nguồn khác",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 42,
+      "chiTieu": "T_NGOAIDS",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Ngoài định suất",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 43,
+      "chiTieu": "NAM_QT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "4",
+      "dienGiai130": "Năm quyết toán",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 44,
+      "chiTieu": "THANG_QT",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "2",
+      "dienGiai130": "Tháng quyết toán",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 45,
+      "chiTieu": "MA_LOAI_KCB",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "1",
+      "dienGiai130": "Mã loại KCB",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 46,
+      "chiTieu": "MA_KHOA",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Mã khoa",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 47,
+      "chiTieu": "MA_CSKCB",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "5",
+      "dienGiai130": "Mã cơ sở KCB",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 48,
+      "chiTieu": "MA_KHUVUC",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "2",
+      "dienGiai130": "Mã khu vực",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 49,
+      "chiTieu": "MA_PTTT_QT",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "5",
+      "dienGiai130": "Mã PTTT quyết toán",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 50,
+      "chiTieu": "CAN_NANG",
+      "kieuDuLieu": "Số",
+      "kichThuocToiDa": "5",
+      "dienGiai130": "Cân nặng",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 51,
+      "chiTieu": "MA_TTDV",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "15",
+      "dienGiai130": "Mã TTDV",
+      "dinhChinh4750": "",
+      "dieuChinh": "Mới"
+    }
+  ],
+  "XML2": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "STT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_THUOC",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "MA_NHOM",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "TEN_THUOC",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "DON_VI_TINH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "HAM_LUONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "DUONG_DUNG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "LIEU_DUNG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "SO_DANG_KY",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "TT_THAU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "PHAM_VI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 13,
+      "chiTieu": "TY_LE_TT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 14,
+      "chiTieu": "SO_LUONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 15,
+      "chiTieu": "DON_GIA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 16,
+      "chiTieu": "THANH_TIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 17,
+      "chiTieu": "MUC_HUONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 18,
+      "chiTieu": "T_NGUONKHAC",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 19,
+      "chiTieu": "T_BNTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 20,
+      "chiTieu": "T_BHTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 21,
+      "chiTieu": "T_BNCCT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 22,
+      "chiTieu": "T_NGOAIDS",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 23,
+      "chiTieu": "MA_KHOA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 24,
+      "chiTieu": "MA_BAC_SI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 25,
+      "chiTieu": "MA_BENH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 26,
+      "chiTieu": "NGAY_YL",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 27,
+      "chiTieu": "NGAY_KQ",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 28,
+      "chiTieu": "MA_PTTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML3": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "STT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_DICH_VU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "MA_VAT_TU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "MA_NHOM",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "GOI_VTYT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "TEN_VAT_TU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "TEN_DICH_VU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "DON_VI_TINH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "PHAM_VI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "SO_LUONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "DON_GIA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 13,
+      "chiTieu": "DON_GIA_BH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 14,
+      "chiTieu": "TT_THAU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 15,
+      "chiTieu": "TY_LE_TT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 16,
+      "chiTieu": "TYLE_TT_BH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 17,
+      "chiTieu": "TYLE_TT_DV",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 18,
+      "chiTieu": "THANH_TIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 19,
+      "chiTieu": "THANH_TIEN_BH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 20,
+      "chiTieu": "THANH_TIEN_BV",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 21,
+      "chiTieu": "T_TRANTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 22,
+      "chiTieu": "MUC_HUONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 23,
+      "chiTieu": "T_NGUONKHAC",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 24,
+      "chiTieu": "T_BNTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 25,
+      "chiTieu": "T_BHTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 26,
+      "chiTieu": "T_BNCCT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 27,
+      "chiTieu": "T_NGOAIDS",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 28,
+      "chiTieu": "MA_KHOA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 29,
+      "chiTieu": "MA_GIUONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 30,
+      "chiTieu": "MA_BAC_SI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 31,
+      "chiTieu": "MA_BENH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 32,
+      "chiTieu": "NGAY_YL",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 33,
+      "chiTieu": "NGAY_TH_YL",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 34,
+      "chiTieu": "NGAY_KQ",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 35,
+      "chiTieu": "MA_PTTT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 36,
+      "chiTieu": "MA_MAY",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 37,
+      "chiTieu": "NGUOI_THUC_HIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML4": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "STT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_DICH_VU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "MA_CHI_SO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "TEN_CHI_SO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "GIA_TRI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "DON_VI_DO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "MO_TA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "KET_LUAN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "NGAY_KQ",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "MA_BS_DOC_KQ",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "NGUOI_THUC_HIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML5": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "STT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "DIEN_BIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "HOI_CHAN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "PHAU_THUAT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "NGAY_YL",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "NGUOI_THUC_HIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML6": [],
+  "XML7": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "SO_LUU_TRU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_YTE",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "MA_KHOA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "NGAY_VAO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "NGAY_RA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "MA_BENH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "CHAN_DOAN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "PP_DIEU_TRI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "LOI_DAN_BS",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "GHI_CHU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "MA_TTDV",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 13,
+      "chiTieu": "NGAY_CT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 14,
+      "chiTieu": "MA_THE_TAM",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 15,
+      "chiTieu": "HO_TEN_CHA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 16,
+      "chiTieu": "HO_TEN_ME",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 17,
+      "chiTieu": "NGUOI_GIAM_HO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 18,
+      "chiTieu": "MA_BS",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML8": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "MA_LOAI_KCB",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "HO_TEN_CHA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "HO_TEN_ME",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "NGUOI_GIAM_HO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "DON_VI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "NGAY_VAO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "NGAY_RA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "CHAN_DOAN_VAO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "CHAN_DOAN_RV",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "QT_BENHLY",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "TOMTAT_KQ",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 13,
+      "chiTieu": "PP_DIEUTRI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 14,
+      "chiTieu": "NGAY_SINHCON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 15,
+      "chiTieu": "NGAY_CONCHET",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 16,
+      "chiTieu": "SO_CONCHET",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 17,
+      "chiTieu": "KET_QUA_DTRI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 18,
+      "chiTieu": "GHI_CHU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 19,
+      "chiTieu": "MA_TTDV",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 20,
+      "chiTieu": "NGAY_CT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 21,
+      "chiTieu": "MA_THE_TAM",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 22,
+      "chiTieu": "DU_PHONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML9": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "MA_BHXH_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_THE_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "HO_TEN_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "NGAYSINH_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "MA_DANTOC_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "SO_CCCD_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "NGAYCAP_CCCD_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "NOICAP_CCCD_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "NOI_CU_TRU_NND",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "MA_QUOCTICH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "MATINH_CU_TRU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 13,
+      "chiTieu": "MAXA_CU_TRU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 14,
+      "chiTieu": "HO_TEN_CHA",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 15,
+      "chiTieu": "MA_THE_TAM",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 16,
+      "chiTieu": "HO_TEN_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 17,
+      "chiTieu": "GIOI_TINH_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 18,
+      "chiTieu": "SO_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 19,
+      "chiTieu": "LAN_SINH",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 20,
+      "chiTieu": "SO_CON_SONG",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 21,
+      "chiTieu": "CAN_NANG_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 22,
+      "chiTieu": "NGAY_SINH_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 23,
+      "chiTieu": "NOI_SINH_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 24,
+      "chiTieu": "TINH_TRANG_CON",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 25,
+      "chiTieu": "SINHCON_PHAUTHUAT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 26,
+      "chiTieu": "SINHCON_DUOI32TUAN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 27,
+      "chiTieu": "GHI_CHU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 28,
+      "chiTieu": "NGUOI_DO_DE",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 29,
+      "chiTieu": "NGAY_CT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 30,
+      "chiTieu": "SO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 31,
+      "chiTieu": "QUYEN_SO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 32,
+      "chiTieu": "NGUOI_GHI_PHIEU",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML10": [],
+  "XML11": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "S0_SERI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "SO_CT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "NGAY_CT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "MA_NHOM",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "MA_DV",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 7,
+      "chiTieu": "THANH_TIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 8,
+      "chiTieu": "THUE_SUAT",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 9,
+      "chiTieu": "TIEN_THUE",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 10,
+      "chiTieu": "TONG_TIEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 11,
+      "chiTieu": "TY_LE",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 12,
+      "chiTieu": "MA_TIEU_CHI",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML12": [],
+  "XML13": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "SO_HO_SO",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "MA_TTHC",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 4,
+      "chiTieu": "MA_DOI_TUONG_KCB",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 5,
+      "chiTieu": "NGAY_KY",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 6,
+      "chiTieu": "NGUOI_KY",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML14": [
+    {
+      "stt": 1,
+      "chiTieu": "MA_LK",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 2,
+      "chiTieu": "SO_GIAY_HEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    },
+    {
+      "stt": 3,
+      "chiTieu": "NGAY_HEN",
+      "kieuDuLieu": "",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
+    }
+  ],
+  "XML15": []
+}
