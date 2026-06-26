@@ -1,5 +1,12 @@
 [
   {
+    "ma_khoa": "CNTT",
+    "ten_khoa": "Phòng công nghệ thông tin",
+    "type": "CLINICAL",
+    "createdAt": "2026-06-24T01:34:56.662Z",
+    "updatedAt": "2026-06-24T01:34:56.662Z"
+  },
+  {
     "ma_khoa": "K01",
     "ten_khoa": "Khoa Khám bệnh",
     "type": "CLINICAL",

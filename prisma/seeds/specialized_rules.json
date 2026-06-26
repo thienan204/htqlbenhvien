@@ -1,5 +1,31 @@
 [
   {
+    "id": "cmqqt69ug0001cgoylimnzrlz",
+    "name": "Cấu hình trường động cho IT Request",
+    "slug": "it-request-fields-config",
+    "description": "Lưu trữ các trường nhập liệu động do admin thêm vào.",
+    "isActive": true,
+    "order": 0,
+    "ruleType": "SYSTEM_CONFIG",
+    "logicConfig": {
+      "assignmentMode": "C",
+      "hardwareErrors": [
+        "Thay mực máy in",
+        "Máy tính không lên",
+        "Mất mạng internnet"
+      ],
+      "maxImageSizeMB": 10,
+      "softwareErrors": [
+        "Huỷ ký số giấy ra viện",
+        "Huỷ ký số lãnh đạo BA",
+        "Lấy lại BN"
+      ]
+    },
+    "sqlQuery": null,
+    "createdAt": "2026-06-23T15:37:52.985Z",
+    "updatedAt": "2026-06-24T08:22:52.710Z"
+  },
+  {
     "id": "cml7t7c6c0000ook5q6yqi80x",
     "name": "Trùng mã giường",
     "slug": "kiem-tra-trung-ma-giuong",
@@ -20,15 +46,14 @@
         "department": "MA_KHOA"
       },
       "filter": {
-        "MA_NHOM": 15,
-        "TYLE_TT_DV": 100
+        "MA_NHOM": 15
       },
       "toleranceMinutes": 0,
       "ignoreIfSameField": ""
     },
     "sqlQuery": null,
     "createdAt": "2026-02-04T09:12:33.636Z",
-    "updatedAt": "2026-05-08T02:31:51.863Z"
+    "updatedAt": "2026-06-24T08:01:54.040Z"
   },
   {
     "id": "cml88004h0000ksk5fz4t5o6k",

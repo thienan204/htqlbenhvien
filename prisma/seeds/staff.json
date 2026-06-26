@@ -11932,5 +11932,39 @@
     "ngay_sinh": null,
     "createdAt": "2026-03-17T08:41:26.185Z",
     "updatedAt": "2026-03-17T08:41:26.185Z"
+  },
+  {
+    "id": "cmqrehlhw0010cgoypjhtyr8q",
+    "ho_ten": "Nguyễn Thiên An",
+    "ma_bac_si": "1",
+    "so_dien_thoai": "0936607983",
+    "dia_chi": null,
+    "ma_khoa": "K01",
+    "trinh_do_id": null,
+    "chuc_danh_id": null,
+    "vi_tri_viec_lam_id": null,
+    "chuc_vu_id": null,
+    "loai_hop_dong_id": null,
+    "gioi_tinh_id": null,
+    "ngay_sinh": null,
+    "createdAt": "2026-06-24T01:34:33.231Z",
+    "updatedAt": "2026-06-24T01:34:33.231Z"
+  },
+  {
+    "id": "cmqreqxi5001acgoyjrtfql7o",
+    "ho_ten": "Nguyễn Thiện An",
+    "ma_bac_si": "CNTTAN",
+    "so_dien_thoai": "0936607983",
+    "dia_chi": null,
+    "ma_khoa": "CNTT",
+    "trinh_do_id": null,
+    "chuc_danh_id": null,
+    "vi_tri_viec_lam_id": null,
+    "chuc_vu_id": "cmqrf38u0001fcgoykto30zrj",
+    "loai_hop_dong_id": null,
+    "gioi_tinh_id": null,
+    "ngay_sinh": null,
+    "createdAt": "2026-06-24T01:41:48.701Z",
+    "updatedAt": "2026-06-24T03:56:02.089Z"
   }
 ]

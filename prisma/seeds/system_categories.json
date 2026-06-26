@@ -229,5 +229,60 @@
     "order": 0,
     "createdAt": "2026-06-14T09:01:55.462Z",
     "updatedAt": "2026-06-14T09:01:55.462Z"
+  },
+  {
+    "id": "cmqrf38u0001fcgoykto30zrj",
+    "type": "CHUC_VU",
+    "code": "TRUONG_PHONG",
+    "name": "Trưởng phòng",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-24T01:51:23.254Z",
+    "updatedAt": "2026-06-24T01:51:23.254Z"
+  },
+  {
+    "id": "cmqrf3hau001gcgoyl71fyfvt",
+    "type": "CHUC_VU",
+    "code": "PHO_TRUONG_PHONG",
+    "name": "Phó trưởng phòng",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-24T01:51:34.228Z",
+    "updatedAt": "2026-06-24T01:51:34.228Z"
+  },
+  {
+    "id": "cmqrf3z2p001icgoyfe60kc7y",
+    "type": "CHUC_VU",
+    "code": "IEU_DUONG_TRUONG",
+    "name": "Điều dưỡng trưởng",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-24T01:51:57.262Z",
+    "updatedAt": "2026-06-24T01:51:57.262Z"
+  },
+  {
+    "id": "cmqrf4a1f001jcgoy0vf8vaft",
+    "type": "CHUC_VU",
+    "code": "GIAM_OC",
+    "name": "Giám đốc",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-24T01:52:11.476Z",
+    "updatedAt": "2026-06-24T01:52:11.476Z"
+  },
+  {
+    "id": "cmqrf4lps001kcgoy8rnosfvq",
+    "type": "CHUC_VU",
+    "code": "PHO_GIAM_OC",
+    "name": "Phó giám đốc",
+    "description": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-06-24T01:52:26.607Z",
+    "updatedAt": "2026-06-24T01:52:26.607Z"
   }
 ]

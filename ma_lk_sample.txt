@@ -1,0 +1,72 @@
+ng BỘ Y tế)
+Kích
+thước
+tối đa/7Kiểu
+dữ liệu
+m 1 l MA_LK
+M
+ChuỖiSTr
+MA DICH VU2
+3Ê\t.T>:
+linh số 130/QĐ-BVTđỔi,
+' !Jíy ll lllr 11 1 EII
+-ê
+chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và
+các bảng còn lại ban hành kèm theo Quyết định này trong
+một lần khám bệnh, chữa bệnh (PRIMARY KEY:100
+m 10
+50
+giường bệnh theo hạng bệnh viện theo quy định tại Bộ mã
+DIV[DC do Bô Y tế ban hành.
+Lưu ý:
+- Vận chuyển người bệnh: Ghi VC.XXXXX, trong đó
+XXXXX là mã cơ sở KBCB nơi người bệnh được chuyển
+- Mà tiền giường theo hạng bệnh viện quy định tại Bộ mã
+DMDC do Bộ trưởng Bộ Y tế ban hành;
+- Trường hợp phải chuyển mẫu bệnh phẩm hoặc chuyển
+người bệnh đến cơ sở KBCB khác để thực hiện dịch vụ
+cận lâm sàng theo quy định của Thông tư 09/2019/TT-
+BYT thì mã hoá theo nguyên tắc:
+XX.YYYif .ZZZZ.K.\V\ViViVIV, trong đó
+ỵ:Y:ỵ、íYX .ZZZZ là mã dịch vụ cận lâm sàng tại Bộ mã
+DMDC do Bộ trưởng Bộ Y tế ban hành, XNNK\N\&\N là mã
+cơ sở KBCB nơi thực hiện dịch vụ cận lâm sàng.
+- Đối với DVKT sử dụng phương pháp vô cảm gây tê, bổ
+sung ký hiệu " GT" sau mã DVKT tương đương. Cụ thể:
+(XX.YYYY.ZEIt 673.
+- Đối với DVKT đã được cấp có thẩm quyền phê duyệt
+thực hiện nhưng chưa được quy định mức giá theo quy
+định tại khoản 3 Điều 7 Thông tư số 39/2018/TT-BVT thì
+mã hoá DVKT theo nguyên tắc mã DVKT tương đương,đếnSửa đồi, bổ sung phần Lưu
+: Trường hợp dịch vụ kỹ thuật
+có sử dụng vết tư y tế kèm
+theo: Ghi ĩnã dịch-vụ kỹ thllật
+vào trường MA DICH VU,
+ghi mã vật tư y tế vào trường
+MA VAT TU của Bảng này;
+- ĐỐi với DVKT đã được cấp
+có thẩm quyền phê duyệt thực
+hiện nhưng chưa được quy
+định mức giá theo quy định tại
+khoản 2 Điều 7 Thông tư số
+22/2023/1、T-13Yl、 thì mã hoá
+DVK’F theo nguyên tắc mã
+DVKT tương đương, 04 ký tự
+cuối ghi 「'0000" (khi đó. mã có
+cấu trúc: XX. Y YYY.0000);DON GIA BH = O:
+DON–GIA–BV = 0; các thuỐc,
+VTYĨ (thuồc phạm vi chi trả
+của quỹ Bl-IY「T) đã được sử
+dụng cho người bệnh thì cơ sở
+KBCB thống kê vào các
+TM-–
+IF
+
+Chỉ tiêuKí,h 1Kiểu
+12:i:
+;\;::「:':$1b:dữ liêu56
+Dính chính hoặc
+bổ sung
+475Nôi dung stIllđôi[11 ng
+ầiễn giii i
+XX.YYYY.0000);

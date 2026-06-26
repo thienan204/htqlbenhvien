@@ -26,6 +26,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
+    "react-resizable": "^4.0.2",
     "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1",
     "xlsx": "^0.18.5"
@@ -37,6 +38,7 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-resizable": "^3.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "prisma": "^5.22.0",

@@ -32,9 +32,9 @@
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
-    "ignoreIfSameField": "MAHOSOBENHAN",
+    "ignoreIfSameField": null,
     "createdAt": "2026-02-05T03:24:08.713Z",
-    "updatedAt": "2026-03-25T13:30:33.538Z"
+    "updatedAt": "2026-06-26T15:14:36.001Z"
   },
   {
     "id": "cmnjssa3s0002d8dt8ha1ul07",
@@ -53,5 +53,24 @@
     "ignoreIfSameField": null,
     "createdAt": "2026-04-04T03:53:29.894Z",
     "updatedAt": "2026-04-04T03:54:20.084Z"
+  },
+  {
+    "id": "cmqv2u1ad0000t21yd2tb36h9",
+    "name": "Kiêm tra trung giường mẫu 2",
+    "machineCols": [
+      "MAGIUONG1",
+      "KHOAKHAM"
+    ],
+    "serviceCol": null,
+    "startCol": "NGAYCHIDINH",
+    "endCol": "NGAYKETTHUC",
+    "ignoreMaMayMinusOne": true,
+    "ignoreNullValues": false,
+    "active": true,
+    "serviceValues": [],
+    "excludedServiceValues": [],
+    "ignoreIfSameField": null,
+    "createdAt": "2026-06-26T15:19:22.884Z",
+    "updatedAt": "2026-06-26T15:19:22.884Z"
   }
 ]

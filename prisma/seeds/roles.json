@@ -85,13 +85,13 @@
       "MENU_ERROR_REQUESTS": {
         "EDIT": true,
         "VIEW": true,
-        "DELETE": false
+        "DELETE": true
       },
       "MENU_IMAGE_MANAGEMENT": {},
       "MENU_SPECIALIZED_RULES": {}
     },
     "createdAt": "2026-06-07T03:15:57.440Z",
-    "updatedAt": "2026-06-19T03:13:18.902Z"
+    "updatedAt": "2026-06-23T15:51:42.942Z"
   },
   {
     "id": "cmq8ur03f0001g44vlr38rnf1",

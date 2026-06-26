@@ -5,6 +5,8 @@ import { Table, Button, Spin, Tag, Empty } from 'antd';
 import { DownloadOutlined, AuditOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { Resizable } from 'react-resizable';
+import type { ResizeCallbackData } from 'react-resizable';
 
 const COLOR_PALETTE = [
     { argb: 'FFFFCCCC', css: '#ffcccc' }, // Red
@@ -15,10 +17,38 @@ const COLOR_PALETTE = [
     { argb: 'FFFFE5CC', css: '#ffe5cc' }, // Orange
 ];
 
+const ResizableTitle = (props: any) => {
+    const { onResize, width, ...restProps } = props;
+
+    if (!width) {
+        return <th {...restProps} />;
+    }
+
+    return (
+        <Resizable
+            width={width}
+            height={0}
+            handle={
+                <span
+                    className="react-resizable-handle"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                />
+            }
+            onResize={onResize}
+            draggableOpts={{ enableUserSelectHack: false }}
+        >
+            <th {...restProps} />
+        </Resizable>
+    );
+};
+
 export default function DuplicatesPage() {
     const [loading, setLoading] = useState(true);
     const [headers, setHeaders] = useState<string[]>([]);
     const [dups, setDups] = useState<any[]>([]);
+    const [colWidths, setColWidths] = useState<Record<number, number>>({});
 
     useEffect(() => {
         const loadData = async () => {
@@ -93,19 +123,33 @@ export default function DuplicatesPage() {
         );
     }
 
-    const tableColumns = headers.map((header, index) => ({
-        title: <span className="font-bold">{header || `Column ${index + 1}`}</span>,
-        dataIndex: index,
-        key: index,
-        width: 150,
-        ellipsis: true,
-        render: (text: any) => {
-            if (text instanceof Date) {
-                return <span className="text-slate-700">{text.toLocaleString('vi-VN')}</span>;
+    const handleResize = (index: number) => (e: React.SyntheticEvent<Element>, { size }: ResizeCallbackData) => {
+        setColWidths(prev => ({
+            ...prev,
+            [index]: size.width,
+        }));
+    };
+
+    const tableColumns = headers.map((header, index) => {
+        const width = colWidths[index] || 150;
+        return {
+            title: <span className="font-bold">{header || `Column ${index + 1}`}</span>,
+            dataIndex: index,
+            key: index,
+            width: width,
+            ellipsis: true,
+            onHeaderCell: () => ({
+                width: width,
+                onResize: handleResize(index),
+            }),
+            render: (text: any) => {
+                if (text instanceof Date) {
+                    return <span className="text-slate-700">{text.toLocaleString('vi-VN')}</span>;
+                }
+                return <span className="text-slate-700">{String(text ?? '')}</span>;
             }
-            return <span className="text-slate-700">{String(text ?? '')}</span>;
-        }
-    }));
+        };
+    });
 
     return (
         <div className="flex flex-col h-screen bg-slate-50">
@@ -126,12 +170,18 @@ export default function DuplicatesPage() {
             </div>
             
             <div className="flex-1 overflow-hidden p-4">
-                <div className="h-full bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div className="h-full bg-white rounded-lg shadow-sm border overflow-hidden custom-scrollbar-table">
                     <Table
+                        components={{
+                            header: {
+                                cell: ResizableTitle,
+                            },
+                        }}
                         columns={tableColumns}
                         dataSource={dups}
-                        scroll={{ x: tableColumns.length * 150, y: 800 }}
+                        scroll={{ x: Object.values(colWidths).reduce((a, b) => a + b, 0) || tableColumns.length * 150, y: 800 }}
                         pagination={false}
+                        virtual
                         bordered
                         size="small"
                         onRow={(record) => {

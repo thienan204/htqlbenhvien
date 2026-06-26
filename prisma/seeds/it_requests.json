@@ -1590,7 +1590,7 @@
     "ten_loi": "🌐 Mất kết nối mạng",
     "ma_khoa": "K4849",
     "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
-    "status": "PENDING",
+    "status": "RESOLVED",
     "dynamicFields": {
       "SĐT": "09366079834",
       "Ghi chú": "Tạo tự động từ Chat",
@@ -1600,9 +1600,9 @@
     "transferToId": null,
     "transferFromId": null,
     "startedAt": null,
-    "resolvedAt": null,
+    "resolvedAt": "2026-06-24T00:52:13.001Z",
     "createdAt": "2026-06-16T02:35:33.118Z",
-    "updatedAt": "2026-06-16T02:35:33.118Z"
+    "updatedAt": "2026-06-24T00:52:13.004Z"
   },
   {
     "id": "cmqg1bovk0006xb82grvrzejm",
@@ -1653,7 +1653,7 @@
     "ten_loi": "🖨️ Máy in hỏng / kẹt giấy tại khoa hồi sức",
     "ma_khoa": "K4849",
     "assigneeId": "cmq6cs5th0007a4eu2mvseb8n",
-    "status": "IN_PROGRESS",
+    "status": "RESOLVED",
     "dynamicFields": {
       "SĐT": "09366079834",
       "Ghi chú": "Tạo tự động từ Chat",
@@ -1663,9 +1663,9 @@
     "transferToId": null,
     "transferFromId": null,
     "startedAt": "2026-06-17T08:32:42.827Z",
-    "resolvedAt": null,
+    "resolvedAt": "2026-06-23T15:36:40.000Z",
     "createdAt": "2026-06-17T08:31:45.639Z",
-    "updatedAt": "2026-06-17T08:32:42.830Z"
+    "updatedAt": "2026-06-23T15:36:40.003Z"
   },
   {
     "id": "cmqkcvwh0000wq7lnzl83ovoj",
@@ -1695,7 +1695,7 @@
     "ten_loi": "Hết mực in / Kẹt giấy",
     "ma_khoa": "K4849",
     "assigneeId": "cmq38z2gk000114575eavnvra",
-    "status": "PENDING",
+    "status": "RESOLVED",
     "dynamicFields": {
       "SĐT": "09366079834",
       "Ghi chú": "Tạo tự động từ Chat",
@@ -1704,10 +1704,10 @@
     "it_note": null,
     "transferToId": null,
     "transferFromId": null,
-    "startedAt": null,
-    "resolvedAt": null,
+    "startedAt": "2026-06-23T15:36:17.263Z",
+    "resolvedAt": "2026-06-23T15:36:25.580Z",
     "createdAt": "2026-06-19T03:17:35.748Z",
-    "updatedAt": "2026-06-19T03:17:35.748Z"
+    "updatedAt": "2026-06-23T15:36:25.582Z"
   },
   {
     "id": "cmqowcccx00ufxj5ffxsw7mq7",
@@ -1762,7 +1762,7 @@
     "ten_loi": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: HOÀNG TỐ UYÊN",
     "ma_khoa": "K18",
     "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
-    "status": "PENDING",
+    "status": "RESOLVED",
     "dynamicFields": {
       "SĐT": "",
       "Ghi chú": "dfds",
@@ -1776,9 +1776,9 @@
     "transferToId": null,
     "transferFromId": null,
     "startedAt": null,
-    "resolvedAt": null,
+    "resolvedAt": "2026-06-24T00:52:04.228Z",
     "createdAt": "2026-06-22T07:50:55.310Z",
-    "updatedAt": "2026-06-22T07:50:55.310Z"
+    "updatedAt": "2026-06-24T00:52:04.230Z"
   },
   {
     "id": "cmqox2pb300ulxj5fupzh62ml",
@@ -1879,5 +1879,685 @@
     "resolvedAt": "2026-06-22T08:45:32.738Z",
     "createdAt": "2026-06-22T08:45:11.442Z",
     "updatedAt": "2026-06-22T08:45:32.740Z"
+  },
+  {
+    "id": "cmqqt6y8e0002cgoyso2gj7e0",
+    "ma_ba": null,
+    "category": "HARDWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K01",
+    "assigneeId": "admin-hardcoded",
+    "status": "IN_PROGRESS",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Mông Thị Luận"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": "2026-06-23T15:38:47.838Z",
+    "resolvedAt": null,
+    "createdAt": "2026-06-23T15:38:24.590Z",
+    "updatedAt": "2026-06-23T15:38:47.839Z"
+  },
+  {
+    "id": "cmqqt8guc0004cgoycouxciq5",
+    "ma_ba": "BA000960314",
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "fdsa",
+      "Người báo": "Nguyễn Thu Thủy",
+      "Trạng thái BA": "Đang điều trị"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-23T15:39:35.365Z",
+    "updatedAt": "2026-06-23T15:39:35.365Z"
+  },
+  {
+    "id": "cmqqt90c70006cgoy54yn3axf",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-23T15:40:00.631Z",
+    "updatedAt": "2026-06-23T15:40:00.631Z"
+  },
+  {
+    "id": "cmqqtcy2b0008cgoy8lzh6foc",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-23T15:43:04.308Z",
+    "updatedAt": "2026-06-23T15:43:04.308Z"
+  },
+  {
+    "id": "cmqqti0fx000bcgoy2sskcun8",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-23T15:47:00.669Z",
+    "updatedAt": "2026-06-23T15:47:00.669Z"
+  },
+  {
+    "id": "cmqrbkera000dcgoy07an03wb",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T00:12:45.623Z",
+    "updatedAt": "2026-06-24T00:12:45.623Z"
+  },
+  {
+    "id": "cmqrbla9c000fcgoy5ug10h3z",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq38z2gk000114575eavnvra",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T00:13:26.448Z",
+    "updatedAt": "2026-06-24T00:13:26.448Z"
+  },
+  {
+    "id": "cmqrblfsb000hcgoymenxywsm",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
+    "status": "RESOLVED",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": "2026-06-24T00:51:39.551Z",
+    "resolvedAt": "2026-06-24T00:51:45.580Z",
+    "createdAt": "2026-06-24T00:13:33.611Z",
+    "updatedAt": "2026-06-24T00:51:45.583Z"
+  },
+  {
+    "id": "cmqrbmb3v000jcgoydlc365rx",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T00:14:14.203Z",
+    "updatedAt": "2026-06-24T00:14:14.203Z"
+  },
+  {
+    "id": "cmqrbo3kv000lcgoygfqjevfq",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T00:15:37.759Z",
+    "updatedAt": "2026-06-24T00:15:37.759Z"
+  },
+  {
+    "id": "cmqrbrkdo000ncgoygj92ck7j",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
+    "status": "RESOLVED",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": "2026-06-24T00:50:06.558Z",
+    "resolvedAt": "2026-06-24T00:51:10.880Z",
+    "createdAt": "2026-06-24T00:18:19.501Z",
+    "updatedAt": "2026-06-24T00:51:10.884Z"
+  },
+  {
+    "id": "cmqrc0c90000pcgoyn4b06cex",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T00:25:08.868Z",
+    "updatedAt": "2026-06-24T00:25:08.868Z"
+  },
+  {
+    "id": "cmqrcwlw8000rcgoyrm8tq21v",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
+    "status": "RESOLVED",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": "2026-06-24T00:51:03.871Z",
+    "createdAt": "2026-06-24T00:50:14.361Z",
+    "updatedAt": "2026-06-24T00:51:03.873Z"
+  },
+  {
+    "id": "cmqrecawx000tcgoyhcnrkax6",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K01",
+    "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:30:26.242Z",
+    "updatedAt": "2026-06-24T01:30:26.242Z"
+  },
+  {
+    "id": "cmqredp7p000vcgoydegxxk7v",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:31:31.430Z",
+    "updatedAt": "2026-06-24T01:31:31.430Z"
+  },
+  {
+    "id": "cmqrex1e1001bcgoyv2cwufil",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq37o0z20000hqr0cf6pu1hu",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:46:33.674Z",
+    "updatedAt": "2026-06-24T01:46:33.674Z"
+  },
+  {
+    "id": "cmqrexjtg001dcgoyewr7p9tm",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:46:57.557Z",
+    "updatedAt": "2026-06-24T01:46:57.557Z"
+  },
+  {
+    "id": "cmqrfchq3001lcgoyckmwrj0s",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:58:34.683Z",
+    "updatedAt": "2026-06-24T01:58:34.683Z"
+  },
+  {
+    "id": "cmqrfcrsx001ncgoy0xr3qc67",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:58:47.746Z",
+    "updatedAt": "2026-06-24T01:58:47.746Z"
+  },
+  {
+    "id": "cmqrfdac3001pcgoya8gen33k",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:59:11.764Z",
+    "updatedAt": "2026-06-24T01:59:11.764Z"
+  },
+  {
+    "id": "cmqrfe59c001rcgoygrnpjgyv",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": null,
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T01:59:51.840Z",
+    "updatedAt": "2026-06-24T01:59:51.840Z"
+  },
+  {
+    "id": "cmqrjjs9e001ycgoywm8yr9nv",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "CNTT",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0936607983",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thiện An"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T03:56:13.390Z",
+    "updatedAt": "2026-06-24T03:56:13.390Z"
+  },
+  {
+    "id": "cmqrjk7tc0020cgoyn3xel0tn",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "CNTT",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "TRANSFERRING",
+    "dynamicFields": {
+      "SĐT": "0936607983",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thiện An"
+    },
+    "it_note": null,
+    "transferToId": "cmq390nqw00021457qxld94j4",
+    "transferFromId": "cmqregj44000ycgoyl5npycrf",
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T03:56:33.553Z",
+    "updatedAt": "2026-06-24T03:56:52.989Z"
+  },
+  {
+    "id": "cmqrr9dbh0022cgoyn1c8roey",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T07:32:04.396Z",
+    "updatedAt": "2026-06-24T07:32:04.396Z"
+  },
+  {
+    "id": "cmqrrajlg0024cgoynnrtbz5f",
+    "ma_ba": "Hhhh",
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Người báo": "Hoàng Mạnh Cương",
+      "Trạng thái BA": "Đang điều trị",
+      "Hình ảnh đính kèm": [
+        "/uploads/tickets/1782286377168-17822863723056090512175827936464.jpg"
+      ]
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T07:32:59.188Z",
+    "updatedAt": "2026-06-24T07:32:59.188Z"
+  },
+  {
+    "id": "cmqrrbp6q0026cgoyiep13m2r",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "MA_MAY không được để trống",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-24T07:33:53.091Z",
+    "updatedAt": "2026-06-24T07:33:53.091Z"
+  },
+  {
+    "id": "cmqsutc470031cgoycceq50jg",
+    "ma_ba": "1491842",
+    "category": "SOFTWARE",
+    "ten_loi": "[Hỗ trợ Lỗi Hồ sơ] Bệnh nhân: HOÀNG TỐ UYÊN",
+    "ma_khoa": "K18",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0936607983",
+      "Ghi chú": " ",
+      "Loại lỗi": "Lỗi Chuyên đề",
+      "Người báo": "Nguyễn Thị Chanh",
+      "Mã máy/Giường": "NS.1.1718-001",
+      "Tên chuyên đề": "Trùng mã máy thủ thuật",
+      "Chi tiết vi phạm": "[CHUYEN_DE] Trùng mã máy thủ thuật - Phát hiện lỗi/Trùng lặp [Nhóm: group_2]"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-25T01:59:20.983Z",
+    "updatedAt": "2026-06-25T01:59:20.983Z"
+  },
+  {
+    "id": "cmqsuuonn0033cgoyfcw49llr",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "ffdsfsdf",
+    "ma_khoa": "K18",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0936607983",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thị Chanh"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-25T02:00:23.891Z",
+    "updatedAt": "2026-06-25T02:00:23.891Z"
+  },
+  {
+    "id": "cmqtoeque0036cgoyjqvpwi2z",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "Y học cổ truyền.",
+    "ma_khoa": "CNTT",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "TRANSFERRING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": "cmqregj44000ycgoyl5npycrf",
+    "transferFromId": "cmq390nqw00021457qxld94j4",
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-25T15:47:48.709Z",
+    "updatedAt": "2026-06-25T15:50:25.349Z"
+  },
+  {
+    "id": "cmqtof37u0038cgoyhswn13un",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "Huỷ ký số giấy ra viện",
+    "ma_khoa": "CNTT",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-25T15:48:04.747Z",
+    "updatedAt": "2026-06-25T15:48:04.747Z"
+  },
+  {
+    "id": "cmqtofzay003acgoypz2o0a1t",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "Huỷ ký số lãnh đạo BA",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmq390nqw00021457qxld94j4",
+    "status": "RESOLVED",
+    "dynamicFields": {
+      "SĐT": "",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thu Thủy"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": "2026-06-25T15:50:14.371Z",
+    "createdAt": "2026-06-25T15:48:46.330Z",
+    "updatedAt": "2026-06-25T15:50:14.374Z"
+  },
+  {
+    "id": "cmqtog5nh003ccgoynap78uj4",
+    "ma_ba": null,
+    "category": "SOFTWARE",
+    "ten_loi": "Lấy lại BN",
+    "ma_khoa": "K4849",
+    "assigneeId": "cmqregj44000ycgoyl5npycrf",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "09366079834",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Hoàng Mạnh Cương"
+    },
+    "it_note": null,
+    "transferToId": null,
+    "transferFromId": null,
+    "startedAt": null,
+    "resolvedAt": null,
+    "createdAt": "2026-06-25T15:48:54.557Z",
+    "updatedAt": "2026-06-25T15:48:54.557Z"
   }
 ]

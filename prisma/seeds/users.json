@@ -21,11 +21,11 @@
     "role": "CNTT",
     "ma_khoa": null,
     "telegram_id": null,
-    "isAvailable": true,
+    "isAvailable": false,
     "dutyOrder": 2,
     "staffId": null,
     "createdAt": "2026-06-07T03:17:07.694Z",
-    "updatedAt": "2026-06-10T02:49:12.227Z"
+    "updatedAt": "2026-06-24T01:46:42.697Z"
   },
   {
     "id": "cmq37upe40001hqr0s2c21dtw",
@@ -49,11 +49,11 @@
     "role": "CNTT",
     "ma_khoa": null,
     "telegram_id": null,
-    "isAvailable": true,
+    "isAvailable": false,
     "dutyOrder": 3,
     "staffId": null,
     "createdAt": "2026-06-07T03:53:42.453Z",
-    "updatedAt": "2026-06-10T02:12:06.158Z"
+    "updatedAt": "2026-06-24T01:46:42.697Z"
   },
   {
     "id": "cmq390nqw00021457qxld94j4",
@@ -62,12 +62,12 @@
     "name": "Nguyễn Việt Hà",
     "role": "CNTT",
     "ma_khoa": null,
-    "telegram_id": null,
-    "isAvailable": true,
+    "telegram_id": "@thienan204",
+    "isAvailable": false,
     "dutyOrder": 1,
     "staffId": null,
     "createdAt": "2026-06-07T03:54:56.696Z",
-    "updatedAt": "2026-06-10T02:12:06.158Z"
+    "updatedAt": "2026-06-25T15:51:19.867Z"
   },
   {
     "id": "cmq4n9gju00014kl4xa8w154g",
@@ -91,11 +91,11 @@
     "role": "CNTT",
     "ma_khoa": null,
     "telegram_id": "@mocthao",
-    "isAvailable": true,
+    "isAvailable": false,
     "dutyOrder": 4,
     "staffId": null,
     "createdAt": "2026-06-09T08:03:37.206Z",
-    "updatedAt": "2026-06-10T13:55:32.452Z"
+    "updatedAt": "2026-06-24T01:46:42.697Z"
   },
   {
     "id": "cmqhtkeuy000dxb82gx1og6t0",
@@ -124,5 +124,19 @@
     "staffId": null,
     "createdAt": "2026-06-22T00:29:54.877Z",
     "updatedAt": "2026-06-22T00:29:54.877Z"
+  },
+  {
+    "id": "cmqregj44000ycgoyl5npycrf",
+    "username": "1",
+    "password": "$2b$10$vQ79JHqp7JbVieKDt/9H/e7umok3Acy8A9c7XlAJYvF2jqbZ5HoLm",
+    "name": "Nguyễn Thiên An",
+    "role": "CNTT",
+    "ma_khoa": null,
+    "telegram_id": null,
+    "isAvailable": true,
+    "dutyOrder": 5,
+    "staffId": "cmqreqxi5001acgoyjrtfql7o",
+    "createdAt": "2026-06-24T01:33:43.492Z",
+    "updatedAt": "2026-06-24T03:56:02.082Z"
   }
 ]

@@ -11,6 +11,8 @@ import { createDuplicateRule, deleteDuplicateRule, getDuplicateRules, updateDupl
 import { getCurrentUser, type UserPayload } from '@/actions/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Resizable } from 'react-resizable';
+import type { ResizeCallbackData } from 'react-resizable';
 
 const { Dragger } = Upload;
 const { Option } = Select;
@@ -111,12 +113,40 @@ const parseDateStr = (dateStr: any) => {
     return null;
 };
 
+const ResizableTitle = (props: any) => {
+    const { onResize, width, ...restProps } = props;
+
+    if (!width) {
+        return <th {...restProps} />;
+    }
+
+    return (
+        <Resizable
+            width={width}
+            height={0}
+            handle={
+                <span
+                    className="react-resizable-handle"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                />
+            }
+            onResize={onResize}
+            draggableOpts={{ enableUserSelectHack: false }}
+        >
+            <th {...restProps} />
+        </Resizable>
+    );
+};
+
 export default function ExcelReaderPage() {
     const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
     const [sheetNames, setSheetNames] = useState<string[]>([]);
     const [activeSheet, setActiveSheet] = useState<string>('');
     const [tableData, setTableData] = useState<any[]>([]);
     const [tableColumns, setTableColumns] = useState<any[]>([]);
+    const [colWidths, setColWidths] = useState<Record<number, number>>({});
     const [loading, setLoading] = useState<boolean>(false);
     const [fileName, setFileName] = useState<string>('');
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -134,11 +164,19 @@ export default function ExcelReaderPage() {
     const [editingRule, setEditingRule] = useState<DuplicateRule | null>(null);
     const [ruleLoading, setRuleLoading] = useState(false);
     const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
+    const [hide50Percent, setHide50Percent] = useState(false);
     const { user: currentUser, hasPermission } = useAuth();
     const router = useRouter();
 
     const [form] = Form.useForm(); // For execution (hidden or manual)
     const [ruleForm] = Form.useForm(); // For rule editing
+
+    const handleResize = (index: number) => (e: React.SyntheticEvent<Element>, { size }: ResizeCallbackData) => {
+        setColWidths(prev => ({
+            ...prev,
+            [index]: size.width,
+        }));
+    };
 
     // Load rules on mount
     const fetchRules = async () => {
@@ -646,7 +684,7 @@ export default function ExcelReaderPage() {
     };
 
     const handleExportDuplicates = async () => {
-        const dups = tableData.filter(x => x.__groupIndex !== undefined);
+        const dups = filteredTableData.filter(x => x.__groupIndex !== undefined);
         if (dups.length === 0) {
             message.info("Không có dữ liệu trùng để xuất. Hãy chạy kiểm tra trước.");
             return;
@@ -684,11 +722,41 @@ export default function ExcelReaderPage() {
         saveAs(new Blob([buf]), `DuLieuTrung_${new Date().toISOString().substring(0, 10)}.xlsx`);
     };
 
-    // Computed data with multi-column filtering
+    const hidden50PercentDups = React.useMemo(() => {
+        if (!hide50Percent || tableData.length === 0) return [];
+        
+        const tyleDvIdx = headers.findIndex(h => h && (String(h).toUpperCase().trim() === 'TYLE_DV' || String(h).toUpperCase().trim() === 'TYLE_TT_DV'));
+        if (tyleDvIdx === -1) return [];
+
+        const groups = new Map<number, any[]>();
+        tableData.forEach(item => {
+            const gIdx = item.__groupIndex;
+            if (gIdx !== undefined) {
+                if (!groups.has(gIdx)) groups.set(gIdx, []);
+                groups.get(gIdx)!.push(item);
+            }
+        });
+
+        const invalidGroups = new Set<number>();
+        groups.forEach((items, gIdx) => {
+            const isAll50 = items.every(i => Number(i[tyleDvIdx]) === 50);
+            if (isAll50) {
+                invalidGroups.add(gIdx);
+            }
+        });
+
+        return tableData.filter(item => item.__groupIndex !== undefined && invalidGroups.has(item.__groupIndex));
+    }, [tableData, hide50Percent, headers]);
+
     const filteredTableData = React.useMemo(() => {
         let data = showOnlyDuplicates
             ? tableData.filter(x => x.__groupIndex !== undefined)
             : tableData;
+
+        if (hide50Percent && hidden50PercentDups.length > 0) {
+            const hiddenKeys = new Set(hidden50PercentDups.map(x => x.key));
+            data = data.filter(item => !hiddenKeys.has(item.key));
+        }
 
         Object.entries(columnFilters).forEach(([colIdxStr, filterVal]) => {
             if (filterVal) {
@@ -702,7 +770,7 @@ export default function ExcelReaderPage() {
         });
 
         return data;
-    }, [tableData, showOnlyDuplicates, columnFilters]);
+    }, [tableData, showOnlyDuplicates, columnFilters, hide50Percent, hidden50PercentDups]);
 
     if (!hasPermission('MENU_DOC_FILE_EXCEL')) {
         return (
@@ -819,7 +887,7 @@ export default function ExcelReaderPage() {
                                 <Button
                                     icon={<AuditOutlined />}
                                     onClick={async () => {
-                                        const dups = tableData.filter(x => x.__groupIndex !== undefined);
+                                        const dups = filteredTableData.filter(x => x.__groupIndex !== undefined);
                                         if (dups.length === 0) {
                                             message.info("Không có dữ liệu trùng để hiển thị. Hãy chạy kiểm tra trước.");
                                         } else {
@@ -844,13 +912,63 @@ export default function ExcelReaderPage() {
                             </div>
                         </div>
 
-                        <div className="mt-4 flex items-center gap-2">
+                        <div className="mt-4 flex items-center gap-4">
                             <Checkbox
                                 checked={showOnlyDuplicates}
                                 onChange={(e) => setShowOnlyDuplicates(e.target.checked)}
                             >
                                 Chỉ hiện dòng trùng
                             </Checkbox>
+                            <Checkbox
+                                checked={hide50Percent}
+                                onChange={(e) => {
+                                    setHide50Percent(e.target.checked);
+                                    if (e.target.checked) {
+                                        message.info("Đã áp dụng bộ lọc nhóm 50%");
+                                    }
+                                }}
+                            >
+                                Bỏ qua nhóm trùng 50%
+                            </Checkbox>
+                            {tableData.some(x => x.__groupIndex !== undefined) && (
+                                <Tag color="processing" className="ml-4 px-3 py-1 font-medium text-sm rounded-full">
+                                    Còn lại: {filteredTableData.filter(x => x.__groupIndex !== undefined).length} dòng trùng
+                                    <a
+                                        className="ml-2 text-blue-600 underline cursor-pointer hover:text-blue-800"
+                                        onClick={async (e) => {
+                                            e.preventDefault();
+                                            const dups = filteredTableData.filter(x => x.__groupIndex !== undefined);
+                                            if (dups.length === 0) {
+                                                message.info("Không có dữ liệu trùng để hiển thị. Hãy chạy kiểm tra trước.");
+                                            } else {
+                                                const db = await initDB();
+                                                await db.put('files', { headers, dups }, 'currentDuplicates');
+                                                const baseUrl = window.location.href.split('?')[0].replace(/\/$/, '');
+                                                window.open(`${baseUrl}/duplicates`, '_blank');
+                                            }
+                                        }}
+                                    >
+                                        (Xem danh sách)
+                                    </a>
+                                </Tag>
+                            )}
+                            {hide50Percent && hidden50PercentDups.length > 0 && (
+                                <Tag color="error" className="ml-2 px-3 py-1 font-medium text-sm rounded-full">
+                                    Đã ẩn: {hidden50PercentDups.length} dòng 50%
+                                    <a
+                                        className="ml-2 text-red-600 underline cursor-pointer hover:text-red-800"
+                                        onClick={async (e) => {
+                                            e.preventDefault();
+                                            const db = await initDB();
+                                            await db.put('files', { headers, dups: hidden50PercentDups }, 'currentDuplicates');
+                                            const baseUrl = window.location.href.split('?')[0].replace(/\/$/, '');
+                                            window.open(`${baseUrl}/duplicates`, '_blank');
+                                        }}
+                                    >
+                                        (Xem danh sách)
+                                    </a>
+                                </Tag>
+                            )}
                         </div>
                     </Card>
 
@@ -861,31 +979,44 @@ export default function ExcelReaderPage() {
                             </div>
                         ) : tableColumns.length > 0 ? (
                             <Table
-                                columns={tableColumns.map((col: any) => ({
-                                    ...col,
-                                    title: (
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <div style={{ marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {col._originalTitle}
+                                components={{
+                                    header: {
+                                        cell: ResizableTitle,
+                                    },
+                                }}
+                                columns={tableColumns.map((col: any) => {
+                                    const width = colWidths[col.dataIndex] || col.width || 150;
+                                    return {
+                                        ...col,
+                                        width,
+                                        onHeaderCell: () => ({
+                                            width,
+                                            onResize: handleResize(col.dataIndex),
+                                        }),
+                                        title: (
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <div style={{ marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {col._originalTitle}
+                                                </div>
+                                                <Input
+                                                    placeholder="Lọc..."
+                                                    size="small"
+                                                    allowClear
+                                                    value={columnFilters[col.dataIndex] || ''}
+                                                    onChange={(e) => {
+                                                        setColumnFilters(prev => ({
+                                                            ...prev,
+                                                            [col.dataIndex]: e.target.value
+                                                        }));
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
                                             </div>
-                                            <Input
-                                                placeholder="Lọc..."
-                                                size="small"
-                                                allowClear
-                                                value={columnFilters[col.dataIndex] || ''}
-                                                onChange={(e) => {
-                                                    setColumnFilters(prev => ({
-                                                        ...prev,
-                                                        [col.dataIndex]: e.target.value
-                                                    }));
-                                                }}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </div>
-                                    )
-                                }))}
+                                        )
+                                    };
+                                })}
                                 dataSource={filteredTableData}
-                                scroll={{ x: tableColumns.length * 150, y: 600 }}
+                                scroll={{ x: Object.values(colWidths).reduce((sum, w) => sum + w, 0) || tableColumns.length * 150, y: 600 }}
                                 pagination={false}
                                 virtual
                                 bordered
