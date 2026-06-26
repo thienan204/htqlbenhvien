@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Tag, Card, Button, Spin, Empty, Descriptions, Input, Space, message, DatePicker, Modal } from 'antd';
 import { loadRecordsFromDB } from '@/lib/db';
 import { ExtendedHosoRecord, getXmlDataList } from '@/lib/xml';
-import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined, CloudUploadOutlined, FilterOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { getDepartments } from '@/actions/department';
@@ -36,6 +36,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     const [filterMaGiuong, setFilterMaGiuong] = useState<string>('');
     const [filterTrinhDo, setFilterTrinhDo] = useState<string>('');
     const [filterNgayRaRange, setFilterNgayRaRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
+    const [hide50Percent, setHide50Percent] = useState<boolean>(false);
 
     // Duplicate Doctor specific state
     const [doctorOrders, setDoctorOrders] = useState<any[]>([]);
@@ -496,7 +497,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             });
         }
 
-        const filtered = bedServices.filter(item => {
+        let filtered = bedServices.filter(item => {
             const searchMatch = !filterBed ||
                 (item.HO_TEN && item.HO_TEN.toLowerCase().includes(filterBed.toLowerCase())) ||
                 (item.MA_LK && item.MA_LK.toString().includes(filterBed.toLowerCase()));
@@ -532,6 +533,29 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
             return searchMatch && khoaMatch && giuongMatch && trinhDoMatch && ngayRaMatch;
         });
+
+        if (hide50Percent) {
+            const groups = new Map<string, any[]>();
+            filtered.forEach(item => {
+                const key = item.groupId || item.key;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(item);
+            });
+
+            const validGroups = new Set<string>();
+            groups.forEach((items, key) => {
+                if (key.startsWith('group_')) {
+                    const isAll50 = items.every(i => Number(i.TYLE_DV) === 50);
+                    if (!isAll50) {
+                        validGroups.add(key);
+                    }
+                } else {
+                    validGroups.add(key);
+                }
+            });
+
+            filtered = filtered.filter(item => validGroups.has(item.groupId || item.key));
+        }
 
         return filtered;
     };
@@ -1438,6 +1462,14 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
                     <div className="flex items-center gap-2 flex-wrap">
                         <Button icon={<ReloadOutlined />} onClick={handleReload}>Tải lại</Button>
+                        <Button 
+                            icon={<FilterOutlined />} 
+                            onClick={() => setHide50Percent(!hide50Percent)}
+                            type={hide50Percent ? "primary" : "default"}
+                            danger={hide50Percent}
+                        >
+                            {hide50Percent ? "Đang ẩn cặp 50%" : "Ẩn cặp 50%"}
+                        </Button>
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
                         <Button
                             type="primary"
