@@ -6,7 +6,7 @@ import { PlusOutlined, DeleteOutlined, SettingOutlined, SyncOutlined, AppstoreAd
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function BedCatalogPage() {
-    const { permissions } = useAuth();
+    // Removed unused useAuth()
     const [beds, setBeds] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [departments, setDepartments] = useState<any[]>([]);

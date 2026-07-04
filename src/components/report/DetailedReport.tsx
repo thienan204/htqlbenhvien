@@ -62,6 +62,7 @@ interface ReportRow {
     ma_doituong_kcb: string;
     ma_giuong: string;
     pp_vo_cam: string;
+    isError: boolean;
 }
 
 export default function DetailedReport() {
@@ -120,6 +121,9 @@ export default function DetailedReport() {
                             ma_bn: renderValue(record.summary?.MA_BN),
                             ho_ten: renderValue(record.summary?.HO_TEN),
                             ma_the: renderValue(record.summary?.MA_THE_BHYT),
+                            ma_benh_chinh: renderValue(record.summary?.MA_BENH_CHINH),
+                            ma_benh_kt: renderValue(record.summary?.MA_BENH_KT),
+                            ma_benh_yhct: renderValue(record.summary?.MA_BENH_YHCT),
                             ngay_vao: formatDateTime(record.summary?.NGAY_VAO),
                             ngay_ra: formatDateTime(record.summary?.NGAY_RA),
                             ngay_yl: '',

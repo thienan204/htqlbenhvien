@@ -45,10 +45,12 @@ export async function POST(request: NextRequest) {
                 } else {
                     const created = await prisma.scopeOfPracticeCatalog.create({
                         data: {
+                            id: crypto.randomUUID(),
                             ma_pham_vi: item.ma_pham_vi,
                             ten_chuc_danh: item.ten_chuc_danh,
                             ghi_chu: item.ghi_chu || null,
-                            isActive: item.isActive !== undefined ? item.isActive : true
+                            isActive: item.isActive !== undefined ? item.isActive : true,
+                            updatedAt: new Date()
                         }
                     });
                     results.push(created);
@@ -69,10 +71,12 @@ export async function POST(request: NextRequest) {
 
         const data = await prisma.scopeOfPracticeCatalog.create({
             data: {
+                id: crypto.randomUUID(),
                 ma_pham_vi,
                 ten_chuc_danh,
                 ghi_chu: ghi_chu || null,
-                isActive: isActive !== undefined ? isActive : true
+                isActive: isActive !== undefined ? isActive : true,
+                updatedAt: new Date()
             }
         });
 

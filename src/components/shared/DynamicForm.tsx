@@ -13,6 +13,7 @@ export interface FieldConfig {
     required?: boolean;
     span?: number;
     options?: { value: string | number; label: string }[];
+    mode?: 'multiple' | 'tags';
     valuePropName?: string;
     onBlur?: (e: any, form: any) => void;
     placeholder?: string;

@@ -16,6 +16,7 @@ interface ChatTabProps {
     uploadProps: any;
     handleFileChange: (e: any) => void;
     form: any;
+    setActiveTab: (tab: string) => void;
     targetDepartment?: string;
 }
 

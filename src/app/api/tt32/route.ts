@@ -7,9 +7,9 @@ export async function GET() {
     try {
         const categories = await prisma.tT32Category.findMany({
             include: {
-                chapterMappings: {
+                TT32ChapterMapping: {
                     include: {
-                        chapter: true
+                        ServiceChapter: true
                     }
                 }
             },
@@ -36,10 +36,12 @@ export async function POST(request: Request) {
 
         const newCategory = await prisma.tT32Category.create({
             data: {
+                id: crypto.randomUUID(),
                 code,
                 name,
                 description,
-                chapterMappings: {
+                updatedAt: new Date(),
+                TT32ChapterMapping: {
                     create: (chapterCodes || []).map((chapCode: string) => ({
                         chapter_code: chapCode
                     }))
@@ -66,7 +68,7 @@ export async function PUT(request: Request) {
         // Cập nhật thông tin cơ bản
         await prisma.tT32Category.update({
             where: { id },
-            data: { code, name, description }
+            data: { code, name, description, updatedAt: new Date() }
         });
 
         // Cập nhật mappings (xóa hết rồi thêm lại cho đơn giản)
