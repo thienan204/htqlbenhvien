@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Modal, Form, message, Upload, Breadcrumb, Card, Space, Drawer, Popconfirm } from 'antd';
+import { Table, Button, Input, Modal, Form, message, Upload, Breadcrumb, Card, Space, Drawer, Popconfirm, Select } from 'antd';
 import { PlusOutlined, UploadOutlined, EditOutlined, DeleteOutlined, SaveOutlined, SearchOutlined, HomeOutlined, FileExcelOutlined } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
 import * as XLSX from 'xlsx';
@@ -10,6 +10,9 @@ import Link from 'next/link';
 interface Department {
     ma_khoa: string;
     ten_khoa: string;
+    ma_khoa_bv?: string;
+    ten_khoa_bv?: string;
+    type?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -20,6 +23,7 @@ export default function DepartmentPage() {
     const [searchText, setSearchText] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingDept, setEditingDept] = useState<Department | null>(null);
+    const [departmentTypes, setDepartmentTypes] = useState<any[]>([]);
     const [form] = Form.useForm();
 
     const fetchDepartments = async () => {
@@ -48,14 +52,32 @@ export default function DepartmentPage() {
 
     useEffect(() => {
         fetchDepartments();
+        fetchDepartmentTypes();
     }, []);
+
+    const fetchDepartmentTypes = async () => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/system-categories?type=DEPARTMENT_TYPE`);
+            if (res.ok) {
+                const data = await res.json();
+                setDepartmentTypes(data);
+            }
+        } catch (error) {
+            console.error('Lỗi tải danh mục phân loại', error);
+        }
+    };
 
     const handleSave = async (values: Department) => {
         try {
+            const payload = {
+                ...values,
+                old_ma_khoa: editingDept ? editingDept.ma_khoa : undefined
+            };
+
             const res = await fetch(`${getBasePath()}/api/departments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
+                body: JSON.stringify(payload),
             });
             if (res.ok) {
                 message.success('Lưu thành công');
@@ -64,7 +86,8 @@ export default function DepartmentPage() {
                 setEditingDept(null);
                 fetchDepartments();
             } else {
-                message.error('Lỗi khi lưu');
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Lỗi khi lưu');
             }
         } catch (error) {
             message.error('Lỗi kết nối');
@@ -86,6 +109,21 @@ export default function DepartmentPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/departments?deleteAll=true`, { method: 'DELETE' });
+            if (res.ok) {
+                message.success('Đã xóa tất cả danh mục Khoa Phòng');
+                fetchDepartments();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Lỗi khi xóa tất cả. Có thể dữ liệu đang được sử dụng ở bảng khác.');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối');
+        }
+    };
+
     const handleImportExcel = (file: File) => {
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -100,7 +138,10 @@ export default function DepartmentPage() {
                 // Expecting column headers: ma_khoa, ten_khoa or similar
                 const mappedData = data.map((row: any) => ({
                     ma_khoa: String(row['ma_khoa'] || row['Mã khoa'] || row['MA_KHOA'] || ''),
-                    ten_khoa: String(row['ten_khoa'] || row['Tên khoa'] || row['TEN_KHOA'] || '')
+                    ten_khoa: String(row['ten_khoa'] || row['Tên khoa'] || row['TEN_KHOA'] || ''),
+                    ma_khoa_bv: row['ma_khoa_bv'] || row['Mã khoa nội bộ'] || row['MA_KHOA_BV'] ? String(row['ma_khoa_bv'] || row['Mã khoa nội bộ'] || row['MA_KHOA_BV']) : undefined,
+                    ten_khoa_bv: row['ten_khoa_bv'] || row['Tên khoa nội bộ'] || row['TEN_KHOA_BV'] ? String(row['ten_khoa_bv'] || row['Tên khoa nội bộ'] || row['TEN_KHOA_BV']) : undefined,
+                    type: row['type'] || row['Phân loại'] || row['phan_loai'] || row['TYPE'] ? String(row['type'] || row['Phân loại'] || row['phan_loai'] || row['TYPE']) : 'CLINICAL'
                 })).filter(item => item.ma_khoa && item.ten_khoa);
 
                 if (mappedData.length === 0) {
@@ -166,6 +207,32 @@ export default function DepartmentPage() {
             onFilter: (value: any, record: Department) => record.ten_khoa.toLowerCase().includes(value.toLowerCase()),
         },
         {
+            title: 'Mã Khoa Nội Bộ',
+            dataIndex: 'ma_khoa_bv',
+            key: 'ma_khoa_bv',
+            width: 150,
+            sorter: (a: Department, b: Department) => (a.ma_khoa_bv || '').localeCompare(b.ma_khoa_bv || ''),
+        },
+        {
+            title: 'Tên Khoa Nội Bộ',
+            dataIndex: 'ten_khoa_bv',
+            key: 'ten_khoa_bv',
+            width: 250,
+            sorter: (a: Department, b: Department) => (a.ten_khoa_bv || '').localeCompare(b.ten_khoa_bv || ''),
+        },
+        {
+            title: 'Phân loại',
+            dataIndex: 'type',
+            key: 'type',
+            width: 150,
+            render: (type: string) => {
+                const found = departmentTypes.find(t => t.code === type);
+                return found ? found.name : type;
+            },
+            filters: departmentTypes.map(t => ({ text: t.name, value: t.code })),
+            onFilter: (value: any, record: Department) => record.type === value,
+        },
+        {
             title: 'Hành động',
             key: 'action',
             render: (_: any, record: Department) => (
@@ -188,7 +255,9 @@ export default function DepartmentPage() {
 
     const filteredData = departments.filter(d =>
         d.ma_khoa.toLowerCase().includes(searchText.toLowerCase()) ||
-        d.ten_khoa.toLowerCase().includes(searchText.toLowerCase())
+        d.ten_khoa.toLowerCase().includes(searchText.toLowerCase()) ||
+        (d.ma_khoa_bv && d.ma_khoa_bv.toLowerCase().includes(searchText.toLowerCase())) ||
+        (d.ten_khoa_bv && d.ten_khoa_bv.toLowerCase().includes(searchText.toLowerCase()))
     );
 
     return (
@@ -211,8 +280,9 @@ export default function DepartmentPage() {
                                 onClick={() => {
                                     const wb = XLSX.utils.book_new();
                                     const ws = XLSX.utils.json_to_sheet([
-                                        { ma_khoa: 'K01', ten_khoa: 'Khoa Nội' },
-                                        { ma_khoa: 'K02', ten_khoa: 'Khoa Ngoại' }
+                                        { ma_khoa: 'K01', ten_khoa: 'Khoa Khám bệnh', ma_khoa_bv: 'KP001', ten_khoa_bv: 'Khám bệnh', type: 'CLINICAL' },
+                                        { ma_khoa: 'K02', ten_khoa: 'Khoa Cấp cứu', ma_khoa_bv: 'KP002', ten_khoa_bv: 'Cấp cứu', type: 'CLINICAL' },
+                                        { ma_khoa: 'K03', ten_khoa: 'Phòng Kế hoạch tổng hợp', ma_khoa_bv: 'KP003', ten_khoa_bv: 'KHTH', type: 'MANAGEMENT' }
                                     ]);
                                     XLSX.utils.book_append_sheet(wb, ws, "Departments");
                                     XLSX.writeFile(wb, "Mau_nhap_khoa.xlsx");
@@ -223,9 +293,13 @@ export default function DepartmentPage() {
                             <Upload beforeUpload={handleImportExcel} showUploadList={false} accept=".xlsx,.xls">
                                 <Button icon={<UploadOutlined />}>Import Excel</Button>
                             </Upload>
+                            <Popconfirm title="Bạn có chắc chắn muốn xóa TOÀN BỘ danh mục Khoa Phòng?" onConfirm={handleDeleteAll} okText="Xóa hết" cancelText="Hủy" okButtonProps={{ danger: true }}>
+                                <Button danger icon={<DeleteOutlined />}>Xóa tất cả</Button>
+                            </Popconfirm>
                             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
                                 setEditingDept(null);
                                 form.resetFields();
+                                form.setFieldsValue({ type: 'CLINICAL' }); // Default value
                                 setIsDrawerOpen(true);
                             }}>
                                 Thêm mới
@@ -254,13 +328,13 @@ export default function DepartmentPage() {
                         </Space>
                     }
                 >
-                    <Form form={form} layout="vertical" onFinish={handleSave}>
+                    <Form form={form} layout="vertical" onFinish={handleSave} initialValues={{ type: 'CLINICAL' }}>
                         <Form.Item
                             name="ma_khoa"
                             label="Mã Khoa"
                             rules={[{ required: true, message: 'Vui lòng nhập mã khoa' }]}
                         >
-                            <Input disabled={!!editingDept} />
+                            <Input />
                         </Form.Item>
                         <Form.Item
                             name="ten_khoa"
@@ -268,6 +342,29 @@ export default function DepartmentPage() {
                             rules={[{ required: true, message: 'Vui lòng nhập tên khoa' }]}
                         >
                             <Input />
+                        </Form.Item>
+                        <Form.Item
+                            name="type"
+                            label="Phân loại"
+                            rules={[{ required: true, message: 'Vui lòng chọn phân loại' }]}
+                        >
+                            <Select placeholder="Chọn phân loại">
+                                {departmentTypes.map(t => (
+                                    <Select.Option key={t.code} value={t.code}>{t.name}</Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                        <Form.Item
+                            name="ma_khoa_bv"
+                            label="Mã Khoa Nội Bộ"
+                        >
+                            <Input placeholder="Nhập mã quản lý nội bộ bệnh viện..." />
+                        </Form.Item>
+                        <Form.Item
+                            name="ten_khoa_bv"
+                            label="Tên Khoa Nội Bộ"
+                        >
+                            <Input placeholder="Nhập tên gọi nội bộ..." />
                         </Form.Item>
                     </Form>
                 </Drawer>

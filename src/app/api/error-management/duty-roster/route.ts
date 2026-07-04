@@ -4,11 +4,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Lấy danh sách nhân viên CNTT
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
+
         const users = await prisma.user.findMany({
             where: {
-                role: 'CNTT'
+                role: targetDepartment
             },
             orderBy: {
                 dutyOrder: 'asc'

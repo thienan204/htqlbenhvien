@@ -9,6 +9,7 @@ interface TicketActionModalProps {
     ticket: Ticket | null;
     itUsers: ITUser[];
     user?: any;
+    targetDepartment?: string;
 }
 
 export const TicketActionModal: React.FC<TicketActionModalProps> = ({
@@ -17,7 +18,8 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     onOk,
     ticket,
     itUsers,
-    user
+    user,
+    targetDepartment = 'CNTT'
 }) => {
     const [actionForm] = Form.useForm();
 

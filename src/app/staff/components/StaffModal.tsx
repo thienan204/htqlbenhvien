@@ -84,7 +84,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
 
     // Cấu hình các trường (Ánh xạ các danh mục vào options)
     const fieldsConfig: FieldConfig[] = [
-        { id: 'ma_bac_si', label: 'Mã NV (Bắt buộc)', type: 'input', required: true, span: 12 },
+        { id: 'ma_nv', label: 'Mã NV (Bắt buộc)', type: 'input', required: true, span: 12 },
         { id: 'ho_ten', label: 'Họ và tên (Bắt buộc)', type: 'input', required: true, span: 12 },
         { id: 'ngay_sinh', label: 'Ngày sinh', type: 'date', span: 8 },
         { 
@@ -95,7 +95,8 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
             options: genders.map(g => ({ value: g.id, label: g.name })) 
         },
         { id: 'so_dien_thoai', label: 'Số điện thoại', type: 'input', span: 8 },
-        { id: 'dia_chi', label: 'Địa chỉ thường trú', type: 'input', span: 24 },
+        { id: 'cccd', label: 'Căn cước công dân', type: 'input', span: 8 },
+        { id: 'dia_chi', label: 'Địa chỉ thường trú', type: 'input', span: 16 },
         { 
             id: 'ma_khoa', 
             label: 'Khoa / Phòng (Bắt buộc)', 

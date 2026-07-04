@@ -6,13 +6,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import DynamicForm, { FieldConfig } from '@/components/shared/DynamicForm';
+import { Modal, Tabs } from 'antd';
+import MyServicesTab from './MyServicesTab';
 
 interface EditProfileModalProps {
     open: boolean;
     onClose: () => void;
+    initialTab?: string;
 }
 
-export default function EditProfileModal({ open, onClose }: EditProfileModalProps) {
+export default function EditProfileModal({ open, onClose, initialTab = '1' }: EditProfileModalProps) {
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [initialData, setInitialData] = useState<any>(null);
     const [hasStaff, setHasStaff] = useState(false);
     
@@ -70,7 +74,7 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
                             ho_ten: data.staff?.ho_ten,
                             so_dien_thoai: data.staff?.so_dien_thoai,
                             dia_chi: data.staff?.dia_chi,
-                            ma_bac_si: data.staff?.ma_bac_si,
+                            ma_nv: data.staff?.ma_nv,
                             ngay_sinh: data.staff?.ngay_sinh ? dayjs(data.staff.ngay_sinh) : null,
                             gioi_tinh_id: data.staff?.gioi_tinh_id,
                             ma_khoa: data.staff?.ma_khoa,
@@ -90,6 +94,12 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
             setInitialData(null);
         }
     }, [open, user]);
+
+    useEffect(() => {
+        if (open) {
+            setActiveTab(initialTab);
+        }
+    }, [open, initialTab]);
 
     const handleSave = async (values: any) => {
         try {
@@ -138,7 +148,7 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
 
     if (hasStaff) {
         fieldsConfig.push(
-            { id: 'ma_bac_si', label: 'Mã NV (Nhân viên)', type: 'input', span: 12 },
+            { id: 'ma_nv', label: 'Mã NV (Nhân viên)', type: 'input', span: 12 },
             { id: 'ho_ten', label: 'Họ và tên (Nhân viên)', type: 'input', span: 12 },
             { id: 'ngay_sinh', label: 'Ngày sinh', type: 'date', span: 8 },
             { 
@@ -196,14 +206,43 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
     }
 
     return (
-        <DynamicForm
-            formId="profile_update_form"
+        <Modal
             title={<span className="text-blue-600 text-xl font-bold">Cập nhật Hồ sơ Cá nhân</span>}
             open={open}
-            onClose={onClose}
-            onSubmit={handleSave}
-            fieldsConfig={fieldsConfig}
-            initialData={initialData}
-        />
+            onCancel={onClose}
+            footer={null}
+            width={1000}
+            destroyOnHidden
+            style={{ top: 20 }}
+            styles={{ body: { padding: '0 24px 24px 24px' } }}
+        >
+            <Tabs 
+                activeKey={activeTab} 
+                onChange={setActiveTab}
+                items={[
+                    {
+                        key: '1',
+                        label: 'Thông tin cá nhân',
+                        children: (
+                            <DynamicForm
+                                formId="profile_update_form"
+                                title={<span className="text-lg font-semibold">Chi tiết hồ sơ</span>}
+                                open={open}
+                                onClose={onClose}
+                                onSubmit={handleSave}
+                                fieldsConfig={fieldsConfig}
+                                initialData={initialData}
+                                mode="inline"
+                            />
+                        )
+                    },
+                    {
+                        key: '2',
+                        label: 'Phạm vi chuyên môn & Dịch vụ',
+                        children: <MyServicesTab />
+                    }
+                ]}
+            />
+        </Modal>
     );
 }

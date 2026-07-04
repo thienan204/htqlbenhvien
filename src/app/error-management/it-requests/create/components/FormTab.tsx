@@ -19,6 +19,7 @@ interface FormTabProps {
     fileList: any[];
     uploadProps: any;
     loading: boolean;
+    targetDepartment?: string;
 }
 
 export function FormTab({
@@ -37,25 +38,30 @@ export function FormTab({
     setSavedStaffId,
     fileList,
     uploadProps,
-    loading
+    loading,
+    targetDepartment = 'CNTT'
 }: FormTabProps) {
     return (
         <Card className="shadow-sm rounded-b-2xl rounded-tr-2xl border-slate-200 border-t-0">
             <Form form={form} layout="vertical" onFinish={handleCreateTicket}>
-                <Form.Item name="category" noStyle>
-                    <Radio.Group className="w-full mb-6 flex rounded-lg p-1 bg-slate-100" optionType="button" buttonStyle="solid">
-                        <Radio.Button value="SOFTWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
-                            Bệnh án
-                        </Radio.Button>
-                        <Radio.Button value="HARDWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
-                            Thiết bị/Sửa chữa
-                        </Radio.Button>
-                    </Radio.Group>
-                </Form.Item>
+                {targetDepartment === 'CNTT' ? (
+                    <Form.Item name="category" noStyle>
+                        <Radio.Group className="w-full mb-6 flex rounded-lg p-1 bg-slate-100" optionType="button" buttonStyle="solid">
+                            <Radio.Button value="SOFTWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
+                                Bệnh án
+                            </Radio.Button>
+                            <Radio.Button value="HARDWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
+                                Thiết bị/Sửa chữa
+                            </Radio.Button>
+                        </Radio.Group>
+                    </Form.Item>
+                ) : (
+                    <Form.Item name="category" initialValue="HARDWARE" hidden><Input /></Form.Item>
+                )}
 
                 <Form.Item noStyle shouldUpdate={(prev, curr) => prev.category !== curr.category}>
                     {({ getFieldValue }) => {
-                        const isSoftware = getFieldValue('category') === 'SOFTWARE';
+                        const isSoftware = targetDepartment === 'CNTT' ? getFieldValue('category') === 'SOFTWARE' : false;
                         return (
                             <>
                                 {isSoftware && (

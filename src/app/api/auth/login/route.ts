@@ -27,8 +27,14 @@ export async function POST(request: Request) {
             finalRole = 'ADMIN';
             finalPermissions = ['*']; // ADMIN has all permissions
         } else {
-            const user = await prisma.user.findUnique({
-                where: { username },
+            const user = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { username },
+                        { staff: { cccd: username } },
+                        { staff: { ma_nv: username } }
+                    ]
+                },
             });
 
             if (!user) {

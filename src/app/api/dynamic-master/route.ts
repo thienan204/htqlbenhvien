@@ -26,6 +26,20 @@ export async function GET(request: Request) {
                 }
                 continue;
             }
+            
+            if (ref === 'BedCatalog.MaKhoa_MaGiuong') {
+                try {
+                    const data = await prisma.bedCatalog.findMany({
+                        select: { ma_khoa: true, ma_giuong: true }
+                    });
+                    result[ref] = data
+                        .filter((d: any) => d.ma_khoa && d.ma_giuong)
+                        .map((d: any) => `${d.ma_khoa}_${d.ma_giuong}`);
+                } catch (err: any) {
+                    console.error('Error fetching BedCatalog.MaKhoa_MaGiuong:', err.message);
+                }
+                continue;
+            }
 
             const [table, column] = ref.split('.');
             if (!table || !column) continue;
@@ -36,13 +50,27 @@ export async function GET(request: Request) {
             try {
                 if (column.includes(':')) {
                     const [keyCol, valCol] = column.split(':');
-                    const data = await (prisma as any)[modelName].findMany({
-                        select: { [keyCol]: true, [valCol]: true }
-                    });
                     
-                    result[ref] = data
-                        .filter((d: any) => d[keyCol] !== null && d[keyCol] !== undefined)
-                        .map((d: any) => `${d[keyCol]}:::${d[valCol]}`);
+                    if (valCol.includes('.')) {
+                        const [relName, relCol] = valCol.split('.');
+                        const data = await (prisma as any)[modelName].findMany({
+                            select: { 
+                                [keyCol]: true, 
+                                [relName]: { select: { [relCol]: true } } 
+                            }
+                        });
+                        result[ref] = data
+                            .filter((d: any) => d[keyCol] !== null && d[keyCol] !== undefined && d[relName] !== null && d[relName] !== undefined)
+                            .map((d: any) => `${d[keyCol]}:::${d[relName][relCol]}`);
+                    } else {
+                        const data = await (prisma as any)[modelName].findMany({
+                            select: { [keyCol]: true, [valCol]: true }
+                        });
+                        
+                        result[ref] = data
+                            .filter((d: any) => d[keyCol] !== null && d[keyCol] !== undefined)
+                            .map((d: any) => `${d[keyCol]}:::${d[valCol]}`);
+                    }
                 } else {
                     const data = await (prisma as any)[modelName].findMany({
                         select: { [column]: true }

@@ -51,14 +51,23 @@ export class ValidationEngine {
     private rules: ValidationRule[] = [];
     private masterData: Record<string, Set<string>> = {};
     private allRecords: HosoRecord[] = [];
+    private _priceMapCache: Map<string, Set<number>> | null = null;
+    private _mismatchMaps: Record<string, Map<string, string>> = {};
+    private _priceMismatchMaps: Record<string, Map<string, Set<string>>> = {};
+    private externalContext: Record<string, any> = {};
+    private dynamicMessage: string | null = null;
 
     constructor(rules: ValidationRule[] = [], masterData: Record<string, Set<string>> = {}) {
         this.rules = rules;
         this.masterData = masterData;
     }
 
-    setContextRecords(records: HosoRecord[]) {
+    public setContextRecords(records: HosoRecord[]) {
         this.allRecords = records;
+    }
+
+    public setExternalContext(context: Record<string, any>) {
+        this.externalContext = context;
     }
 
     private resolvePathValues(record: HosoRecord, path: string): any[] {
@@ -95,6 +104,9 @@ export class ValidationEngine {
                 rootContext[g.type] = g.data;
             }
         });
+
+        // Merge external context (e.g. icd10Map, department rules)
+        Object.assign(rootContext, this.externalContext);
 
         // Add shortcuts for strict XML structure if needed, or helper to get list
 
@@ -156,6 +168,7 @@ export class ValidationEngine {
                     let isError = false;
 
                     if (rule.code && rule.code.trim()) {
+                        this.dynamicMessage = null;
                         isError = this.evaluateRuleCode(rule.code, context);
                     }
 
@@ -220,6 +233,7 @@ export class ValidationEngine {
 
                                 let isMatch = true;
                                 if (rule.code && rule.code.trim()) {
+                                    this.dynamicMessage = null;
                                     // For Group Count, code evaluation = true means it MATCHES the condition to be counted
                                     isMatch = this.evaluateRuleCode(rule.code, extendedContext);
                                 }
@@ -273,10 +287,13 @@ export class ValidationEngine {
                                     const allowedValues = rule.conditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
 
                                     // Check if value exists and matches one of the allowed values
-                                    // We convert to string and trim to handle cases like " 1" or type mismatches
-                                    const valStr = conditionVal !== null && conditionVal !== undefined ? String(conditionVal).trim() : '';
+                                    // Use this.getDataValue to safely extract the string from objects like { "#text": "15" }
+                                    const valStr = this.getDataValue(conditionVal);
 
                                     if (!valStr || !allowedValues.includes(valStr)) {
+                                        if (rule.code && rule.code.includes('BedCatalog')) {
+                                            console.log(`[DEBUG] Rule ${rule.id} SKIPPED row ${index} because condition failed. conditionVal: ${JSON.stringify(conditionVal)}, valStr: ${valStr}, allowed: ${allowedValues}`);
+                                        }
                                         return;
                                     }
                                 }
@@ -314,7 +331,11 @@ export class ValidationEngine {
                                 let isError = false;
 
                                 if (rule.code && rule.code.trim()) {
+                                    this.dynamicMessage = null;
                                     isError = this.evaluateRuleCode(rule.code, extendedContext);
+                                    if (rule.code.includes('BedCatalog')) {
+                                        console.log(`[DEBUG] Rule ${rule.id} | XMLType: ${rule.xmlType} | row index: ${index} | MA_KHOA: ${item.MA_KHOA} | MA_GIUONG: ${item.MA_GIUONG} | isError: ${isError}`);
+                                    }
                                 }
 
                                 if (!isError && rule.mathExpression && rule.mathExpression.trim()) {
@@ -361,13 +382,14 @@ export class ValidationEngine {
     }
 
     private createResult(rule: ValidationRule, index?: number, debugInfo?: string): ValidationResult {
+        const msg = this.dynamicMessage ? this.dynamicMessage : (rule.errorMessage || rule.name);
         return {
             ruleId: rule.id,
             ruleName: rule.name,
             type: rule.type,
             xmlType: rule.xmlType,
             field: rule.field,
-            message: (rule.errorMessage || rule.name) + (debugInfo ? ` ${debugInfo}` : ''),
+            message: msg + (debugInfo ? ` ${debugInfo}` : ''),
             isError: rule.type === 'Xuất toán',
             index
         };
@@ -698,18 +720,20 @@ export class ValidationEngine {
                 return false;
             };
 
-            let priceMapCache: Map<string, number> | null = null;
             const GET_PRICE_MAP = () => {
-                if (priceMapCache) return priceMapCache;
-                priceMapCache = new Map();
+                if (this._priceMapCache) return this._priceMapCache;
+                this._priceMapCache = new Map();
                 const set = this.masterData['Mau05_PRICE_MAP'];
                 if (set) {
                     for (const item of set) {
                         const [m, p] = item.split(':::');
-                        priceMapCache.set(m, Number(p));
+                        if (!this._priceMapCache.has(m)) {
+                            this._priceMapCache.set(m, new Set<number>());
+                        }
+                        this._priceMapCache.get(m)!.add(Number(p));
                     }
                 }
-                return priceMapCache;
+                return this._priceMapCache;
             };
 
             const CHECK_MAU05_PRICE_MISMATCH = (maDichVu: any, donGia: any): boolean => {
@@ -717,12 +741,19 @@ export class ValidationEngine {
                 if (!mdv) return false;
                 const map = GET_PRICE_MAP();
                 if (!map.has(mdv)) return false; 
-                const expectedPrice = map.get(mdv);
+                const expectedPrices = map.get(mdv)!;
                 const actualPrice = Number(donGia);
-                return expectedPrice !== actualPrice; 
+                
+                let hasMatch = false;
+                for (const expectedPrice of expectedPrices) {
+                    if (Math.round(expectedPrice) === Math.round(actualPrice)) {
+                        hasMatch = true;
+                        break;
+                    }
+                }
+                return !hasMatch; 
             };
 
-            const _mismatchMaps: Record<string, Map<string, string>> = {};
             const CHECK_MISMATCH = (mapRef: string, keyVal: any, actualVal: any): boolean => {
                 const kv = String(keyVal).trim();
                 if (!kv) return false;
@@ -730,16 +761,16 @@ export class ValidationEngine {
                 const set = this.masterData[mapRef];
                 if (!set) return false;
 
-                if (!_mismatchMaps[mapRef]) {
+                if (!this._mismatchMaps[mapRef]) {
                     const map = new Map<string, string>();
                     for (const item of set) {
                         const [m, p] = item.split(':::');
                         map.set(m, p);
                     }
-                    _mismatchMaps[mapRef] = map;
+                    this._mismatchMaps[mapRef] = map;
                 }
 
-                const map = _mismatchMaps[mapRef];
+                const map = this._mismatchMaps[mapRef];
                 if (!map.has(kv)) return false; 
                 
                 const expectedVal = map.get(kv);
@@ -751,6 +782,56 @@ export class ValidationEngine {
                 }
                 
                 return String(expectedVal).trim() !== String(actualVal).trim();
+            };
+
+            const CHECK_PRICE_MISMATCH_MAU03_04 = (mapRef: string, keyVal: any, actualVal: any): boolean => {
+                const kv = String(keyVal).trim();
+                if (!kv) return false;
+                
+                const set = this.masterData[mapRef];
+                if (!set) return false;
+
+                if (!this._priceMismatchMaps[mapRef]) {
+                    const map = new Map<string, Set<string>>();
+                    for (const item of set) {
+                        const [m, p] = item.split(':::');
+                        if (!map.has(m)) {
+                            map.set(m, new Set<string>());
+                        }
+                        map.get(m)!.add(p);
+                    }
+                    this._priceMismatchMaps[mapRef] = map;
+                }
+
+                const map = this._priceMismatchMaps[mapRef];
+                if (!map.has(kv)) return false; 
+                
+                const expectedVals = map.get(kv)!;
+                const aNum = Number(actualVal);
+                const isActualNum = !isNaN(aNum) && String(actualVal).trim() !== '';
+                
+                let hasMatch = false;
+
+                for (const expectedVal of expectedVals) {
+                    const eNum = Number(expectedVal);
+                    const isExpectedNum = !isNaN(eNum) && expectedVal !== '';
+
+                    if (isExpectedNum && isActualNum) {
+                        // So sánh làm tròn để giải quyết sai số (ví dụ: 4899.999 và 4900)
+                        if (Math.round(eNum) === Math.round(aNum)) {
+                            hasMatch = true;
+                            break;
+                        }
+                    } else {
+                        if (String(expectedVal).trim() === String(actualVal).trim()) {
+                            hasMatch = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Trả về true nếu KHÔNG CÓ giá trị nào khớp (tức là Mismatch)
+                return !hasMatch;
             };
 
             // Only expose specific safe keys and the context objects
@@ -767,7 +848,8 @@ export class ValidationEngine {
                 CHECK_DUPLICATE_DIFF: CHECK_DUPLICATE_DIFF,
                 CHECK_DUPLICATE_IN_LIST: CHECK_DUPLICATE_IN_LIST,
                 CHECK_MAU05_PRICE_MISMATCH: CHECK_MAU05_PRICE_MISMATCH,
-                CHECK_MISMATCH: CHECK_MISMATCH
+                CHECK_MISMATCH: CHECK_MISMATCH,
+                CHECK_PRICE_MISMATCH_MAU03_04: CHECK_PRICE_MISMATCH_MAU03_04
             };
 
             const keys = [...Object.keys(context), ...Object.keys(helpers)];
@@ -797,8 +879,21 @@ export class ValidationEngine {
                 }
             }
 
-            const getVal = (path: string) => {
+            const getVal = (path: string): any => {
                 path = path.trim();
+                
+                // Handle concatenation (e.g. MA_KHOA + '_' + MA_GIUONG)
+                if (path.includes('+') && !path.startsWith("'") && !path.startsWith('"')) {
+                    const parts = path.split('+');
+                    return parts.map(p => {
+                        const val = getVal(p);
+                        if (val === null || val === undefined) return '';
+                        if (typeof val === 'object' && val['#text'] !== undefined) return String(val['#text']).trim();
+                        if (typeof val === 'object' && val.__cdata !== undefined) return String(val.__cdata).trim();
+                        return String(val);
+                    }).join('');
+                }
+
                 // Handle String Literals
                 if ((path.startsWith("'") && path.endsWith("'")) || (path.startsWith('"') && path.endsWith('"'))) {
                     return path.substring(1, path.length - 1);
@@ -851,6 +946,11 @@ export class ValidationEngine {
                     }
                 }
                 const result = notOp ? !exists : exists;
+                
+                if (listName.includes('BedCatalog')) {
+                    console.log(`[EVAL] match: ${match} | valStr: ${valStr} | existsInDB: ${exists} | notOp: ${notOp} | result: ${result}`);
+                }
+                
                 // Return string representation of boolean
                 return result ? "true" : "false";
             });
@@ -902,6 +1002,87 @@ export class ValidationEngine {
                 return expectedPrice !== actualPrice ? "true" : "false";
             });
 
+            // 0.6.5. Handle CHECK_ICD10
+            cleanCode = cleanCode.replace(/CHECK_ICD10\(\s*['"]([^'"]+)['"]\s*,\s*([^)]+)\s*\)/g, (match, ruleName, field) => {
+                const val = getVal(field.trim());
+                const valStr = val !== null && val !== undefined ? String(val).trim() : '';
+                
+                if (!valStr) return "false";
+                
+                const map = this.externalContext?.icd10Map;
+                if (!map) return "false";
+
+                const codes = valStr.split(';').map(s => s.trim()).filter(Boolean);
+                let hasError = false;
+
+                for (const code of codes) {
+                    const info = map[code];
+                    if (info && info[ruleName] === true) {
+                        hasError = true;
+                        break;
+                    }
+                }
+                
+                return hasError ? "true" : "false";
+            });
+
+            // 0.6.6. Handle CHECK_NOT_IN_ICD10
+            cleanCode = cleanCode.replace(/CHECK_NOT_IN_ICD10\(\s*([^)]+)\s*\)/g, (match, field) => {
+                const val = getVal(field.trim());
+                const valStr = val !== null && val !== undefined ? String(val).trim() : '';
+                
+                if (!valStr) return "false"; // Empty is handled by other rules if required
+                
+                const map = this.externalContext?.icd10Map;
+                if (!map) return "false"; // Cannot validate
+
+                const codes = valStr.split(';').map(s => s.trim()).filter(Boolean);
+                let isMissing = false;
+                const missingList: string[] = [];
+
+                for (const code of codes) {
+                    const info = map[code];
+                    if (!info || info.found === false) {
+                        isMissing = true;
+                        if (!missingList.includes(code)) {
+                            missingList.push(code);
+                        }
+                    }
+                }
+                
+                if (isMissing) {
+                    const msg = `${field.trim()} [${missingList.join(', ')}] không nằm trong Danh mục ICD TT06`;
+                    if (this.dynamicMessage) {
+                        this.dynamicMessage += ` | ${msg}`;
+                    } else {
+                        this.dynamicMessage = msg;
+                    }
+                }
+                
+                return isMissing ? "true" : "false";
+            });
+
+            // 0.6.7. Handle ENDS_WITH
+            cleanCode = cleanCode.replace(/ENDS_WITH\(\s*([^,]+)\s*,\s*['"]([^'"]+)['"]\s*\)/g, (match, fieldRef, suffix) => {
+                const val = getVal(fieldRef.trim());
+                if (val === null || val === undefined) return "false";
+                return String(val).endsWith(suffix) ? "true" : "false";
+            });
+
+            // 0.6.8. Handle STARTS_WITH
+            cleanCode = cleanCode.replace(/STARTS_WITH\(\s*([^,]+)\s*,\s*['"]([^'"]+)['"]\s*\)/g, (match, fieldRef, prefix) => {
+                const val = getVal(fieldRef.trim());
+                if (val === null || val === undefined) return "false";
+                return String(val).startsWith(prefix) ? "true" : "false";
+            });
+
+            // 0.6.9. Handle CONTAINS
+            cleanCode = cleanCode.replace(/CONTAINS\(\s*([^,]+)\s*,\s*['"]([^'"]+)['"]\s*\)/g, (match, fieldRef, substr) => {
+                const val = getVal(fieldRef.trim());
+                if (val === null || val === undefined) return "false";
+                return String(val).includes(substr) ? "true" : "false";
+            });
+
             // 0.7. Handle CHECK_MISMATCH (Regex fallback for code strings)
             cleanCode = cleanCode.replace(/CHECK_MISMATCH\(\s*['"]([^'"]+)['"]\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, (match, mapRef, keyRef, actualRef) => {
                 const keyVal = getVal(keyRef.trim());
@@ -930,8 +1111,52 @@ export class ValidationEngine {
                 if (!isNaN(eNum) && !isNaN(aNum) && expectedVal !== '' && String(actualVal).trim() !== '') {
                      return eNum !== aNum ? "true" : "false";
                 }
-                
                 return String(expectedVal).trim() !== String(actualVal).trim() ? "true" : "false";
+            });
+
+            // 0.8. Handle CHECK_PRICE_MISMATCH_MAU03_04 (Regex fallback for code strings)
+            cleanCode = cleanCode.replace(/CHECK_PRICE_MISMATCH_MAU03_04\(\s*['"]([^'"]+)['"]\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, (match, mapRef, keyRef, actualRef) => {
+                const keyVal = getVal(keyRef.trim());
+                const actualVal = getVal(actualRef.trim());
+                
+                const kv = keyVal !== null && keyVal !== undefined ? String(keyVal).trim() : '';
+                if (!kv) return "false";
+                
+                const set = this.masterData[mapRef];
+                if (!set) return "false";
+
+                const expectedVals: string[] = [];
+                for (const item of set) {
+                    const [m, p] = item.split(':::');
+                    if (m === kv) {
+                        expectedVals.push(p);
+                    }
+                }
+
+                if (expectedVals.length === 0) return "false";
+                
+                const aNum = Number(actualVal);
+                const isActualNum = !isNaN(aNum) && String(actualVal).trim() !== '';
+                
+                let hasMatch = false;
+                for (const expectedVal of expectedVals) {
+                    const eNum = Number(expectedVal);
+                    const isExpectedNum = !isNaN(eNum) && expectedVal !== '';
+
+                    if (isExpectedNum && isActualNum) {
+                        if (Math.round(eNum) === Math.round(aNum)) {
+                            hasMatch = true;
+                            break;
+                        }
+                    } else {
+                        if (String(expectedVal).trim() === String(actualVal).trim()) {
+                            hasMatch = true;
+                            break;
+                        }
+                    }
+                }
+                
+                return !hasMatch ? "true" : "false";
             });
 
             // 1. Handle LOGICAL OR (||)
@@ -945,7 +1170,13 @@ export class ValidationEngine {
             if (cleanCode.includes('&&')) {
                 const parts = cleanCode.split('&&');
                 // All parts must be true
-                return parts.every(part => this.evaluateRuleCode(part, context, throwError));
+                const result = parts.every(part => {
+                    const partResult = this.evaluateRuleCode(part, context, throwError);
+                    console.log(`[EVAL &&] part="${part}" => ${partResult}`);
+                    return partResult;
+                });
+                console.log(`[EVAL &&] final result for "${cleanCode}" => ${result}`);
+                return result;
             }
 
             // 3. Handle PARENTHESES (Basic support for wrapping single expression)
@@ -1078,5 +1309,49 @@ export const DEFAULT_RULES: ValidationRule[] = [
         name: 'Sai định dạng Mã thẻ tạm',
         code: '(MA_THE_TAM != null && MA_THE_TAM != "") && (MA_THE_TAM.length != 15)',
         errorMessage: 'Mã thẻ tạm phải có độ dài 15 ký tự'
+    },
+    {
+        id: '8',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'MA_BENH',
+        name: 'Mã không được dùng làm bệnh chính',
+        code: "CHECK_ICD10('is_not_main_disease', MA_BENH)",
+        errorMessage: 'Mã bệnh không được dùng làm bệnh chính theo TT06'
+    },
+    {
+        id: '9',
+        active: true,
+        checkNotNull: false,
+        type: 'Cảnh báo',
+        xmlType: 'XML1',
+        field: 'MA_BENH',
+        name: 'Không khuyến khích làm bệnh chính',
+        code: "CHECK_ICD10('not_recommended_main', MA_BENH)",
+        errorMessage: 'Không khuyến khích dùng mã này làm bệnh chính'
+    },
+    {
+        id: '10',
+        active: true,
+        checkNotNull: false,
+        type: 'Cảnh báo',
+        xmlType: 'XML1',
+        field: 'MA_BENH',
+        name: 'Bắt buộc có mã chi tiết hơn',
+        code: "CHECK_ICD10('requires_more_specific', MA_BENH)",
+        errorMessage: 'Mã bệnh yêu cầu mã chi tiết hơn (4 hoặc 5 ký tự)'
+    },
+    {
+        id: '11',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'MA_BENH',
+        name: 'Chỉ dùng cho nguyên nhân tử vong',
+        code: "CHECK_ICD10('is_death_cause_only', MA_BENH)",
+        errorMessage: 'Mã bệnh này chỉ được sử dụng cho nguyên nhân tử vong'
     }
 ];

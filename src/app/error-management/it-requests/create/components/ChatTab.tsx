@@ -15,8 +15,8 @@ interface ChatTabProps {
     fileList: any[];
     uploadProps: any;
     handleFileChange: (e: any) => void;
-    setActiveTab: (tab: string) => void;
     form: any;
+    targetDepartment?: string;
 }
 
 export function ChatTab({
@@ -32,14 +32,15 @@ export function ChatTab({
     uploadProps,
     handleFileChange,
     setActiveTab,
-    form
+    form,
+    targetDepartment = 'CNTT'
 }: ChatTabProps) {
     const router = useRouter();
     const [chatText, setChatText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [chatLoading, setChatLoading] = useState(false);
     const recognitionRef = useRef<any>(null);
-    const [chatCategory, setChatCategory] = useState<string>('SOFTWARE');
+    const [chatCategory, setChatCategory] = useState<string>(targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE');
 
     const handleVoiceInput = () => {
         if (isListening && recognitionRef.current) {
@@ -126,13 +127,16 @@ export function ChatTab({
                     assigneeId: null, // Auto assign
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: staffId,
-                    sdt: staff?.so_dien_thoai || ''
+                    sdt: staff?.so_dien_thoai || '',
+                    targetDepartment
                 })
             });
 
             if (res.ok) {
                 message.success('Gửi yêu cầu thành công!');
-                router.push('/error-management/it-requests');
+                if (targetDepartment === 'VTYT') router.push('/error-management/vtyt-requests');
+                else if (targetDepartment === 'HCQT') router.push('/error-management/hcqt-requests');
+                else router.push('/error-management/it-requests');
             } else {
                 const err = await res.json();
                 message.error(err.error || 'Gửi yêu cầu thất bại');
@@ -181,20 +185,22 @@ export function ChatTab({
             </div>
 
             {/* Category Selection for Chat Tab */}
-            <Radio.Group 
-                value={chatCategory} 
-                onChange={(e) => setChatCategory(e.target.value)}
-                className="w-full mb-4 flex rounded-lg p-1 bg-white border border-slate-200 shadow-sm" 
-                optionType="button" 
-                buttonStyle="solid"
-            >
-                <Radio.Button value="SOFTWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'SOFTWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
-                    Bệnh án
-                </Radio.Button>
-                <Radio.Button value="HARDWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'HARDWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
-                    Thiết bị/Sửa chữa
-                </Radio.Button>
-            </Radio.Group>
+            {targetDepartment === 'CNTT' ? (
+                <Radio.Group 
+                    value={chatCategory} 
+                    onChange={(e) => setChatCategory(e.target.value)}
+                    className="w-full mb-4 flex rounded-lg p-1 bg-white border border-slate-200 shadow-sm" 
+                    optionType="button" 
+                    buttonStyle="solid"
+                >
+                    <Radio.Button value="SOFTWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'SOFTWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
+                        Bệnh án
+                    </Radio.Button>
+                    <Radio.Button value="HARDWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'HARDWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
+                        Thiết bị/Sửa chữa
+                    </Radio.Button>
+                </Radio.Group>
+            ) : null}
 
             <div className="flex-1 overflow-y-auto mb-4 space-y-4">
                 <div className="flex gap-3">

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ITError {
@@ -25,7 +26,10 @@ export default function ITConfigPage() {
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(10);
 
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'CNTT';
+    const searchParams = useSearchParams();
+    const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
+
+    const isAdmin = user?.role === 'ADMIN' || user?.role === targetDepartment;
 
     useEffect(() => {
         fetchConfig();
@@ -34,7 +38,7 @@ export default function ITConfigPage() {
     const fetchConfig = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/error-management/it-request-config');
+            const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const data = await res.json();
                 const mappedSoftwareErrors = (data.softwareErrors || []).map((err: string, index: number) => ({
@@ -84,10 +88,10 @@ export default function ITConfigPage() {
 
             const stringArray = updatedErrors.map(e => e.name);
             const payload = isSoftware 
-                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map(e => e.name), assignmentMode, maxImageSizeMB }
-                : { softwareErrors: softwareErrors.map(e => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB };
+                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map(e => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
+                : { softwareErrors: softwareErrors.map(e => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
 
-            const res = await fetch('/api/error-management/it-request-config', {
+            const res = await fetch(`/api/error-management/it-request-config`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -115,10 +119,10 @@ export default function ITConfigPage() {
             const stringArray = updatedErrors.map(e => e.name);
 
             const payload = isSoftware 
-                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map(e => e.name), assignmentMode, maxImageSizeMB }
-                : { softwareErrors: softwareErrors.map(e => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB };
+                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map(e => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
+                : { softwareErrors: softwareErrors.map(e => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
 
-            const res = await fetch('/api/error-management/it-request-config', {
+            const res = await fetch(`/api/error-management/it-request-config`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -141,9 +145,10 @@ export default function ITConfigPage() {
                 softwareErrors: softwareErrors.map(e => e.name),
                 hardwareErrors: hardwareErrors.map(e => e.name),
                 assignmentMode,
-                maxImageSizeMB
+                maxImageSizeMB,
+                targetDepartment
             };
-            const res = await fetch('/api/error-management/it-request-config', {
+            const res = await fetch(`/api/error-management/it-request-config`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -288,12 +293,12 @@ export default function ITConfigPage() {
             <div className="max-w-[1000px] mx-auto space-y-6">
                 <Breadcrumb items={[
                     { title: <Link href="/"><HomeOutlined /> Trang chủ</Link> }, 
-                    { title: <Link href="/error-management/it-requests">Quản lý Yêu cầu IT</Link> }, 
-                    { title: 'Danh mục Lỗi' }
+                    { title: <Link href={`/error-management/${targetDepartment.toLowerCase()}-requests`}>Quản lý Yêu cầu {targetDepartment}</Link> }, 
+                    { title: 'Cấu hình Danh mục Lỗi' }
                 ]} />
 
                 <Card
-                    title={<span className="text-xl font-bold text-slate-800">Danh Mục Lỗi IT</span>}
+                    title={<span className="text-xl font-bold text-slate-800">Cấu hình Danh Mục Yêu cầu - {targetDepartment}</span>}
                     extra={
                         <Button type="primary" icon={<PlusOutlined />} onClick={() => {
                             setEditingError(null);

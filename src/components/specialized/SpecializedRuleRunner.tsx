@@ -67,10 +67,18 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 const map: Record<string, { ho_ten: string, trinh_do: string }> = {};
                 if (Array.isArray(staffs)) {
                     staffs.forEach((s: any) => {
-                        map[s.ma_bac_si] = {
+                        const info = {
                             ho_ten: s.ho_ten || '',
-                            trinh_do: s.trinh_do || ''
+                            trinh_do: s.trinh_do_ref?.name || s.trinh_do || ''
                         };
+                        if (s.ma_nv) {
+                            map[s.ma_nv] = info;
+                        }
+                        if (s.certificates && Array.isArray(s.certificates)) {
+                            s.certificates.forEach((c: any) => {
+                                if (c.so_cchn) map[c.so_cchn] = info;
+                            });
+                        }
                     });
                 }
                 setStaffMap(map);

@@ -27,21 +27,49 @@ export async function POST(request: Request) {
             const ops = body.filter(i => i.ma_khoa && i.ten_khoa).map(item =>
                 prisma.department.upsert({
                     where: { ma_khoa: String(item.ma_khoa) },
-                    update: { ten_khoa: String(item.ten_khoa) },
-                    create: { ma_khoa: String(item.ma_khoa), ten_khoa: String(item.ten_khoa) }
+                    update: { 
+                        ten_khoa: String(item.ten_khoa),
+                        ma_khoa_bv: item.ma_khoa_bv ? String(item.ma_khoa_bv) : undefined,
+                        ten_khoa_bv: item.ten_khoa_bv ? String(item.ten_khoa_bv) : undefined
+                    },
+                    create: { 
+                        ma_khoa: String(item.ma_khoa), 
+                        ten_khoa: String(item.ten_khoa),
+                        ma_khoa_bv: item.ma_khoa_bv ? String(item.ma_khoa_bv) : undefined,
+                        ten_khoa_bv: item.ten_khoa_bv ? String(item.ten_khoa_bv) : undefined,
+                        type: 'CLINICAL'
+                    }
                 })
             );
             await prisma.$transaction(ops);
             return NextResponse.json({ message: 'Import successful', count: ops.length });
         } else {
-            const { ma_khoa, ten_khoa } = body;
+            const { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, type, old_ma_khoa } = body;
             if (!ma_khoa || !ten_khoa) {
                 return NextResponse.json({ error: 'Missing ma_khoa or ten_khoa' }, { status: 400 });
             }
+
+            // Check if we are changing the primary key
+            if (old_ma_khoa && old_ma_khoa !== ma_khoa) {
+                try {
+                    const item = await prisma.department.update({
+                        where: { ma_khoa: old_ma_khoa },
+                        data: { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, type: type || 'CLINICAL' }
+                    });
+                    return NextResponse.json(item);
+                } catch (error: any) {
+                    const errStr = String(error?.message || '');
+                    if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001')) {
+                        return NextResponse.json({ error: 'Không thể đổi Mã Khoa vì đang có Nhân sự hoặc dữ liệu liên quan. Vui lòng tạo khoa mới và chuyển dữ liệu sang!' }, { status: 400 });
+                    }
+                    throw error; // Let the outer catch handle it
+                }
+            }
+
             const item = await prisma.department.upsert({
                 where: { ma_khoa },
-                update: { ten_khoa },
-                create: { ma_khoa, ten_khoa }
+                update: { ten_khoa, ma_khoa_bv, ten_khoa_bv, type: type || 'CLINICAL' },
+                create: { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, type: type || 'CLINICAL' }
             });
             return NextResponse.json(item);
         }
@@ -55,6 +83,13 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const ma_khoa = searchParams.get('ma_khoa');
+        const deleteAll = searchParams.get('deleteAll');
+
+        if (deleteAll === 'true') {
+            const result = await prisma.department.deleteMany();
+            return NextResponse.json({ success: true, count: result.count });
+        }
+
         if (!ma_khoa) return NextResponse.json({ error: 'Missing ma_khoa' }, { status: 400 });
 
         // Check constraints manually to provide specific error message

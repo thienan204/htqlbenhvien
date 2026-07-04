@@ -32,7 +32,7 @@ const showNativeNotification = (title: string, body: string) => {
     }
 };
 
-export const useTickets = (user: any, isAdmin: boolean) => {
+export const useTickets = (user: any, isAdmin: boolean, targetDepartment: string = 'CNTT') => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(false);
     
@@ -42,7 +42,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
     const fetchTickets = async (isPolling = false) => {
         if (!isPolling) setLoading(true);
         try {
-            const res = await fetch('/api/error-management/it-requests');
+            const res = await fetch(`/api/error-management/it-requests?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const data = await res.json();
                 setTickets(data);
@@ -51,7 +51,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
                 
                 if (isPolling && unassignedTickets.length > lastUnassignedCount && lastUnassignedCount !== 0) {
                     if (isAdmin) {
-                        playNotificationSound();
+                        playNotificationSound(targetDepartment);
                         notification.info({
                             title: 'Có lỗi mới chờ tiếp nhận!',
                             description: 'Có một lỗi mới vừa được gửi lên chưa có người xử lý.',
@@ -62,7 +62,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
                 }
 
                 if (isPolling && myTickets.length > lastMyTicketCount && lastMyTicketCount !== 0) {
-                    playNotificationSound();
+                    playNotificationSound(targetDepartment);
                     notification.success({
                         title: 'Việc mới được phân công!',
                         description: 'Bạn vừa nhận được một yêu cầu hỗ trợ mới, vui lòng kiểm tra.',
@@ -79,7 +79,7 @@ export const useTickets = (user: any, isAdmin: boolean) => {
 
                 if (unacceptedTickets.length > 0) {
                     if (isPolling) {
-                        playNotificationSound();
+                        playNotificationSound(targetDepartment);
                         showNativeNotification('🚨 Nhắc nhở: Có việc chưa tiếp nhận!', `Bạn đang có ${unacceptedTickets.length} yêu cầu cần xử lý. Vui lòng bấm "Nhận việc"!`);
                     }
                     notification.warning({

@@ -9,13 +9,15 @@ interface EditTicketModalProps {
     ticket: Ticket | null;
     onCancel: () => void;
     onSuccess: () => void;
+    targetDepartment?: string;
 }
 
 export const EditTicketModal: React.FC<EditTicketModalProps> = ({
     visible,
     ticket,
     onCancel,
-    onSuccess
+    onSuccess,
+    targetDepartment = 'CNTT'
 }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
@@ -117,16 +119,18 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                 destroyOnHidden
             >
                 <Form form={form} layout="vertical" className="mt-4">
-                    <Form.Item
-                        name="category"
-                        label="Loại sự cố"
-                        rules={[{ required: true, message: 'Vui lòng chọn loại sự cố' }]}
-                    >
-                        <Radio.Group buttonStyle="solid" className="flex">
-                            <Radio.Button value="SOFTWARE" className="flex-1 text-center">Phần mềm (BAĐT)</Radio.Button>
-                            <Radio.Button value="HARDWARE" className="flex-1 text-center">Thiết bị/Sửa chữa</Radio.Button>
-                        </Radio.Group>
-                    </Form.Item>
+                    {targetDepartment === 'CNTT' && (
+                        <Form.Item
+                            name="category"
+                            label="Loại sự cố"
+                            rules={[{ required: true, message: 'Vui lòng chọn loại sự cố' }]}
+                        >
+                            <Radio.Group buttonStyle="solid" className="flex">
+                                <Radio.Button value="SOFTWARE" className="flex-1 text-center">Phần mềm (BAĐT)</Radio.Button>
+                                <Radio.Button value="HARDWARE" className="flex-1 text-center">Thiết bị/Sửa chữa</Radio.Button>
+                            </Radio.Group>
+                        </Form.Item>
+                    )}
 
                     <Form.Item
                         name="ten_loi"

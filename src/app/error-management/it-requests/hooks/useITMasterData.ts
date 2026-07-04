@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ITUser } from '../types';
 
-export const useITMasterData = (user: any) => {
+export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') => {
     const [itUsers, setItUsers] = useState<ITUser[]>([]);
     const [softwareErrors, setSoftwareErrors] = useState<string[]>([]);
     const [hardwareErrors, setHardwareErrors] = useState<string[]>([]);
@@ -27,7 +27,7 @@ export const useITMasterData = (user: any) => {
 
     const fetchITUsers = async () => {
         try {
-            const res = await fetch('/api/error-management/duty-roster');
+            const res = await fetch(`/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const data = await res.json();
                 setItUsers(data.filter((u: ITUser) => u.isAvailable));
@@ -43,17 +43,11 @@ export const useITMasterData = (user: any) => {
 
     const fetchConfiguredFields = async () => {
         try {
-            const res = await fetch('/api/error-management/it-request-config');
+            const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const configData = await res.json();
                 setSoftwareErrors(configData.softwareErrors || []);
-                setHardwareErrors(configData.hardwareErrors || [
-                    'Máy tính không lên',
-                    'Hết mực in / Kẹt giấy',
-                    'Mất mạng Internet',
-                    'Lỗi bàn phím / Chuột',
-                    'Khác'
-                ]);
+                setHardwareErrors(configData.hardwareErrors || []);
                 setAssignmentMode(configData.assignmentMode || 'A');
             }
         } catch (error) {

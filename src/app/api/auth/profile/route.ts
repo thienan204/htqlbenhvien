@@ -21,10 +21,11 @@ export async function GET(request: Request) {
                 staffId: true,
                 staff: {
                     select: {
+                        id: true,
                         ho_ten: true,
                         so_dien_thoai: true,
                         dia_chi: true,
-                        ma_bac_si: true,
+                        ma_nv: true,
                         ngay_sinh: true,
                         gioi_tinh_id: true,
                         ma_khoa: true,
@@ -55,7 +56,7 @@ export async function PUT(request: Request) {
         const { 
             name, telegram_id, isAvailable, 
             ho_ten, so_dien_thoai, dia_chi,
-            ma_bac_si, ngay_sinh, gioi_tinh_id, ma_khoa,
+            ma_nv, ngay_sinh, gioi_tinh_id, ma_khoa,
             loai_hop_dong_id, chuc_vu_id, vi_tri_viec_lam_id, chuc_danh_id, trinh_do_id
         } = body;
 
@@ -82,7 +83,7 @@ export async function PUT(request: Request) {
                         ho_ten: ho_ten !== undefined ? ho_ten : undefined,
                         so_dien_thoai: so_dien_thoai !== undefined ? so_dien_thoai : undefined,
                         dia_chi: dia_chi !== undefined ? dia_chi : undefined,
-                        ma_bac_si: ma_bac_si !== undefined ? ma_bac_si : undefined,
+                        ma_nv: ma_nv !== undefined ? ma_nv : undefined,
                         ngay_sinh: ngay_sinh !== undefined && ngay_sinh !== null ? new Date(ngay_sinh) : (ngay_sinh === null ? null : undefined),
                         gioi_tinh_id: gioi_tinh_id !== undefined ? gioi_tinh_id : undefined,
                         ma_khoa: ma_khoa !== undefined ? ma_khoa : undefined,

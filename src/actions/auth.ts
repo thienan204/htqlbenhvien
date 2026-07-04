@@ -13,6 +13,7 @@ export type UserPayload = {
     staffId?: string;
     permissions?: any;
     isManager?: boolean;
+    ma_cchn?: string;
 };
 
 export async function getCurrentUser(): Promise<UserPayload | null> {
@@ -27,6 +28,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
 
         let permissions: any = [];
         let isManager = false;
+        let ma_cchn: string | undefined = undefined;
         
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
@@ -44,10 +46,19 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 
                 const userRecord = await prisma.user.findUnique({
                     where: { id: payload.id as string },
-                    include: { staff: true }
+                    include: { 
+                        staff: {
+                            include: {
+                                certificates: true
+                            }
+                        } 
+                    }
                 });
                 if (userRecord?.staff?.chuc_vu_id) {
                     isManager = true;
+                }
+                if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
+                    ma_cchn = userRecord.staff.certificates[0].so_cchn;
                 }
             } catch (err) {
                 console.error('Error fetching fresh permissions:', err);
@@ -63,7 +74,8 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             ma_khoa: payload.ma_khoa as string | undefined,
             staffId: payload.staffId as string | undefined,
             permissions,
-            isManager
+            isManager,
+            ma_cchn
         };
     } catch (error) {
         return null; // Invalid or expired token

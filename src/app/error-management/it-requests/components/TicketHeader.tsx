@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Switch } from 'antd';
-import { PlusOutlined, BugOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Switch, Popconfirm } from 'antd';
+import { PlusOutlined, BugOutlined, SettingOutlined, DeleteOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
 interface TicketHeaderProps {
@@ -11,6 +11,8 @@ interface TicketHeaderProps {
     onToggleAvailability: (checked: boolean) => void;
     onCreateRequest: () => void;
     onOpenSettings: () => void;
+    onDeleteAll?: () => void;
+    targetDepartment?: string;
 }
 
 export const TicketHeader: React.FC<TicketHeaderProps> = ({
@@ -20,8 +22,20 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
     togglingAvailability,
     onToggleAvailability,
     onCreateRequest,
-    onOpenSettings
+    onOpenSettings,
+    onDeleteAll,
+    targetDepartment = 'CNTT'
 }) => {
+    const isVTYT = targetDepartment === 'VTYT';
+    const isHCQT = targetDepartment === 'HCQT';
+    
+    let title = 'Quản lý yêu cầu CNTT';
+    if (isVTYT) title = 'Quản lý yêu cầu Vật tư Y tế';
+    if (isHCQT) title = 'Quản lý yêu cầu Hành chính Quản trị';
+    
+    let description = 'Quản lý các ticket hỗ trợ gửi lên phòng CNTT';
+    if (isVTYT) description = 'Quản lý các ticket hỗ trợ gửi lên phòng Vật tư Y tế';
+    if (isHCQT) description = 'Quản lý các ticket hỗ trợ gửi lên phòng Hành chính Quản trị';
     return (
         <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -29,12 +43,12 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                     <BugOutlined />
                 </div>
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-1 leading-tight">Yêu cầu xử lý của khoa phòng</h1>
-                    <p className="text-sm sm:text-base text-slate-500 m-0">Quản lý các ticket hỗ trợ gửi lên phòng CNTT</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800 m-0">{title}</h1>
+                    <p className="text-sm sm:text-base text-slate-500 m-0">{description}</p>
                 </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-stretch sm:items-center mt-4 sm:mt-0">
-                {user?.role === 'CNTT' && (
+                {user?.role === targetDepartment && (
                     <div className="flex items-center gap-2">
                         <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-50 px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg border border-slate-200 w-full sm:w-auto">
                             <span className="text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
@@ -56,16 +70,37 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                     </div>
                 )}
                 {user?.role === 'ADMIN' && (
-                    <Link href="/error-management/config" className="w-full sm:w-auto">
-                        <Button 
-                            type="default" 
-                            size="large" 
-                            icon={<SettingOutlined />} 
-                            className="w-full text-slate-600 border-slate-200 hover:text-blue-600 hover:border-blue-400"
-                        >
-                            Cấu hình Lỗi phần mềm
-                        </Button>
-                    </Link>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <Link href={`/error-management/config?targetDepartment=${targetDepartment}`} className="w-full sm:w-auto">
+                            <Button 
+                                type="default" 
+                                size="large" 
+                                icon={<SettingOutlined />} 
+                                className="w-full text-slate-600 border-slate-200 hover:text-blue-600 hover:border-blue-400"
+                            >
+                                Cấu hình
+                            </Button>
+                        </Link>
+                        {onDeleteAll && (
+                            <Popconfirm
+                                title="Xóa toàn bộ dữ liệu"
+                                description="Bạn có chắc chắn muốn xóa toàn bộ Yêu cầu xử lý không? Hành động này không thể hoàn tác!"
+                                onConfirm={onDeleteAll}
+                                okText="Xóa tất cả"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button 
+                                    danger 
+                                    size="large" 
+                                    icon={<DeleteOutlined />} 
+                                    className="w-full sm:w-auto"
+                                >
+                                    Xóa tất cả
+                                </Button>
+                            </Popconfirm>
+                        )}
+                    </div>
                 )}
                 <Button className="w-full sm:w-auto" type="primary" size="large" icon={<PlusOutlined />} onClick={onCreateRequest}>
                     Tạo Yêu Cầu

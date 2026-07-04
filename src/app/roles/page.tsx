@@ -178,7 +178,7 @@ export default function RolesPage() {
             title: 'Thao tác',
             key: 'action',
             render: (_: any, record: Role) => {
-                const isSystemRole = ['ADMIN', 'CNTT', 'KHOA'].includes(record.code);
+                const isSystemRole = ['ADMIN', 'CNTT', 'KHOA', 'VTYT', 'HCQT'].includes(record.code);
                 return (
                     <Space>
                         <Button size="small" type="primary" ghost icon={<EditOutlined />} onClick={() => openModal(record)} />
@@ -254,7 +254,7 @@ export default function RolesPage() {
                     }}
                 >
                     <Form.Item name="code" label="Mã Role (Viết liền không dấu, in hoa)" rules={[{ required: true, message: 'Bắt buộc nhập' }]}>
-                        <Input disabled={!!selectedRole && ['ADMIN', 'CNTT', 'KHOA'].includes(selectedRole.code)} placeholder="Ví dụ: GIAM_DOC, KE_TOAN..." />
+                        <Input disabled={!!selectedRole && ['ADMIN', 'CNTT', 'KHOA', 'VTYT', 'HCQT'].includes(selectedRole.code)} placeholder="Ví dụ: GIAM_DOC, KE_TOAN..." />
                     </Form.Item>
 
                     <Form.Item name="name" label="Tên hiển thị" rules={[{ required: true, message: 'Bắt buộc nhập' }]}>

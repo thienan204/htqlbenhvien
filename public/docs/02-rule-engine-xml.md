@@ -19,7 +19,17 @@ Dù phần mềm xuất ra thẻ `<ma_nhom>10</ma_nhom>` hay `<MA_NHOM>10</MA_NH
 
 Hệ thống sẽ bóc tách chữ `MA_VAT_TU` trong XML và tra cứu trực tiếp trong bảng `Mau04Catalog` (Database Mẫu 04). Nếu không tìm thấy, hệ thống sẽ đánh lỗi xuất toán.
 
-## 3. Cấu hình "Xóa toàn bộ" danh mục
+## 3. Các hàm xử lý chuỗi (String Functions)
+Bạn có thể sử dụng các hàm xử lý chuỗi trong biểu thức logic để kiểm tra dữ liệu một cách linh hoạt:
+
+- `ENDS_WITH(TRUONG_DU_LIEU, 'chuoi')`: Kiểm tra trường dữ liệu có kết thúc bằng chuỗi chỉ định hay không.
+- `STARTS_WITH(TRUONG_DU_LIEU, 'chuoi')`: Kiểm tra trường dữ liệu có bắt đầu bằng chuỗi chỉ định hay không.
+- `CONTAINS(TRUONG_DU_LIEU, 'chuoi')`: Kiểm tra trường dữ liệu có chứa chuỗi chỉ định hay không.
+
+**Ví dụ:** Kiểm tra nếu Mã dịch vụ kết thúc bằng `_GT` thì Phương pháp vô cảm (`PP_VO_CAM`) bắt buộc phải là 2 hoặc 3:
+- **Biểu thức logic:** `ENDS_WITH(MA_DICH_VU, '_GT') && PP_VO_CAM != 2 && PP_VO_CAM != 3`
+
+## 4. Cấu hình "Xóa toàn bộ" danh mục
 Tại màn hình quản lý Danh mục Mẫu 04, bạn sẽ thấy một nút màu đỏ **Xóa toàn bộ**. 
 - Nút này hỗ trợ việc Reset danh mục khi cần cập nhật bảng giá mới nhất.
 - Yêu cầu xác nhận (Popconfirm) 2 lần trước khi thực sự xóa dữ liệu.

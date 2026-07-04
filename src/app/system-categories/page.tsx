@@ -15,6 +15,7 @@ const HARDCODED_TYPES = [
     { key: 'CHUC_DANH', label: 'Chức danh Nghề nghiệp', icon: <TagsOutlined /> },
     { key: 'CHUC_VU', label: 'Chức vụ', icon: <IdcardOutlined /> },
     { key: 'GENDER', label: 'Giới tính', icon: <UserOutlined /> },
+    { key: 'DEPARTMENT_TYPE', label: 'Phân loại Khoa Phòng', icon: <PartitionOutlined /> },
     { key: 'DANH_MUC_THIET_BI', label: 'Phân loại Thiết bị', icon: <TagsOutlined /> },
     { key: 'NHOM_THIET_BI', label: 'Nhóm Thiết bị', icon: <PartitionOutlined /> },
     { key: 'LOAI_THIET_BI', label: 'Loại Thiết bị', icon: <BookOutlined /> },
@@ -22,6 +23,8 @@ const HARDCODED_TYPES = [
     { key: 'NHA_CUNG_CAP', label: 'Nhà cung cấp / Đơn vị', icon: <BookOutlined /> },
     { key: 'HANG_SAN_XUAT', label: 'Hãng sản xuất', icon: <BookOutlined /> },
     { key: 'NGUON_KINH_PHI', label: 'Nguồn kinh phí', icon: <BookOutlined /> },
+    { key: 'NHOM_DICH_VU', label: 'Nhóm Dịch vụ (Mẫu 05)', icon: <TagsOutlined /> },
+    { key: 'PHUONG_PHAP_VO_CAM', label: 'Phương pháp vô cảm', icon: <TagsOutlined /> },
 ];
 
 export default function SystemCategoriesPage() {
@@ -125,7 +128,7 @@ export default function SystemCategoriesPage() {
         const isUpdate = !!selectedItem?.id;
         const method = isUpdate ? 'PUT' : 'POST';
         
-        let code = values.code;
+        let code = values.code || selectedItem?.code;
         if (!code && values.name) {
             code = values.name
                 .normalize('NFD')
@@ -403,7 +406,13 @@ export default function SystemCategoriesPage() {
                 onSubmit={handleSave}
                 initialData={selectedItem}
                 fieldsConfig={[
-                    ...(selectedType === 'TRINH_DO' ? [{ id: 'code', label: 'Mã (Code - Không dấu, viết liền)', type: 'input' as const, required: true, span: 24 }] : []),
+                    { 
+                        id: 'code', 
+                        label: 'Mã (Code - Bắt buộc cho Nhóm Dịch vụ, để trống sẽ tự tạo)', 
+                        type: 'input', 
+                        span: 24,
+                        disabled: !!selectedItem?.id // Không cho sửa Code nếu đang Cập nhật để tránh lỗi mapping
+                    },
                     { id: 'name', label: 'Tên hiển thị', type: 'input', required: true, span: 24 },
                     { id: 'description', label: 'Ghi chú (Tùy chọn)', type: 'textarea', span: 24 },
                     { id: 'order', label: 'Thứ tự sắp xếp', type: 'number', span: 12 },

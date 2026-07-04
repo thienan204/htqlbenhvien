@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Space, Tag, Input } from 'antd';
-import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined } from '@ant-design/icons';
+import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select } from 'antd';
+import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined } from '@ant-design/icons';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
+import CertificatesModal from './components/CertificatesModal';
 
 export default function StaffPage() {
     const [staffList, setStaffList] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
+    const [filterDept, setFilterDept] = useState<string | null>(null);
+    const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+    const [isCertModalOpen, setIsCertModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
+    const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
 
     const fetchStaff = async () => {
         setLoading(true);
@@ -29,16 +34,72 @@ export default function StaffPage() {
         }
     };
 
+    const handleGenerateUsers = async () => {
+        try {
+            setIsGeneratingUsers(true);
+            const res = await fetch('/api/staff/generate-users', { method: 'POST' });
+            if (res.ok) {
+                const result = await res.json();
+                if (result.count === 0 && result.failed === undefined) {
+                    message.info(result.message);
+                } else {
+                    message.success(result.message);
+                }
+                fetchStaff();
+            } else {
+                message.error('Lỗi khi tạo user tự động');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối');
+        } finally {
+            setIsGeneratingUsers(false);
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/staff', { method: 'DELETE' });
+            if (res.ok) {
+                const result = await res.json();
+                message.success(`Đã xóa thành công ${result.count} nhân sự.`);
+                fetchStaff();
+            } else {
+                message.error('Xóa toàn bộ thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi khi xóa toàn bộ');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchStaff();
     }, []);
 
     const columns = [
         {
+            title: 'STT',
+            key: 'stt',
+            width: 60,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => index + 1
+        },
+        {
             title: 'Mã NV',
-            dataIndex: 'ma_bac_si',
-            key: 'ma_bac_si',
+            dataIndex: 'ma_nv',
+            key: 'ma_nv',
             render: (text: string) => <span className="font-semibold text-blue-600">{text}</span>
+        },
+        {
+            title: 'Số CCHN',
+            key: 'cchn',
+            render: (_: any, record: any) => {
+                const certs = record.certificates || [];
+                const activeCert = certs.find((c: any) => c.isActive) || certs[0];
+                return activeCert ? <span className="text-purple-600">{activeCert.so_cchn}</span> : <span className="text-slate-400 italic">-</span>;
+            }
         },
         {
             title: 'Họ và tên',
@@ -65,18 +126,31 @@ export default function StaffPage() {
             title: 'Thao tác',
             key: 'action',
             render: (_: any, record: any) => (
-                <Button size="small" type="primary" ghost onClick={() => {
-                    setSelectedStaff(record);
-                    setIsStaffModalOpen(true);
-                }}>Xem chi tiết / Sửa</Button>
+                <Space>
+                    <Button size="small" type="primary" ghost onClick={() => {
+                        setSelectedStaff(record);
+                        setIsStaffModalOpen(true);
+                    }}>Xem chi tiết / Sửa</Button>
+                    <Button size="small" onClick={() => {
+                        setSelectedStaff(record);
+                        setIsCertModalOpen(true);
+                    }}>🪪 Quản lý CCHN</Button>
+                </Space>
             )
         }
     ];
 
-    const filteredData = staffList.filter(s => 
-        (s.ho_ten && s.ho_ten.toLowerCase().includes(searchText.toLowerCase())) || 
-        (s.ma_bac_si && s.ma_bac_si.toLowerCase().includes(searchText.toLowerCase()))
-    );
+    const uniqueDepartments = Array.from(new Set(staffList.map(s => s.department?.ten_khoa || s.ma_khoa))).filter(Boolean);
+    const uniqueJobTitles = Array.from(new Set(staffList.map(s => s.chuc_danh_ref?.name))).filter(Boolean);
+
+    const filteredData = staffList.filter(s => {
+        const matchText = (s.ho_ten && s.ho_ten.toLowerCase().includes(searchText.toLowerCase())) || 
+                          (s.ma_nv && s.ma_nv.toLowerCase().includes(searchText.toLowerCase())) ||
+                          (s.certificates && s.certificates.some((c: any) => c.so_cchn.toLowerCase().includes(searchText.toLowerCase())));
+        const matchDept = filterDept ? (s.department?.ten_khoa === filterDept || s.ma_khoa === filterDept) : true;
+        const matchJobTitle = filterJobTitle ? (s.chuc_danh_ref?.name === filterJobTitle) : true;
+        return matchText && matchDept && matchJobTitle;
+    });
 
     return (
         <div className="w-full h-full p-6 space-y-6">
@@ -91,6 +165,33 @@ export default function StaffPage() {
                     </div>
                 </div>
                 <Space>
+                    <Popconfirm 
+                        title="Xóa toàn bộ nhân sự?" 
+                        description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
+                        onConfirm={handleDeleteAll} 
+                        okText="Có, Xóa hết" 
+                        cancelText="Không"
+                        okButtonProps={{ danger: true }}
+                    >
+                        <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
+                    </Popconfirm>
+                    <Popconfirm
+                        title="Tạo User tự động?"
+                        description="Hệ thống sẽ tạo tài khoản cho tất cả nhân sự chưa có User. Mật khẩu mặc định là 123456."
+                        onConfirm={handleGenerateUsers}
+                        okText="Tạo ngay"
+                        cancelText="Hủy"
+                    >
+                        <Button 
+                            type="dashed" 
+                            className="border-blue-500 text-blue-600 font-medium bg-blue-50 hover:bg-blue-100" 
+                            size="large" 
+                            icon={<TeamOutlined />}
+                            loading={isGeneratingUsers}
+                        >
+                            Tạo User tự động
+                        </Button>
+                    </Popconfirm>
                     <Button type="default" size="large" icon={<UploadOutlined />} onClick={() => setIsImportOpen(true)}>
                         Import Excel
                     </Button>
@@ -104,7 +205,7 @@ export default function StaffPage() {
             </div>
 
             <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
-                <div className="p-4 border-b border-slate-100">
+                <div className="p-4 border-b border-slate-100 flex flex-wrap gap-4">
                     <Input 
                         placeholder="Tìm kiếm theo Tên hoặc Mã NV..." 
                         prefix={<SearchOutlined className="text-slate-400" />}
@@ -112,6 +213,26 @@ export default function StaffPage() {
                         onChange={(e) => setSearchText(e.target.value)}
                         className="max-w-md rounded-lg"
                         size="large"
+                    />
+                    <Select
+                        placeholder="Lọc Khoa/Phòng"
+                        allowClear
+                        showSearch
+                        size="large"
+                        className="min-w-[200px]"
+                        value={filterDept}
+                        onChange={setFilterDept}
+                        options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
+                    />
+                    <Select
+                        placeholder="Lọc Chức danh"
+                        allowClear
+                        showSearch
+                        size="large"
+                        className="min-w-[200px]"
+                        value={filterJobTitle}
+                        onChange={setFilterJobTitle}
+                        options={uniqueJobTitles.map(title => ({ label: String(title), value: String(title) }))}
                     />
                 </div>
                 <Table 
@@ -138,6 +259,16 @@ export default function StaffPage() {
                 staffData={selectedStaff}
                 onSuccess={() => {
                     setIsStaffModalOpen(false);
+                    fetchStaff();
+                }}
+            />
+
+            <CertificatesModal
+                open={isCertModalOpen}
+                onClose={() => setIsCertModalOpen(false)}
+                staffId={selectedStaff?.id}
+                staffName={selectedStaff?.ho_ten}
+                onSuccess={() => {
                     fetchStaff();
                 }}
             />

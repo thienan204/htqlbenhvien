@@ -1,13 +1,13 @@
-export const playNotificationSound = () => {
+export const playNotificationSound = (targetDepartment: string = 'CNTT') => {
     try {
         if (typeof window === 'undefined') return;
 
         // Check if muted
-        const isMuted = localStorage.getItem('it_notification_muted') === 'true';
+        const isMuted = localStorage.getItem(`${targetDepartment}_notification_muted`) === 'true';
         if (isMuted) return;
 
         // Check for custom audio
-        const customAudio = localStorage.getItem('it_notification_audio');
+        const customAudio = localStorage.getItem(`${targetDepartment}_notification_audio`);
         if (customAudio) {
             const audio = new Audio(customAudio);
             audio.play().catch(e => {

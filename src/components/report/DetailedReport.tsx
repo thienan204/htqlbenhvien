@@ -44,6 +44,9 @@ interface ReportRow {
     ma_bn: string;
     ho_ten: string;
     ma_the: string;
+    ma_benh_chinh: string;
+    ma_benh_kt: string;
+    ma_benh_yhct: string;
     ngay_vao: string;
     ngay_ra: string;
     ngay_yl: string;
@@ -56,8 +59,9 @@ interface ReportRow {
     ma_khoa: string;
     ten_khoa: string;
     chi_tiet_loi: string;
-    isError: boolean;
     ma_doituong_kcb: string;
+    ma_giuong: string;
+    pp_vo_cam: string;
 }
 
 export default function DetailedReport() {
@@ -73,6 +77,14 @@ export default function DetailedReport() {
     const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
     const [saveNote, setSaveNote] = useState('');
     const [saveFileName, setSaveFileName] = useState('');
+
+    const resolveTenKhoa = (maKhoa: string) => {
+        if (!maKhoa) return '';
+        return maKhoa.split(';').map(k => {
+            const code = k.trim();
+            return departments[code] || code;
+        }).join('; ');
+    };
 
     useEffect(() => {
         const fetchDepts = async () => {
@@ -121,7 +133,9 @@ export default function DetailedReport() {
                             ten_khoa: departments[renderValue(record.summary?.MA_KHOA)] || '',
                             chi_tiet_loi: '',
                             isError: false,
-                            ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB)
+                            ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
+                            ma_giuong: '',
+                            pp_vo_cam: ''
                         });
                     } else {
                         errors.forEach((err, errIdx) => {
@@ -132,6 +146,8 @@ export default function DetailedReport() {
                             let ngayKQ = '';
                             let donGiaBh = '';
                             let maKhoa = renderValue(record.summary?.MA_KHOA);
+                            let maGiuong = '';
+                            let ppVoCam = '';
 
                             if (err.xmlType && err.index !== undefined) {
                                 const group = record.groups.find(g => g.type === err.xmlType);
@@ -146,6 +162,8 @@ export default function DetailedReport() {
                                         ngayKQ = formatDateTime(item.NGAY_KQ);
                                         donGiaBh = renderValue(item.DON_GIA_BH);
                                         if (item.MA_KHOA) maKhoa = renderValue(item.MA_KHOA);
+                                        if (item.MA_GIUONG) maGiuong = renderValue(item.MA_GIUONG);
+                                        if (item.PP_VO_CAM) ppVoCam = renderValue(item.PP_VO_CAM);
                                     }
                                 }
                             }
@@ -157,6 +175,9 @@ export default function DetailedReport() {
                                 ma_bn: renderValue(record.summary?.MA_BN),
                                 ho_ten: renderValue(record.summary?.HO_TEN),
                                 ma_the: renderValue(record.summary?.MA_THE_BHYT),
+                                ma_benh_chinh: renderValue(record.summary?.MA_BENH_CHINH),
+                                ma_benh_kt: renderValue(record.summary?.MA_BENH_KT),
+                                ma_benh_yhct: renderValue(record.summary?.MA_BENH_YHCT),
                                 ngay_vao: formatDateTime(record.summary?.NGAY_VAO),
                                 ngay_ra: formatDateTime(record.summary?.NGAY_RA),
                                 ngay_yl: ngayYL,
@@ -170,7 +191,9 @@ export default function DetailedReport() {
                                 ten_khoa: departments[maKhoa] || '',
                                 chi_tiet_loi: `[${err.xmlType}] ${err.message || err.ruleName}`,
                                 isError: true,
-                                ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB)
+                                ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
+                                ma_giuong: maGiuong,
+                                pp_vo_cam: ppVoCam
                             });
                         });
                     }
@@ -224,6 +247,9 @@ export default function DetailedReport() {
             { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
             { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
             { header: 'Họ tên', key: 'ho_ten', width: 25 },
+            { header: 'Mã Bệnh Chính', key: 'ma_benh_chinh', width: 15 },
+            { header: 'Mã Bệnh KT', key: 'ma_benh_kt', width: 15 },
+            { header: 'Mã Bệnh YHCT', key: 'ma_benh_yhct', width: 15 },
             { header: 'Ngày vào', key: 'ngay_vao', width: 16 },
             { header: 'Ngày ra', key: 'ngay_ra', width: 16 },
             { header: 'Ngày YL', key: 'ngay_yl', width: 16 },
@@ -232,6 +258,8 @@ export default function DetailedReport() {
             { header: 'Ngày Vào Nội Trú', key: 'ngay_vao_noi_tru', width: 16 },
             { header: 'Mã DV/Thuốc', key: 'ma_dv', width: 15 },
             { header: 'Chi tiết lỗi', key: 'chi_tiet_loi', width: 60 },
+            { header: 'PP Vô Cảm', key: 'pp_vo_cam', width: 12 },
+            { header: 'Mã giường', key: 'ma_giuong', width: 12 },
             { header: 'Tên DV/Thuốc', key: 'ten_dv', width: 40 },
             { header: 'Đơn giá BH', key: 'don_gia_bh', width: 15 },
             { header: 'Mã LK', key: 'ma_lk', width: 14 },
@@ -245,7 +273,7 @@ export default function DetailedReport() {
             worksheet.addRow({
                 ...row,
                 stt: idx + 1,
-                ten_khoa: departments[row.ma_khoa] || ''
+                ten_khoa: resolveTenKhoa(row.ma_khoa)
             });
         });
 
@@ -290,7 +318,7 @@ export default function DetailedReport() {
                 ma_dv: item.ma_dv || '',
                 ten_dv: item.ten_dv || '',
                 don_gia_bh: item.don_gia_bh || '',
-                ten_khoa: departments[item.ma_khoa] || '',
+                ten_khoa: resolveTenKhoa(item.ma_khoa),
                 ma_doituong_kcb: item.ma_doituong_kcb || '',
                 chi_tiet_loi: item.chi_tiet_loi || 'Lỗi XML',
                 sourceType: 'XML'
@@ -341,6 +369,9 @@ export default function DetailedReport() {
                 { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
                 { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
                 { header: 'Họ tên', key: 'ho_ten', width: 25 },
+                { header: 'Mã Bệnh Chính', key: 'ma_benh_chinh', width: 15 },
+                { header: 'Mã Bệnh KT', key: 'ma_benh_kt', width: 15 },
+                { header: 'Mã Bệnh YHCT', key: 'ma_benh_yhct', width: 15 },
                 { header: 'Ngày vào', key: 'ngay_vao', width: 16 },
                 { header: 'Ngày ra', key: 'ngay_ra', width: 16 },
                 { header: 'Ngày YL', key: 'ngay_yl', width: 16 },
@@ -349,6 +380,8 @@ export default function DetailedReport() {
                 { header: 'Ngày Vào Nội Trú', key: 'ngay_vao_noi_tru', width: 16 },
                 { header: 'Mã DV/Thuốc', key: 'ma_dv', width: 15 },
                 { header: 'Chi tiết lỗi', key: 'chi_tiet_loi', width: 60 },
+                { header: 'PP Vô Cảm', key: 'pp_vo_cam', width: 12 },
+                { header: 'Mã giường', key: 'ma_giuong', width: 12 },
                 { header: 'Tên DV/Thuốc', key: 'ten_dv', width: 40 },
                 { header: 'Đơn giá BH', key: 'don_gia_bh', width: 15 },
                 { header: 'Mã LK', key: 'ma_lk', width: 14 },
@@ -361,7 +394,7 @@ export default function DetailedReport() {
                 worksheet.addRow({
                     ...row,
                     stt: idx + 1,
-                    ten_khoa: departments[row.ma_khoa] || ''
+                    ten_khoa: resolveTenKhoa(row.ma_khoa)
                 });
             });
 
@@ -442,9 +475,12 @@ export default function DetailedReport() {
             dataIndex: 'ten_khoa',
             key: 'ten_khoa',
             width: 200,
-            render: (_: any, record: ReportRow) => <span className="text-slate-600">{departments[record.ma_khoa] || ''}</span>
+            render: (_: any, record: ReportRow) => <span className="text-slate-600">{resolveTenKhoa(record.ma_khoa)}</span>
         },
         { title: 'Họ tên', dataIndex: 'ho_ten', key: 'ho_ten', width: 180, onCell: createOnCell('ho_ten') },
+        { title: 'Mã Bệnh Chính', dataIndex: 'ma_benh_chinh', key: 'ma_benh_chinh', width: 120, onCell: createOnCell('ma_benh_chinh') },
+        { title: 'Mã Bệnh KT', dataIndex: 'ma_benh_kt', key: 'ma_benh_kt', width: 120, onCell: createOnCell('ma_benh_kt') },
+        { title: 'Mã Bệnh YHCT', dataIndex: 'ma_benh_yhct', key: 'ma_benh_yhct', width: 120, onCell: createOnCell('ma_benh_yhct') },
         { title: 'Ngày vào', dataIndex: 'ngay_vao', key: 'ngay_vao', width: 140, onCell: createOnCell('ngay_vao') },
         { title: 'Ngày ra', dataIndex: 'ngay_ra', key: 'ngay_ra', width: 140, onCell: createOnCell('ngay_ra') },
         { title: 'Ngày TH YL', dataIndex: 'ngay_th_yl', key: 'ngay_th_yl', width: 140, onCell: createOnCell('ngay_th_yl') },
@@ -473,6 +509,8 @@ export default function DetailedReport() {
                 return true;
             },
         },
+        { title: 'PP Vô Cảm', dataIndex: 'pp_vo_cam', key: 'pp_vo_cam', width: 100, onCell: createOnCell('pp_vo_cam') },
+        { title: 'Mã giường', dataIndex: 'ma_giuong', key: 'ma_giuong', width: 100, onCell: createOnCell('ma_giuong') },
         {
             title: 'Tên DV/Thuốc', dataIndex: 'ten_dv', key: 'ten_dv', width: 250, ellipsis: true, onCell: createOnCell('ten_dv'), render: (text: string) => (
                 <Tooltip title={text}>
@@ -497,7 +535,7 @@ export default function DetailedReport() {
             <div className="max-w-[1800px] mx-auto space-y-6">
                 <Breadcrumb
                     items={[
-                        { title: <Link href="/">Trang chủ</Link> },
+                        { title: <Link href="/xml-checker">Trang chủ</Link> },
                         { title: 'Báo cáo chi tiết' },
                     ]}
                 />
@@ -505,7 +543,7 @@ export default function DetailedReport() {
                 <Card
                     title={
                         <div className="flex items-center gap-3">
-                            <Link href="/">
+                            <Link href="/xml-checker">
                                 <Button icon={<ArrowLeftOutlined />} type="text" shape="circle" />
                             </Link>
                             <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent">

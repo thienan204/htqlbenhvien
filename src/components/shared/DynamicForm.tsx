@@ -18,6 +18,7 @@ export interface FieldConfig {
     placeholder?: string;
     defaultValue?: any;
     disabled?: boolean;
+    customNode?: React.ReactNode;
 }
 
 export interface DynamicFormProps {
@@ -277,6 +278,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                     <Select
                         showSearch
                         allowClear
+                        mode={field.mode}
                         disabled={field.disabled}
                         placeholder={field.placeholder || `Chọn ${field.label.toLowerCase()}...`}
                         optionFilterProp="label"
@@ -529,6 +531,7 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                                                 ? { flex: `0 0 ${100 - field.labelRatio}%`, style: { maxWidth: `${100 - field.labelRatio}%`, minWidth: 0 } } 
                                                 : (isCompact ? { flex: 'auto', style: { minWidth: 0 } } : undefined)
                                         ) : undefined}
+                                        extra={field.customNode}
                                     >
                                         {renderInputNode(field)}
                                     </Form.Item>

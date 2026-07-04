@@ -1,0 +1,298 @@
+[
+  {
+    "id": "101",
+    "name": "Bác sỹ chuyên khoa Hồi sức cấp cứu"
+  },
+  {
+    "id": "102",
+    "name": "Bác sỹ chuyên khoa Nội khoa"
+  },
+  {
+    "id": "102.04",
+    "name": "Bác sỹ chuyên khoa Nội Tim mạch"
+  },
+  {
+    "id": "102.05",
+    "name": "Bác sỹ chuyên khoa Nội tiêu hóa"
+  },
+  {
+    "id": "102.06",
+    "name": "Bác sỹ chuyên khoa Nội cơ - xương - khớp"
+  },
+  {
+    "id": "102.07",
+    "name": "Bác sỹ chuyên khoa Nội thận - tiết niệu"
+  },
+  {
+    "id": "102.50",
+    "name": "Bác sỹ chuyên khoa Nội Hô hấp"
+  },
+  {
+    "id": "102.09",
+    "name": "Bác sỹ chuyên khoa Dị ứng"
+  },
+  {
+    "id": "102.10",
+    "name": "Bác sỹ chuyên khoa Huyết học"
+  },
+  {
+    "id": "102.11",
+    "name": "Bác sỹ chuyên khoa Truyền nhiễm"
+  },
+  {
+    "id": "102.14",
+    "name": "Bác sỹ chuyên khoa Thần kinh"
+  },
+  {
+    "id": "103",
+    "name": "Bác sỹ chuyên khoa Nhi khoa"
+  },
+  {
+    "id": "104",
+    "name": "Bác sỹ chuyên khoa Ngoại lao"
+  },
+  {
+    "id": "105",
+    "name": "Bác sỹ chuyên khoa Da liễu"
+  },
+  {
+    "id": "106",
+    "name": "Bác sỹ chuyên khoa Tâm thần"
+  },
+  {
+    "id": "107",
+    "name": "Bác sỹ chuyên khoa Nội tiết"
+  },
+  {
+    "id": "108",
+    "name": "Bác sỹ Y học cổ truyền"
+  },
+  {
+    "id": "109",
+    "name": "Bác sỹ chuyên khoa Gây mê hồi sức"
+  },
+  {
+    "id": "110",
+    "name": "Bác sỹ chuyên khoa Ngoại khoa"
+  },
+  {
+    "id": "110.20",
+    "name": "Bác sỹ chuyên khoa Ngoại thần kinh"
+  },
+  {
+    "id": "110.21",
+    "name": "Bác sỹ chuyên khoa Ngoại lồng ngực"
+  },
+  {
+    "id": "110.22",
+    "name": "Bác sỹ chuyên khoa Ngoại tiêu hóa"
+  },
+  {
+    "id": "110.23",
+    "name": "Bác sỹ chuyên khoa Ngoại thận - tiết niệu"
+  },
+  {
+    "id": "110.24",
+    "name": "Bác sỹ chuyên khoa Chấn thương chỉnh hình"
+  },
+  {
+    "id": "111",
+    "name": "Bác sỹ chuyên khoa Bỏng"
+  },
+  {
+    "id": "112",
+    "name": "Bác sỹ chuyên khoa Ung bướu"
+  },
+  {
+    "id": "113",
+    "name": "Bác sỹ chuyên khoa Phụ sản"
+  },
+  {
+    "id": "114",
+    "name": "Bác sỹ chuyên khoa Mắt"
+  },
+  {
+    "id": "115",
+    "name": "Bác sỹ chuyên khoa Tai mũi họng"
+  },
+  {
+    "id": "116",
+    "name": "Bác sỹ Răng hàm mặt"
+  },
+  {
+    "id": "117",
+    "name": "Bác sỹ chuyên khoa Phục hồi chức năng"
+  },
+  {
+    "id": "118",
+    "name": "Bác sỹ chuyên khoa Chẩn đoán hình ảnh"
+  },
+  {
+    "id": "119",
+    "name": "Bác sỹ chuyên khoa Y học hạt nhân"
+  },
+  {
+    "id": "120",
+    "name": "Bác sỹ chuyên khoa Nội soi chẩn đoán can thiệp"
+  },
+  {
+    "id": "121",
+    "name": "Bác sỹ chuyên khoa Thăm dò chức năng"
+  },
+  {
+    "id": "122",
+    "name": "Bác sỹ chuyên khoa Huyết học-truyển máu"
+  },
+  {
+    "id": "123",
+    "name": "Bác sỹ chuyên khoa Hóa sinh"
+  },
+  {
+    "id": "124",
+    "name": "Bác sỹ chuyên khoa Vi sinh"
+  },
+  {
+    "id": "125",
+    "name": "Bác sỹ chuyên khoa Giải phẫu bệnh"
+  },
+  {
+    "id": "126",
+    "name": "Bác sỹ chuyên khoa Vi phẫu"
+  },
+  {
+    "id": "127",
+    "name": "Bác sỹ chuyên khoa Phẫu thuật nội soi"
+  },
+  {
+    "id": "128",
+    "name": "Bác sỹ chuyên khoa Tạo hình thẩm mỹ"
+  },
+  {
+    "id": "129",
+    "name": "Bác sỹ đa khoa"
+  },
+  {
+    "id": "130",
+    "name": "Bác sỹ Y học dự phòng"
+  },
+  {
+    "id": "131",
+    "name": "Bác sỹ y học cổ truyền không dùng thuốc"
+  },
+  {
+    "id": "201",
+    "name": "Y sỹ đa khoa"
+  },
+  {
+    "id": "202",
+    "name": "Y sỹ Y học cổ truyền"
+  },
+  {
+    "id": "515",
+    "name": "Kỹ thuật y phục hồi chức năng"
+  },
+  {
+    "id": "701",
+    "name": "Lương y"
+  },
+  {
+    "id": "801",
+    "name": "Dược sỹ từ đại học trở lên"
+  },
+  {
+    "id": "802",
+    "name": "Dược sỹ dưới đại học"
+  },
+  {
+    "id": "132",
+    "name": "Bác sỹ y khoa"
+  },
+  {
+    "id": "133",
+    "name": "Bác sỹ chuyên khoa dinh dưỡng"
+  },
+  {
+    "id": "134",
+    "name": "Bác sỹ tâm lý lâm sàng"
+  },
+  {
+    "id": "301",
+    "name": "Điều dưỡng có trình độ từ đại học trở lên"
+  },
+  {
+    "id": "302",
+    "name": "Điều dưỡng trình độ dưới đại học"
+  },
+  {
+    "id": "304",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Nội khoa"
+  },
+  {
+    "id": "305",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Da liễu"
+  },
+  {
+    "id": "306",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Tâm thần"
+  },
+  {
+    "id": "307",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Nội tiết"
+  },
+  {
+    "id": "310",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Ngoại"
+  },
+  {
+    "id": "311",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Bỏng"
+  },
+  {
+    "id": "312",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Ung bướu"
+  },
+  {
+    "id": "314",
+    "name": "Điều dưỡng có văn bằng chuyên khoa Mắt"
+  },
+  {
+    "id": "402",
+    "name": "Hộ sinh trình độ dưới đại học"
+  },
+  {
+    "id": "401",
+    "name": "Hộ sinh trình độ từ đại học trở lên"
+  },
+  {
+    "id": "512",
+    "name": "Kỹ thuật y hình ảnh y học trình độ dưới đại học"
+  },
+  {
+    "id": "513",
+    "name": "Kỹ thuật y phục hình răng"
+  },
+  {
+    "id": "514",
+    "name": "Kỹ thuật y khúc xạ nhãn khoa"
+  },
+  {
+    "id": "601",
+    "name": "Cử nhân tâm lý lâm sàng"
+  },
+  {
+    "id": "901",
+    "name": "Kỹ sư vật lý y học"
+  },
+  {
+    "id": "902",
+    "name": "Kỹ sư xạ trị"
+  },
+  {
+    "id": "903",
+    "name": "Kỹ sư công nghệ sinh học"
+  },
+  {
+    "id": "904",
+    "name": "Cử nhân công nghệ sinh học"
+  }
+]

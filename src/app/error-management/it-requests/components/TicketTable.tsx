@@ -16,6 +16,7 @@ interface TicketTableProps {
     onDeleteTicket: (id: string) => void;
     onProcessClick: (ticket: Ticket) => void;
     onEditClick?: (ticket: Ticket) => void;
+    targetDepartment?: string;
 }
 
 export const TicketTable: React.FC<TicketTableProps> = ({
@@ -28,7 +29,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     onFetchTickets,
     onDeleteTicket,
     onProcessClick,
-    onEditClick
+    onEditClick,
+    targetDepartment = 'CNTT'
 }) => {
     
     const handleReceiveTicket = async (id: string) => {
@@ -141,7 +143,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             }
         },
         {
-            title: 'Phản hồi CNTT',
+            title: targetDepartment === 'CNTT' ? 'Phản hồi CNTT' : `Phản hồi ${targetDepartment}`,
             dataIndex: 'it_note',
             key: 'it_note',
             render: (text: string) => <div className="text-slate-600 italic whitespace-pre-wrap">{text || '-'}</div>
@@ -208,7 +210,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             </>
                         )}
                         
-                        {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === 'CNTT') && (
+                        {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
                             <Button size="small" type="primary" ghost onClick={() => onProcessClick(record)}>Xử lý</Button>
                         )}
 

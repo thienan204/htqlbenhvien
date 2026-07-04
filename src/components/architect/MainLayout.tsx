@@ -12,28 +12,27 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children, rules, menus = [] }: MainLayoutProps) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const pathname = usePathname();
 
+    // Tự động đóng Sidebar khi chuyển trang
     useEffect(() => {
         setIsSidebarOpen(false);
     }, [pathname]);
 
     return (
         <>
-            {pathname !== '/' && (
-                <SidebarClient rules={rules} menus={menus} isOpen={isSidebarOpen} />
-            )}
+            <SidebarClient rules={rules} menus={menus} isOpen={isSidebarOpen} />
             <TopHeader
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-                isSidebarOpen={isSidebarOpen && pathname !== '/'}
-                hideToggle={pathname === '/'}
+                isSidebarOpen={isSidebarOpen}
+                hideToggle={false}
             />
 
             <div
                 className={`
                     pt-[60px] min-h-screen bg-slate-50 transition-all duration-300 ease-in-out
-                    ${(isSidebarOpen && pathname !== '/') ? 'pl-[280px]' : 'pl-0'}
+                    ${isSidebarOpen ? 'pl-[280px]' : 'pl-0'}
                 `}
             >
                 {children}

@@ -10,11 +10,12 @@ const prisma = new PrismaClient();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-async function sendTelegramMessage(message: string, chatId?: string) {
-    const targetChatId = chatId || TELEGRAM_CHAT_ID;
-    if (!TELEGRAM_BOT_TOKEN || !targetChatId) return;
+async function sendTelegramMessage(message: string, chatId?: string, botToken?: string) {
+    const targetBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
+    const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
+    if (!targetBotToken || !targetChatId) return;
     try {
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        await fetch(`https://api.telegram.org/bot${targetBotToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -35,8 +36,15 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const statusFilter = searchParams.get('status');
+        const targetDepartment = searchParams.get('targetDepartment');
 
         let whereClause: any = {};
+        
+        // Cố định targetDepartment theo Role nếu không phải Admin/Khoa
+        if (user.role === 'CNTT') whereClause.targetDepartment = 'CNTT';
+        else if (user.role === 'VTYT') whereClause.targetDepartment = 'VTYT';
+        else if (user.role === 'HCQT') whereClause.targetDepartment = 'HCQT';
+        else if (targetDepartment) whereClause.targetDepartment = targetDepartment;
         
         // Phân quyền: KHOA chỉ thấy phiếu của mình
         if (user.role === 'KHOA') {
@@ -55,7 +63,7 @@ export async function GET(request: Request) {
 
         // Lấy danh sách tên người xử lý để map ID -> Tên
         const assignees = await prisma.user.findMany({
-            where: { role: { in: ['CNTT', 'ADMIN'] } },
+            where: { role: { in: ['CNTT', 'VTYT', 'HCQT', 'ADMIN'] } },
             select: { id: true, name: true, username: true }
         });
         const assigneeMap = assignees.reduce((acc: any, curr) => {
@@ -82,11 +90,33 @@ export async function POST(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action } = body;
+        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action, targetDepartment = 'CNTT' } = body;
         
         let ma_khoa = body.ma_khoa;
-        if (!['ADMIN', 'CNTT'].includes(user.role)) {
+        if (!['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
             ma_khoa = user.ma_khoa; // Ghi đè bằng mã khoa thực tế
+        }
+
+        let slug = 'it-request-fields-config';
+        if (targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
+        else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
+
+        // Lấy cấu hình
+        const configRule = await prisma.specializedRule.findUnique({
+            where: { slug }
+        });
+        
+        let assignmentMode = 'A';
+        let targetBotToken = process.env.TELEGRAM_BOT_TOKEN;
+        let targetChatId = process.env.TELEGRAM_CHAT_ID;
+        
+        if (configRule && configRule.logicConfig) {
+            const config: any = configRule.logicConfig;
+            if (!Array.isArray(config)) {
+                assignmentMode = config.assignmentMode || 'A';
+                if (config.telegramBotToken) targetBotToken = config.telegramBotToken;
+                if (config.telegramChatId) targetChatId = config.telegramChatId;
+            }
         }
 
         if (action === 'PING' && xmlErrorId) {
@@ -133,8 +163,8 @@ export async function POST(request: Request) {
                 telegramMsg += `🗒 <b>Ghi chú gửi lại:</b> ${dynamicFields['Ghi chú']}\n`;
             }
 
-            if (TELEGRAM_CHAT_ID) {
-                await sendTelegramMessage(telegramMsg, TELEGRAM_CHAT_ID);
+            if (targetChatId) {
+                await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken);
             }
             
             return NextResponse.json({ success: true, pingCount: newPingCount });
@@ -175,25 +205,12 @@ export async function POST(request: Request) {
             }
         }
 
-        // Lấy cấu hình chia việc
-        const configRule = await prisma.specializedRule.findUnique({
-            where: { slug: 'it-request-fields-config' }
-        });
-        
-        let assignmentMode = 'A';
-        if (configRule && configRule.logicConfig) {
-            const config: any = configRule.logicConfig;
-            if (!Array.isArray(config)) {
-                assignmentMode = config.assignmentMode || 'A';
-            }
-        }
-
         // Nếu Khoa không chọn ai (Khoa không có quyền chọn, nên luôn là null)
         if (!finalAssignee) {
             if (assignmentMode === 'C') {
                 // Cách C: Chia việc tự động cho người online rảnh nhất
                 const availableUsers = await prisma.user.findMany({
-                    where: { role: 'CNTT', isAvailable: true }
+                    where: { role: targetDepartment, isAvailable: true }
                 });
 
                 if (availableUsers.length > 0) {
@@ -224,6 +241,7 @@ export async function POST(request: Request) {
 
         const newRequest = await prisma.iTRequest.create({
             data: {
+                targetDepartment,
                 ma_ba: ma_ba || null,
                 category: category || 'SOFTWARE',
                 ten_loi,
@@ -284,14 +302,14 @@ export async function POST(request: Request) {
         telegramMsg += `\n🧑‍💻 <b>Người nhận:</b> ${assigneeInfo}`;
 
         // Bắn Telegram vào Group chung
-        if (TELEGRAM_CHAT_ID) {
-            await sendTelegramMessage(telegramMsg, TELEGRAM_CHAT_ID);
+        if (targetChatId) {
+            await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken);
         }
 
         // Bắn Telegram trực tiếp (Direct Message) cho Nhân viên CNTT nếu họ có điền ID Telegram dạng số
         if (assigneeUser && assigneeUser.telegram_id && /^-?\d+$/.test(assigneeUser.telegram_id)) {
             const dmMsg = `🔔 <b>BẠN VỪA ĐƯỢC GIAO MỘT VIỆC MỚI:</b>\n\n${telegramMsg}`;
-            await sendTelegramMessage(dmMsg, assigneeUser.telegram_id);
+            await sendTelegramMessage(dmMsg, assigneeUser.telegram_id, targetBotToken);
         }
 
         // Lưu ngược itRequestId vào XmlErrorRecord nếu có xmlErrorId
@@ -462,8 +480,51 @@ export async function DELETE(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
+        const action = searchParams.get('action');
+        const targetDepartment = searchParams.get('targetDepartment');
 
+        // Quyền xóa tất cả chỉ dành cho ADMIN
+        if (action === 'delete_all') {
+            if (user.role !== 'ADMIN') {
+                return NextResponse.json({ error: 'Chỉ Admin mới có quyền xóa tất cả' }, { status: 403 });
+            }
+            
+            let whereClause: any = {};
+            if (targetDepartment) whereClause.targetDepartment = targetDepartment;
+
+            // Xóa tất cả file ảnh vật lý của các ticket
+            const allTickets = await prisma.iTRequest.findMany({
+                where: whereClause,
+                select: { dynamicFields: true }
+            });
+            
+            for (const ticket of allTickets) {
+                if (ticket.dynamicFields) {
+                    const fields: any = ticket.dynamicFields;
+                    const images = fields['Hình ảnh đính kèm'];
+                    if (Array.isArray(images)) {
+                        for (const url of images) {
+                            try {
+                                if (typeof url === 'string' && url.startsWith('/uploads/tickets/')) {
+                                    const filename = url.replace('/uploads/tickets/', '');
+                                    const filepath = join(process.cwd(), 'public', 'uploads', 'tickets', filename);
+                                    await unlink(filepath).catch(() => {});
+                                }
+                            } catch (e) {
+                                // Bỏ qua lỗi xóa file
+                            }
+                        }
+                    }
+                }
+            }
+
+            await prisma.iTRequest.deleteMany({
+                where: whereClause
+            });
+            return NextResponse.json({ success: true });
+        }
+
+        const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
 
         const ticket = await prisma.iTRequest.findUnique({ where: { id } });

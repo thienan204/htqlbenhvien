@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
@@ -15,209 +9,183 @@ datasource db {
 }
 
 model ValidationRule {
-  id              String   @id @default(cuid())
-  active          Boolean  @default(true)
-  type            String   // 'Xuất toán' | 'Cảnh báo'
-  xmlType         String   // XML1, XML2, ...
-  field           String?
-  name            String
-  description     String?
-  code            String
-  mathExpression  String?
-  checkNotNull    Boolean  @default(false)
-  conditionField  String?
-  conditionValue  String?
-  conditionMaDichVu String?
+  id                     String   @id @default(cuid())
+  active                 Boolean  @default(true)
+  type                   String
+  xmlType                String
+  field                  String?
+  name                   String
+  description            String?
+  code                   String
+  conditionField         String?
+  conditionValue         String?
+  errorMessage           String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  checkNotNull           Boolean  @default(false)
+  conditionMaDichVu      String?
   conditionMaDichVuValue String?
-  errorMessage    String?
-  isGroupCount    Boolean  @default(false)
-  minCountVal     Int?
-  maxCountVal     Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isGroupCount           Boolean  @default(false)
+  mathExpression         String?
+  maxCountVal            Int?
+  minCountVal            Int?
 }
+
 model FormConfig {
   id        String   @id @default(cuid())
   formId    String   @unique
-  layout    String?  @db.Text
-  settings  String?  @db.Text
+  layout    String?
+  settings  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  name      String?
-  role      String   @default("USER") // 'ADMIN', 'USER', 'KHOA', 'CNTT'
-  ma_khoa   String?
-  telegram_id String? // Username hoặc ID Telegram để Bot tag tên
-  
-  // Quản lý ca trực (Dành riêng cho Role CNTT)
-  isAvailable Boolean  @default(false)
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  name        String?
+  role        String   @default("USER")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   dutyOrder   Int      @default(999)
-
-  // Liên kết với Hồ sơ Nhân viên (Dành cho tài khoản cá nhân)
+  isAvailable Boolean  @default(false)
+  ma_khoa     String?
+  telegram_id String?
   staffId     String?  @unique
   staff       Staff?   @relation(fields: [staffId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model DraftRule {
-  id              String   @id @default(cuid())
-  active          Boolean  @default(true)
-  type            String   // 'Xuất toán' | 'Cảnh báo'
-  xmlType         String   // XML1, XML2, ...
-  field           String?
-  name            String
-  description     String?
-  code            String
-  mathExpression  String?
-  checkNotNull    Boolean  @default(false)
-  conditionField  String?
-  conditionValue  String?
-  conditionMaDichVu String?
+  id                     String   @id @default(cuid())
+  active                 Boolean  @default(true)
+  type                   String
+  xmlType                String
+  field                  String?
+  name                   String
+  description            String?
+  code                   String
+  conditionField         String?
+  conditionValue         String?
+  errorMessage           String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  checkNotNull           Boolean  @default(false)
+  conditionMaDichVu      String?
   conditionMaDichVuValue String?
-  errorMessage    String?
-  isGroupCount    Boolean  @default(false)
-  minCountVal     Int?
-  maxCountVal     Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isGroupCount           Boolean  @default(false)
+  mathExpression         String?
+  maxCountVal            Int?
+  minCountVal            Int?
 }
 
 model Department {
-  ma_khoa         String   @id
-  ten_khoa        String
-  type            String   @default("CLINICAL") // 'CLINICAL' (Lâm sàng) hoặc 'MANAGEMENT' (Phòng quản lý)
-  staff           Staff[]
-  warehouses      Warehouse[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  ma_khoa     String       @id
+  ten_khoa    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  type        String       @default("CLINICAL")
+  ma_khoa_bv  String?
+  ten_khoa_bv String?
+  BedCatalog  BedCatalog[]
+  staff       Staff[]
+  warehouses  Warehouse[]
 }
 
 model Staff {
-  id              String   @id @default(cuid())
-  ho_ten          String
-  ma_bac_si       String   @unique
-  // Bỏ đi các trường String tĩnh
-  // trinh_do        String?
-  // chuc_danh       String?
-  
-  so_dien_thoai   String?
-  dia_chi         String?
-  ma_khoa         String
-  department      Department @relation(fields: [ma_khoa], references: [ma_khoa])
-  
-  // Các quan hệ Danh mục SystemCategory
-  trinh_do_id        String?
-  trinh_do_ref       SystemCategory? @relation("StaffQualification", fields: [trinh_do_id], references: [id])
-  
-  chuc_danh_id       String?
-  chuc_danh_ref      SystemCategory? @relation("StaffJobTitle", fields: [chuc_danh_id], references: [id])
-
-  vi_tri_viec_lam_id String?
-  vi_tri_ref         SystemCategory? @relation("StaffJobPosition", fields: [vi_tri_viec_lam_id], references: [id])
-  
-  chuc_vu_id         String?
-  chuc_vu_ref        SystemCategory? @relation("StaffPosition", fields: [chuc_vu_id], references: [id])
-  
-  loai_hop_dong_id   String?
-  loai_hop_dong_ref  SystemCategory? @relation("StaffContractType", fields: [loai_hop_dong_id], references: [id])
-
-  gioi_tinh_id       String?
-  gioi_tinh_ref      SystemCategory? @relation("StaffGender", fields: [gioi_tinh_id], references: [id])
-
-  ngay_sinh          DateTime?
-
-  // Liên kết 1-Nhiều tới bảng Chứng chỉ hành nghề (Mảng các CCHN)
-  certificates       PracticingCertificate[]
-
-  // Liên kết với Tài khoản (1-1)
-  user            User?
-  
-  // Liên kết Quản lý kho
+  id                     String                  @id @default(cuid())
+  ho_ten                 String
+  ma_khoa                String
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  so_dien_thoai          String?
+  chuc_danh_id           String?
+  chuc_vu_id             String?
+  gioi_tinh_id           String?
+  loai_hop_dong_id       String?
+  ngay_sinh              DateTime?
+  trinh_do_id            String?
+  vi_tri_viec_lam_id     String?
+  dia_chi                String?
+  ma_nv                  String                  @unique
+  cccd                   String?
+  certificates           PracticingCertificate[]
+  chuc_danh_ref          SystemCategory?         @relation("StaffJobTitle", fields: [chuc_danh_id], references: [id])
+  chuc_vu_ref            SystemCategory?         @relation("StaffPosition", fields: [chuc_vu_id], references: [id])
+  gioi_tinh_ref          SystemCategory?         @relation("StaffGender", fields: [gioi_tinh_id], references: [id])
+  loai_hop_dong_ref      SystemCategory?         @relation("StaffContractType", fields: [loai_hop_dong_id], references: [id])
+  department             Department              @relation(fields: [ma_khoa], references: [ma_khoa])
+  trinh_do_ref           SystemCategory?         @relation("StaffQualification", fields: [trinh_do_id], references: [id])
+  vi_tri_ref             SystemCategory?         @relation("StaffJobPosition", fields: [vi_tri_viec_lam_id], references: [id])
+  user                   User?
   storekeeper_warehouses Warehouse[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 }
 
 model SystemCategory {
-  id          String   @id @default(cuid())
-  type        String   // VD: 'GENDER', 'LOAI_HOP_DONG', 'VI_TRI_VIEC_LAM', 'TRINH_DO', 'CHUC_DANH', 'CHUC_VU'
-  code        String   
-  name        String   
-  description String?
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
-  
-  // Liên kết động tới bảng Staff
-  staff_hop_dong   Staff[] @relation("StaffContractType")
-  staff_vi_tri     Staff[] @relation("StaffJobPosition")
-  staff_chuc_danh  Staff[] @relation("StaffJobTitle")
-  staff_trinh_do   Staff[] @relation("StaffQualification")
-  staff_chuc_vu    Staff[] @relation("StaffPosition")
-  staff_gioi_tinh  Staff[] @relation("StaffGender") 
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  type            String
+  code            String
+  name            String
+  description     String?
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  staff_chuc_danh Staff[]  @relation("StaffJobTitle")
+  staff_chuc_vu   Staff[]  @relation("StaffPosition")
+  staff_gioi_tinh Staff[]  @relation("StaffGender")
+  staff_hop_dong  Staff[]  @relation("StaffContractType")
+  staff_trinh_do  Staff[]  @relation("StaffQualification")
+  staff_vi_tri    Staff[]  @relation("StaffJobPosition")
 
-  @@unique([type, code]) 
+  @@unique([type, code])
 }
 
 model PracticingCertificate {
-  id                 String   @id @default(cuid())
-  staffId            String   
-  staff              Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  
-  so_cchn            String   // "Số chứng chỉ hành nghề đăng ký với BHYT"
-  ngay_cap           DateTime? // "Ngày cấp"
-  chuc_danh_cchn     String?  // "CDNN trong CCHN"
-  pham_vi_hanh_nghe  String?  // "Phạm vi hành nghề"
-  pham_vi_bo_sung    String?  // "Phạm vi chuyên môn bổ sung"
-  dich_vu_ky_thuat   String?  // "Dịch vụ kỹ thuật khác"
-  isActive           Boolean  @default(true) // Đánh dấu CCHN nào đang được sử dụng chính
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                String          @id @default(cuid())
+  staffId           String
+  so_cchn           String
+  ngay_cap          DateTime?
+  chuc_danh_cchn    String?
+  pham_vi_hanh_nghe String?
+  pham_vi_bo_sung   String?
+  dich_vu_ky_thuat  String?
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  tt32_category_id  String?
+  CCHNException     CCHNException[]
+  staff             Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  TT32Category      TT32Category?   @relation(fields: [tt32_category_id], references: [id])
 }
 
 model DuplicateRule {
-  id                  String   @id @default(cuid())
-  name                String
-  machineCols         String[]
-  serviceCol          String?
-  startCol            String
-  endCol              String
-  ignoreMaMayMinusOne Boolean  @default(false)
-  ignoreNullValues    Boolean  @default(false)
-  active              Boolean  @default(true)
-  serviceValues       String[]
+  id                    String   @id @default(cuid())
+  name                  String
+  machineCols           String[]
+  serviceCol            String?
+  startCol              String
+  endCol                String
+  ignoreMaMayMinusOne   Boolean  @default(false)
+  ignoreNullValues      Boolean  @default(false)
+  active                Boolean  @default(true)
+  serviceValues         String[]
   excludedServiceValues String[]
-  ignoreIfSameField   String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  ignoreIfSameField     String?
 }
 
 model SpecializedRule {
   id          String   @id @default(cuid())
-  name        String   // Display Name (Menu Label)
-  slug        String   @unique // URL path segment (e.g., 'kiem-tra-thuoc')
+  name        String
+  slug        String   @unique
   description String?
   isActive    Boolean  @default(true)
-  order       Int      @default(0) // For menu sorting
-  
-  // Rule Classification
-  ruleType    String   // 'SQL', 'DUPLICATE_BED', 'MACHINE_CHECK', 'GROUP_15', etc.
-
-  // Logic Configuration
-  logicConfig Json?    // Flexible storage for rule parameters
-  sqlQuery    String?  // Optional: Direct SQL for advanced users
-
+  order       Int      @default(0)
+  ruleType    String
+  logicConfig Json?
+  sqlQuery    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -226,7 +194,7 @@ model DepartmentCatalog {
   id          String   @id @default(uuid())
   STT         Int?
   MA_KHOA     String   @db.VarChar(50)
-  TEN_KHOA    String   @db.Text
+  TEN_KHOA    String
   BAN_KHAM    Int?
   GIUONG_PD   Int?
   GIUONG_TK   Int?
@@ -235,436 +203,528 @@ model DepartmentCatalog {
   TU_NGAY     String?  @db.VarChar(8)
   DEN_NGAY    String?  @db.VarChar(8)
   MA_CSKCB    String?  @db.VarChar(5)
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model Mau02Catalog {
-  id              String   @id @default(uuid())
-  STT             Int?
-  MA_KHOA         String?  @db.VarChar(100)
-  TEN_KHOA        String?
-  HO_TEN          String?  @db.VarChar(250)
-  GIOI_TINH       Int?     
-  SO_DINH_DANH    String?  @db.VarChar(15)
-  CHUCDANH_NN     String?  @db.VarChar(2)
-  VI_TRI          String?  @db.VarChar(5)
-  MACCHN          String?  @db.VarChar(250)
-  NGAYCAP_CCHN    String?  @db.VarChar(8)
-  NOICAP_CCHN     String?  @db.VarChar(250)
-  PHAMVI_CM       String?  @db.VarChar(15)
-  PHAMVI_CMBS     String?  @db.VarChar(50)
-  DVKT_KHAC       String?  
-  VB_PHANCONG     String?  @db.VarChar(50)
-  THOIGIAN_DK     Int?     
-  THOIGIAN_NGAY   String?  @db.VarChar(200)
-  THOIGIAN_TUAN   String?  @db.VarChar(200)
-  CSKCB_KHAC      String?  @db.VarChar(30)
-  CSKCB_CGKT      String?  @db.VarChar(5)
-  QD_CGKT         String?  @db.VarChar(50)
-  TU_NGAY         String?  @db.VarChar(8)
-  DEN_NGAY        String?  @db.VarChar(8)
-  MA_CSKCB        String?  @db.VarChar(5)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  STT           Int?
+  MA_KHOA       String?  @db.VarChar(100)
+  TEN_KHOA      String?
+  HO_TEN        String?  @db.VarChar(250)
+  GIOI_TINH     Int?
+  SO_DINH_DANH  String?  @db.VarChar(15)
+  CHUCDANH_NN   String?  @db.VarChar(2)
+  VI_TRI        String?  @db.VarChar(5)
+  MACCHN        String?  @db.VarChar(250)
+  NGAYCAP_CCHN  String?  @db.VarChar(8)
+  NOICAP_CCHN   String?  @db.VarChar(250)
+  PHAMVI_CM     String?  @db.VarChar(15)
+  PHAMVI_CMBS   String?  @db.VarChar(50)
+  DVKT_KHAC     String?
+  VB_PHANCONG   String?  @db.VarChar(50)
+  THOIGIAN_DK   Int?
+  THOIGIAN_NGAY String?  @db.VarChar(200)
+  THOIGIAN_TUAN String?  @db.VarChar(200)
+  CSKCB_KHAC    String?  @db.VarChar(30)
+  CSKCB_CGKT    String?  @db.VarChar(5)
+  QD_CGKT       String?  @db.VarChar(50)
+  TU_NGAY       String?  @db.VarChar(8)
+  DEN_NGAY      String?  @db.VarChar(8)
+  MA_CSKCB      String?  @db.VarChar(5)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Mau03Catalog {
-  id              String   @id @default(uuid())
-  STT             Int?
-  MA_THUOC        String?  @db.VarChar(255)
-  TEN_HOAT_CHAT   String?  
-  TEN_THUOC       String?  
-  DON_VI_TINH     String?  @db.VarChar(50)
-  HAM_LUONG       String?  
-  DUONG_DUNG      String?  @db.VarChar(255)
-  MA_DUONG_DUNG   String?  @db.VarChar(10)
-  DANG_BAO_CHE    String?  
-  SO_DANG_KY      String?  
-  SO_LUONG        Float?   
-  DON_GIA         Float?
-  DON_GIA_BH      Float?
-  QUY_CACH        String?  
-  NHA_SX          String?  
-  NUOC_SX         String?  @db.VarChar(100)
-  NHA_THAU        String?  
-  TT_THAU         String?  @db.VarChar(50)
-  TU_NGAY_HD      String?  @db.VarChar(8)
-  DEN_NGAY_HD     String?  @db.VarChar(8)
-  MA_CSKCB        String?  @db.VarChar(5)
-  LOAI_THUOC      Int?     
-  LOAI_THAU       Int?     
-  HT_THAU         Int?     
-  MA_DVKT         String?  
-  TCCL            String?  @db.VarChar(50)
-  BO_PHAN_VT      Int?     
-  TEN_KHOA_HOC    String?  @db.VarChar(500)
-  NGUON_GOC       String?  @db.VarChar(500)
-  PP_CHEBIEN      String?  
-  MA_DL_NHAP      String?  @db.VarChar(3)
-  MA_DL_CB        String?  @db.VarChar(3)
-  TLHH_CB         Float?   
-  TLHH_BQ         Float?   
-  MA_CSKCB_THUOC  String?  @db.VarChar(5)
-  TU_NGAY         String?  @db.VarChar(8)
-  DEN_NGAY        String?  @db.VarChar(8)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(uuid())
+  STT            Int?
+  MA_THUOC       String?  @db.VarChar(255)
+  TEN_HOAT_CHAT  String?
+  TEN_THUOC      String?
+  DON_VI_TINH    String?  @db.VarChar(50)
+  HAM_LUONG      String?
+  DUONG_DUNG     String?  @db.VarChar(255)
+  MA_DUONG_DUNG  String?  @db.VarChar(10)
+  DANG_BAO_CHE   String?
+  SO_DANG_KY     String?
+  SO_LUONG       Float?
+  DON_GIA        Float?
+  DON_GIA_BH     Float?
+  QUY_CACH       String?
+  NHA_SX         String?
+  NUOC_SX        String?  @db.VarChar(100)
+  NHA_THAU       String?
+  TT_THAU        String?  @db.VarChar(50)
+  TU_NGAY_HD     String?  @db.VarChar(8)
+  DEN_NGAY_HD    String?  @db.VarChar(8)
+  MA_CSKCB       String?  @db.VarChar(5)
+  LOAI_THUOC     Int?
+  LOAI_THAU      Int?
+  HT_THAU        Int?
+  MA_DVKT        String?
+  TCCL           String?  @db.VarChar(50)
+  BO_PHAN_VT     Int?
+  TEN_KHOA_HOC   String?  @db.VarChar(500)
+  NGUON_GOC      String?  @db.VarChar(500)
+  PP_CHEBIEN     String?
+  MA_DL_NHAP     String?  @db.VarChar(3)
+  MA_DL_CB       String?  @db.VarChar(3)
+  TLHH_CB        Float?
+  TLHH_BQ        Float?
+  MA_CSKCB_THUOC String?  @db.VarChar(5)
+  TU_NGAY        String?  @db.VarChar(8)
+  DEN_NGAY       String?  @db.VarChar(8)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Mau04Catalog {
-  id              String   @id @default(uuid())
-  STT             Int?
-  MA_VAT_TU       String?  @db.VarChar(50)
-  NHOM_VAT_TU     String?  
-  TEN_VAT_TU      String?  
-  MA_HIEU         String?  
-  SO_LUU_HANH     String?  @db.VarChar(20)
-  TINHNANG_KT     String?  
-  QUY_CACH        String?  
-  HANG_SX         String?  
-  NUOC_SX         String?  @db.VarChar(100)
-  DON_VI_TINH     String?  @db.VarChar(50)
-  DON_GIA         Float?   
-  DON_GIA_BH      Float?   
-  TYLE_TT_BH      Float?   
-  SO_LUONG        Float?   
-  DINH_MUC        Float?   
-  NHA_THAU        String?  
-  TT_THAU         String?  @db.VarChar(50)
-  TU_NGAY_HD      String?  @db.VarChar(8)
-  DEN_NGAY_HD     String?  @db.VarChar(8)
-  MA_CSKCB        String?  @db.VarChar(5)
-  LOAI_THAU       Int?     
-  HT_THAU         Int?     
-  MA_CSKCB_TBYT   String?  @db.VarChar(5)
-  TU_NGAY         String?  @db.VarChar(8)
-  DEN_NGAY        String?  @db.VarChar(8)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  STT           Int?
+  MA_VAT_TU     String?  @db.VarChar(50)
+  NHOM_VAT_TU   String?
+  TEN_VAT_TU    String?
+  MA_HIEU       String?
+  SO_LUU_HANH   String?  @db.VarChar(20)
+  TINHNANG_KT   String?
+  QUY_CACH      String?
+  HANG_SX       String?
+  NUOC_SX       String?  @db.VarChar(100)
+  DON_VI_TINH   String?  @db.VarChar(50)
+  DON_GIA       Float?
+  DON_GIA_BH    Float?
+  TYLE_TT_BH    Float?
+  SO_LUONG      Float?
+  DINH_MUC      Float?
+  NHA_THAU      String?
+  TT_THAU       String?  @db.VarChar(50)
+  TU_NGAY_HD    String?  @db.VarChar(8)
+  DEN_NGAY_HD   String?  @db.VarChar(8)
+  MA_CSKCB      String?  @db.VarChar(5)
+  LOAI_THAU     Int?
+  HT_THAU       Int?
+  MA_CSKCB_TBYT String?  @db.VarChar(5)
+  TU_NGAY       String?  @db.VarChar(8)
+  DEN_NGAY      String?  @db.VarChar(8)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Mau05Catalog {
-  id              String   @id @default(uuid())
-  STT             Int?
-  MA_DICH_VU      String?  @db.VarChar(20)
-  TEN_DICH_VU     String?  
-  TEN_DVKT_GIA    String?  
-  DON_GIA         Float?   
-  QUY_TRINH       String?  @db.VarChar(50)
-  SO_LUONG_CGKT   Float?   
-  CSKCB_CGKT      String?  @db.VarChar(5)
-  CSKCB_CLS       String?  @db.VarChar(5)
-  QD_DVKT         String?  @db.VarChar(50)
-  QD_PD_GIA       String?  @db.VarChar(50)
-  GHI_CHU         String?  
-  MA_THUOC        String?  @db.VarChar(15)
-  TEN_THUOC       String?  
-  SO_DANG_KY      String?  @db.VarChar(50)
-  DON_VI_TINH     String?  
-  TT_THAU         String?  
-  DON_GIA_THUOC   Float?   
-  DM_NSX_CDD      Float?   
-  DM_THUCTE_CDD   Float?   
-  LIEU_BQ_PX      Float?   
-  TL_THUCTE_BQ_PX Float?   
-  THANH_TIEN_THUOC Float?   
-  GIA_THANH_TOAN  Float?   
-  TU_NGAY         String?  @db.VarChar(8)
-  DEN_NGAY        String?  @db.VarChar(8)
-  MA_CSKCB        String?  @db.VarChar(5)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(uuid())
+  STT              Int?
+  MA_DICH_VU       String?  @db.VarChar(20)
+  TEN_DICH_VU      String?
+  TEN_DVKT_GIA     String?
+  DON_GIA          Float?
+  QUY_TRINH        String?  @db.VarChar(50)
+  SO_LUONG_CGKT    Float?
+  CSKCB_CGKT       String?  @db.VarChar(5)
+  CSKCB_CLS        String?  @db.VarChar(5)
+  QD_DVKT          String?  @db.VarChar(50)
+  QD_PD_GIA        String?  @db.VarChar(50)
+  GHI_CHU          String?
+  MA_THUOC         String?  @db.VarChar(15)
+  TEN_THUOC        String?
+  SO_DANG_KY       String?  @db.VarChar(50)
+  DON_VI_TINH      String?
+  TT_THAU          String?
+  DON_GIA_THUOC    Float?
+  DM_NSX_CDD       Float?
+  DM_THUCTE_CDD    Float?
+  LIEU_BQ_PX       Float?
+  TL_THUCTE_BQ_PX  Float?
+  THANH_TIEN_THUOC Float?
+  GIA_THANH_TOAN   Float?
+  TU_NGAY          String?  @db.VarChar(8)
+  DEN_NGAY         String?  @db.VarChar(8)
+  MA_CSKCB         String?  @db.VarChar(5)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Mau06Catalog {
-  id              String   @id @default(uuid())
-  STT             Int?
-  TEN_TB          String?  
-  KY_HIEU         String?  
-  CONGTY_SX       String?  
-  NUOC_SX         String?  @db.VarChar(100)
-  NAM_SX          Int?     
-  NAM_SD          Int?     
-  MA_MAY          String?  
-  SO_LUU_HANH     String?  @db.VarChar(20)
-  HD_TU           String?  @db.VarChar(8)
-  HD_DEN          String?  @db.VarChar(8)
-  TU_NGAY         String?  @db.VarChar(8)
-  DEN_NGAY        String?  @db.VarChar(8)
-  MA_CSKCB        String?  @db.VarChar(5)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model ITRequest {
-  id              String   @id @default(cuid())
-  ma_ba           String?  // MABA (Mã bệnh án)
-  category        String   @default("SOFTWARE") // SOFTWARE, HARDWARE
-  ten_loi         String   // Tên lỗi yêu cầu / Mô tả lỗi
-  ma_khoa         String   // Khoa gửi yêu cầu
-  
-  assigneeId      String?  // Giao người xử lý
-  status          String   @default("PENDING") // PENDING, IN_PROGRESS, RESOLVED, TRANSFERRING
-  dynamicFields   Json?    // Chứa cấu trúc các trường từ Form Builder
-  it_note         String?  @db.Text
-  
-  // Fields for Transfer Workflow
-  transferToId    String?
-  transferFromId  String?
-  
-  // Time tracking fields
-  startedAt       DateTime?
-  resolvedAt      DateTime?
-  
-  // Chat Messages
-  messages        RequestMessage[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model RequestMessage {
-  id              String   @id @default(cuid())
-  itRequestId     String
-  itRequest       ITRequest @relation(fields: [itRequestId], references: [id], onDelete: Cascade)
-  senderId        String   // ID người gửi (có thể là ID của User)
-  senderName      String?  // Tên người gửi hiển thị
-  content         String?  @db.Text // Nội dung chat
-  imageUrl        String?  // Ảnh đính kèm nếu có
-  isSystem        Boolean  @default(false) // Có phải tin nhắn tự động từ hệ thống không
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model XmlErrorRecord {
-  id                String   @id @default(cuid())
-  ma_lk             String?
-  ma_bn             String?
-  ma_khoa           String?
-  ten_khoa          String?
-  ho_ten            String?
-  ma_the            String?
-  ngay_vao          DateTime?
-  ngay_ra           DateTime?
-  ngay_yl           DateTime?
-  ngay_th_yl        DateTime?
-  ngay_kq           DateTime?
-  ngay_vao_noi_tru  DateTime?
-  ma_dv             String?
-  ten_dv            String?
-  don_gia_bh        String?
-  ma_doituong_kcb   String?
-  ma_may            String?
-  ma_bac_si         String?
-  ten_bac_si        String?
-  nguoi_th          String?
-  ten_nguoi_th      String?
-  chi_tiet_loi      String?  @db.Text
-  sourceType        String   @default("XML") // XML, CHUYEN_DE
-
-  status            String   @default("PENDING") // PENDING, EXPLAINED
-  departmentNote    String?  @db.Text // Giải trình của khoa
-  adminNote         String?  @db.Text // Ghi chú của Admin
-  
-  // Liên kết với IT Request
-  itRequestId       String?
-  itRequestPingCount Int      @default(0)
-  itResolved        Boolean  @default(false)
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model Role {
-  id          String   @id @default(cuid())
-  code        String   @unique // ADMIN, CNTT, KHOA...
-  name        String   // Tên hiển thị
-  description String?
-  permissions Json?    // Danh sách các mã menu được phép truy cập
-  
+  id          String   @id @default(uuid())
+  STT         Int?
+  TEN_TB      String?
+  KY_HIEU     String?
+  CONGTY_SX   String?
+  NUOC_SX     String?  @db.VarChar(100)
+  NAM_SX      Int?
+  NAM_SD      Int?
+  MA_MAY      String?
+  SO_LUU_HANH String?  @db.VarChar(20)
+  HD_TU       String?  @db.VarChar(8)
+  HD_DEN      String?  @db.VarChar(8)
+  TU_NGAY     String?  @db.VarChar(8)
+  DEN_NGAY    String?  @db.VarChar(8)
+  MA_CSKCB    String?  @db.VarChar(5)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+model ITRequest {
+  id               String           @id @default(cuid())
+  ma_ba            String?
+  ten_loi          String
+  ma_khoa          String
+  assigneeId       String?
+  status           String           @default("PENDING")
+  dynamicFields    Json?
+  it_note          String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  category         String           @default("SOFTWARE")
+  targetDepartment String           @default("CNTT")
+  transferFromId   String?
+  transferToId     String?
+  resolvedAt       DateTime?
+  startedAt        DateTime?
+  messages         RequestMessage[]
+}
+
+model RequestMessage {
+  id          String    @id @default(cuid())
+  itRequestId String
+  senderId    String
+  senderName  String?
+  content     String?
+  imageUrl    String?
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  itRequest   ITRequest @relation(fields: [itRequestId], references: [id], onDelete: Cascade)
+}
+
+model XmlErrorRecord {
+  id                 String    @id @default(cuid())
+  ma_lk              String?
+  ma_bn              String?
+  ma_khoa            String?
+  ten_khoa           String?
+  ho_ten             String?
+  ma_the             String?
+  ngay_vao           DateTime?
+  ngay_ra            DateTime?
+  ngay_yl            DateTime?
+  ngay_th_yl         DateTime?
+  ngay_kq            DateTime?
+  ngay_vao_noi_tru   DateTime?
+  ma_dv              String?
+  ten_dv             String?
+  ma_doituong_kcb    String?
+  chi_tiet_loi       String?
+  status             String    @default("PENDING")
+  departmentNote     String?
+  adminNote          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  sourceType         String    @default("XML")
+  don_gia_bh         String?
+  ma_may             String?
+  ma_bac_si          String?
+  nguoi_th           String?
+  ten_bac_si         String?
+  ten_nguoi_th       String?
+  itRequestId        String?
+  itRequestPingCount Int       @default(0)
+  itResolved         Boolean   @default(false)
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  permissions Json?
+}
+
 model Menu {
-  id              String   @id @default(cuid())
-  title           String   // Tên hiển thị (vd: Đọc dữ liệu Excel)
-  path            String?  // Đường dẫn hiển thị (vd: /doc-file-excel-1)
-  targetPath      String?  // Đường dẫn gốc (vd: /doc-file-excel)
-  icon            String?  // Tên Icon của Ant Design (vd: FileExcelOutlined)
-  parentId        String?  // Dùng để tạo cấp bậc (Nhóm menu hoặc menu con)
-  order           Int      @default(0) // Số thứ tự để lưu vị trí kéo thả
-  permissionCode  String?  // Mã quyền (vd: MENU_DOC_FILE_EXCEL) để link với bảng Role
-  isActive        Boolean  @default(true)
-  isSpecialGroup  String?  // Dùng để đánh dấu các nhóm đặc biệt (như nhóm "Chuyên đề" tự động load từ bảng SpecializedRule)
-  showInPaths     String[] @default([]) // Chứa tiền tố đường dẫn module (vd: ['/xml-checker'])
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  path           String?
+  icon           String?
+  parentId       String?
+  order          Int      @default(0)
+  permissionCode String?
+  isActive       Boolean  @default(true)
+  isSpecialGroup String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  targetPath     String?
+  showInPaths    String[] @default([])
 }
 
 model DashboardCard {
-  id              String   @id @default(cuid())
-  title           String   // Tiêu đề (VD: Quản lý Nhân sự)
-  description     String?  // Mô tả chi tiết
-  icon            String?  // Tên Icon (VD: TeamOutlined)
-  href            String   // Đường dẫn (VD: /staff)
-  
-  // Giao diện thẻ
-  bgColor         String?  // VD: bg-cyan-50
-  borderColor     String?  // VD: border-cyan-200
-  hoverColor      String?  // VD: hover:border-cyan-500
-  
-  order           Int      @default(0) // Số thứ tự hiển thị
-  isActive        Boolean  @default(true) // Trạng thái Bật/Tắt
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  icon        String?
+  href        String
+  bgColor     String?
+  borderColor String?
+  hoverColor  String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Warehouse {
-  id              String   @id @default(cuid())
-  code            String   @unique
-  name            String
-  department_id   String
-  department      Department @relation(fields: [department_id], references: [ma_khoa])
-  warehouse_type  String   // KHO_CHINH, KHO_KHOA
-  room            String?
-  storekeeper_id  String?
-  storekeeper     Staff?   @relation(fields: [storekeeper_id], references: [id])
-  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
-
-  equipments      Equipment[]
-  vouchersAsFrom  InventoryVoucher[] @relation("FromWarehouse")
-  vouchersAsTo    InventoryVoucher[] @relation("ToWarehouse")
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String             @id @default(cuid())
+  code           String             @unique
+  name           String
+  department_id  String
+  warehouse_type String
+  room           String?
+  storekeeper_id String?
+  status         String             @default("ACTIVE")
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  equipments     Equipment[]
+  vouchersAsFrom InventoryVoucher[] @relation("FromWarehouse")
+  vouchersAsTo   InventoryVoucher[] @relation("ToWarehouse")
+  department     Department         @relation(fields: [department_id], references: [ma_khoa])
+  storekeeper    Staff?             @relation(fields: [storekeeper_id], references: [id])
 }
 
 model Equipment {
-  id                 String   @id @default(cuid())
-  ma_vttb            String   @unique
+  id                 String            @id @default(cuid())
+  ma_vttb            String            @unique
   ten_vttb           String
-  qr_code            String   @unique
-  quantity           Int      @default(1) // Cho vật tư tiêu hao
-  
-  // Phân loại (Trỏ đến SystemCategory)
-  category_id        String?  
+  qr_code            String            @unique
+  category_id        String?
   group_id           String?
   type_id            String?
   manufacturer_id    String?
   country_id         String?
   production_year_id String?
   funding_source_id  String?
-
   donvitinh          String?
-  vattu_hay_tb       String? // VAT_TU, THIET_BI
+  vattu_hay_tb       String?
   kyhieu             String?
   serial             String?
-  quanly_serial      Boolean  @default(false)
+  quanly_serial      Boolean           @default(false)
   dongia             Float?
   vat                Float?
   dongia_vat         Float?
   dv_cungung         String?
-  bao_hanh           Boolean  @default(false)
+  bao_hanh           Boolean           @default(false)
   ngay_bdbh          DateTime?
   ngay_ktbh          DateTime?
   pp_tinh_khauhao    String?
   thoigian_khauhao   Int?
   ten_ketoan         String?
-
-  status             String   @default("TRONG_KHO") // TRONG_KHO, DANG_SU_DUNG, BAO_HONG, THANH_LY
+  status             String            @default("TRONG_KHO")
   warehouse_id       String
-  warehouse          Warehouse @relation(fields: [warehouse_id], references: [id])
-  
-  custom_fields      Json?    // Chứa dữ liệu động
-
-  voucher_id         String?  // Trỏ đến phiếu nhập kho đã sinh ra thiết bị này
+  custom_fields      Json?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  quantity           Int               @default(1)
+  voucher_id         String?
   voucher            InventoryVoucher? @relation(fields: [voucher_id], references: [id])
-
+  warehouse          Warehouse         @relation(fields: [warehouse_id], references: [id])
   maintenanceLogs    MaintenanceLog[]
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
 }
 
 model InventoryVoucher {
-  id                String   @id @default(cuid())
-  voucher_code      String   @unique
-  type              String   // NHAP_KHO, XUAT_KHO, LUAN_CHUYEN, TRA_HANG
-  sub_type          String?  // NHAP_MOI, NHAP_HOAN_TRA, XUAT_SU_DUNG, XUAT_CHUYEN_KHO, XUAT_TRA_NCC
-  
-  // Dùng khi nhập từ nhà cung cấp
+  id                String                   @id @default(cuid())
+  voucher_code      String                   @unique
+  type              String
   supplier_name     String?
   document_number   String?
   document_date     DateTime?
   deliverer_name    String?
   deliverer_address String?
   received_date     DateTime?
-
-  // Kho điều chuyển
   from_warehouse_id String?
-  from_warehouse    Warehouse? @relation("FromWarehouse", fields: [from_warehouse_id], references: [id])
   to_warehouse_id   String?
-  to_warehouse      Warehouse? @relation("ToWarehouse", fields: [to_warehouse_id], references: [id])
-  
-  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  created_by        String   // Tên hoặc ID người lập
-  
-  details           InventoryVoucherDetail[]
+  status            String                   @default("PENDING")
+  created_by        String
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  sub_type          String?
   equipments        Equipment[]
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  from_warehouse    Warehouse?               @relation("FromWarehouse", fields: [from_warehouse_id], references: [id])
+  to_warehouse      Warehouse?               @relation("ToWarehouse", fields: [to_warehouse_id], references: [id])
+  details           InventoryVoucherDetail[]
 }
 
 model InventoryVoucherDetail {
-  id               String   @id @default(cuid())
-  voucher_id       String
-  voucher          InventoryVoucher @relation(fields: [voucher_id], references: [id], onDelete: Cascade)
-  
-  ten_vttb         String
-  category_id      String?
-  group_id         String?
-  type_id          String?
-  
-  quantity         Int      @default(1)
-  dongia           Float?
-  vat              Float?
-  dongia_vat       Float?
-  thanh_tien       Float?
-
-  // Lưu thông tin hãng SX, năm... lúc nhập vào
-  manufacturer_id  String?
-  country_id       String?
+  id                String           @id @default(cuid())
+  voucher_id        String
+  ten_vttb          String
+  category_id       String?
+  group_id          String?
+  type_id           String?
+  quantity          Int              @default(1)
+  dongia            Float?
+  vat               Float?
+  dongia_vat        Float?
+  thanh_tien        Float?
+  manufacturer_id   String?
+  country_id        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
   funding_source_id String?
-  serial_numbers   String?  @db.Text
-  is_auto_generate Boolean  @default(true)
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  is_auto_generate  Boolean          @default(true)
+  serial_numbers    String?
+  voucher           InventoryVoucher @relation(fields: [voucher_id], references: [id], onDelete: Cascade)
 }
 
 model MaintenanceLog {
-  id                  String   @id @default(cuid())
-  equipment_id        String
-  equipment           Equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade)
-  
-  reported_by         String?  // ID khoa báo hỏng hoặc tên
-  issue_description   String   @db.Text
-  handled_by          String?  // ID người sửa
-  status              String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
-  cost                Float?
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                String    @id @default(cuid())
+  equipment_id      String
+  reported_by       String?
+  issue_description String
+  handled_by        String?
+  status            String    @default("PENDING")
+  cost              Float?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  equipment         Equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade)
+}
+
+model BedCatalog {
+  id          String     @id
+  ma_khoa     String
+  ma_giuong   String
+  loai_giuong String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  Department  Department @relation(fields: [ma_khoa], references: [ma_khoa], onDelete: Cascade)
+
+  @@unique([ma_khoa, ma_giuong])
+  @@index([ma_khoa])
+}
+
+model CCHNException {
+  id                    String                @id
+  cchn_id               String
+  ma_dich_vu            String
+  type                  String
+  note                  String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime
+  PracticingCertificate PracticingCertificate @relation(fields: [cchn_id], references: [id], onDelete: Cascade)
+}
+
+model DoctorServiceMapping {
+  id          String   @id
+  cchn        String
+  ma_dich_vu  String
+  ten_dich_vu String?
+  source      String   @default("XML_AUTO")
+  status      String   @default("PENDING_REVIEW")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  @@unique([cchn, ma_dich_vu])
+  @@index([cchn])
+  @@index([ma_dich_vu])
+}
+
+model Icd10Catalog {
+  id                     String   @id
+  ma_chuong              String?
+  ten_chuong             String?
+  ma_nhom                String?
+  ten_nhom               String?
+  ma_loai                String?
+  ten_loai               String?
+  ma_benh                String?
+  ten_benh               String?
+  ma_chi_tiet            String   @unique
+  ten_chi_tiet           String?
+  is_not_main_disease    Boolean  @default(false)
+  not_recommended_main   Boolean  @default(false)
+  requires_more_specific Boolean  @default(false)
+  is_death_cause_only    Boolean  @default(false)
+  is_female_only         Boolean  @default(false)
+  is_male_only           Boolean  @default(false)
+  ma_qd_cu               String?
+  tuyen_dieu_tri         String?
+  ma_chuyen_khoa         String?
+  dk_tuoi                String?
+  dk_gioi_tinh           String?
+  ghi_chu                String?
+  fullData               Json?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime
+
+  @@index([ma_benh])
+  @@index([ma_chi_tiet])
+}
+
+model ScopeOfPracticeCatalog {
+  id                  String                @id
+  ma_pham_vi          String                @unique
+  ten_chuc_danh       String
+  ghi_chu             String?
+  isActive            Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  ScopeServiceMapping ScopeServiceMapping[]
+
+  @@index([ma_pham_vi])
+}
+
+model ScopeServiceMapping {
+  id                     String                 @id
+  ma_pham_vi             String
+  ma_dich_vu             String
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  ScopeOfPracticeCatalog ScopeOfPracticeCatalog @relation(fields: [ma_pham_vi], references: [ma_pham_vi], onDelete: Cascade)
+
+  @@unique([ma_pham_vi, ma_dich_vu])
+  @@index([ma_dich_vu])
+  @@index([ma_pham_vi])
+}
+
+model ServiceChapter {
+  code               String               @id
+  name               String
+  description        String?
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  TT32ChapterMapping TT32ChapterMapping[]
+}
+
+model TT32Category {
+  id                    String                  @id
+  code                  String                  @unique
+  name                  String
+  description           String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  PracticingCertificate PracticingCertificate[]
+  TT32ChapterMapping    TT32ChapterMapping[]
+}
+
+model TT32ChapterMapping {
+  tt32_category_id String
+  chapter_code     String
+  ServiceChapter   ServiceChapter @relation(fields: [chapter_code], references: [code], onDelete: Cascade)
+  TT32Category     TT32Category   @relation(fields: [tt32_category_id], references: [id], onDelete: Cascade)
+
+  @@id([tt32_category_id, chapter_code])
+}
+
+model TT32ServiceCatalog {
+  id            String   @id
+  category_name String
+  group_name    String
+  code          String
+  name          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
 }

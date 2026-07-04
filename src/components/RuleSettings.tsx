@@ -411,9 +411,9 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         <div className="font-bold text-blue-700">1. Kiểm tra danh mục hệ thống (EXISTS_IN)</div>
                         <div className="text-gray-600 mb-1">Dùng để đối chiếu MÃ của File XML với danh sách trong Database hệ thống.</div>
                         <ul className="list-disc pl-4 space-y-1">
-                            <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('Staff.ma_bac_si', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ không có trên hệ thống.</li>
+                            <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('PracticingCertificate.so_cchn', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ (CCHN) không có trên hệ thống.</li>
                             <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('Department.ma_khoa', MA_KHOA)</code> : Báo lỗi nếu Mã Khoa không có trên hệ thống.</li>
-                            <li><span className="text-gray-500 italic">Mẹo: Bạn có thể đổi 'Staff.ma_bac_si' bằng bất kỳ Tên_Bảng.Tên_Cột nào có trong Database sau này. Nó sẽ tự động hiểu!</span></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Bạn có thể đổi 'PracticingCertificate.so_cchn' bằng bất kỳ Tên_Bảng.Tên_Cột nào có trong Database sau này. Nó sẽ tự động hiểu!</span></li>
                         </ul>
                     </div>
                     <div>
@@ -450,9 +450,12 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         <div className="font-bold text-blue-700">6. Kiểm tra sai lệch với BẤT KỲ BẢNG NÀO (Động hoàn toàn)</div>
                         <div className="text-gray-600 mb-1">Dùng để so sánh giá trị của hồ sơ hiện tại với cột bất kỳ trong bảng danh mục bất kỳ. Rất mạnh mẽ! Báo lỗi nếu tìm thấy mã nhưng giá trị bị sai lệch.</div>
                         <ul className="list-disc pl-4 space-y-1">
-                            <li>Cú pháp: <code className="bg-white px-1 border rounded text-red-600">CHECK_MISMATCH('TênBảng.CộtMã:CộtSoSánh', Giá_Trị_Mã_XML, Giá_Trị_So_Sánh_XML)</code></li>
-                            <li><span className="text-gray-500 italic">Ví dụ 1 (Giá Mẫu 05):</span> <code className="bg-white px-1 border rounded text-red-600">CHECK_MISMATCH('Mau05Catalog.MA_DICH_VU:DON_GIA', MA_DICH_VU, DON_GIA_BH)</code></li>
-                            <li><span className="text-gray-500 italic">Ví dụ 2 (Tên Bác Sĩ):</span> <code className="bg-white px-1 border rounded text-red-600">CHECK_MISMATCH('Staff.ma_bac_si:ten_bac_si', MA_BAC_SI, TEN_BAC_SI)</code></li>
+                            <li>Cú pháp gốc: <code className="bg-white px-1 border rounded text-red-600">CHECK_MISMATCH('TênBảng.CộtMã:CộtSoSánh', Giá_Trị_Mã_XML, Giá_Trị_So_Sánh_XML)</code></li>
+                            <li><span className="text-gray-500 italic">Ví dụ (Tên Bác Sĩ):</span> <code className="bg-white px-1 border rounded text-red-600">CHECK_MISMATCH('PracticingCertificate.so_cchn:Staff.ho_ten', MA_BAC_SI, TEN_BAC_SI)</code></li>
+                            <li className="mt-2 pt-2 border-t border-gray-100">
+                                <div className="text-orange-700 font-semibold text-[13px] mb-1">🔥 Dành riêng cho Đơn giá Mẫu 03 & Mẫu 04 (Hỗ trợ 1 mã nhiều giá và tự làm tròn số):</div>
+                                Cú pháp: <code className="bg-white px-1 border rounded text-red-600">CHECK_PRICE_MISMATCH_MAU03_04('Mau04Catalog.MA_VAT_TU:DON_GIA_BH', MA_VAT_TU, DON_GIA_BH)</code>
+                            </li>
                         </ul>
                     </div>
                     <div className="mt-2">
@@ -476,6 +479,24 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                 <div className="text-gray-800 font-semibold text-[13px]">Kịch bản 4: Check siêu chặt (Trùng 3 tiêu chí: Bác Sĩ + Dịch Vụ + Ngày Giờ)</div>
                                 <code className="bg-white px-1 border rounded text-red-600">CHECK_DUPLICATE_IN_LIST('MA_BAC_SI', MA_BAC_SI, 'MA_DICH_VU', MA_DICH_VU, 'NGAY_TH_YL', NGAY_TH_YL)</code>
                             </li>
+                        </ul>
+                    </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">8. Kiểm tra chéo 2 trường dữ liệu kết hợp (Ví dụ: Khoa + Giường)</div>
+                        <div className="text-gray-600 mb-1">Dùng để kiểm tra xem 2 trường dữ liệu gộp lại có hợp lệ trong Database hay không (Ví dụ: Giường này có đúng nằm trong Khoa này không).</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Cú pháp: <code className="bg-white px-1 border rounded text-red-600">CHECK_MISMATCH('BedCatalog.ma_giuong:BedCatalog.ma_khoa', MA_GIUONG, MA_KHOA)</code></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Hệ thống sẽ tra cứu xem MA_GIUONG trong file XML có mã Khoa tương ứng giống với MA_KHOA trong XML hay không. Cú pháp CHECK_MISMATCH rất mạnh mẽ để kiểm tra chéo 2 trường!</span></li>
+                        </ul>
+                    </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">9. Tra cứu Danh mục ICD-10 (Thông tư 06)</div>
+                        <div className="text-gray-600 mb-1">Dùng để kiểm tra trực tiếp mã bệnh từ XML đối chiếu với các quy tắc khắt khe của ICD-10 (Chỉ dùng cho XML1).</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Bệnh chính không được dùng làm bệnh chính: <code className="bg-white px-1 border rounded text-red-600">CHECK_ICD10('is_not_main_disease', MA_BENH)</code></li>
+                            <li>Bắt buộc có mã chi tiết hơn (4 hoặc 5 ký tự): <code className="bg-white px-1 border rounded text-red-600">CHECK_ICD10('requires_more_specific', MA_BENH)</code></li>
+                            <li>Mã bệnh kèm theo chỉ dành cho tử vong: <code className="bg-white px-1 border rounded text-red-600">CHECK_ICD10('is_death_cause_only', MA_BENHKHAC)</code></li>
+                            <li>Kiểm tra mã bệnh KHÔNG TỒN TẠI trong danh mục ICD10: <code className="bg-white px-1 border rounded text-red-600">CHECK_NOT_IN_ICD10(MA_BENH_KT)</code> (Hỗ trợ tự động tách các mã nối nhau bằng dấu chấm phẩy ;)</li>
                         </ul>
                     </div>
                 </div>

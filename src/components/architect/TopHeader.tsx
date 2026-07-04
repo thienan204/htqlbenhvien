@@ -22,6 +22,7 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
     const router = useRouter();
     const { user } = useAuth();
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+    const [profileInitialTab, setProfileInitialTab] = useState('1');
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
     return (
@@ -64,7 +65,13 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                                     key: 'profile',
                                     label: 'Cập nhật Hồ sơ',
                                     icon: <UserOutlined />,
-                                    onClick: () => setIsEditProfileOpen(true)
+                                    onClick: () => { setProfileInitialTab('1'); setIsEditProfileOpen(true); }
+                                },
+                                {
+                                    key: 'services',
+                                    label: 'Phạm vi chuyên môn',
+                                    icon: <AppstoreOutlined />, // or MedicineBoxOutlined, but AppstoreOutlined is already imported
+                                    onClick: () => { setProfileInitialTab('2'); setIsEditProfileOpen(true); }
                                 },
                                 {
                                     key: 'password',
@@ -99,7 +106,7 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                             </div>
                         </Dropdown>
 
-                        <EditProfileModal open={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
+                        <EditProfileModal open={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} initialTab={profileInitialTab} />
                         <ChangePasswordModal open={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
                     </>
                 ) : (

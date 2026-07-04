@@ -279,7 +279,7 @@ export default function ExcelReaderPage() {
     // IndexedDB Helper
     const initDB = async () => {
         const { openDB } = await import('idb');
-        return openDB('ExcelReaderDB', 1, {
+        return openDB('ExcelReaderDB', 2, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains('files')) {
                     db.createObjectStore('files');

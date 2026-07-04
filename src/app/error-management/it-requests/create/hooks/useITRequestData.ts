@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function useITRequestData(isAdmin: boolean, userRole: string | undefined, userMaKhoa: string | undefined, userStaffId: string | undefined, form: any) {
+export function useITRequestData(isAdmin: boolean, userRole: string | undefined, userMaKhoa: string | undefined, userStaffId: string | undefined, form: any, targetDepartment: string = 'CNTT') {
     const [softwareErrors, setSoftwareErrors] = useState<string[]>([]);
     const [hardwareErrors, setHardwareErrors] = useState<string[]>([]);
     const [allStaffs, setAllStaffs] = useState<any[]>([]);
@@ -13,17 +13,11 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
     useEffect(() => {
         const fetchConfiguredFields = async () => {
             try {
-                const res = await fetch('/api/error-management/it-request-config');
+                const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
                 if (res.ok) {
                     const configData = await res.json();
                     setSoftwareErrors(configData.softwareErrors || []);
-                    setHardwareErrors(configData.hardwareErrors || [
-                        'Máy tính không lên',
-                        'Hết mực in / Kẹt giấy',
-                        'Mất mạng Internet',
-                        'Lỗi bàn phím / Chuột',
-                        'Khác'
-                    ]);
+                    setHardwareErrors(configData.hardwareErrors || []);
                     if (configData.maxImageSizeMB) {
                         setMaxImageSizeMB(configData.maxImageSizeMB);
                     }
@@ -72,7 +66,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
 
         const fetchITUsers = async () => {
             try {
-                const res = await fetch('/api/error-management/duty-roster');
+                const res = await fetch(`/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
                 if (res.ok) {
                     const data = await res.json();
                     setItUsers(data.filter((u: any) => u.isAvailable));
@@ -99,11 +93,11 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
         const lastStaffId = userStaffId || localStorage.getItem('last_it_request_staff_id');
         setSavedStaffId(lastStaffId);
         form.setFieldsValue({
-            category: 'SOFTWARE',
+            category: targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE',
             trang_thai_ba: 'Đang điều trị',
             nguoi_bao_id: lastStaffId || undefined
         });
-    }, [form, isAdmin, userRole, userMaKhoa, userStaffId]);
+    }, [form, isAdmin, userRole, userMaKhoa, userStaffId, targetDepartment]);
 
     return {
         softwareErrors,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Card, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 interface User {
@@ -27,6 +27,11 @@ export default function UsersPage() {
     const [form] = Form.useForm();
     const [selectedRole, setSelectedRole] = useState<string>('USER');
     const [mounted, setMounted] = useState(false);
+    
+    // Filters
+    const [searchText, setSearchText] = useState('');
+    const [filterRole, setFilterRole] = useState<string | null>(null);
+    const [filterDept, setFilterDept] = useState<string | null>(null);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -180,6 +185,8 @@ export default function UsersPage() {
                 let color = 'default';
                 if (roleCode === 'ADMIN') color = 'red';
                 else if (roleCode === 'CNTT') color = 'blue';
+                else if (roleCode === 'VTYT') color = 'green';
+                else if (roleCode === 'HCQT') color = 'orange';
                 else if (roleCode === 'KHOA') color = 'green';
                 return <Tag color={color}>{foundRole ? foundRole.name : roleCode}</Tag>;
             }
@@ -219,6 +226,14 @@ export default function UsersPage() {
         }
     ];
 
+    const filteredUsers = users.filter(u => {
+        const matchText = (u.username?.toLowerCase().includes(searchText.toLowerCase())) || 
+                          (u.name && u.name.toLowerCase().includes(searchText.toLowerCase()));
+        const matchRole = filterRole ? u.role === filterRole : true;
+        const matchDept = filterDept ? u.ma_khoa === filterDept : true;
+        return matchText && matchRole && matchDept;
+    });
+
     return (
         <div className="w-full max-w-[1200px] mx-auto px-[30px] py-6 space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -237,8 +252,40 @@ export default function UsersPage() {
             </div>
 
             <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
+                <div className="p-4 border-b border-slate-100 flex flex-wrap gap-4 bg-slate-50/50">
+                    <Input 
+                        placeholder="Tìm kiếm tài khoản, họ tên..." 
+                        prefix={<SearchOutlined className="text-slate-400" />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        className="max-w-md rounded-lg"
+                        size="large"
+                    />
+                    <Select
+                        placeholder="Lọc Vai trò (Role)"
+                        allowClear
+                        showSearch
+                        size="large"
+                        className="min-w-[200px]"
+                        value={filterRole}
+                        onChange={setFilterRole}
+                        options={roles.map(r => ({ label: `${r.name} (${r.code})`, value: r.code }))}
+                        optionFilterProp="label"
+                    />
+                    <Select
+                        placeholder="Lọc Khoa/Phòng"
+                        allowClear
+                        showSearch
+                        size="large"
+                        className="min-w-[200px]"
+                        value={filterDept}
+                        onChange={setFilterDept}
+                        options={departments.map(d => ({ label: `${d.ten_khoa} (${d.ma_khoa})`, value: d.ma_khoa }))}
+                        optionFilterProp="label"
+                    />
+                </div>
                 <Table 
-                    dataSource={users} 
+                    dataSource={filteredUsers} 
                     columns={columns} 
                     rowKey="id" 
                     loading={loading}

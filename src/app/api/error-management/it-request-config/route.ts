@@ -6,15 +6,30 @@ const prisma = new PrismaClient();
 const CONFIG_SLUG = 'it-request-fields-config';
 const RULE_TYPE = 'SYSTEM_CONFIG';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
+        let slug = 'it-request-fields-config';
+        if (targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
+        else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
+
         const configRule = await prisma.specializedRule.findUnique({
-            where: { slug: CONFIG_SLUG }
+            where: { slug }
         });
+
+        let defaultHardwareErrors = ['Khác'];
+        if (targetDepartment === 'CNTT') {
+            defaultHardwareErrors = ['Máy tính không lên', 'Hết mực in / Kẹt giấy', 'Mất mạng Internet', 'Lỗi bàn phím / Chuột', 'Khác'];
+        } else if (targetDepartment === 'VTYT') {
+            defaultHardwareErrors = ['Không lên nguồn', 'Lỗi cảm biến/Đầu dò', 'Báo lỗi hệ thống', 'Hư hỏng vật lý', 'Khác'];
+        } else if (targetDepartment === 'HCQT') {
+            defaultHardwareErrors = ['Hỏng bóng đèn', 'Chảy nước/Tắc nghẽn', 'Hỏng điều hòa', 'Sự cố điện', 'Khác'];
+        }
 
         // Nếu chưa có, trả về mặc định
         if (!configRule || !configRule.logicConfig) {
-            return NextResponse.json({ fields: [], assignmentMode: 'A' });
+            return NextResponse.json({ fields: [], assignmentMode: 'A', hardwareErrors: defaultHardwareErrors });
         }
 
         // Handle legacy array format
@@ -26,13 +41,7 @@ export async function GET() {
         const config: any = configRule.logicConfig;
         return NextResponse.json({ 
             softwareErrors: config.softwareErrors || config.fields || [], 
-            hardwareErrors: config.hardwareErrors || [
-                'Máy tính không lên',
-                'Hết mực in / Kẹt giấy',
-                'Mất mạng Internet',
-                'Lỗi bàn phím / Chuột',
-                'Khác'
-            ],
+            hardwareErrors: config.hardwareErrors && config.hardwareErrors.length > 0 ? config.hardwareErrors : defaultHardwareErrors,
             assignmentMode: config.assignmentMode || 'A',
             maxImageSizeMB: config.maxImageSizeMB || 10
         });
@@ -45,13 +54,19 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const user = await getCurrentUser();
-        // Chỉ ADMIN hoặc CNTT mới được phép cấu hình
-        if (!user || !['ADMIN', 'CNTT'].includes(user.role)) {
+        // Chỉ ADMIN hoặc quyền quản lý phòng ban mới được phép cấu hình
+        if (!user || (!['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
+        let slug = 'it-request-fields-config';
+        if (targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
+        else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
+
         const body = await request.json();
-        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB } = body;
+        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB, telegramBotToken, telegramChatId } = body;
 
         if (softwareErrors && !Array.isArray(softwareErrors)) {
             return NextResponse.json({ error: 'Dữ liệu softwareErrors không hợp lệ, phải là mảng string' }, { status: 400 });
@@ -61,7 +76,7 @@ export async function POST(request: Request) {
         }
 
         // Keep existing config to avoid overwriting missing fields
-        const existingRule = await prisma.specializedRule.findUnique({ where: { slug: CONFIG_SLUG } });
+        const existingRule = await prisma.specializedRule.findUnique({ where: { slug } });
         const existingConfig: any = existingRule?.logicConfig || {};
 
         const newConfig = {
@@ -69,20 +84,22 @@ export async function POST(request: Request) {
             softwareErrors: softwareErrors || existingConfig.softwareErrors || [],
             hardwareErrors: hardwareErrors || existingConfig.hardwareErrors || [],
             assignmentMode: assignmentMode || existingConfig.assignmentMode || 'A',
-            maxImageSizeMB: maxImageSizeMB !== undefined ? maxImageSizeMB : (existingConfig.maxImageSizeMB || 10)
+            maxImageSizeMB: maxImageSizeMB !== undefined ? maxImageSizeMB : (existingConfig.maxImageSizeMB || 10),
+            telegramBotToken: telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
+            telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId
         };
 
         const configRule = await prisma.specializedRule.upsert({
-            where: { slug: CONFIG_SLUG },
+            where: { slug },
             update: {
                 logicConfig: newConfig,
                 updatedAt: new Date(),
             },
             create: {
-                name: 'Cấu hình trường động cho IT Request',
-                slug: CONFIG_SLUG,
+                name: `Cấu hình trường động cho ${targetDepartment}`,
+                slug,
                 ruleType: RULE_TYPE,
-                description: 'Lưu trữ các trường nhập liệu động do admin thêm vào.',
+                description: `Lưu trữ các trường nhập liệu động cho ${targetDepartment}.`,
                 logicConfig: newConfig,
             }
         });

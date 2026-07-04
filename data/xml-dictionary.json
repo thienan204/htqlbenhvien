@@ -458,6 +458,15 @@
       "dienGiai130": "Mã TTDV",
       "dinhChinh4750": "",
       "dieuChinh": "Mới"
+    },
+    {
+      "stt": 52,
+      "chiTieu": "MA_BENH_CHINH",
+      "kieuDuLieu": "Chuỗi",
+      "kichThuocToiDa": "",
+      "dienGiai130": "",
+      "dinhChinh4750": "",
+      "dieuChinh": ""
     }
   ],
   "XML2": [

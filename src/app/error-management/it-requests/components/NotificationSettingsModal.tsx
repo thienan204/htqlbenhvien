@@ -8,11 +8,13 @@ const { Text, Title } = Typography;
 interface NotificationSettingsModalProps {
     visible: boolean;
     onCancel: () => void;
+    targetDepartment?: string;
 }
 
 export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     visible,
-    onCancel
+    onCancel,
+    targetDepartment = 'CNTT'
 }) => {
     const [isMuted, setIsMuted] = useState(false);
     const [hasCustomAudio, setHasCustomAudio] = useState(false);
@@ -20,8 +22,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
     useEffect(() => {
         if (visible) {
-            setIsMuted(localStorage.getItem('it_notification_muted') === 'true');
-            setHasCustomAudio(!!localStorage.getItem('it_notification_audio'));
+            setIsMuted(localStorage.getItem(`${targetDepartment}_notification_muted`) === 'true');
+            setHasCustomAudio(!!localStorage.getItem(`${targetDepartment}_notification_audio`));
             if ('Notification' in window) {
                 setNotificationPermission(Notification.permission);
             }
@@ -30,9 +32,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
     const handleMuteChange = (checked: boolean) => {
         setIsMuted(checked);
-        localStorage.setItem('it_notification_muted', checked ? 'true' : 'false');
+        localStorage.setItem(`${targetDepartment}_notification_muted`, checked ? 'true' : 'false');
         if (!checked) {
-            playNotificationSound();
+            playNotificationSound(targetDepartment);
         }
     };
 
@@ -72,7 +74,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         const reader = new FileReader();
         reader.onload = (e) => {
             const base64Audio = e.target?.result as string;
-            localStorage.setItem('it_notification_audio', base64Audio);
+            localStorage.setItem(`${targetDepartment}_notification_audio`, base64Audio);
             setHasCustomAudio(true);
             message.success('Đã lưu âm thanh báo động tùy chỉnh!');
         };
@@ -85,7 +87,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     };
 
     const handleRemoveCustomAudio = () => {
-        localStorage.removeItem('it_notification_audio');
+        localStorage.removeItem(`${targetDepartment}_notification_audio`);
         setHasCustomAudio(false);
         message.success('Đã khôi phục âm thanh mặc định.');
     };
@@ -178,7 +180,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
                 {!isMuted && (
                     <div className="flex justify-end pt-2">
-                        <Button icon={<PlayCircleOutlined />} onClick={playNotificationSound}>
+                        <Button icon={<PlayCircleOutlined />} onClick={() => playNotificationSound(targetDepartment)}>
                             Nghe thử âm thanh hiện tại
                         </Button>
                     </div>

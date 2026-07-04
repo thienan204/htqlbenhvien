@@ -10,10 +10,11 @@ export async function GET(request: Request) {
                 department: true,
                 chuc_danh_ref: true,
                 trinh_do_ref: true,
-                chuc_vu_ref: true
+                chuc_vu_ref: true,
+                certificates: { select: { so_cchn: true, isActive: true } }
             },
             orderBy: {
-                ma_bac_si: 'asc'
+                ma_nv: 'asc'
             }
         });
         return NextResponse.json(staff);
@@ -31,17 +32,17 @@ export async function POST(request: Request) {
         if (Array.isArray(body)) {
             let successCount = 0;
             for (const item of body) {
-                if (!item.ho_ten || !item.ma_bac_si || !item.ma_khoa) continue;
+                if (!item.ho_ten || !item.ma_nv || !item.ma_khoa) continue;
 
                 await prisma.staff.upsert({
-                    where: { ma_bac_si: item.ma_bac_si },
+                    where: { ma_nv: item.ma_nv },
                     update: {
                         ho_ten: item.ho_ten,
                         so_dien_thoai: item.so_dien_thoai || null,
                         ma_khoa: item.ma_khoa
                     },
                     create: {
-                        ma_bac_si: item.ma_bac_si,
+                        ma_nv: item.ma_nv,
                         ho_ten: item.ho_ten,
                         so_dien_thoai: item.so_dien_thoai || null,
                         ma_khoa: item.ma_khoa
@@ -53,9 +54,13 @@ export async function POST(request: Request) {
         }
 
         // Handle Single Object (For Form Add/Update)
-        const { id, ho_ten, ma_bac_si, so_dien_thoai, dia_chi, ma_khoa, trinh_do_id, chuc_danh_id } = body;
+        const { 
+            id, ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
+            trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+            vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh 
+        } = body;
 
-        if (!ho_ten || !ma_bac_si || !ma_khoa) {
+        if (!ho_ten || !ma_nv || !ma_khoa) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
@@ -63,13 +68,21 @@ export async function POST(request: Request) {
             // Update existing
             const updated = await prisma.staff.update({
                 where: { id },
-                data: { ho_ten, ma_bac_si, so_dien_thoai, dia_chi, ma_khoa, trinh_do_id, chuc_danh_id }
+                data: { 
+                    ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
+                    trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+                    vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh 
+                }
             });
             return NextResponse.json(updated);
         } else {
             // Create new
             const created = await prisma.staff.create({
-                data: { ho_ten, ma_bac_si, so_dien_thoai, dia_chi, ma_khoa, trinh_do_id, chuc_danh_id }
+                data: { 
+                    ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
+                    trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+                    vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh 
+                }
             });
             return NextResponse.json(created);
         }
@@ -93,15 +106,6 @@ export async function DELETE(request: Request) {
             // Bulk delete
             const ids = idsParam.split(',').filter(Boolean);
             if (ids.length > 0) {
-                const userCount = await prisma.user.count({ where: { staffId: { in: ids } } });
-                const warehouseCount = await prisma.warehouse.count({ where: { storekeeper_id: { in: ids } } });
-
-                if (userCount > 0 || warehouseCount > 0) {
-                    return NextResponse.json({ 
-                        error: `Không thể xóa hàng loạt vì có Nhân sự đang liên kết với Tài khoản hoặc Kho vật tư.` 
-                    }, { status: 400 });
-                }
-
                 await prisma.staff.deleteMany({
                     where: { id: { in: ids } }
                 });
@@ -109,20 +113,18 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: true, deletedCount: ids.length });
         }
 
-        if (!id) {
-            return NextResponse.json({ error: 'Missing staff ID or IDs' }, { status: 400 });
+        if (!id && !idsParam) {
+            // Delete ALL staff
+            // First delete dependent tables like PracticingCertificate
+            await prisma.practicingCertificate.deleteMany();
+            
+            // Delete all staff
+            const deleted = await prisma.staff.deleteMany();
+            return NextResponse.json({ success: true, count: deleted.count });
         }
 
-        const userCount = await prisma.user.count({ where: { staffId: id } });
-        const warehouseCount = await prisma.warehouse.count({ where: { storekeeper_id: id } });
-
-        if (userCount > 0 || warehouseCount > 0) {
-            let msgParts = [];
-            if (userCount > 0) msgParts.push(`${userCount} Tài khoản`);
-            if (warehouseCount > 0) msgParts.push(`${warehouseCount} Kho vật tư`);
-            return NextResponse.json({ 
-                error: `Không thể xóa vì Nhân sự này đang liên kết với ${msgParts.join(' và ')}. Vui lòng hủy liên kết trước.` 
-            }, { status: 400 });
+        if (!id) {
+            return NextResponse.json({ error: 'Missing staff ID or IDs' }, { status: 400 });
         }
 
         await prisma.staff.delete({

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Spin, Tag, Empty } from 'antd';
-import { DownloadOutlined, AuditOutlined } from '@ant-design/icons';
+import { Table, Button, Spin, Tag, Empty, Input } from 'antd';
+import { DownloadOutlined, AuditOutlined, SearchOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Resizable } from 'react-resizable';
@@ -49,12 +49,26 @@ export default function DuplicatesPage() {
     const [headers, setHeaders] = useState<string[]>([]);
     const [dups, setDups] = useState<any[]>([]);
     const [colWidths, setColWidths] = useState<Record<number, number>>({});
+    const [searchText, setSearchText] = useState('');
+
+    const filteredDups = React.useMemo(() => {
+        if (!searchText) return dups;
+        const lowercasedFilter = searchText.toLowerCase();
+        return dups.filter(item => {
+            return Object.keys(item).some(key => {
+                if (key === '__groupIndex' || key === 'key') return false;
+                const value = item[key];
+                if (value === null || value === undefined) return false;
+                return String(value).toLowerCase().includes(lowercasedFilter);
+            });
+        });
+    }, [dups, searchText]);
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 const { openDB } = await import('idb');
-                const db = await openDB('ExcelReaderDB', 1);
+                const db = await openDB('ExcelReaderDB', 2);
                 const data = await db.get('files', 'currentDuplicates');
                 
                 if (data) {
@@ -72,7 +86,7 @@ export default function DuplicatesPage() {
     }, []);
 
     const handleExportDuplicates = async () => {
-        if (dups.length === 0) return;
+        if (filteredDups.length === 0) return;
 
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet("Du Lieu Trung");
@@ -80,7 +94,7 @@ export default function DuplicatesPage() {
         const headerRow = ws.addRow(headers);
         headerRow.font = { bold: true };
 
-        dups.forEach(item => {
+        filteredDups.forEach(item => {
             const rowVals: any[] = [];
             headers.forEach((_, idx) => {
                 rowVals.push(item[idx]);
@@ -143,18 +157,42 @@ export default function DuplicatesPage() {
                 onResize: handleResize(index),
             }),
             render: (text: any) => {
+                let stringValue = '';
                 if (text instanceof Date) {
-                    return <span className="text-slate-700">{text.toLocaleString('vi-VN')}</span>;
+                    stringValue = text.toLocaleString('vi-VN');
+                } else {
+                    stringValue = String(text ?? '');
                 }
-                return <span className="text-slate-700">{String(text ?? '')}</span>;
+
+                if (!searchText) {
+                    return <span className="text-slate-700">{stringValue}</span>;
+                }
+
+                const escapeRegExp = (string: string) => {
+                    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                };
+
+                const parts = stringValue.split(new RegExp(`(${escapeRegExp(searchText)})`, 'gi'));
+
+                return (
+                    <span className="text-slate-700">
+                        {parts.map((part, i) =>
+                            part.toLowerCase() === searchText.toLowerCase() ? (
+                                <mark key={i} className="bg-yellow-300 p-0 text-slate-900 font-medium">{part}</mark>
+                            ) : (
+                                part
+                            )
+                        )}
+                    </span>
+                );
             }
         };
     });
 
     return (
         <div className="flex flex-col h-screen bg-slate-50">
-            <div className="p-4 bg-white border-b flex justify-between items-center shadow-sm z-10 shrink-0">
-                <div className="flex items-center gap-3">
+            <div className="p-4 bg-white border-b flex justify-between items-center shadow-sm z-10 shrink-0 gap-4">
+                <div className="flex items-center gap-3 shrink-0">
                     <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
                         <AuditOutlined className="text-xl" />
                     </div>
@@ -162,9 +200,22 @@ export default function DuplicatesPage() {
                         <h1 className="text-xl font-bold text-slate-800 m-0">Danh sách Dữ liệu Trùng lặp</h1>
                         <p className="text-sm text-slate-500 m-0">Được nhóm theo màu sắc giống như file xuất Excel</p>
                     </div>
-                    <Tag color="purple" className="ml-4 text-base px-3 py-1">{dups.length} bản ghi</Tag>
+                    <Tag color="purple" className="ml-4 text-base px-3 py-1">{filteredDups.length} bản ghi</Tag>
                 </div>
-                <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportDuplicates} className="bg-green-600" size="large">
+                
+                <div className="flex-1 max-w-md">
+                    <Input
+                        placeholder="Tìm kiếm trong dữ liệu..."
+                        prefix={<SearchOutlined className="text-slate-400" />}
+                        suffix={searchText ? <span className="text-slate-400 text-sm">{filteredDups.length} kết quả</span> : null}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        allowClear
+                        size="large"
+                    />
+                </div>
+
+                <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportDuplicates} className="bg-green-600 shrink-0" size="large">
                     Xuất file Excel này
                 </Button>
             </div>
@@ -178,7 +229,7 @@ export default function DuplicatesPage() {
                             },
                         }}
                         columns={tableColumns}
-                        dataSource={dups}
+                        dataSource={filteredDups}
                         scroll={{ x: Object.values(colWidths).reduce((a, b) => a + b, 0) || tableColumns.length * 150, y: 800 }}
                         pagination={false}
                         virtual
