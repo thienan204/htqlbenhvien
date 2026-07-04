@@ -25,6 +25,8 @@ export default function ITConfigPage() {
     // We also need to preserve the assignmentMode
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(10);
+    const [telegramBotToken, setTelegramBotToken] = useState<string>('');
+    const [telegramChatId, setTelegramChatId] = useState<string>('');
 
     const searchParams = useSearchParams();
     const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
@@ -53,6 +55,8 @@ export default function ITConfigPage() {
                 setHardwareErrors(mappedHardwareErrors);
                 setAssignmentMode(data.assignmentMode || 'A');
                 setMaxImageSizeMB(data.maxImageSizeMB || 10);
+                setTelegramBotToken(data.telegramBotToken || '');
+                setTelegramChatId(data.telegramChatId || '');
             } else {
                 message.error('Lỗi tải cấu hình');
             }
@@ -146,7 +150,9 @@ export default function ITConfigPage() {
                 hardwareErrors: hardwareErrors.map(e => e.name),
                 assignmentMode,
                 maxImageSizeMB,
-                targetDepartment
+                targetDepartment,
+                telegramBotToken,
+                telegramChatId
             };
             const res = await fetch(`/api/error-management/it-request-config`, {
                 method: 'POST',
@@ -255,7 +261,7 @@ export default function ITConfigPage() {
                             >
                                 <Radio value="A">
                                     <span className="font-medium text-slate-700">Tự do nhận việc</span>
-                                    <div className="text-xs text-slate-500">Ticket gửi lên ở trạng thái chờ, nhân viên CNTT ai rảnh thì chủ động click "Nhận việc".</div>
+                                    <div className="text-xs text-slate-500">Ticket gửi lên ở trạng thái chờ, nhân viên {targetDepartment} ai rảnh thì chủ động click "Nhận việc".</div>
                                 </Radio>
                                 <Radio value="B">
                                     <span className="font-medium text-slate-700">Trưởng nhóm điều phối</span>
@@ -282,6 +288,28 @@ export default function ITConfigPage() {
                             <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Dung lượng tối đa (MB) cho mỗi ảnh khi tải lên. Khuyến nghị 10MB để tránh treo trình duyệt. Hệ thống sẽ tự nén lại sau khi chọn.</div>
+                    </Card>
+
+                    <Card size="small" title="Cấu hình Thông báo Telegram" className="border border-slate-200">
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <div className="text-sm font-medium text-slate-700 mb-1">Bot Token</div>
+                                <Input 
+                                    placeholder="Ví dụ: 123456789:ABCdefGHIjklmNOPqrsTUVwxyz..." 
+                                    value={telegramBotToken} 
+                                    onChange={e => setTelegramBotToken(e.target.value)} 
+                                />
+                            </div>
+                            <div>
+                                <div className="text-sm font-medium text-slate-700 mb-1">Chat ID (Nhóm nhận thông báo)</div>
+                                <Input 
+                                    placeholder="Ví dụ: -100123456789" 
+                                    value={telegramChatId} 
+                                    onChange={e => setTelegramChatId(e.target.value)} 
+                                />
+                            </div>
+                            <Button type="default" onClick={handleSaveGeneralConfig} className="w-fit">Lưu cấu hình Bot</Button>
+                        </div>
                     </Card>
                 </div>
             )

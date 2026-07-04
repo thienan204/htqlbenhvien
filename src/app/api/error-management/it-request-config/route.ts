@@ -43,7 +43,9 @@ export async function GET(request: Request) {
             softwareErrors: config.softwareErrors || config.fields || [], 
             hardwareErrors: config.hardwareErrors && config.hardwareErrors.length > 0 ? config.hardwareErrors : defaultHardwareErrors,
             assignmentMode: config.assignmentMode || 'A',
-            maxImageSizeMB: config.maxImageSizeMB || 10
+            maxImageSizeMB: config.maxImageSizeMB || 10,
+            telegramBotToken: config.telegramBotToken || '',
+            telegramChatId: config.telegramChatId || ''
         });
     } catch (error: any) {
         console.error('GET it-request-config error:', error);
