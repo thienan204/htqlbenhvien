@@ -3,24 +3,24 @@
     "id": "cmqd3rhh70003r7gvrifsmiba",
     "code": "CNTT.KTBTH",
     "name": "Kho thiết bị tin học",
-    "department_id": "K4849",
+    "department_id": "K01",
     "warehouse_type": "KHO_KHOA",
     "room": null,
-    "storekeeper_id": "cmmud581i00vjk7r1t58jxl97",
+    "storekeeper_id": null,
     "status": "ACTIVE",
     "createdAt": "2026-06-14T01:25:32.345Z",
-    "updatedAt": "2026-06-17T08:19:48.239Z"
+    "updatedAt": "2026-06-29T02:03:36.398Z"
   },
   {
     "id": "cmqisgf7x00038uck7mq1ujn5",
     "code": "TS.TDCN",
     "name": "Khoa tài sản tdcn",
-    "department_id": "K40",
+    "department_id": "K01",
     "warehouse_type": "KHO_KHOA",
     "room": null,
-    "storekeeper_id": "cmmud589d00yrk7r14fd5czxh",
+    "storekeeper_id": null,
     "status": "ACTIVE",
     "createdAt": "2026-06-18T00:55:37.483Z",
-    "updatedAt": "2026-06-18T00:55:37.483Z"
+    "updatedAt": "2026-06-29T02:03:43.440Z"
   }
 ]

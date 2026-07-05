@@ -1,366 +1,380 @@
 [
   {
-    "ma_khoa": "CNTT",
-    "ten_khoa": "Phòng công nghệ thông tin",
-    "type": "CLINICAL",
-    "createdAt": "2026-06-24T01:34:56.662Z",
-    "updatedAt": "2026-06-24T01:34:56.662Z"
-  },
-  {
     "ma_khoa": "K01",
     "ten_khoa": "Khoa Khám bệnh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.436Z",
-    "updatedAt": "2026-01-18T03:24:06.436Z"
+    "createdAt": "2026-06-27T11:46:26.560Z",
+    "updatedAt": "2026-06-29T01:59:59.362Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP001",
+    "ten_khoa_bv": "Khám bệnh"
   },
   {
     "ma_khoa": "K02",
     "ten_khoa": "Khoa cấp cứu",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.455Z",
-    "updatedAt": "2026-01-20T09:32:26.966Z"
+    "createdAt": "2026-06-27T11:46:26.585Z",
+    "updatedAt": "2026-06-29T02:01:57.548Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP002",
+    "ten_khoa_bv": "Cấp cứu"
   },
   {
     "ma_khoa": "K03",
     "ten_khoa": "Khoa Nội tổng hợp",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.457Z",
-    "updatedAt": "2026-01-18T03:24:06.457Z"
+    "createdAt": "2026-06-27T11:46:26.618Z",
+    "updatedAt": "2026-06-29T02:05:35.442Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP007",
+    "ten_khoa_bv": "Nội tổng hợp"
   },
   {
     "ma_khoa": "K04",
-    "ten_khoa": "Khoa Nội tim mạch",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.460Z",
-    "updatedAt": "2026-01-18T03:24:06.460Z"
+    "ten_khoa": "Khoa Nội Tim Mạch",
+    "createdAt": "2026-06-27T11:46:26.650Z",
+    "updatedAt": "2026-06-29T02:07:56.177Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP010",
+    "ten_khoa_bv": "Nội TM"
   },
   {
     "ma_khoa": "K05",
     "ten_khoa": "Khoa Nội tiêu hoá",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.462Z",
-    "updatedAt": "2026-01-18T03:24:06.462Z"
-  },
-  {
-    "ma_khoa": "K06",
-    "ten_khoa": "Khoa Nội cơ - xương - khớp",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.464Z",
-    "updatedAt": "2026-01-18T03:24:06.464Z"
+    "createdAt": "2026-06-27T11:46:26.595Z",
+    "updatedAt": "2026-06-29T02:05:58.297Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP008",
+    "ten_khoa_bv": "Nội Tiêu hóa"
   },
   {
     "ma_khoa": "K07",
     "ten_khoa": "Khoa Nội thận - tiết niệu",
+    "createdAt": "2026-06-27T11:46:26.628Z",
+    "updatedAt": "2026-06-29T02:06:36.597Z",
     "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.466Z",
-    "updatedAt": "2026-01-18T03:24:06.466Z"
-  },
-  {
-    "ma_khoa": "K08",
-    "ten_khoa": "Khoa Nội tiết",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.469Z",
-    "updatedAt": "2026-01-18T03:24:06.469Z"
-  },
-  {
-    "ma_khoa": "K09",
-    "ten_khoa": "Khoa Dị ứng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.471Z",
-    "updatedAt": "2026-01-18T03:24:06.471Z"
-  },
-  {
-    "ma_khoa": "K10",
-    "ten_khoa": "Khoa Huyết học lâm sàng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.473Z",
-    "updatedAt": "2026-01-18T03:24:06.473Z"
+    "ma_khoa_bv": "KP009",
+    "ten_khoa_bv": "Nội Thận-TN-LM"
   },
   {
     "ma_khoa": "K11",
     "ten_khoa": "Khoa Truyền nhiễm",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.476Z",
-    "updatedAt": "2026-01-18T03:24:06.476Z"
-  },
-  {
-    "ma_khoa": "K12",
-    "ten_khoa": "Khoa Lao",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.478Z",
-    "updatedAt": "2026-01-18T03:24:06.478Z"
+    "createdAt": "2026-06-27T11:46:26.685Z",
+    "updatedAt": "2026-06-29T02:14:02.417Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP018",
+    "ten_khoa_bv": "Truyền nhiễm"
   },
   {
     "ma_khoa": "K13",
     "ten_khoa": "Khoa Da liễu",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.480Z",
-    "updatedAt": "2026-01-18T03:24:06.480Z"
-  },
-  {
-    "ma_khoa": "K14",
-    "ten_khoa": "Khoa Thần kinh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.483Z",
-    "updatedAt": "2026-01-18T03:24:06.483Z"
+    "createdAt": "2026-06-27T11:46:26.692Z",
+    "updatedAt": "2026-06-29T02:14:21.043Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP019",
+    "ten_khoa_bv": "Da liễu"
   },
   {
     "ma_khoa": "K1415",
     "ten_khoa": "Khoa Tâm thần - Thần kinh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T08:49:53.071Z",
-    "updatedAt": "2026-01-18T08:49:53.071Z"
-  },
-  {
-    "ma_khoa": "K15",
-    "ten_khoa": "Khoa Tâm thần",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.485Z",
-    "updatedAt": "2026-01-18T03:24:06.485Z"
+    "createdAt": "2026-06-27T11:46:26.634Z",
+    "updatedAt": "2026-06-29T02:05:11.029Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP006",
+    "ten_khoa_bv": "Tâm thần - Thần kinh"
   },
   {
     "ma_khoa": "K16",
     "ten_khoa": "Khoa Y học cổ truyền",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.487Z",
-    "updatedAt": "2026-01-18T03:24:06.487Z"
-  },
-  {
-    "ma_khoa": "K17",
-    "ten_khoa": "Khoa Lão học",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.489Z",
-    "updatedAt": "2026-01-18T03:24:06.489Z"
+    "createdAt": "2026-06-27T11:46:26.698Z",
+    "updatedAt": "2026-06-29T02:14:41.502Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP020",
+    "ten_khoa_bv": "YHCT"
   },
   {
     "ma_khoa": "K1706",
     "ten_khoa": "Khoa lão-cơ xương khớp",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-19T00:11:34.874Z",
-    "updatedAt": "2026-01-19T00:11:34.874Z"
+    "createdAt": "2026-06-27T11:46:26.623Z",
+    "updatedAt": "2026-06-29T02:04:36.019Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP004",
+    "ten_khoa_bv": "Lão - CXK"
   },
   {
     "ma_khoa": "K18",
     "ten_khoa": "Khoa Nhi",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.491Z",
-    "updatedAt": "2026-01-18T03:24:06.491Z"
-  },
-  {
-    "ma_khoa": "K19",
-    "ten_khoa": "Khoa Ngoại tổng hợp",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.493Z",
-    "updatedAt": "2026-01-18T03:24:06.493Z"
-  },
-  {
-    "ma_khoa": "K20",
-    "ten_khoa": "Khoa Ngoại thần kinh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.495Z",
-    "updatedAt": "2026-01-18T03:24:06.495Z"
+    "createdAt": "2026-06-27T11:46:26.680Z",
+    "updatedAt": "2026-06-29T02:13:48.170Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP017",
+    "ten_khoa_bv": "Nhi"
   },
   {
     "ma_khoa": "K2021",
     "ten_khoa": "Khoa ngoại thần kinh lồng ngực",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-19T00:12:29.409Z",
-    "updatedAt": "2026-01-19T00:12:29.409Z"
-  },
-  {
-    "ma_khoa": "K21",
-    "ten_khoa": "Khoa Ngoại lồng ngực",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.497Z",
-    "updatedAt": "2026-01-18T03:24:06.497Z"
+    "createdAt": "2026-06-27T11:46:26.670Z",
+    "updatedAt": "2026-06-29T02:13:00.480Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP015",
+    "ten_khoa_bv": "Ngoại TK-LN"
   },
   {
     "ma_khoa": "K22",
     "ten_khoa": "Khoa Ngoại tiêu hoá",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.499Z",
-    "updatedAt": "2026-01-18T03:24:06.499Z"
+    "createdAt": "2026-06-27T11:46:26.660Z",
+    "updatedAt": "2026-06-29T02:12:12.394Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP013",
+    "ten_khoa_bv": "Ngoại Tiêu hóa"
   },
   {
     "ma_khoa": "K23",
     "ten_khoa": "Khoa Ngoại thận - tiết niệu",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.501Z",
-    "updatedAt": "2026-01-18T03:24:06.501Z"
+    "createdAt": "2026-06-27T11:46:26.590Z",
+    "updatedAt": "2026-06-29T02:11:50.098Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP012",
+    "ten_khoa_bv": "Ngoại Thận - Tiết niệu"
   },
   {
     "ma_khoa": "K24",
     "ten_khoa": "Khoa ngoại chấn thương bỏng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.503Z",
-    "updatedAt": "2026-01-19T00:13:36.031Z"
-  },
-  {
-    "ma_khoa": "K25",
-    "ten_khoa": "Khoa Bỏng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.505Z",
-    "updatedAt": "2026-01-18T03:24:06.505Z"
+    "createdAt": "2026-06-27T11:46:26.601Z",
+    "updatedAt": "2026-06-29T02:12:32.710Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP014",
+    "ten_khoa_bv": "Chấn thương - Bỏng"
   },
   {
     "ma_khoa": "K26",
     "ten_khoa": "Khoa Phẫu thuật - Gây mê hồi sức",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.506Z",
-    "updatedAt": "2026-01-18T03:24:06.506Z"
+    "createdAt": "2026-06-27T11:46:26.709Z",
+    "updatedAt": "2026-06-29T02:08:47.067Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP025",
+    "ten_khoa_bv": "GM-HS"
   },
   {
     "ma_khoa": "K27",
     "ten_khoa": "Khoa Phụ sản",
+    "createdAt": "2026-06-27T11:46:26.675Z",
+    "updatedAt": "2026-06-29T02:13:20.252Z",
     "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.508Z",
-    "updatedAt": "2026-01-18T03:24:06.508Z"
+    "ma_khoa_bv": "KP016",
+    "ten_khoa_bv": "Phụ sản"
   },
   {
     "ma_khoa": "K28",
     "ten_khoa": "Khoa Tai - Mũi - Họng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.510Z",
-    "updatedAt": "2026-01-18T03:24:06.510Z"
+    "createdAt": "2026-06-27T11:46:26.639Z",
+    "updatedAt": "2026-06-29T02:09:35.955Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP022",
+    "ten_khoa_bv": "Tai mũi họng"
   },
   {
     "ma_khoa": "K29",
     "ten_khoa": "Khoa Răng - Hàm - Mặt",
+    "createdAt": "2026-06-27T11:46:26.644Z",
+    "updatedAt": "2026-06-29T02:09:06.117Z",
     "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.512Z",
-    "updatedAt": "2026-01-18T03:24:06.512Z"
+    "ma_khoa_bv": "KP024",
+    "ten_khoa_bv": "Răng Hàm Mặt"
   },
   {
     "ma_khoa": "K30",
     "ten_khoa": "Khoa Mắt",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.515Z",
-    "updatedAt": "2026-01-18T03:24:06.515Z"
+    "createdAt": "2026-06-27T11:46:26.665Z",
+    "updatedAt": "2026-06-29T02:09:59.654Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP023",
+    "ten_khoa_bv": "Mắt"
   },
   {
     "ma_khoa": "K31",
-    "ten_khoa": "Khoa Vật lý trị liệu - Phục hồi chức năng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.516Z",
-    "updatedAt": "2026-01-18T03:24:06.516Z"
-  },
-  {
-    "ma_khoa": "K32",
-    "ten_khoa": "Khoa Y học hạt nhân",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.518Z",
-    "updatedAt": "2026-01-18T03:24:06.518Z"
+    "ten_khoa": "Khoa Vật lý trị liệu - Phục hồi chức năng\t",
+    "createdAt": "2026-06-27T11:46:26.703Z",
+    "updatedAt": "2026-06-29T02:10:25.513Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP021",
+    "ten_khoa_bv": "VLTL-PHCN"
   },
   {
     "ma_khoa": "K33",
     "ten_khoa": "Khoa Ung bướu (điều trị tia xạ)",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.520Z",
-    "updatedAt": "2026-01-18T03:24:06.520Z"
-  },
-  {
-    "ma_khoa": "K34",
-    "ten_khoa": "Khoa Truyền máu",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.522Z",
-    "updatedAt": "2026-01-18T03:24:06.522Z"
-  },
-  {
-    "ma_khoa": "K35",
-    "ten_khoa": "Khoa Lọc máu nhân tạo",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.524Z",
-    "updatedAt": "2026-01-18T03:24:06.524Z"
+    "createdAt": "2026-06-27T11:46:26.612Z",
+    "updatedAt": "2026-06-29T02:11:25.487Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP011",
+    "ten_khoa_bv": "UB-YHHN"
   },
   {
     "ma_khoa": "K36",
     "ten_khoa": "Khoa Huyết học",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.526Z",
-    "updatedAt": "2026-01-18T03:24:06.526Z"
-  },
-  {
-    "ma_khoa": "K37",
-    "ten_khoa": "Khoa Sinh hoá",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.528Z",
-    "updatedAt": "2026-01-18T03:24:06.528Z"
-  },
-  {
-    "ma_khoa": "K38",
-    "ten_khoa": "Khoa Vi sinh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.530Z",
-    "updatedAt": "2026-01-18T03:24:06.530Z"
-  },
-  {
-    "ma_khoa": "K39",
-    "ten_khoa": "Khoa Chẩn đoán hình ảnh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.533Z",
-    "updatedAt": "2026-01-18T03:24:06.533Z"
-  },
-  {
-    "ma_khoa": "K40",
-    "ten_khoa": "Khoa Thăm dò chức năng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.535Z",
-    "updatedAt": "2026-01-18T03:24:06.535Z"
-  },
-  {
-    "ma_khoa": "K41",
-    "ten_khoa": "Khoa Nội soi",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.537Z",
-    "updatedAt": "2026-01-18T03:24:06.537Z"
-  },
-  {
-    "ma_khoa": "K42",
-    "ten_khoa": "Khoa Giải phẫu bệnh",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.539Z",
-    "updatedAt": "2026-01-18T03:24:06.539Z"
-  },
-  {
-    "ma_khoa": "K43",
-    "ten_khoa": "Khoa Chống nhiễm khuẩn",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.541Z",
-    "updatedAt": "2026-01-18T03:24:06.541Z"
-  },
-  {
-    "ma_khoa": "K44",
-    "ten_khoa": "Khoa Dược",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.543Z",
-    "updatedAt": "2026-01-18T03:24:06.543Z"
-  },
-  {
-    "ma_khoa": "K45",
-    "ten_khoa": "Khoa Dinh dưỡng",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.544Z",
-    "updatedAt": "2026-01-18T03:24:06.544Z"
-  },
-  {
-    "ma_khoa": "K46",
-    "ten_khoa": "Khoa Sinh học phân tử",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.546Z",
-    "updatedAt": "2026-01-18T03:24:06.546Z"
-  },
-  {
-    "ma_khoa": "K47",
-    "ten_khoa": "Khoa Xét nghiệm",
-    "type": "CLINICAL",
-    "createdAt": "2026-01-18T03:24:06.548Z",
-    "updatedAt": "2026-01-18T03:24:06.548Z"
+    "createdAt": "2026-06-27T11:46:26.729Z",
+    "updatedAt": "2026-06-29T02:11:00.983Z",
+    "type": "KHOA_CAN_LAM_SANG",
+    "ma_khoa_bv": "KP029",
+    "ten_khoa_bv": "HH-TM"
   },
   {
     "ma_khoa": "K4849",
     "ten_khoa": "Khoa hồi sức tích cực chống độc",
+    "createdAt": "2026-06-27T11:46:26.607Z",
+    "updatedAt": "2026-06-29T02:03:52.078Z",
+    "type": "KHOA_LAM_SANG",
+    "ma_khoa_bv": "KP003",
+    "ten_khoa_bv": "HSTC-CĐ"
+  },
+  {
+    "ma_khoa": "KP026",
+    "ten_khoa": "Dinh dưỡng",
+    "createdAt": "2026-06-27T11:46:26.714Z",
+    "updatedAt": "2026-06-27T12:00:24.024Z",
     "type": "CLINICAL",
-    "createdAt": "2026-01-19T00:10:54.713Z",
-    "updatedAt": "2026-01-19T00:10:54.713Z"
+    "ma_khoa_bv": "KP026",
+    "ten_khoa_bv": "Dinh dưỡng"
+  },
+  {
+    "ma_khoa": "KP028",
+    "ten_khoa": "Dược",
+    "createdAt": "2026-06-27T11:46:26.720Z",
+    "updatedAt": "2026-06-27T12:00:32.154Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP028",
+    "ten_khoa_bv": "Dược"
+  },
+  {
+    "ma_khoa": "KP030",
+    "ten_khoa": "HS-VS",
+    "createdAt": "2026-06-27T11:46:26.734Z",
+    "updatedAt": "2026-06-27T12:00:31.763Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP030",
+    "ten_khoa_bv": "HS-VS"
+  },
+  {
+    "ma_khoa": "KP033",
+    "ten_khoa": "TDCN",
+    "createdAt": "2026-06-27T11:46:26.739Z",
+    "updatedAt": "2026-06-27T12:00:31.865Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP033",
+    "ten_khoa_bv": "TDCN"
+  },
+  {
+    "ma_khoa": "KP034",
+    "ten_khoa": "CĐHA",
+    "createdAt": "2026-06-27T11:46:26.655Z",
+    "updatedAt": "2026-06-27T12:00:32.529Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP034",
+    "ten_khoa_bv": "CĐHA"
+  },
+  {
+    "ma_khoa": "KP035",
+    "ten_khoa": "GPB",
+    "createdAt": "2026-06-27T11:46:26.744Z",
+    "updatedAt": "2026-06-27T12:00:27.180Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP035",
+    "ten_khoa_bv": "GPB"
+  },
+  {
+    "ma_khoa": "KP036",
+    "ten_khoa": "KSNK",
+    "createdAt": "2026-06-27T11:46:26.725Z",
+    "updatedAt": "2026-06-27T12:00:31.641Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP036",
+    "ten_khoa_bv": "KSNK"
+  },
+  {
+    "ma_khoa": "KP037",
+    "ten_khoa": "Điều dưỡng",
+    "createdAt": "2026-06-27T11:46:26.750Z",
+    "updatedAt": "2026-06-27T12:00:27.860Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP037",
+    "ten_khoa_bv": "Điều dưỡng"
+  },
+  {
+    "ma_khoa": "KP038",
+    "ten_khoa": "VT-TTBYT",
+    "createdAt": "2026-06-27T11:46:26.756Z",
+    "updatedAt": "2026-06-27T12:00:28.341Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP038",
+    "ten_khoa_bv": "VT-TTBYT"
+  },
+  {
+    "ma_khoa": "KP039",
+    "ten_khoa": "TCCB",
+    "createdAt": "2026-06-27T11:46:26.761Z",
+    "updatedAt": "2026-06-27T12:00:28.549Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP039",
+    "ten_khoa_bv": "TCCB"
+  },
+  {
+    "ma_khoa": "KP040",
+    "ten_khoa": "HCQT",
+    "createdAt": "2026-06-27T11:46:26.769Z",
+    "updatedAt": "2026-06-27T12:00:31.574Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP040",
+    "ten_khoa_bv": "HCQT"
+  },
+  {
+    "ma_khoa": "KP041",
+    "ten_khoa": "TCKT",
+    "createdAt": "2026-06-27T11:46:26.774Z",
+    "updatedAt": "2026-06-27T12:00:32.048Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP041",
+    "ten_khoa_bv": "TCKT"
+  },
+  {
+    "ma_khoa": "KP042",
+    "ten_khoa": "KHTH",
+    "createdAt": "2026-06-27T11:46:26.780Z",
+    "updatedAt": "2026-06-27T12:00:30.194Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP042",
+    "ten_khoa_bv": "KHTH"
+  },
+  {
+    "ma_khoa": "KP043",
+    "ten_khoa": "CTXH",
+    "createdAt": "2026-06-27T11:46:26.786Z",
+    "updatedAt": "2026-06-27T12:00:30.359Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP043",
+    "ten_khoa_bv": "CTXH"
+  },
+  {
+    "ma_khoa": "KP044",
+    "ten_khoa": "QLCL",
+    "createdAt": "2026-06-27T11:46:26.791Z",
+    "updatedAt": "2026-06-27T12:00:31.594Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP044",
+    "ten_khoa_bv": "QLCL"
+  },
+  {
+    "ma_khoa": "KP045",
+    "ten_khoa": "Chỉ đạo tuyến",
+    "createdAt": "2026-06-27T11:46:26.797Z",
+    "updatedAt": "2026-06-27T12:00:30.595Z",
+    "type": "CLINICAL",
+    "ma_khoa_bv": "KP045",
+    "ten_khoa_bv": "Chỉ đạo tuyến"
+  },
+  {
+    "ma_khoa": "KP046",
+    "ten_khoa": "Phòng công nghệ thôn tin",
+    "createdAt": "2026-06-27T11:46:26.803Z",
+    "updatedAt": "2026-06-29T02:18:27.213Z",
+    "type": "PHONG_CHUC_NANG",
+    "ma_khoa_bv": "KP046",
+    "ten_khoa_bv": "CNTT"
   }
 ]

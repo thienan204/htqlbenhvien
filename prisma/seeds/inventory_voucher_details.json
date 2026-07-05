@@ -13,10 +13,10 @@
     "thanh_tien": 3000000,
     "manufacturer_id": null,
     "country_id": null,
-    "funding_source_id": null,
-    "serial_numbers": "123123,321312,33123",
-    "is_auto_generate": true,
     "createdAt": "2026-06-14T13:44:21.744Z",
-    "updatedAt": "2026-06-14T13:44:21.744Z"
+    "updatedAt": "2026-06-14T13:44:21.744Z",
+    "funding_source_id": null,
+    "is_auto_generate": true,
+    "serial_numbers": "123123,321312,33123"
   }
 ]

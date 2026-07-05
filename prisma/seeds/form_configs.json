@@ -70,5 +70,13 @@
     "settings": "{\"layout\":\"vertical\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
     "createdAt": "2026-06-18T00:56:20.685Z",
     "updatedAt": "2026-06-18T00:56:20.685Z"
+  },
+  {
+    "id": "cmqyn3ynu000112fpe14mbs0r",
+    "formId": "cert_form",
+    "layout": "[{\"id\":\"so_cchn\",\"widthPercent\":50},{\"id\":\"ngay_cap\",\"widthPercent\":50},{\"id\":\"chuc_danh_cchn\",\"widthPercent\":100},{\"id\":\"pham_vi_hanh_nghe\",\"widthPercent\":100},{\"id\":\"pham_vi_bo_sung\",\"widthPercent\":100},{\"id\":\"dich_vu_ky_thuat\",\"widthPercent\":100},{\"id\":\"isActive\",\"widthPercent\":100}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
+    "createdAt": "2026-06-29T03:10:16.653Z",
+    "updatedAt": "2026-06-29T03:10:16.653Z"
   }
 ]

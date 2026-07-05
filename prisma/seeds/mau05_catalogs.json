@@ -55173,7 +55173,7 @@
     "MA_DICH_VU": "01.0128.0209",
     "TEN_DICH_VU": "Thông khí nhân tạo không xâm nhập [theo giờ thực tế]",
     "TEN_DVKT_GIA": "Thông khí nhân tạo không xâm nhập [theo giờ thực tế]",
-    "DON_GIA": 625000,
+    "DON_GIA": 26041.66,
     "QUY_TRINH": null,
     "SO_LUONG_CGKT": null,
     "CSKCB_CGKT": null,
@@ -55197,7 +55197,7 @@
     "DEN_NGAY": null,
     "MA_CSKCB": null,
     "createdAt": "2026-06-08T07:39:36.262Z",
-    "updatedAt": "2026-06-08T07:39:36.262Z"
+    "updatedAt": "2026-06-27T09:02:38.768Z"
   },
   {
     "id": "943d9296-de08-47b5-8e0d-14a7f3d0639e",

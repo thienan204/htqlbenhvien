@@ -3,7 +3,6 @@
     "id": "cmqdu5m93000392lj3l0vft0y",
     "voucher_code": "PN-1781444629007",
     "type": "NHAP_KHO",
-    "sub_type": null,
     "supplier_name": "Cty a",
     "document_number": null,
     "document_date": null,
@@ -15,6 +14,7 @@
     "status": "APPROVED",
     "created_by": "Admin",
     "createdAt": "2026-06-14T13:44:21.734Z",
-    "updatedAt": "2026-06-14T13:44:21.734Z"
+    "updatedAt": "2026-06-14T13:44:21.734Z",
+    "sub_type": null
   }
 ]

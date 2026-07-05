@@ -13,9 +13,9 @@
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
-    "ignoreIfSameField": null,
     "createdAt": "2026-01-30T01:08:18.815Z",
-    "updatedAt": "2026-03-16T15:51:55.612Z"
+    "updatedAt": "2026-03-16T15:51:55.612Z",
+    "ignoreIfSameField": null
   },
   {
     "id": "cml8w74i10001ksk5ylppsdit",
@@ -32,9 +32,9 @@
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
-    "ignoreIfSameField": null,
     "createdAt": "2026-02-05T03:24:08.713Z",
-    "updatedAt": "2026-06-26T15:14:36.001Z"
+    "updatedAt": "2026-07-01T08:04:53.246Z",
+    "ignoreIfSameField": null
   },
   {
     "id": "cmnjssa3s0002d8dt8ha1ul07",
@@ -50,9 +50,9 @@
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
-    "ignoreIfSameField": null,
     "createdAt": "2026-04-04T03:53:29.894Z",
-    "updatedAt": "2026-04-04T03:54:20.084Z"
+    "updatedAt": "2026-04-04T03:54:20.084Z",
+    "ignoreIfSameField": null
   },
   {
     "id": "cmqv2u1ad0000t21yd2tb36h9",
@@ -69,8 +69,8 @@
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
-    "ignoreIfSameField": null,
     "createdAt": "2026-06-26T15:19:22.884Z",
-    "updatedAt": "2026-06-26T15:19:22.884Z"
+    "updatedAt": "2026-06-26T15:19:22.884Z",
+    "ignoreIfSameField": null
   }
 ]

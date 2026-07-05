@@ -4,15 +4,17 @@
     "code": "ADMIN",
     "name": "Quản trị viên",
     "description": "Có toàn quyền truy cập hệ thống",
-    "permissions": null,
     "createdAt": "2026-06-07T03:15:57.407Z",
-    "updatedAt": "2026-06-07T03:15:57.407Z"
+    "updatedAt": "2026-06-07T03:15:57.407Z",
+    "permissions": null
   },
   {
     "id": "cmq37mire0001ihffjgy8bgsc",
     "code": "CNTT",
     "name": "Phòng CNTT",
     "description": "Quyền xử lý lỗi hệ thống",
+    "createdAt": "2026-06-07T03:15:57.434Z",
+    "updatedAt": "2026-06-10T04:07:01.363Z",
     "permissions": {
       "MENU_STAFF": {},
       "MENU_IT_DUTY": {},
@@ -41,20 +43,26 @@
         "DELETE": false
       },
       "MENU_SPECIALIZED_RULES": {}
-    },
-    "createdAt": "2026-06-07T03:15:57.434Z",
-    "updatedAt": "2026-06-10T04:07:01.363Z"
+    }
   },
   {
     "id": "cmq37mirk0002ihff7p113uj4",
     "code": "KHOA",
     "name": "Khoa / Phòng ban",
     "description": "Quyền xem và giải trình lỗi của Khoa",
+    "createdAt": "2026-06-07T03:15:57.440Z",
+    "updatedAt": "2026-06-30T08:43:29.368Z",
     "permissions": {
       "roles": {},
       "users": {},
       "MENU_STAFF": {},
+      "PHAM_vi_cm": {
+        "EDIT": true,
+        "VIEW": true,
+        "DELETE": true
+      },
       "MENU_IT_DUTY": {},
+      "MENU_CHUYEN_DE": {},
       "MENU_IT_REPORT": {},
       "MENU_XML_RULES": {},
       "menu_bcnhapkho": {},
@@ -89,37 +97,105 @@
       },
       "MENU_IMAGE_MANAGEMENT": {},
       "MENU_SPECIALIZED_RULES": {}
-    },
-    "createdAt": "2026-06-07T03:15:57.440Z",
-    "updatedAt": "2026-06-23T15:51:42.942Z"
+    }
   },
   {
     "id": "cmq8ur03f0001g44vlr38rnf1",
     "code": "GUEST",
     "name": "GUEST ",
     "description": "Role này không cần login vẫn vào được",
+    "createdAt": "2026-06-11T02:02:08.571Z",
+    "updatedAt": "2026-07-05T01:57:48.217Z",
     "permissions": {
+      "roles": {},
+      "users": {},
       "MENU_STAFF": {},
       "MENU_IT_DUTY": {},
+      "tra_cuu_icd10": {
+        "VIEW": true
+      },
+      "MENU_CHUYEN_DE": {},
       "MENU_IT_REPORT": {},
       "MENU_XML_RULES": {},
+      "MENU_YEUCAU_HC": {},
+      "menu_bcnhapkho": {},
+      "menu_yeu_VATTU": {},
       "MENU_CATALOG_01": {},
       "MENU_CATALOG_02": {},
       "MENU_CATALOG_03": {},
       "MENU_CATALOG_04": {},
       "MENU_CATALOG_05": {},
       "MENU_CATALOG_06": {},
-      "MENU_XML_ERRORS": {},
       "MENU_DEPARTMENTS": {},
       "MENU_EXCEL_RULES": {},
+      "lOI_XML_CHUYENDE": {},
       "MENU_DOC_FILE_EXCEL": {
         "VIEW": true
       },
       "MENU_ERROR_REQUESTS": {},
       "MENU_IMAGE_MANAGEMENT": {},
       "MENU_SPECIALIZED_RULES": {}
-    },
-    "createdAt": "2026-06-11T02:02:08.571Z",
-    "updatedAt": "2026-06-11T02:03:31.085Z"
+    }
+  },
+  {
+    "id": "cmr5th2nv01ca3l00ebui7fbm",
+    "code": "KHOA_PHONG",
+    "name": "Khoa phòng",
+    "description": null,
+    "createdAt": "2026-07-04T03:42:49.532Z",
+    "updatedAt": "2026-07-04T03:42:49.532Z",
+    "permissions": {
+      "roles": {},
+      "users": {},
+      "MENU_STAFF": {},
+      "MENU_IT_DUTY": {},
+      "MENU_CHUYEN_DE": {
+        "VIEW": true
+      },
+      "MENU_IT_REPORT": {},
+      "MENU_XML_RULES": {},
+      "menu_bcnhapkho": {},
+      "MENU_CATALOG_01": {},
+      "MENU_CATALOG_02": {},
+      "MENU_CATALOG_03": {},
+      "MENU_CATALOG_04": {},
+      "MENU_CATALOG_05": {},
+      "MENU_CATALOG_06": {},
+      "MENU_XML_ERRORS": {
+        "VIEW": true
+      },
+      "MENU_DEPARTMENTS": {},
+      "MENU_EXCEL_RULES": {},
+      "lOI_XML_CHUYENDE": {
+        "VIEW": true
+      },
+      "MENU_DOC_FILE_EXCEL": {
+        "VIEW": true
+      },
+      "MENU_ERROR_REQUESTS": {
+        "EDIT": true,
+        "VIEW": true
+      },
+      "MENU_IMAGE_MANAGEMENT": {},
+      "MENU_SPECIALIZED_RULES": {}
+    }
+  },
+  {
+    "id": "cmr639squ0000brko5lbklzo3",
+    "code": "VTYT",
+    "name": "Phòng Vật tư y tế",
+    "description": null,
+    "createdAt": "2026-07-04T08:17:06.245Z",
+    "updatedAt": "2026-07-04T08:17:06.245Z",
+    "permissions": null
+  },
+  {
+    "id": "cmr639stx0001brkoq2yr2c4b",
+    "code": "HCQT",
+    "name": "Phòng Hành chính Quản trị",
+    "description": null,
+    "createdAt": "2026-07-04T08:17:06.357Z",
+    "updatedAt": "2026-07-04T08:17:06.357Z",
+    "permissions": null
   }
 ]

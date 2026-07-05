@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
         const token = request.cookies.get('auth_token')?.value;
 
         if (!token) {
-            const roleManagedPublicPaths = ['/doc-file-excel', '/chuyen-de'];
+            const roleManagedPublicPaths = ['/doc-file-excel', '/chuyen-de', '/icd10'];
             const isRoleManagedPublic = roleManagedPublicPaths.some(p => path.startsWith(p));
             if (isRoleManagedPublic) {
                 if (targetPathForRewrite) return NextResponse.rewrite(new URL(targetPathForRewrite, request.url));
