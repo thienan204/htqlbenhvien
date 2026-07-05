@@ -20,6 +20,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
     const [jobTitles, setJobTitles] = useState<any[]>([]);
     const [jobPositions, setJobPositions] = useState<any[]>([]);
     const [qualifications, setQualifications] = useState<any[]>([]);
+    const [ethnicities, setEthnicities] = useState<any[]>([]);
 
     useEffect(() => {
         if (open) {
@@ -44,6 +45,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
                 setJobTitles(cats.filter((c: any) => c.type === 'CHUC_DANH'));
                 setJobPositions(cats.filter((c: any) => c.type === 'VI_TRI_VIEC_LAM'));
                 setQualifications(cats.filter((c: any) => c.type === 'TRINH_DO'));
+                setEthnicities(cats.filter((c: any) => c.type === 'DAN_TOC'));
             }
         } catch (error) {
             console.error('Lỗi tải danh mục', error);
@@ -96,7 +98,15 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
         },
         { id: 'so_dien_thoai', label: 'Số điện thoại', type: 'input', span: 8 },
         { id: 'cccd', label: 'Căn cước công dân', type: 'input', span: 8 },
-        { id: 'dia_chi', label: 'Địa chỉ thường trú', type: 'input', span: 16 },
+        { id: 'ma_bhxh', label: 'Mã số BHXH', type: 'input', span: 8 },
+        { 
+            id: 'dan_toc_id', 
+            label: 'Dân tộc', 
+            type: 'select', 
+            span: 8,
+            options: ethnicities.map(e => ({ value: e.id, label: e.name }))
+        },
+        { id: 'dia_chi', label: 'Địa chỉ thường trú', type: 'input', span: 24 },
         { 
             id: 'ma_khoa', 
             label: 'Khoa / Phòng (Bắt buộc)', 

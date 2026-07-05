@@ -6,6 +6,8 @@ import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutli
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
 import CertificatesModal from './components/CertificatesModal';
+import BulkUpdateStaffModal from './components/BulkUpdateStaffModal';
+import StaffDetailsModal from './components/StaffDetailsModal';
 
 export default function StaffPage() {
     const [staffList, setStaffList] = useState<any[]>([]);
@@ -14,10 +16,13 @@ export default function StaffPage() {
     const [filterDept, setFilterDept] = useState<string | null>(null);
     const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
+    const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+    const [isStaffDetailsModalOpen, setIsStaffDetailsModalOpen] = useState(false);
     const [isCertModalOpen, setIsCertModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
+    const [tableParams, setTableParams] = useState({ current: 1, pageSize: 20 });
 
     const fetchStaff = async () => {
         setLoading(true);
@@ -84,7 +89,7 @@ export default function StaffPage() {
             key: 'stt',
             width: 60,
             align: 'center' as const,
-            render: (_: any, __: any, index: number) => index + 1
+            render: (_: any, __: any, index: number) => (tableParams.current - 1) * tableParams.pageSize + index + 1
         },
         {
             title: 'Mã NV',
@@ -127,10 +132,14 @@ export default function StaffPage() {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space>
+                    <Button size="small" onClick={() => {
+                        setSelectedStaff(record);
+                        setIsStaffDetailsModalOpen(true);
+                    }}>👁️ Xem</Button>
                     <Button size="small" type="primary" ghost onClick={() => {
                         setSelectedStaff(record);
                         setIsStaffModalOpen(true);
-                    }}>Xem chi tiết / Sửa</Button>
+                    }}>Sửa</Button>
                     <Button size="small" onClick={() => {
                         setSelectedStaff(record);
                         setIsCertModalOpen(true);
@@ -193,7 +202,10 @@ export default function StaffPage() {
                         </Button>
                     </Popconfirm>
                     <Button type="default" size="large" icon={<UploadOutlined />} onClick={() => setIsImportOpen(true)}>
-                        Import Excel
+                        Import Nhân sự mới
+                    </Button>
+                    <Button type="default" size="large" icon={<UploadOutlined />} onClick={() => setIsBulkUpdateOpen(true)}>
+                        Cập nhật hàng loạt
                     </Button>
                     <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => {
                         setSelectedStaff(null);
@@ -240,7 +252,19 @@ export default function StaffPage() {
                     columns={columns} 
                     rowKey="id" 
                     loading={loading}
-                    pagination={{ defaultPageSize: 10 }}
+                    pagination={{ 
+                        current: tableParams.current,
+                        pageSize: tableParams.pageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '20', '50', '100'],
+                        locale: { items_per_page: '/ Trang' }
+                    }}
+                    onChange={(pagination) => {
+                        setTableParams({
+                            current: pagination.current || 1,
+                            pageSize: pagination.pageSize || 20,
+                        });
+                    }}
                 />
             </Card>
 
@@ -253,21 +277,36 @@ export default function StaffPage() {
                 }} 
             />
 
+            <BulkUpdateStaffModal
+                open={isBulkUpdateOpen}
+                onClose={() => setIsBulkUpdateOpen(false)}
+                onSuccess={() => {
+                    setIsBulkUpdateOpen(false);
+                    fetchStaff();
+                }}
+            />
+
             <StaffModal
                 open={isStaffModalOpen}
-                onClose={() => setIsStaffModalOpen(false)}
                 staffData={selectedStaff}
+                onClose={() => setIsStaffModalOpen(false)}
                 onSuccess={() => {
                     setIsStaffModalOpen(false);
                     fetchStaff();
                 }}
             />
 
+            <StaffDetailsModal
+                open={isStaffDetailsModalOpen}
+                staff={selectedStaff}
+                onClose={() => setIsStaffDetailsModalOpen(false)}
+            />
+
             <CertificatesModal
                 open={isCertModalOpen}
-                onClose={() => setIsCertModalOpen(false)}
                 staffId={selectedStaff?.id}
                 staffName={selectedStaff?.ho_ten}
+                onClose={() => setIsCertModalOpen(false)}
                 onSuccess={() => {
                     fetchStaff();
                 }}

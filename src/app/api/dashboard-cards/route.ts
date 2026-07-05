@@ -4,10 +4,34 @@ import { getCurrentUser } from '@/actions/auth';
 
 export async function GET() {
     try {
+        const user = await getCurrentUser();
         const cards = await prisma.dashboardCard.findMany({
             orderBy: { order: 'asc' },
         });
-        return NextResponse.json(cards);
+
+        if (user?.role === 'ADMIN') {
+            return NextResponse.json(cards);
+        }
+
+        const adminOnlyPaths = ['/rules', '/roles', '/settings', '/admin', '/mau'];
+        const tccbPaths = ['/staff', '/departments'];
+
+        const filteredCards = cards.filter(card => {
+            const isAdminRoute = adminOnlyPaths.some(p => card.href.startsWith(p));
+            const isTccbRoute = tccbPaths.some(p => card.href.startsWith(p));
+
+            if (isAdminRoute && user?.role !== 'ADMIN') {
+                return false;
+            }
+
+            if (isTccbRoute && !['ADMIN', 'TCCB', 'KHOA_PHONG'].includes(user?.role as string)) {
+                return false;
+            }
+
+            return true;
+        });
+
+        return NextResponse.json(filteredCards);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

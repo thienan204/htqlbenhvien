@@ -22,6 +22,7 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
     const [editingCert, setEditingCert] = useState<any>(null);
     const [tt32Categories, setTt32Categories] = useState<any[]>([]);
     const [scopeOfPracticeList, setScopeOfPracticeList] = useState<any[]>([]);
+    const [noiCapCchnList, setNoiCapCchnList] = useState<any[]>([]);
     const [certForm] = Form.useForm();
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
 
@@ -29,15 +30,17 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
         if (!staffId) return;
         setLoading(true);
         try {
-            const [certRes, catRes, scopeRes] = await Promise.all([
+            const [certRes, catRes, scopeRes, noiCapRes] = await Promise.all([
                 fetch(`/api/practicing-certificates?staffId=${staffId}`),
                 fetch(`/api/tt32`),
-                fetch(`/api/pham-vi-chuyen-mon?activeOnly=true`)
+                fetch(`/api/pham-vi-chuyen-mon?activeOnly=true`),
+                fetch(`/api/system-categories?type=NOI_CAP_CCHN`)
             ]);
             
             if (certRes.ok) setCertificates(await certRes.json());
             if (catRes.ok) setTt32Categories(await catRes.json());
             if (scopeRes.ok) setScopeOfPracticeList(await scopeRes.json());
+            if (noiCapRes.ok) setNoiCapCchnList(await noiCapRes.json());
             
         } catch (error) {
             console.error('Lỗi khi tải CCHN', error);
@@ -79,8 +82,9 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
             ...values,
             id: editingCert?.id,
             staffId,
-            pham_vi_hanh_nghe: Array.isArray(values.pham_vi_hanh_nghe) ? values.pham_vi_hanh_nghe.join('; ') : values.pham_vi_hanh_nghe,
             ngay_cap: values.ngay_cap ? values.ngay_cap.toISOString() : null,
+            tu_ngay: values.tu_ngay ? values.tu_ngay.toISOString() : null,
+            den_ngay: values.den_ngay ? values.den_ngay.toISOString() : null,
             isActive: values.isActive ?? true
         };
 
@@ -133,8 +137,11 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
         },
         {
             title: 'Phạm vi hành nghề',
-            dataIndex: 'pham_vi_hanh_nghe',
-            key: 'pham_vi_hanh_nghe',
+            key: 'scopes',
+            render: (_: any, record: any) => {
+                if (!record.scopes || record.scopes.length === 0) return '-';
+                return record.scopes.map((s: any) => `${s.scope.ma_pham_vi} - ${s.scope.ten_chuc_danh}`).join('; ');
+            },
             ellipsis: true
         },
         {
@@ -158,7 +165,14 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
     const fieldsConfig: FieldConfig[] = [
         { id: 'so_cchn', label: 'Số CCHN (Bắt buộc)', type: 'input', required: true, span: 12 },
         { id: 'ngay_cap', label: 'Ngày cấp', type: 'date', span: 12 },
-        { id: 'chuc_danh_cchn', label: 'Chức danh trong CCHN', type: 'input', span: 24 },
+        { 
+            id: 'noi_cap_cchn_id', 
+            label: 'Nơi cấp CCHN', 
+            type: 'select', 
+            span: 12,
+            options: noiCapCchnList.map(c => ({ value: c.id, label: c.name })) 
+        },
+        { id: 'chuc_danh_cchn', label: 'Chức danh trong CCHN', type: 'input', span: 12 },
         { 
             id: 'tt32_category_id', 
             label: 'Nhóm phân quyền (Thông tư 32)', 
@@ -167,14 +181,25 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
             options: tt32Categories.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }))
         },
         { 
-            id: 'pham_vi_hanh_nghe', 
+            id: 'pham_vi_hanh_nghe_ids', 
             label: 'Phạm vi hành nghề', 
             type: 'select', 
             mode: 'multiple',
             span: 24,
-            options: scopeOfPracticeList.map(s => ({ value: `${s.ma_pham_vi} - ${s.ten_chuc_danh}`, label: `${s.ma_pham_vi} - ${s.ten_chuc_danh}` }))
+            options: scopeOfPracticeList.map(s => ({ value: s.ma_pham_vi, label: `${s.ma_pham_vi} - ${s.ten_chuc_danh}` }))
         },
         { id: 'pham_vi_bo_sung', label: 'Phạm vi chuyên môn bổ sung', type: 'textarea', span: 24 },
+        
+        { id: 'tu_ngay', label: 'Ngày bắt đầu đăng ký', type: 'date', span: 12 },
+        { id: 'den_ngay', label: 'Ngày kết thúc đăng ký', type: 'date', span: 12 },
+        { id: 'thoi_gian_dang_ky', label: 'T.gian đăng ký khám (VD: T20730-1200)', type: 'input', span: 8 },
+        { id: 'thoi_gian_ngay', label: 'Ngày làm việc (VD: T2T3T4)', type: 'input', span: 8 },
+        { id: 'thoi_gian_tuan', label: 'Tuần làm việc', type: 'input', span: 8 },
+        
+        { id: 'cskcb_khac', label: 'CSKCB làm thêm (nếu có)', type: 'input', span: 8 },
+        { id: 'cskcb_cgkt', label: 'Mã CSKCB Chuyển giao KT', type: 'input', span: 8 },
+        { id: 'qd_cgkt', label: 'Quyết định CGKT', type: 'input', span: 8 },
+        { id: 'vb_phan_cong', label: 'Văn bản phân công', type: 'input', span: 24 },
         { 
             id: 'dich_vu_ky_thuat', 
             label: 'Dịch vụ kỹ thuật khác', 
@@ -200,8 +225,10 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
     const initialData = React.useMemo(() => {
         return editingCert ? {
             ...editingCert,
-            pham_vi_hanh_nghe: editingCert.pham_vi_hanh_nghe ? editingCert.pham_vi_hanh_nghe.split(';').map((s: string) => s.trim()) : undefined,
-            ngay_cap: editingCert.ngay_cap ? dayjs(editingCert.ngay_cap) : null
+            pham_vi_hanh_nghe_ids: editingCert.scopes ? editingCert.scopes.map((s: any) => s.scope.ma_pham_vi) : undefined,
+            ngay_cap: editingCert.ngay_cap ? dayjs(editingCert.ngay_cap) : null,
+            tu_ngay: editingCert.tu_ngay ? dayjs(editingCert.tu_ngay) : null,
+            den_ngay: editingCert.den_ngay ? dayjs(editingCert.den_ngay) : null
         } : { isActive: true };
     }, [editingCert]);
 

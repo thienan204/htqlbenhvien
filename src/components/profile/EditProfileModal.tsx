@@ -211,7 +211,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
             open={open}
             onCancel={onClose}
             footer={null}
-            width={1000}
+            width="80vw"
             destroyOnHidden
             style={{ top: 20 }}
             styles={{ body: { padding: '0 24px 24px 24px' } }}

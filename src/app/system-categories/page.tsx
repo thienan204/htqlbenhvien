@@ -15,6 +15,8 @@ const HARDCODED_TYPES = [
     { key: 'CHUC_DANH', label: 'Chức danh Nghề nghiệp', icon: <TagsOutlined /> },
     { key: 'CHUC_VU', label: 'Chức vụ', icon: <IdcardOutlined /> },
     { key: 'GENDER', label: 'Giới tính', icon: <UserOutlined /> },
+    { key: 'DAN_TOC', label: 'Dân tộc', icon: <UserOutlined /> },
+    { key: 'NOI_CAP_CCHN', label: 'Nơi cấp CCHN', icon: <IdcardOutlined /> },
     { key: 'DEPARTMENT_TYPE', label: 'Phân loại Khoa Phòng', icon: <PartitionOutlined /> },
     { key: 'DANH_MUC_THIET_BI', label: 'Phân loại Thiết bị', icon: <TagsOutlined /> },
     { key: 'NHOM_THIET_BI', label: 'Nhóm Thiết bị', icon: <PartitionOutlined /> },

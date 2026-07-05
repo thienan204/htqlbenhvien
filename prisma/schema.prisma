@@ -109,11 +109,14 @@ model Staff {
   dia_chi                String?
   ma_nv                  String                  @unique
   cccd                   String?
+  ma_bhxh                String?
+  dan_toc_id             String?
   certificates           PracticingCertificate[]
   chuc_danh_ref          SystemCategory?         @relation("StaffJobTitle", fields: [chuc_danh_id], references: [id])
   chuc_vu_ref            SystemCategory?         @relation("StaffPosition", fields: [chuc_vu_id], references: [id])
   gioi_tinh_ref          SystemCategory?         @relation("StaffGender", fields: [gioi_tinh_id], references: [id])
   loai_hop_dong_ref      SystemCategory?         @relation("StaffContractType", fields: [loai_hop_dong_id], references: [id])
+  dan_toc_ref            SystemCategory?         @relation("StaffEthnicity", fields: [dan_toc_id], references: [id])
   department             Department              @relation(fields: [ma_khoa], references: [ma_khoa])
   trinh_do_ref           SystemCategory?         @relation("StaffQualification", fields: [trinh_do_id], references: [id])
   vi_tri_ref             SystemCategory?         @relation("StaffJobPosition", fields: [vi_tri_viec_lam_id], references: [id])
@@ -137,6 +140,8 @@ model SystemCategory {
   staff_hop_dong  Staff[]  @relation("StaffContractType")
   staff_trinh_do  Staff[]  @relation("StaffQualification")
   staff_vi_tri    Staff[]  @relation("StaffJobPosition")
+  staff_dan_toc   Staff[]                 @relation("StaffEthnicity")
+  cchn_noi_cap    PracticingCertificate[] @relation("CertIssuePlace")
 
   @@unique([type, code])
 }
@@ -147,9 +152,18 @@ model PracticingCertificate {
   so_cchn           String
   ngay_cap          DateTime?
   chuc_danh_cchn    String?
-  pham_vi_hanh_nghe String?
   pham_vi_bo_sung   String?
   dich_vu_ky_thuat  String?
+  noi_cap_cchn_id   String?
+  vb_phan_cong      String?
+  thoi_gian_dang_ky String?
+  thoi_gian_ngay    String?
+  thoi_gian_tuan    String?
+  cskcb_khac        String?
+  cskcb_cgkt        String?
+  qd_cgkt           String?
+  tu_ngay           DateTime?
+  den_ngay          DateTime?
   isActive          Boolean         @default(true)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -157,6 +171,19 @@ model PracticingCertificate {
   CCHNException     CCHNException[]
   staff             Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
   TT32Category      TT32Category?   @relation(fields: [tt32_category_id], references: [id])
+  noi_cap_cchn_ref  SystemCategory? @relation("CertIssuePlace", fields: [noi_cap_cchn_id], references: [id])
+  scopes            CCHNScopeMapping[]
+}
+
+model CCHNScopeMapping {
+  cchn_id       String
+  ma_pham_vi    String
+  createdAt     DateTime @default(now())
+
+  certificate   PracticingCertificate   @relation(fields: [cchn_id], references: [id], onDelete: Cascade)
+  scope         ScopeOfPracticeCatalog  @relation(fields: [ma_pham_vi], references: [ma_pham_vi], onDelete: Cascade)
+
+  @@id([cchn_id, ma_pham_vi])
 }
 
 model DuplicateRule {
@@ -377,11 +404,11 @@ model ITRequest {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   category         String           @default("SOFTWARE")
-  targetDepartment String           @default("CNTT")
   transferFromId   String?
   transferToId     String?
   resolvedAt       DateTime?
   startedAt        DateTime?
+  targetDepartment String           @default("CNTT")
   messages         RequestMessage[]
 }
 
@@ -622,7 +649,9 @@ model DoctorServiceMapping {
   source      String   @default("XML_AUTO")
   status      String   @default("PENDING_REVIEW")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
+  isChiDinh   Boolean  @default(false)
+  isThucHien  Boolean  @default(false)
 
   @@unique([cchn, ma_dich_vu])
   @@index([cchn])
@@ -653,10 +682,10 @@ model Icd10Catalog {
   dk_tuoi                String?
   dk_gioi_tinh           String?
   ghi_chu                String?
-  fullData               Json?
   isActive               Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime
+  fullData               Json?
 
   @@index([ma_benh])
   @@index([ma_chi_tiet])
@@ -671,6 +700,7 @@ model ScopeOfPracticeCatalog {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime
   ScopeServiceMapping ScopeServiceMapping[]
+  CCHNScopeMapping    CCHNScopeMapping[]
 
   @@index([ma_pham_vi])
 }

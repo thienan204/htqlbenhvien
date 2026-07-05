@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Space, Tag, Input, Button, Select } from 'antd';
-import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CertificatesModal from '@/app/staff/components/CertificatesModal';
+import BulkUpdateCchnModal from './components/BulkUpdateCchnModal';
 
 export default function PracticingCertificatesPage() {
     const [certificates, setCertificates] = useState<any[]>([]);
@@ -15,6 +16,8 @@ export default function PracticingCertificatesPage() {
     // Manage CertificatesModal
     const [isCertModalOpen, setIsCertModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<{ id: string, ho_ten: string } | null>(null);
+    const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+    const [tableParams, setTableParams] = useState({ current: 1, pageSize: 15 });
 
     const fetchCertificates = async () => {
         setLoading(true);
@@ -54,7 +57,7 @@ export default function PracticingCertificatesPage() {
             key: 'stt',
             width: 60,
             align: 'center' as const,
-            render: (_: any, __: any, index: number) => index + 1
+            render: (_: any, __: any, index: number) => (tableParams.current - 1) * tableParams.pageSize + index + 1
         },
         {
             title: 'Mã NV',
@@ -87,8 +90,11 @@ export default function PracticingCertificatesPage() {
         },
         {
             title: 'Phạm vi hành nghề',
-            dataIndex: 'pham_vi_hanh_nghe',
-            key: 'pham_vi_hanh_nghe',
+            key: 'scopes',
+            render: (_: any, record: any) => {
+                if (!record.scopes || record.scopes.length === 0) return '-';
+                return record.scopes.map((s: any) => `${s.scope.ma_pham_vi} - ${s.scope.ten_chuc_danh}`).join('; ');
+            },
             ellipsis: true
         },
         {
@@ -128,6 +134,14 @@ export default function PracticingCertificatesPage() {
                         <p className="text-slate-500 m-0">Tra cứu và quản lý chứng chỉ hành nghề của toàn bộ nhân viên.</p>
                     </div>
                 </div>
+                <Button 
+                    type="primary" 
+                    size="large" 
+                    icon={<UploadOutlined />} 
+                    onClick={() => setIsBulkUpdateOpen(true)}
+                >
+                    Cập nhật hàng loạt (Excel)
+                </Button>
             </div>
 
             <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
@@ -156,7 +170,19 @@ export default function PracticingCertificatesPage() {
                     columns={columns} 
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `Tổng số ${total} chứng chỉ` }}
+                    pagination={{ 
+                        current: tableParams.current,
+                        pageSize: tableParams.pageSize,
+                        showSizeChanger: true, 
+                        showTotal: (total) => `Tổng số ${total} chứng chỉ`,
+                        locale: { items_per_page: '/ Trang' }
+                    }}
+                    onChange={(pagination) => {
+                        setTableParams({
+                            current: pagination.current || 1,
+                            pageSize: pagination.pageSize || 15,
+                        });
+                    }}
                     rowClassName="hover:bg-slate-50/50"
                     size="middle"
                 />
@@ -168,6 +194,15 @@ export default function PracticingCertificatesPage() {
                 staffId={selectedStaff?.id || null}
                 staffName={selectedStaff?.ho_ten || null}
                 onSuccess={() => {
+                    fetchCertificates();
+                }}
+            />
+
+            <BulkUpdateCchnModal
+                open={isBulkUpdateOpen}
+                onClose={() => setIsBulkUpdateOpen(false)}
+                onSuccess={() => {
+                    setIsBulkUpdateOpen(false);
                     fetchCertificates();
                 }}
             />

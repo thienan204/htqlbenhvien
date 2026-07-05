@@ -51,11 +51,18 @@ export async function middleware(request: NextRequest) {
             const { payload } = await jose.jwtVerify(token, secret);
             
             // 1. Admin-Only Routes
-            const adminOnlyPaths = ['/rules', '/roles', '/departments', '/staff', '/settings', '/admin', '/mau'];
+            const adminOnlyPaths = ['/rules', '/roles', '/settings', '/admin', '/mau'];
+            const tccbPaths = ['/staff', '/departments'];
+            
             const isAdminRoute = adminOnlyPaths.some(p => path.startsWith(p));
+            const isTccbRoute = tccbPaths.some(p => path.startsWith(p));
             
             if (isAdminRoute && payload.role !== 'ADMIN') {
-                return NextResponse.redirect(new URL(`${bp}/`, request.url));
+                return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
+            }
+
+            if (isTccbRoute && !['ADMIN', 'TCCB', 'KHOA_PHONG'].includes(payload.role as string)) {
+                return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
             }
 
             if (targetPathForRewrite) return NextResponse.rewrite(new URL(targetPathForRewrite, request.url));

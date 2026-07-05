@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import * as Icons from '@ant-design/icons';
-import { Spin } from 'antd';
+import { Spin, message } from 'antd';
+
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 interface DashboardCard {
     id: string;
@@ -21,6 +23,23 @@ interface DashboardCard {
 export default function DashboardPage() {
   const [modules, setModules] = useState<DashboardCard[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // Hiển thị cảnh báo nếu bị văng ra từ middleware do thiếu quyền
+    if (searchParams.get('error') === 'unauthorized') {
+      message.error({
+          content: 'Bạn không có quyền truy cập vào chức năng này!',
+          duration: 3,
+          style: { marginTop: '20vh' }
+      });
+      // Xóa query param bằng router của Next.js để đảm bảo đồng bộ trạng thái
+      router.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     const fetchCards = async () => {

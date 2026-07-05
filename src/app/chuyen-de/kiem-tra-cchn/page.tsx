@@ -165,6 +165,83 @@ export default function KiemTraCCHNPage() {
         }
     };
 
+    const handleSyncServices = async () => {
+        if (fileData.length === 0) {
+            message.warning('Không có dữ liệu XML để đồng bộ.');
+            return;
+        }
+
+        if (!colMaDichVu || (!colMaBacSi && !colNguoiThucHien)) {
+            message.error('Vui lòng cấu hình Cột Mã Dịch Vụ và ít nhất 1 cột CCHN!');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const syncRecordsMap = new Map<string, any>();
+
+            fileData.forEach((row) => {
+                const maDichVu = String(row[colMaDichVu] || '').trim();
+                const tenDichVu = String(row[colTenDichVu] || '').trim();
+
+                if (!maDichVu) return;
+
+                const addCchnToMap = (cchnString: string, isChiDinh: boolean, isThucHien: boolean) => {
+                    const cchns = cchnString.split(';').map(s => s.trim()).filter(Boolean);
+                    cchns.forEach(cchn => {
+                        const key = `${cchn}_${maDichVu}`;
+                        if (!syncRecordsMap.has(key)) {
+                            syncRecordsMap.set(key, { 
+                                cchn, 
+                                ma_dich_vu: maDichVu, 
+                                ten_dich_vu: tenDichVu,
+                                isChiDinh,
+                                isThucHien
+                            });
+                        } else {
+                            // Merge flags if record already exists for this CCHN + MaDichVu
+                            const existing = syncRecordsMap.get(key);
+                            existing.isChiDinh = existing.isChiDinh || isChiDinh;
+                            existing.isThucHien = existing.isThucHien || isThucHien;
+                        }
+                    });
+                };
+
+                if (colMaBacSi) addCchnToMap(String(row[colMaBacSi] || ''), true, false);
+                if (colNguoiThucHien) addCchnToMap(String(row[colNguoiThucHien] || ''), false, true);
+            });
+
+            const records = Array.from(syncRecordsMap.values());
+
+            if (records.length === 0) {
+                message.info('Không có dữ liệu hợp lệ để đồng bộ.');
+                setLoading(false);
+                return;
+            }
+
+            const res = await fetch('/api/cchn/sync-xml-services', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ records })
+            });
+
+            if (!res.ok) throw new Error('API Error');
+            const data = await res.json();
+            
+            if (data.success) {
+                message.success(`Đã đồng bộ thành công! Thêm mới ${data.count} bản ghi dịch vụ vào hồ sơ CCHN.`);
+            } else {
+                message.error('Có lỗi xảy ra khi đồng bộ.');
+            }
+
+        } catch (error) {
+            console.error(error);
+            message.error('Lỗi kết nối đồng bộ. Vui lòng thử lại.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!isMounted) return null;
 
     if (!hasPermission('MENU_CHUYEN_DE')) {
@@ -186,6 +263,9 @@ export default function KiemTraCCHNPage() {
                 <Space>
                     <Button icon={<SyncOutlined />} onClick={loadCachedFile} loading={loading}>
                         Nạp lại XML Cache
+                    </Button>
+                    <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleSyncServices} loading={loading} className="bg-emerald-600 hover:bg-emerald-500">
+                        Đồng bộ Dịch vụ vào Hồ sơ Nhân sự
                     </Button>
                 </Space>
             </div>

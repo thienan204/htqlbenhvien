@@ -9,11 +9,13 @@ export async function GET(request: Request) {
         const staffId = searchParams.get('staffId');
 
         if (!staffId) {
-            // Lấy toàn bộ CCHN (Dùng cho màn hình Quản lý CCHN chung)
+            // Lấy toàn bộ CCHN
             const allCerts = await prisma.practicingCertificate.findMany({
                 include: { 
                     staff: { include: { department: true } },
-                    TT32Category: true 
+                    TT32Category: true,
+                    noi_cap_cchn_ref: true,
+                    scopes: { include: { scope: true } }
                 },
                 orderBy: { createdAt: 'desc' }
             });
@@ -22,7 +24,11 @@ export async function GET(request: Request) {
 
         const certs = await prisma.practicingCertificate.findMany({
             where: { staffId },
-            include: { TT32Category: true },
+            include: { 
+                TT32Category: true,
+                noi_cap_cchn_ref: true,
+                scopes: { include: { scope: true } }
+            },
             orderBy: { createdAt: 'desc' }
         });
         
@@ -38,14 +44,15 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { 
             staffId, so_cchn, ngay_cap, chuc_danh_cchn, 
-            pham_vi_hanh_nghe, pham_vi_bo_sung, dich_vu_ky_thuat, isActive, tt32_category_id
+            pham_vi_hanh_nghe_ids, pham_vi_bo_sung, dich_vu_ky_thuat, isActive, tt32_category_id,
+            noi_cap_cchn_id, vb_phan_cong, thoi_gian_dang_ky, thoi_gian_ngay, thoi_gian_tuan,
+            cskcb_khac, cskcb_cgkt, qd_cgkt, tu_ngay, den_ngay
         } = body;
 
         if (!staffId || !so_cchn) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // If this one is active, deactivate others
         if (isActive) {
             await prisma.practicingCertificate.updateMany({
                 where: { staffId },
@@ -53,11 +60,20 @@ export async function POST(request: Request) {
             });
         }
 
+        const scopesData = pham_vi_hanh_nghe_ids && Array.isArray(pham_vi_hanh_nghe_ids) 
+            ? pham_vi_hanh_nghe_ids.map((ma: string) => ({ scope: { connect: { ma_pham_vi: ma } } })) 
+            : [];
+
         const created = await prisma.practicingCertificate.create({
             data: {
                 staffId, so_cchn, ngay_cap, chuc_danh_cchn, 
-                pham_vi_hanh_nghe, pham_vi_bo_sung, dich_vu_ky_thuat, 
-                isActive: isActive ?? true, tt32_category_id
+                pham_vi_bo_sung, dich_vu_ky_thuat, 
+                isActive: isActive ?? true, tt32_category_id,
+                noi_cap_cchn_id, vb_phan_cong, thoi_gian_dang_ky, thoi_gian_ngay, thoi_gian_tuan,
+                cskcb_khac, cskcb_cgkt, qd_cgkt, tu_ngay, den_ngay,
+                scopes: {
+                    create: scopesData
+                }
             }
         });
 
@@ -73,14 +89,15 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { 
             id, staffId, so_cchn, ngay_cap, chuc_danh_cchn, 
-            pham_vi_hanh_nghe, pham_vi_bo_sung, dich_vu_ky_thuat, isActive, tt32_category_id
+            pham_vi_hanh_nghe_ids, pham_vi_bo_sung, dich_vu_ky_thuat, isActive, tt32_category_id,
+            noi_cap_cchn_id, vb_phan_cong, thoi_gian_dang_ky, thoi_gian_ngay, thoi_gian_tuan,
+            cskcb_khac, cskcb_cgkt, qd_cgkt, tu_ngay, den_ngay
         } = body;
 
         if (!id || !staffId || !so_cchn) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // If this one is active, deactivate others
         if (isActive) {
             await prisma.practicingCertificate.updateMany({
                 where: { staffId, id: { not: id } },
@@ -88,12 +105,26 @@ export async function PUT(request: Request) {
             });
         }
 
+        // Xóa tất cả scopes cũ
+        await prisma.cCHNScopeMapping.deleteMany({
+            where: { cchn_id: id }
+        });
+
+        const scopesData = pham_vi_hanh_nghe_ids && Array.isArray(pham_vi_hanh_nghe_ids) 
+            ? pham_vi_hanh_nghe_ids.map((ma: string) => ({ scope: { connect: { ma_pham_vi: ma } } })) 
+            : [];
+
         const updated = await prisma.practicingCertificate.update({
             where: { id },
             data: {
                 so_cchn, ngay_cap, chuc_danh_cchn, 
-                pham_vi_hanh_nghe, pham_vi_bo_sung, dich_vu_ky_thuat, 
-                isActive: isActive ?? true, tt32_category_id
+                pham_vi_bo_sung, dich_vu_ky_thuat, 
+                isActive: isActive ?? true, tt32_category_id,
+                noi_cap_cchn_id, vb_phan_cong, thoi_gian_dang_ky, thoi_gian_ngay, thoi_gian_tuan,
+                cskcb_khac, cskcb_cgkt, qd_cgkt, tu_ngay, den_ngay,
+                scopes: {
+                    create: scopesData
+                }
             }
         });
 

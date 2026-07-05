@@ -210,7 +210,11 @@ export async function POST(request: Request) {
             if (assignmentMode === 'C') {
                 // Cách C: Chia việc tự động cho người online rảnh nhất
                 const availableUsers = await prisma.user.findMany({
-                    where: { role: targetDepartment, isAvailable: true }
+                    where: { 
+                        role: targetDepartment, 
+                        isAvailable: true,
+                        id: { not: user.id } // Chốt chặn: KHÔNG tự giao việc cho chính người đang bấm nút tạo
+                    }
                 });
 
                 if (availableUsers.length > 0) {
