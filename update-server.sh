@@ -27,7 +27,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 echo ""
 echo "🗄️ Bước 3: Chạy cấu hình Database (Đẩy cấu trúc bảng mới vào DB)..."
-docker exec htqlbenhvien-app npx -y prisma@5.22.0 db push --skip-generate
+docker exec htqlbenhvien-app npx -y prisma@5.22.0 db push --skip-generate --accept-data-loss
 
 echo ""
 echo "==================================================="
