@@ -117,7 +117,7 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
                                 if (header === 'pham_vi_hanh_nghe') {
                                     const parts = val.toString().split(';');
                                     const ids: string[] = [];
-                                    parts.forEach(p => {
+                                    parts.forEach((p: string) => {
                                         const match = p.trim().match(/^(\d+)/);
                                         if (match && match[1]) ids.push(match[1]);
                                     });
