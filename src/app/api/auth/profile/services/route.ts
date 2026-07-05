@@ -15,7 +15,11 @@ export async function GET(request: Request) {
                 staffId: true,
                 staff: {
                     select: {
-                        certificates: true,
+                        certificates: {
+                            include: {
+                                scopes: true
+                            }
+                        }
                     }
                 }
             }
@@ -27,10 +31,7 @@ export async function GET(request: Request) {
 
         const certificates = userData.staff.certificates;
         const cchnNumbers = certificates.map(c => c.so_cchn).filter(Boolean);
-        const scopeCodes = certificates.map(c => {
-            if (!c.pham_vi_hanh_nghe) return null;
-            return c.pham_vi_hanh_nghe.split('-')[0].trim();
-        }).filter(Boolean);
+        const scopeCodes = certificates.flatMap(c => c.scopes.map(s => s.ma_pham_vi)).filter(Boolean);
 
         const scopesInfo = await prisma.scopeOfPracticeCatalog.findMany({
             where: {
@@ -43,11 +44,12 @@ export async function GET(request: Request) {
         scopesInfo.forEach(s => scopeMap.set(s.ma_pham_vi, s.ten_chuc_danh));
 
         const enrichedCertificates = certificates.map(c => {
-            const code = c.pham_vi_hanh_nghe ? c.pham_vi_hanh_nghe.split('-')[0].trim() : null;
             return {
                 ...c,
-                pham_vi_hanh_nghe: code,
-                ten_pham_vi: code ? scopeMap.get(code) || '' : ''
+                scopes: c.scopes.map(s => ({
+                    ma_pham_vi: s.ma_pham_vi,
+                    ten_pham_vi: scopeMap.get(s.ma_pham_vi) || ''
+                }))
             };
         });
 

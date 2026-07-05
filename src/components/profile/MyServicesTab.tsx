@@ -202,8 +202,13 @@ export default function MyServicesTab() {
                                     
                                     <span className="col-span-1 text-slate-400">Phạm vi CM:</span>
                                     <span className="col-span-2 font-medium">
-                                        {cert.pham_vi_hanh_nghe ? (
-                                            <>{cert.pham_vi_hanh_nghe} {cert.ten_pham_vi ? `- ${cert.ten_pham_vi}` : ''}</>
+                                        {cert.scopes && cert.scopes.length > 0 ? (
+                                            cert.scopes.map((s: any, i: number) => (
+                                                <div key={i}>
+                                                    <Tag color="blue" className="mr-1">{s.ma_pham_vi}</Tag> 
+                                                    {s.ten_pham_vi}
+                                                </div>
+                                            ))
                                         ) : '---'}
                                     </span>
                                     
