@@ -69,7 +69,7 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                         />
                     </div>
                 )}
-                {user?.role === 'ADMIN' && (
+                {isAdmin && (
                     <div className="flex gap-2 w-full sm:w-auto">
                         <Link href={`/error-management/config?targetDepartment=${targetDepartment}`} className="w-full sm:w-auto">
                             <Button 
@@ -81,7 +81,7 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                 Cấu hình
                             </Button>
                         </Link>
-                        {onDeleteAll && (
+                        {onDeleteAll && user?.role === 'ADMIN' && (
                             <Popconfirm
                                 title="Xóa toàn bộ dữ liệu"
                                 description="Bạn có chắc chắn muốn xóa toàn bộ Yêu cầu xử lý không? Hành động này không thể hoàn tác!"

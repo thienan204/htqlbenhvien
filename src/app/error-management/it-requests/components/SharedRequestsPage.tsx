@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Card, Segmented, message } from 'antd';
+import { Card, Segmented, message, Select } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -29,6 +29,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('MINE');
+    const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [togglingAvailability, setTogglingAvailability] = useState(false);
 
     const {
@@ -49,11 +50,16 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     } = useTickets(user, isAdmin, targetDepartment);
 
     const filteredTickets = useMemo(() => {
-        if (!isAdmin) return tickets;
-        if (filterMode === 'MINE') return tickets.filter(t => t.assigneeId === user?.id || t.transferToId === user?.id);
-        if (filterMode === 'UNASSIGNED') return tickets.filter(t => !t.assigneeId);
-        return tickets;
-    }, [tickets, filterMode, isAdmin, user]);
+        let result = tickets;
+        if (isAdmin) {
+            if (filterMode === 'MINE') result = result.filter(t => t.assigneeId === user?.id || t.transferToId === user?.id);
+            if (filterMode === 'UNASSIGNED') result = result.filter(t => !t.assigneeId);
+        }
+        if (statusFilter !== 'ALL') {
+            result = result.filter(t => t.status === statusFilter);
+        }
+        return result;
+    }, [tickets, filterMode, isAdmin, user, statusFilter]);
 
     const handleToggleAvailability = async (checked: boolean) => {
         if (!user) return;
@@ -111,20 +117,37 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 targetDepartment={targetDepartment}
             />
 
-            {isAdmin && (
-                <div className="flex bg-white p-1 sm:p-2 rounded-xl border border-slate-100 shadow-sm w-full sm:w-fit overflow-x-auto scrollbar-hide">
-                    <Segmented 
-                        className="w-full sm:w-auto min-w-max"
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                {isAdmin && (
+                    <div className="flex bg-white p-1 sm:p-2 rounded-xl border border-slate-100 shadow-sm w-full sm:w-fit overflow-x-auto scrollbar-hide">
+                        <Segmented 
+                            className="w-full sm:w-auto min-w-max"
+                            options={[
+                                { label: 'Tất cả Yêu cầu', value: 'ALL' },
+                                { label: 'Việc của tôi', value: 'MINE' },
+                                ...(assignmentMode !== 'C' ? [{ label: 'Chờ nhận việc (Trống)', value: 'UNASSIGNED' }] : [])
+                            ]}
+                            value={filterMode}
+                            onChange={(val: any) => setFilterMode(val)}
+                        />
+                    </div>
+                )}
+                <div className="flex bg-white p-1 sm:p-2 rounded-xl border border-slate-100 shadow-sm w-full sm:w-fit">
+                    <Select
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        variant="borderless"
+                        className="w-full sm:min-w-[180px]"
                         options={[
-                            { label: 'Tất cả Yêu cầu', value: 'ALL' },
-                            { label: 'Việc của tôi', value: 'MINE' },
-                            ...(assignmentMode !== 'C' ? [{ label: 'Chờ nhận việc (Trống)', value: 'UNASSIGNED' }] : [])
+                            { value: 'ALL', label: 'Tất cả trạng thái' },
+                            { value: 'PENDING', label: 'Chờ xử lý' },
+                            { value: 'IN_PROGRESS', label: 'Đang xử lý' },
+                            { value: 'TRANSFERRING', label: 'Chờ chuyển giao' },
+                            { value: 'RESOLVED', label: 'Hoàn thành' }
                         ]}
-                        value={filterMode}
-                        onChange={(val: any) => setFilterMode(val)}
                     />
                 </div>
-            )}
+            </div>
 
             <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
                 <TicketTable 

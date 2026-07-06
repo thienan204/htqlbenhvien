@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Switch, Button, message, Card, Space, Tag } from 'antd';
+import { Table, Switch, Button, message, Card, Space, Tag, Tabs } from 'antd';
 import { ArrowUpOutlined, ArrowDownOutlined, SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ITUser {
     id: string;
@@ -14,14 +15,22 @@ interface ITUser {
 }
 
 export default function DutyRosterPage() {
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('CNTT');
     const [users, setUsers] = useState<ITUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
+    useEffect(() => {
+        if (user && user.role !== 'ADMIN' && ['CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
+            setActiveTab(user.role);
+        }
+    }, [user]);
+
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/error-management/duty-roster');
+            const res = await fetch(`/api/error-management/duty-roster?targetDepartment=${activeTab}`);
             if (res.ok) {
                 const data = await res.json();
                 // Ensure array is sorted by dutyOrder
@@ -39,7 +48,7 @@ export default function DutyRosterPage() {
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [activeTab]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -157,11 +166,32 @@ export default function DutyRosterPage() {
         }
     ];
 
+    const allTabItems = [
+        { key: 'CNTT', label: 'Công nghệ thông tin' },
+        { key: 'VTYT', label: 'Vật tư Y tế' },
+        { key: 'HCQT', label: 'Hành chính Quản trị' }
+    ];
+
+    const tabItems = allTabItems.filter(item => {
+        if (user?.role === 'ADMIN') return true;
+        return user?.role === item.key;
+    });
+
+    let title = 'Quản lý CNTT';
+    if (activeTab === 'VTYT') title = 'Quản lý Vật tư Y tế';
+    if (activeTab === 'HCQT') title = 'Quản lý Hành chính Quản trị';
+
     return (
         <div className="w-full max-w-[1200px] mx-auto px-[30px] py-6 space-y-6">
+            {tabItems.length > 1 && (
+                <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: '16px 24px 0 24px' } }}>
+                    <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+                </Card>
+            )}
+
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 mb-1">Quản lý CNTT</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 mb-1">{title}</h1>
                     <p className="text-slate-500 m-0">Sắp xếp thứ tự ưu tiên nhận phiếu yêu cầu hỗ trợ từ các Khoa.</p>
                 </div>
                 <Space>

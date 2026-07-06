@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tabs, Table, Tag, Typography, Card, Space, Input, Button, Modal, Form, Select, message } from 'antd';
+import { Tabs, Table, Tag, Typography, Card, Space, Input, Button, Modal, Form, Select, message, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, BookOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
+import { SearchOutlined, BookOutlined, PlusOutlined, EditOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 
 const { Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -117,6 +118,106 @@ export default function BangChiTieuPage() {
         }
     };
 
+    const handleDownloadTemplate = (xmlType: string) => {
+        const currentData = data[xmlType] || [];
+        
+        let templateData: any[] = [];
+        
+        if (currentData.length > 0) {
+            templateData = currentData.map(item => ({
+                'STT': item.stt,
+                'Chỉ tiêu': item.chiTieu,
+                'Kiểu dữ liệu': item.kieuDuLieu,
+                'Kích thước tối đa': item.kichThuocToiDa || '',
+                'Diễn giải theo QĐ 130/4750': item.dienGiai130 || '',
+                'Đính chính theo QĐ 3176': item.dinhChinh4750 || '',
+                'Điều chỉnh': item.dieuChinh || ''
+            }));
+        } else {
+            templateData = [
+                {
+                    'STT': 1,
+                    'Chỉ tiêu': 'MA_LK',
+                    'Kiểu dữ liệu': 'Chuỗi',
+                    'Kích thước tối đa': '100',
+                    'Diễn giải theo QĐ 130/4750': 'Mã liên kết',
+                    'Đính chính theo QĐ 3176': '',
+                    'Điều chỉnh': 'Giữ nguyên'
+                }
+            ];
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(templateData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, xmlType);
+        XLSX.writeFile(workbook, `Mau_Nhap_Chi_Tieu_${xmlType}.xlsx`);
+    };
+
+    const handleImportExcel = (file: File, xmlType: string) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const dataBuffer = e.target?.result;
+                if (!dataBuffer) return;
+                
+                const workbook = XLSX.read(dataBuffer, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rawData = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+                if (!rawData || rawData.length === 0) {
+                    message.error('File Excel không có dữ liệu!');
+                    return;
+                }
+
+                // Map Excel data to XmlDictionaryItem format
+                const importedItems: XmlDictionaryItem[] = rawData.map((row, index) => {
+                    return {
+                        stt: Number(row['STT']) || index + 1,
+                        chiTieu: String(row['Chỉ tiêu'] || '').trim(),
+                        kieuDuLieu: String(row['Kiểu dữ liệu'] || 'Chuỗi').trim(),
+                        kichThuocToiDa: String(row['Kích thước tối đa'] || '').trim(),
+                        dienGiai130: String(row['Diễn giải theo QĐ 130/4750'] || '').trim(),
+                        dinhChinh4750: String(row['Đính chính theo QĐ 3176'] || '').trim(),
+                        dieuChinh: String(row['Điều chỉnh'] || '').trim()
+                    };
+                }).filter(item => item.chiTieu); // Bỏ qua các dòng trống
+
+                if (importedItems.length === 0) {
+                    message.error('Không tìm thấy cột "Chỉ tiêu" hợp lệ trong file Excel.');
+                    return;
+                }
+
+                // Sắp xếp lại theo STT
+                importedItems.sort((a, b) => a.stt - b.stt);
+
+                // Ghi đè toàn bộ dữ liệu của XML này
+                const newData = { ...data, [xmlType]: importedItems };
+
+                // Lưu lên server
+                setLoading(true);
+                const res = await fetch('/api/xml-dictionary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newData)
+                });
+
+                if (res.ok) {
+                    setData(newData);
+                    message.success(`Đã import thành công ${importedItems.length} dòng cho ${xmlType} (Ghi đè hoàn toàn)!`);
+                } else {
+                    message.error('Lỗi khi lưu dữ liệu lên máy chủ.');
+                }
+            } catch (error) {
+                console.error("Error reading Excel:", error);
+                message.error('Lỗi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
     const columns = (xmlType: string): ColumnsType<XmlDictionaryItem> => [
         {
             title: 'Hành động',
@@ -207,7 +308,27 @@ export default function BangChiTieuPage() {
             label: xmlType,
             children: (
                 <div className="bg-white rounded-b-xl border border-t-0 border-slate-200 p-4">
-                    <div className="mb-4 flex justify-end">
+                    <div className="mb-4 flex justify-between items-center">
+                        <Space>
+                            <Button
+                                icon={<DownloadOutlined />}
+                                onClick={() => handleDownloadTemplate(xmlType)}
+                            >
+                                Tải File Mẫu
+                            </Button>
+                            <Upload
+                                accept=".xlsx, .xls"
+                                showUploadList={false}
+                                beforeUpload={(file) => {
+                                    handleImportExcel(file, xmlType);
+                                    return false; // Prevent default upload behavior
+                                }}
+                            >
+                                <Button icon={<UploadOutlined />} className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100">
+                                    Nhập Excel
+                                </Button>
+                            </Upload>
+                        </Space>
                         <Button 
                             type="primary" 
                             icon={<PlusOutlined />} 

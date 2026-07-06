@@ -5,9 +5,9 @@ import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select } f
 import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined } from '@ant-design/icons';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
-import CertificatesModal from './components/CertificatesModal';
 import BulkUpdateStaffModal from './components/BulkUpdateStaffModal';
 import StaffDetailsModal from './components/StaffDetailsModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StaffPage() {
     const [staffList, setStaffList] = useState<any[]>([]);
@@ -23,6 +23,7 @@ export default function StaffPage() {
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 20 });
+    const { user } = useAuth();
 
     const fetchStaff = async () => {
         setLoading(true);
@@ -174,16 +175,18 @@ export default function StaffPage() {
                     </div>
                 </div>
                 <Space>
-                    <Popconfirm 
-                        title="Xóa toàn bộ nhân sự?" 
-                        description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
-                        onConfirm={handleDeleteAll} 
-                        okText="Có, Xóa hết" 
-                        cancelText="Không"
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
-                    </Popconfirm>
+                    {user?.role === 'ADMIN' && (
+                        <Popconfirm 
+                            title="Xóa toàn bộ nhân sự?" 
+                            description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
+                            onConfirm={handleDeleteAll} 
+                            okText="Có, Xóa hết" 
+                            cancelText="Không"
+                            okButtonProps={{ danger: true }}
+                        >
+                            <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
+                        </Popconfirm>
+                    )}
                     <Popconfirm
                         title="Tạo User tự động?"
                         description="Hệ thống sẽ tạo tài khoản cho tất cả nhân sự chưa có User. Mật khẩu mặc định là 123456."

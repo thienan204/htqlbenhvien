@@ -6,6 +6,7 @@ import { PlusOutlined, UploadOutlined, EditOutlined, DeleteOutlined, SaveOutline
 import { getBasePath } from '@/utils/config';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Department {
     ma_khoa: string;
@@ -25,6 +26,7 @@ export default function DepartmentPage() {
     const [editingDept, setEditingDept] = useState<Department | null>(null);
     const [departmentTypes, setDepartmentTypes] = useState<any[]>([]);
     const [form] = Form.useForm();
+    const { user } = useAuth();
 
     const fetchDepartments = async () => {
         setLoading(true);
@@ -293,9 +295,11 @@ export default function DepartmentPage() {
                             <Upload beforeUpload={handleImportExcel} showUploadList={false} accept=".xlsx,.xls">
                                 <Button icon={<UploadOutlined />}>Import Excel</Button>
                             </Upload>
-                            <Popconfirm title="Bạn có chắc chắn muốn xóa TOÀN BỘ danh mục Khoa Phòng?" onConfirm={handleDeleteAll} okText="Xóa hết" cancelText="Hủy" okButtonProps={{ danger: true }}>
-                                <Button danger icon={<DeleteOutlined />}>Xóa tất cả</Button>
-                            </Popconfirm>
+                            {user?.role === 'ADMIN' && (
+                                <Popconfirm title="Bạn có chắc chắn muốn xóa TOÀN BỘ danh mục Khoa Phòng?" onConfirm={handleDeleteAll} okText="Xóa hết" cancelText="Hủy" okButtonProps={{ danger: true }}>
+                                    <Button danger icon={<DeleteOutlined />}>Xóa tất cả</Button>
+                                </Popconfirm>
+                            )}
                             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
                                 setEditingDept(null);
                                 form.resetFields();

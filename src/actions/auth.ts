@@ -10,10 +10,11 @@ export type UserPayload = {
     username: string;
     role: string;
     ma_khoa?: string;
+    ten_khoa?: string;
     staffId?: string;
-    permissions?: any;
     isManager?: boolean;
     ma_cchn?: string;
+    name?: string;
 };
 
 export async function getCurrentUser(): Promise<UserPayload | null> {
@@ -29,10 +30,13 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         let permissions: any = [];
         let isManager = false;
         let ma_cchn: string | undefined = undefined;
+        let finalName: string | undefined = undefined;
+        let finalTenKhoa: string | undefined = undefined;
         
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
             isManager = true;
+            finalName = payload.username === 'admin' ? 'Quản trị viên (Gốc)' : (payload.name as string);
         } else {
             const { PrismaClient } = await import('@prisma/client');
             const prisma = new PrismaClient();
@@ -60,6 +64,17 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
                     ma_cchn = userRecord.staff.certificates[0].so_cchn;
                 }
+                
+                if (userRecord) {
+                    finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
+                }
+                
+                if (payload.ma_khoa) {
+                    const dept = await prisma.department.findUnique({ where: { ma_khoa: payload.ma_khoa as string } });
+                    if (dept) {
+                        finalTenKhoa = dept.ten_khoa;
+                    }
+                }
             } catch (err) {
                 console.error('Error fetching fresh permissions:', err);
             } finally {
@@ -75,7 +90,9 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             staffId: payload.staffId as string | undefined,
             permissions,
             isManager,
-            ma_cchn
+            ma_cchn,
+            name: finalName,
+            ten_khoa: finalTenKhoa
         };
     } catch (error) {
         return null; // Invalid or expired token

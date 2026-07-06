@@ -97,7 +97,7 @@ export default function Icd10Page() {
         {
             title: 'Chương / Nhóm',
             key: 'group',
-            width: 250,
+            width: 200,
             render: (_: any, record: any) => (
                 <div className="text-xs text-slate-500">
                     <div className="font-semibold">{record.ma_chuong}</div>
@@ -108,7 +108,7 @@ export default function Icd10Page() {
         {
             title: 'Quy tắc Check XML (Cảnh báo)',
             key: 'rules',
-            width: 350,
+            width: 250,
             render: (_: any, record: any) => (
                 <Space orientation="vertical" size={2} className="w-full">
                     {record.is_not_main_disease && (

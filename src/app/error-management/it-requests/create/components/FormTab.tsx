@@ -169,17 +169,19 @@ export function FormTab({
                                             showSearch 
                                             placeholder="Tìm tên nhân viên..." 
                                             virtual={false}
-                                            disabled={!!user?.staffId}
+                                            disabled={!!user?.staffId && !isAdmin}
                                             optionFilterProp="children"
                                             onChange={(val) => {
-                                                if (!user?.staffId) {
+                                                if (!user?.staffId || isAdmin) {
                                                     localStorage.setItem('last_it_request_staff_id', val);
                                                     setSavedStaffId(val);
                                                 }
                                             }}
                                         >
                                             {departmentStaff.map((s: any) => (
-                                                <Select.Option key={s.id} value={s.id}>{s.ho_ten} {s.chuc_danh ? `(${s.chuc_danh})` : ''}</Select.Option>
+                                                <Select.Option key={s.id} value={s.id}>
+                                                    {s.ho_ten} {s.chuc_danh ? `(${s.chuc_danh})` : ''} {isAdmin ? `- ${s.department?.ten_khoa || s.ma_khoa}` : ''}
+                                                </Select.Option>
                                             ))}
                                         </Select>
                                     </Form.Item>

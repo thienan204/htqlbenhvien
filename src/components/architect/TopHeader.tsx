@@ -98,7 +98,9 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                             <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-colors">
                                 <div className="text-right hidden md:block">
                                     <div className="text-sm font-bold text-slate-700">{(user as any).name || user.username}</div>
-                                    <div className="text-xs text-slate-400 font-medium">{user.role}</div>
+                                    <div className="text-xs text-slate-400 font-medium">
+                                        {user.ten_khoa ? `${user.role} - ${user.ten_khoa}` : user.role}
+                                    </div>
                                 </div>
                                 <Avatar size="large" className="bg-blue-500 border-2 border-white shadow-sm">
                                     {((user as any).name || user.username)?.[0]?.toUpperCase()}

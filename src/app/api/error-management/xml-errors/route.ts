@@ -85,11 +85,16 @@ export async function GET(req: NextRequest) {
 
         let whereClause: any = {};
         
-        // Nếu user là KHOA, filter theo ma_khoa
-        if (user.role === 'KHOA' && user.ma_khoa) {
-            whereClause.ma_khoa = {
-                contains: user.ma_khoa
-            };
+        // Phân quyền hiển thị theo khoa phòng: Không phải Admin/CNTT thì chỉ thấy lỗi của khoa mình
+        if (user.role !== 'ADMIN' && user.role !== 'CNTT') {
+            if (user.ma_khoa) {
+                whereClause.ma_khoa = {
+                    contains: user.ma_khoa
+                };
+            } else {
+                // Không có mã khoa thì không thấy gì
+                whereClause.ma_khoa = 'NONE';
+            }
         }
 
         if (sourceType) {
@@ -126,8 +131,8 @@ export async function PUT(req: NextRequest) {
         if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         // Phân quyền update
-        if (user.role === 'KHOA') {
-            if (existing.ma_khoa && user.ma_khoa && !existing.ma_khoa.includes(user.ma_khoa)) {
+        if (user.role !== 'ADMIN' && user.role !== 'CNTT') {
+            if (!user.ma_khoa || (existing.ma_khoa && !existing.ma_khoa.includes(user.ma_khoa))) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
         }
@@ -135,7 +140,7 @@ export async function PUT(req: NextRequest) {
         const updateData: any = {};
         if (status !== undefined) updateData.status = status;
         
-        if (user.role === 'KHOA' && departmentNote !== undefined) {
+        if (user.role !== 'ADMIN' && user.role !== 'CNTT' && departmentNote !== undefined) {
             updateData.departmentNote = departmentNote;
         }
         

@@ -451,6 +451,9 @@ export default function XmlErrorManager() {
                             } else {
                                 setSelectedErrorForIT(record);
                                 itForm.resetFields();
+                                if (user?.staffId) {
+                                    itForm.setFieldsValue({ nguoi_bao_id: user.staffId });
+                                }
                                 setIsITModalVisible(true);
                             }
                         }}
@@ -738,8 +741,9 @@ export default function XmlErrorManager() {
                             showSearch
                             placeholder="Chọn tên nhân viên..."
                             optionFilterProp="children"
+                            disabled={!!user?.staffId && !isAdmin}
                         >
-                            {staffList.filter(s => s.ma_khoa === selectedErrorForIT?.ma_khoa).map(staff => (
+                            {staffList.filter(s => s.ma_khoa === selectedErrorForIT?.ma_khoa || s.id === user?.staffId).map(staff => (
                                 <Select.Option key={staff.id} value={staff.id}>
                                     {staff.ho_ten} {staff.so_dien_thoai ? `(${staff.so_dien_thoai})` : ''}
                                 </Select.Option>

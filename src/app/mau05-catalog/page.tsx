@@ -5,6 +5,7 @@ import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, mess
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, HeartOutlined, ContainerOutlined, ExperimentOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Mau05CatalogPage() {
     const [data, setData] = useState<any[]>([]);
@@ -15,6 +16,7 @@ export default function Mau05CatalogPage() {
     const [searchText, setSearchText] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
+    const { user } = useAuth();
 
     const fetchData = async () => {
         setLoading(true);
@@ -203,18 +205,18 @@ export default function Mau05CatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
-                        <Popconfirm
-                            title="Xóa toàn bộ danh mục?"
-                            description="Hành động này sẽ xóa sạch dữ liệu hiện tại. Bạn có chắc chắn?"
-                            onConfirm={handleDeleteAll}
-                            okText="Có, Xóa hết"
-                            cancelText="Không"
-                            okButtonProps={{ danger: true }}
-                        >
-                            <Button danger type="primary" icon={<DeleteOutlined />}>
-                                Xóa toàn bộ
-                            </Button>
-                        </Popconfirm>
+                        {user?.role === 'ADMIN' && (
+                            <Popconfirm 
+                                title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
+                                description="Hành động này sẽ xóa sạch danh mục và không thể hoàn tác. Bạn có chắc chắn không?"
+                                onConfirm={handleDeleteAll} 
+                                okText="Có, Xóa hết" 
+                                cancelText="Không"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
+                            </Popconfirm>
+                        )}
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600">Tải file mẫu</Button>
                         <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">
                             <Button type="default" icon={<UploadOutlined />} className="bg-blue-50 border-blue-200 text-blue-700">Import Excel</Button>

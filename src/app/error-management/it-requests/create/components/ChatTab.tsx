@@ -124,7 +124,7 @@ export function ChatTab({
                     ma_ba: ma_ba,
                     category: category,
                     ten_loi: chatText,
-                    ma_khoa: isAdmin ? (user?.ma_khoa || departments[0]?.ma_khoa) : 'KHOA_HIENTAI', 
+                    ma_khoa: isAdmin ? (staff?.ma_khoa || user?.ma_khoa || departments[0]?.ma_khoa) : 'KHOA_HIENTAI', 
                     assigneeId: null, // Auto assign
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: staffId,
@@ -155,7 +155,7 @@ export function ChatTab({
             <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm mb-4">
                 <div className="text-sm font-medium text-slate-600 flex items-center gap-2">
                     <span>👤 Người báo:</span>
-                    {user?.staffId ? (
+                    {user?.staffId && !isAdmin ? (
                         <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
                             {departmentStaff.find((s: any) => s.id === user.staffId)?.ho_ten || 'Tài khoản cá nhân'}
                         </span>
@@ -168,13 +168,14 @@ export function ChatTab({
                                 localStorage.setItem('last_it_request_staff_id', val);
                                 form.setFieldsValue({ nguoi_bao_id: val });
                             }}
-                            className="min-w-[150px]"
+                            className="min-w-[250px] max-w-full"
+                            popupMatchSelectWidth={false}
                             placeholder="Chọn tên nhân viên"
                             variant="borderless"
                             virtual={false}
                             options={departmentStaff.map((s: any) => ({
                                 value: s.id,
-                                label: s.ho_ten
+                                label: isAdmin ? `${s.ho_ten} - ${s.department?.ten_khoa || s.ma_khoa}` : s.ho_ten
                             }))}
                             showSearch
                             filterOption={(input, option) =>
