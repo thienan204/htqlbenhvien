@@ -41,14 +41,14 @@ export default function MyServicesTab() {
     }
 
     if (error) {
-        return <Alert message="Lỗi" description={error} type="error" showIcon className="m-4" />;
+        return <Alert title="Lỗi" description={error} type="error" showIcon className="m-4" />;
     }
 
     if (!data || !data.certificates || data.certificates.length === 0) {
         return (
             <div className="p-8 text-center">
                 <Alert
-                    message="Chưa có Chứng chỉ hành nghề"
+                    title="Chưa có Chứng chỉ hành nghề"
                     description="Tài khoản của bạn chưa được liên kết với bất kỳ Chứng chỉ hành nghề nào trên hệ thống."
                     type="warning"
                     showIcon
