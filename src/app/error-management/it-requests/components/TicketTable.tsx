@@ -146,6 +146,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             title: targetDepartment === 'CNTT' ? 'Phản hồi CNTT' : `Phản hồi ${targetDepartment}`,
             dataIndex: 'it_note',
             key: 'it_note',
+            width: 300,
             render: (text: string) => <div className="text-slate-600 italic whitespace-pre-wrap">{text || '-'}</div>
         },
         {
@@ -175,7 +176,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
         {
             title: 'Thao tác',
             key: 'action',
-            width: 200,
+            width: 130,
             render: (_: any, record: Ticket) => {
                 return (
                     <Space>
