@@ -43,8 +43,14 @@ export function ChatTab({
     const recognitionRef = useRef<any>(null);
     const [chatCategory, setChatCategory] = useState<string>(targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE');
     const [staffSearchValue, setStaffSearchValue] = useState('');
+    const [isSelectOpen, setIsSelectOpen] = useState(false);
     const [isSearchListening, setIsSearchListening] = useState(false);
     const searchRecognitionRef = useRef<any>(null);
+
+    // Normalize vietnamese string for better search
+    const normalizeString = (str: string) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    };
 
     const handleSearchVoiceInput = () => {
         if (isSearchListening && searchRecognitionRef.current) {
@@ -66,9 +72,9 @@ export function ChatTab({
         recognition.onstart = () => setIsSearchListening(true);
         recognition.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript;
-            // Clean up the text (remove trailing dot if any)
             const cleanText = transcript.replace(/\.$/, '');
             setStaffSearchValue(cleanText);
+            setIsSelectOpen(true); // Open the dropdown to show filtered results
         };
         recognition.onerror = (event: any) => {
             console.warn('Speech recognition error:', event.error);
@@ -210,16 +216,22 @@ export function ChatTab({
                         <div className="flex items-center gap-1 border border-slate-200 rounded bg-slate-50 px-1 py-0.5 min-w-[250px] max-w-full">
                             <Select
                                 size="small"
+                                open={isSelectOpen}
+                                onDropdownVisibleChange={(open) => setIsSelectOpen(open)}
                                 value={departmentStaff.some((s: any) => s.id === savedStaffId) ? savedStaffId : undefined}
                                 onChange={(val) => {
                                     setSavedStaffId(val);
                                     localStorage.setItem('last_it_request_staff_id', val);
                                     form.setFieldsValue({ nguoi_bao_id: val });
                                     setStaffSearchValue('');
+                                    setIsSelectOpen(false);
                                 }}
                                 searchValue={staffSearchValue}
                                 onSearch={setStaffSearchValue}
-                                onBlur={() => setStaffSearchValue('')}
+                                onBlur={() => {
+                                    setStaffSearchValue('');
+                                    setIsSelectOpen(false);
+                                }}
                                 className="flex-1"
                                 popupMatchSelectWidth={false}
                                 placeholder="Chọn tên nhân viên"
@@ -230,9 +242,11 @@ export function ChatTab({
                                     label: isAdmin ? `${s.ho_ten} - ${s.department?.ten_khoa || s.ma_khoa}` : s.ho_ten
                                 }))}
                                 showSearch
-                                filterOption={(input, option) =>
-                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                }
+                                filterOption={(input, option) => {
+                                    const optionLabel = normalizeString(option?.label as string ?? '');
+                                    const searchInput = normalizeString(input);
+                                    return optionLabel.includes(searchInput);
+                                }}
                             />
                             <Tooltip title="Tìm bằng giọng nói">
                                 <AudioOutlined 
