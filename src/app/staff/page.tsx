@@ -5,6 +5,7 @@ import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select } f
 import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined } from '@ant-design/icons';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
+import CertificatesModal from './components/CertificatesModal';
 import BulkUpdateStaffModal from './components/BulkUpdateStaffModal';
 import StaffDetailsModal from './components/StaffDetailsModal';
 import { useAuth } from '@/contexts/AuthContext';

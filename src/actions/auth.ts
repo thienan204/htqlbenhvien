@@ -15,6 +15,7 @@ export type UserPayload = {
     isManager?: boolean;
     ma_cchn?: string;
     name?: string;
+    permissions?: any[];
 };
 
 export async function getCurrentUser(): Promise<UserPayload | null> {
