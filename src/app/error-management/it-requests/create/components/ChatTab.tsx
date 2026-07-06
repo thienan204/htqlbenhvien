@@ -70,6 +70,8 @@ export function ChatTab({
             setIsListening(false);
             if (event.error === 'not-allowed') {
                 message.error("Vui lòng cấp quyền sử dụng Micro cho trình duyệt!");
+            } else if (event.error === 'network') {
+                message.error("Trình duyệt (hoặc mạng bệnh viện) chặn dịch vụ giọng nói. Vui lòng dùng Google Chrome hoặc nhập tay!");
             } else if (event.error !== 'no-speech') {
                 message.error("Lỗi nhận diện giọng nói: " + event.error);
             }
