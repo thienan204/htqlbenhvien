@@ -84,9 +84,12 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                     {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 && (
                         <div className="mt-1 flex flex-col gap-2">
                             <div className="flex flex-wrap gap-1">
-                                {Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm').map(([k, v]) => (
-                                    <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>
-                                ))}
+                                {Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm').map(([k, v]) => {
+                                    if (k === 'SĐT') {
+                                        return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
+                                    }
+                                    return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
+                                })}
                             </div>
                             {record.dynamicFields['Hình ảnh đính kèm'] && Array.isArray(record.dynamicFields['Hình ảnh đính kèm']) && (
                                 <div className="flex flex-wrap gap-2 mt-1">
