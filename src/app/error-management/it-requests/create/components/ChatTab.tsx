@@ -217,7 +217,7 @@ export function ChatTab({
                             <Select
                                 size="small"
                                 open={isSelectOpen}
-                                onDropdownVisibleChange={(open) => setIsSelectOpen(open)}
+                                onOpenChange={(open) => setIsSelectOpen(open)}
                                 value={departmentStaff.some((s: any) => s.id === savedStaffId) ? savedStaffId : undefined}
                                 onChange={(val) => {
                                     setSavedStaffId(val);
