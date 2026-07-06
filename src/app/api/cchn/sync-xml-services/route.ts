@@ -30,23 +30,35 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, count: 0, message: 'No valid records to insert' });
         }
 
-        // Use prisma.$transaction to execute upserts efficiently
-        const upsertOperations = records.map((record: any) => {
-            return prisma.doctorServiceMapping.upsert({
-                where: {
-                    cchn_ma_dich_vu: {
-                        cchn: record.cchn,
-                        ma_dich_vu: record.ma_dich_vu,
-                    }
-                },
-                update: {
-                    // Update flags using bitwise OR logic (if it was previously true, keep it true)
-                    isChiDinh: record.isChiDinh || undefined,
-                    isThucHien: record.isThucHien || undefined,
-                    ten_dich_vu: record.ten_dich_vu || undefined,
-                    updatedAt: now
-                },
-                create: {
+        const uniqueCchns = Array.from(new Set(records.map((r: any) => r.cchn)));
+        
+        // Fetch existing records for these CCHNs
+        const existingRecords = await prisma.doctorServiceMapping.findMany({
+            where: {
+                cchn: { in: uniqueCchns as string[] }
+            },
+            select: {
+                cchn: true,
+                ma_dich_vu: true,
+                isChiDinh: true,
+                isThucHien: true
+            }
+        });
+
+        const existingMap = new Map();
+        existingRecords.forEach(r => {
+            existingMap.set(`${r.cchn}_${r.ma_dich_vu}`, r);
+        });
+
+        const newRecords: any[] = [];
+        const updateOperations: any[] = [];
+
+        records.forEach((record: any) => {
+            const key = `${record.cchn}_${record.ma_dich_vu}`;
+            const existing = existingMap.get(key);
+            
+            if (!existing) {
+                newRecords.push({
                     id: crypto.randomUUID(),
                     cchn: record.cchn,
                     ma_dich_vu: record.ma_dich_vu,
@@ -57,16 +69,52 @@ export async function POST(request: Request) {
                     isThucHien: !!record.isThucHien,
                     createdAt: now,
                     updatedAt: now
+                });
+                // Add to map to prevent duplicates in the same payload
+                existingMap.set(key, record);
+            } else {
+                // If it already exists, we might still want to merge the flags if they changed
+                const needsUpdate = (record.isChiDinh && !existing.isChiDinh) || (record.isThucHien && !existing.isThucHien);
+                if (needsUpdate) {
+                    updateOperations.push(
+                        prisma.doctorServiceMapping.update({
+                            where: {
+                                cchn_ma_dich_vu: {
+                                    cchn: record.cchn,
+                                    ma_dich_vu: record.ma_dich_vu
+                                }
+                            },
+                            data: {
+                                isChiDinh: record.isChiDinh ? true : undefined,
+                                isThucHien: record.isThucHien ? true : undefined,
+                                updatedAt: now
+                            }
+                        })
+                    );
+                    // Update the map to reflect the new state
+                    existing.isChiDinh = existing.isChiDinh || record.isChiDinh;
+                    existing.isThucHien = existing.isThucHien || record.isThucHien;
                 }
-            });
+            }
         });
 
-        const result = await prisma.$transaction(upsertOperations);
+        // Insert new records in bulk
+        if (newRecords.length > 0) {
+            await prisma.doctorServiceMapping.createMany({
+                data: newRecords,
+                skipDuplicates: true // Just in case
+            });
+        }
+
+        // Execute updates
+        if (updateOperations.length > 0) {
+            await prisma.$transaction(updateOperations);
+        }
 
         return NextResponse.json({ 
             success: true, 
-            count: result.length,
-            message: `Successfully synchronized ${result.length} services.`
+            count: newRecords.length,
+            message: `Successfully synchronized. Added ${newRecords.length} new services.`
         });
 
     } catch (error: any) {
