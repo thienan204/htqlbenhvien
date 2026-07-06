@@ -7,8 +7,6 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    ports:
-      - "3001:3000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
@@ -30,6 +28,20 @@ services:
       - htql-prod-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    networks:
+      - htql-prod-network
+
+  nginx-prod:
+    image: nginx:alpine
+    container_name: htqlbenhvien-nginx-prod
+    restart: always
+    ports:
+      - "3001:3001" # Cổng mà Router 201 đang trỏ vào
+    volumes:
+      - ./nginx-prod.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro # Mount chứng chỉ SSL từ máy chủ vào
+    depends_on:
+      - app-htql
     networks:
       - htql-prod-network
 
