@@ -6,7 +6,7 @@ import {
     BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined
 } from '@ant-design/icons';
 import { Button, Badge, Avatar, Dropdown } from 'antd';
-import { logout } from '@/actions/auth';
+// Removed server action import
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import EditProfileModal from '../profile/EditProfileModal';
@@ -88,7 +88,9 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                                     icon: <LogoutOutlined />,
                                     danger: true,
                                     onClick: async () => {
-                                        await logout();
+                                        try {
+                                            await fetch('/api/auth/logout', { method: 'POST' });
+                                        } catch(e) {}
                                         window.location.href = '/login';
                                     }
                                 }
