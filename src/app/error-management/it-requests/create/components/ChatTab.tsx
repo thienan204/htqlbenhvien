@@ -52,6 +52,12 @@ export function ChatTab({
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
 
+    // Get initials (e.g. "Lê Thị Phượng" -> "ltp")
+    const getInitials = (str: string) => {
+        const normalized = normalizeString(str);
+        return normalized.replace(/[^a-z0-9\s]/gi, '').split(/\s+/).filter(Boolean).map(w => w[0]).join('');
+    };
+
     const handleSearchVoiceInput = () => {
         if (isSearchListening && searchRecognitionRef.current) {
             searchRecognitionRef.current.stop();
@@ -243,9 +249,11 @@ export function ChatTab({
                                 }))}
                                 showSearch
                                 filterOption={(input, option) => {
-                                    const optionLabel = normalizeString(option?.label as string ?? '');
+                                    const rawLabel = option?.label as string ?? '';
+                                    const optionLabel = normalizeString(rawLabel);
                                     const searchInput = normalizeString(input);
-                                    return optionLabel.includes(searchInput);
+                                    const initials = getInitials(rawLabel);
+                                    return optionLabel.includes(searchInput) || initials.includes(searchInput);
                                 }}
                             />
                             <Tooltip title="Tìm bằng giọng nói">
