@@ -187,7 +187,7 @@ export function FormTab({
                                     </Form.Item>
                                 </div>
                                 
-                                {isAdmin && (
+                                {isManager && (
                                     <div className="mt-6 bg-purple-50/50 p-6 rounded-xl border border-purple-100">
                                         <div className="font-bold text-purple-800 mb-4 uppercase text-sm">Khu vực dành cho Quản lý / Trưởng phòng</div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
