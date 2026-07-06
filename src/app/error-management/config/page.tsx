@@ -321,7 +321,7 @@ export default function ITConfigPage() {
             <div className="max-w-[1000px] mx-auto space-y-6">
                 <Breadcrumb items={[
                     { title: <Link href="/"><HomeOutlined /> Trang chủ</Link> }, 
-                    { title: <Link href={`/error-management/${targetDepartment.toLowerCase()}-requests`}>Quản lý Yêu cầu {targetDepartment}</Link> }, 
+                    { title: <Link href={`/error-management/${targetDepartment === 'CNTT' ? 'it' : targetDepartment.toLowerCase()}-requests`}>Quản lý Yêu cầu {targetDepartment}</Link> }, 
                     { title: 'Cấu hình Danh mục Lỗi' }
                 ]} />
 
