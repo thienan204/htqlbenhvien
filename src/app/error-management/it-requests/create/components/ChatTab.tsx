@@ -42,6 +42,51 @@ export function ChatTab({
     const [chatLoading, setChatLoading] = useState(false);
     const recognitionRef = useRef<any>(null);
     const [chatCategory, setChatCategory] = useState<string>(targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE');
+    const [staffSearchValue, setStaffSearchValue] = useState('');
+    const [isSearchListening, setIsSearchListening] = useState(false);
+    const searchRecognitionRef = useRef<any>(null);
+
+    const handleSearchVoiceInput = () => {
+        if (isSearchListening && searchRecognitionRef.current) {
+            searchRecognitionRef.current.stop();
+            return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            message.warning("Trình duyệt không hỗ trợ nhận diện giọng nói!");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        searchRecognitionRef.current = recognition;
+        recognition.lang = 'vi-VN';
+        recognition.continuous = false;
+        
+        recognition.onstart = () => setIsSearchListening(true);
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            // Clean up the text (remove trailing dot if any)
+            const cleanText = transcript.replace(/\.$/, '');
+            setStaffSearchValue(cleanText);
+        };
+        recognition.onerror = (event: any) => {
+            console.warn('Speech recognition error:', event.error);
+            setIsSearchListening(false);
+            if (event.error === 'not-allowed') {
+                message.error("Vui lòng cấp quyền sử dụng Micro cho trình duyệt!");
+            } else if (event.error === 'network') {
+                message.error("Trình duyệt chặn dịch vụ giọng nói. Vui lòng dùng Google Chrome!");
+            }
+        };
+        recognition.onend = () => setIsSearchListening(false);
+        
+        try {
+            recognition.start();
+        } catch (error) {
+            setIsSearchListening(false);
+        }
+    };
 
     const handleVoiceInput = () => {
         if (isListening && recognitionRef.current) {
@@ -162,28 +207,43 @@ export function ChatTab({
                             {departmentStaff.find((s: any) => s.id === user.staffId)?.ho_ten || 'Tài khoản cá nhân'}
                         </span>
                     ) : (
-                        <Select
-                            size="small"
-                            value={departmentStaff.some((s: any) => s.id === savedStaffId) ? savedStaffId : undefined}
-                            onChange={(val) => {
-                                setSavedStaffId(val);
-                                localStorage.setItem('last_it_request_staff_id', val);
-                                form.setFieldsValue({ nguoi_bao_id: val });
-                            }}
-                            className="min-w-[250px] max-w-full"
-                            popupMatchSelectWidth={false}
-                            placeholder="Chọn tên nhân viên"
-                            variant="borderless"
-                            virtual={false}
-                            options={departmentStaff.map((s: any) => ({
-                                value: s.id,
-                                label: isAdmin ? `${s.ho_ten} - ${s.department?.ten_khoa || s.ma_khoa}` : s.ho_ten
-                            }))}
-                            showSearch
-                            filterOption={(input, option) =>
-                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                        />
+                        <div className="flex items-center gap-1 border border-slate-200 rounded bg-slate-50 px-1 py-0.5 min-w-[250px] max-w-full">
+                            <Select
+                                size="small"
+                                value={departmentStaff.some((s: any) => s.id === savedStaffId) ? savedStaffId : undefined}
+                                onChange={(val) => {
+                                    setSavedStaffId(val);
+                                    localStorage.setItem('last_it_request_staff_id', val);
+                                    form.setFieldsValue({ nguoi_bao_id: val });
+                                    setStaffSearchValue('');
+                                }}
+                                searchValue={staffSearchValue}
+                                onSearch={setStaffSearchValue}
+                                onBlur={() => setStaffSearchValue('')}
+                                className="flex-1"
+                                popupMatchSelectWidth={false}
+                                placeholder="Chọn tên nhân viên"
+                                variant="borderless"
+                                virtual={false}
+                                options={departmentStaff.map((s: any) => ({
+                                    value: s.id,
+                                    label: isAdmin ? `${s.ho_ten} - ${s.department?.ten_khoa || s.ma_khoa}` : s.ho_ten
+                                }))}
+                                showSearch
+                                filterOption={(input, option) =>
+                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                }
+                            />
+                            <Tooltip title="Tìm bằng giọng nói">
+                                <AudioOutlined 
+                                    className={`cursor-pointer text-[16px] px-1 transition-colors ${isSearchListening ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-blue-500'}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSearchVoiceInput();
+                                    }}
+                                />
+                            </Tooltip>
+                        </div>
                     )}
                 </div>
             </div>
