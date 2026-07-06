@@ -154,8 +154,28 @@ export default function StaffPage() {
     const uniqueDepartments = Array.from(new Set(staffList.map(s => s.department?.ten_khoa || s.ma_khoa))).filter(Boolean);
     const uniqueJobTitles = Array.from(new Set(staffList.map(s => s.chuc_danh_ref?.name))).filter(Boolean);
 
+    // Normalize vietnamese string for better search
+    const normalizeString = (str: string) => {
+        if (!str) return '';
+        return str
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLowerCase();
+    };
+
+    // Get initials (e.g. "Lê Thị Phượng" -> "ltp")
+    const getInitials = (str: string) => {
+        if (!str) return '';
+        const normalized = normalizeString(str);
+        return normalized.replace(/[^a-z0-9\s]/gi, '').split(/\s+/).filter(Boolean).map(w => w[0]).join('');
+    };
+
     const filteredData = staffList.filter(s => {
-        const matchText = (s.ho_ten && s.ho_ten.toLowerCase().includes(searchText.toLowerCase())) || 
+        const searchInput = normalizeString(searchText);
+        const matchText = (s.ho_ten && normalizeString(s.ho_ten).includes(searchInput)) || 
+                          (s.ho_ten && getInitials(s.ho_ten).includes(searchInput)) ||
                           (s.ma_nv && s.ma_nv.toLowerCase().includes(searchText.toLowerCase())) ||
                           (s.certificates && s.certificates.some((c: any) => c.so_cchn.toLowerCase().includes(searchText.toLowerCase())));
         const matchDept = filterDept ? (s.department?.ten_khoa === filterDept || s.ma_khoa === filterDept) : true;
@@ -239,6 +259,13 @@ export default function StaffPage() {
                         value={filterDept}
                         onChange={setFilterDept}
                         options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
+                        filterOption={(input, option) => {
+                            const rawLabel = option?.label as string ?? '';
+                            const optionLabel = normalizeString(rawLabel);
+                            const searchInput = normalizeString(input);
+                            const initials = getInitials(rawLabel);
+                            return optionLabel.includes(searchInput) || initials.includes(searchInput);
+                        }}
                     />
                     <Select
                         placeholder="Lọc Chức danh"
@@ -248,7 +275,14 @@ export default function StaffPage() {
                         className="min-w-[200px]"
                         value={filterJobTitle}
                         onChange={setFilterJobTitle}
-                        options={uniqueJobTitles.map(title => ({ label: String(title), value: String(title) }))}
+                        options={uniqueJobTitles.map(jt => ({ label: String(jt), value: String(jt) }))}
+                        filterOption={(input, option) => {
+                            const rawLabel = option?.label as string ?? '';
+                            const optionLabel = normalizeString(rawLabel);
+                            const searchInput = normalizeString(input);
+                            const initials = getInitials(rawLabel);
+                            return optionLabel.includes(searchInput) || initials.includes(searchInput);
+                        }}
                     />
                 </div>
                 <Table 
