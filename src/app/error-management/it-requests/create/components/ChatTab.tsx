@@ -49,7 +49,12 @@ export function ChatTab({
 
     // Normalize vietnamese string for better search
     const normalizeString = (str: string) => {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        return str
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLowerCase();
     };
 
     // Get initials (e.g. "Lê Thị Phượng" -> "ltp")
