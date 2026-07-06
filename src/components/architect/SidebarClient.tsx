@@ -14,6 +14,17 @@ interface SidebarClientProps {
     isOpen: boolean;
 }
 
+const checkPathMatch = (patterns: string[], currentPath: string) => {
+    if (!patterns || patterns.length === 0) return true;
+    return patterns.some((pattern: string) => {
+        // Loại bỏ ký tự wildcard ở cuối (* hoặc /*)
+        const cleanPattern = pattern.replace(/\/\*$/, '').replace(/\*$/, '');
+        // Khớp nếu đường dẫn giống hệt hoặc là đường dẫn con
+        return currentPath === cleanPattern || currentPath.startsWith(`${cleanPattern}/`) || currentPath.startsWith(pattern);
+    });
+};
+
+
 export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClientProps) {
     const { user, hasPermission } = useAuth();
     const pathname = usePathname();
@@ -25,7 +36,7 @@ export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClie
         if (!group.showInPaths || group.showInPaths.length === 0) return true;
         
         // Nếu URL khớp với bất kỳ tiền tố nào trong showInPaths thì hiển thị
-        return group.showInPaths.some((prefix: string) => pathname.startsWith(prefix));
+        return checkPathMatch(group.showInPaths, pathname);
     });
 
     const renderIcon = (iconName: string | null) => {
@@ -66,8 +77,7 @@ export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClie
                     const visibleChildren = children.filter(child => {
                         // 1. Lọc theo showInPaths
                         if (child.showInPaths && child.showInPaths.length > 0) {
-                            const isPathMatch = child.showInPaths.some((prefix: string) => pathname.startsWith(prefix));
-                            if (!isPathMatch) return false;
+                            if (!checkPathMatch(child.showInPaths, pathname)) return false;
                         }
 
                         // 2. Lọc theo quyền
