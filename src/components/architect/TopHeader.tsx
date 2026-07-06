@@ -89,8 +89,7 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                                     danger: true,
                                     onClick: async () => {
                                         await logout();
-                                        router.push('/login');
-                                        router.refresh();
+                                        window.location.href = '/login';
                                     }
                                 }
                             ]
