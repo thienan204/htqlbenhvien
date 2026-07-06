@@ -16,6 +16,8 @@ export type UserPayload = {
     ma_cchn?: string;
     name?: string;
     permissions?: any[];
+    ma_nv?: string;
+    cccd?: string;
 };
 
 export async function getCurrentUser(): Promise<UserPayload | null> {
@@ -33,6 +35,8 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         let ma_cchn: string | undefined = undefined;
         let finalName: string | undefined = undefined;
         let finalTenKhoa: string | undefined = undefined;
+        let ma_nv: string | undefined = undefined;
+        let cccd: string | undefined = undefined;
         
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
@@ -68,6 +72,8 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 
                 if (userRecord) {
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
+                    ma_nv = userRecord.staff?.ma_nv || undefined;
+                    cccd = userRecord.staff?.cccd || undefined;
                 }
                 
                 if (payload.ma_khoa) {
@@ -93,7 +99,9 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             isManager,
             ma_cchn,
             name: finalName,
-            ten_khoa: finalTenKhoa
+            ten_khoa: finalTenKhoa,
+            ma_nv,
+            cccd
         };
     } catch (error) {
         return null; // Invalid or expired token
