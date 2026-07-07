@@ -242,18 +242,18 @@ model Mau02Catalog {
   TEN_KHOA      String?
   HO_TEN        String?  @db.VarChar(250)
   GIOI_TINH     Int?
-  SO_DINH_DANH  String?  @db.VarChar(15)
-  CHUCDANH_NN   String?  @db.VarChar(2)
-  VI_TRI        String?  @db.VarChar(5)
+  SO_DINH_DANH  String?  @db.VarChar(50)
+  CHUCDANH_NN   String?  @db.VarChar(50)
+  VI_TRI        String?  @db.VarChar(50)
   MACCHN        String?  @db.VarChar(250)
   NGAYCAP_CCHN  String?  @db.VarChar(8)
   NOICAP_CCHN   String?  @db.VarChar(250)
-  PHAMVI_CM     String?  @db.VarChar(15)
-  PHAMVI_CMBS   String?  @db.VarChar(50)
+  PHAMVI_CM     String?  @db.VarChar(250)
+  PHAMVI_CMBS   String?  @db.VarChar(250)
   DVKT_KHAC     String?
-  VB_PHANCONG   String?  @db.VarChar(50)
+  VB_PHANCONG   String?  @db.VarChar(250)
   THOIGIAN_DK   Int?
-  THOIGIAN_NGAY String?  @db.VarChar(200)
+  THOIGIAN_NGAY String?  @db.VarChar(250)
   THOIGIAN_TUAN String?  @db.VarChar(200)
   CSKCB_KHAC    String?  @db.VarChar(30)
   CSKCB_CGKT    String?  @db.VarChar(5)

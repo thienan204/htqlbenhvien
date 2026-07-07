@@ -79,7 +79,7 @@ export async function POST(request: Request) {
                         PHAMVI_CMBS: cert.pham_vi_bo_sung || '',
                         DVKT_KHAC: cert.dich_vu_ky_thuat || '',
                         VB_PHANCONG: cert.vb_phan_cong || '',
-                        THOIGIAN_DK: cert.thoi_gian_dang_ky || '',
+                        THOIGIAN_DK: cert.thoi_gian_dang_ky ? parseInt(cert.thoi_gian_dang_ky) : null,
                         THOIGIAN_NGAY: cert.thoi_gian_ngay || '',
                         THOIGIAN_TUAN: cert.thoi_gian_tuan || '',
                         CSKCB_KHAC: cert.cskcb_khac || '',
