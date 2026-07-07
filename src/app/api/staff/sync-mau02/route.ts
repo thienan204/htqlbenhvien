@@ -43,6 +43,8 @@ export async function POST(request: Request) {
                 gioi_tinh_ref: true,
                 chuc_danh_ref: true,
                 vi_tri_ref: true,
+                chuc_vu_ref: true,
+                vi_tri_bhyt_ref: true,
                 certificates: {
                     where: { isActive: true },
                     include: {
