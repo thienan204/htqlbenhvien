@@ -129,8 +129,16 @@ export async function DELETE(request: Request) {
                     { vi_tri_viec_lam_id: id },
                     { chuc_vu_id: id },
                     { loai_hop_dong_id: id },
-                    { gioi_tinh_id: id }
+                    { gioi_tinh_id: id },
+                    { dan_toc_id: id },
+                    { vi_tri_bhyt_id: id }
                 ]
+            }
+        });
+
+        const cchnCount = await prisma.practicingCertificate.count({
+            where: {
+                noi_cap_cchn_id: id
             }
         });
 
@@ -161,9 +169,10 @@ export async function DELETE(request: Request) {
             }
         });
 
-        if (staffCount > 0 || equipmentCount > 0 || voucherDetailCount > 0) {
+        if (staffCount > 0 || equipmentCount > 0 || voucherDetailCount > 0 || cchnCount > 0) {
             let msgParts = [];
             if (staffCount > 0) msgParts.push(`${staffCount} Nhân sự`);
+            if (cchnCount > 0) msgParts.push(`${cchnCount} CCHN`);
             if (equipmentCount > 0) msgParts.push(`${equipmentCount} Thiết bị/Vật tư`);
             if (voucherDetailCount > 0) msgParts.push(`${voucherDetailCount} Chi tiết phiếu kho`);
             return NextResponse.json({ 
