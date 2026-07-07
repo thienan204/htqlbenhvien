@@ -25,12 +25,17 @@ export default function StaffPage() {
     const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 20 });
     const [isSyncing, setIsSyncing] = useState(false);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const { user } = useAuth();
 
     const handleSyncMau02 = async () => {
         try {
             setIsSyncing(true);
-            const res = await fetch('/api/staff/sync-mau02', { method: 'POST' });
+            const res = await fetch('/api/staff/sync-mau02', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ staffIds: selectedRowKeys })
+            });
             if (res.ok) {
                 const result = await res.json();
                 message.success(`Đã đồng bộ thành công ${result.count} nhân sự sang Mẫu 02!`);
@@ -229,7 +234,9 @@ export default function StaffPage() {
                     )}
                     <Popconfirm
                         title="Đồng bộ sang Mẫu 02 XML?"
-                        description="Hành động này sẽ XÓA SẠCH dữ liệu Mẫu 02 hiện tại và đồng bộ lại từ danh sách này. Bạn chắc chắn chứ?"
+                        description={selectedRowKeys.length > 0 
+                            ? `Bạn đang chọn ${selectedRowKeys.length} nhân sự. Hệ thống sẽ XÓA SẠCH Mẫu 02 cũ và CHỈ ĐỒNG BỘ ${selectedRowKeys.length} người này. Bạn chắc chắn chứ?` 
+                            : "Bạn chưa chọn ai. Hệ thống sẽ XÓA SẠCH Mẫu 02 cũ và ĐỒNG BỘ TOÀN BỘ nhân sự. Bạn chắc chắn chứ?"}
                         onConfirm={handleSyncMau02}
                         okText="Đồng bộ"
                         cancelText="Hủy"
@@ -242,7 +249,7 @@ export default function StaffPage() {
                             icon={<SyncOutlined />}
                             loading={isSyncing}
                         >
-                            Đồng bộ Mẫu 02
+                            Đồng bộ Mẫu 02 {selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''}
                         </Button>
                     </Popconfirm>
                     <Popconfirm
@@ -323,6 +330,12 @@ export default function StaffPage() {
                     />
                 </div>
                 <Table 
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: (newSelectedRowKeys: React.Key[]) => {
+                            setSelectedRowKeys(newSelectedRowKeys);
+                        }
+                    }}
                     dataSource={filteredData} 
                     columns={columns} 
                     rowKey="id" 

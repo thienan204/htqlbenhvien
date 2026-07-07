@@ -18,8 +18,14 @@ export async function POST(request: Request) {
         // 1. Delete all existing Mau02 records
         await prisma.mau02Catalog.deleteMany();
 
+        const body = await request.json().catch(() => ({}));
+        const staffIds: string[] = body.staffIds || [];
+
         // 2. Fetch Staff with their active CCHNs and related refs
+        const whereClause = staffIds.length > 0 ? { id: { in: staffIds } } : {};
+
         const staffList = await prisma.staff.findMany({
+            where: whereClause,
             include: {
                 department: true,
                 gioi_tinh_ref: true,
