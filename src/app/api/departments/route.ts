@@ -30,13 +30,15 @@ export async function POST(request: Request) {
                     update: { 
                         ten_khoa: String(item.ten_khoa),
                         ma_khoa_bv: item.ma_khoa_bv ? String(item.ma_khoa_bv) : undefined,
-                        ten_khoa_bv: item.ten_khoa_bv ? String(item.ten_khoa_bv) : undefined
+                        ten_khoa_bv: item.ten_khoa_bv ? String(item.ten_khoa_bv) : undefined,
+                        ma_khoa_bhyt: item.ma_khoa_bhyt ? String(item.ma_khoa_bhyt) : undefined
                     },
                     create: { 
                         ma_khoa: String(item.ma_khoa), 
                         ten_khoa: String(item.ten_khoa),
                         ma_khoa_bv: item.ma_khoa_bv ? String(item.ma_khoa_bv) : undefined,
                         ten_khoa_bv: item.ten_khoa_bv ? String(item.ten_khoa_bv) : undefined,
+                        ma_khoa_bhyt: item.ma_khoa_bhyt ? String(item.ma_khoa_bhyt) : undefined,
                         type: 'CLINICAL'
                     }
                 })
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
             await prisma.$transaction(ops);
             return NextResponse.json({ message: 'Import successful', count: ops.length });
         } else {
-            const { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, type, old_ma_khoa } = body;
+            const { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, ma_khoa_bhyt, type, old_ma_khoa } = body;
             if (!ma_khoa || !ten_khoa) {
                 return NextResponse.json({ error: 'Missing ma_khoa or ten_khoa' }, { status: 400 });
             }
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
                 try {
                     const item = await prisma.department.update({
                         where: { ma_khoa: old_ma_khoa },
-                        data: { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, type: type || 'CLINICAL' }
+                        data: { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, ma_khoa_bhyt, type: type || 'CLINICAL' }
                     });
                     return NextResponse.json(item);
                 } catch (error: any) {
@@ -68,8 +70,8 @@ export async function POST(request: Request) {
 
             const item = await prisma.department.upsert({
                 where: { ma_khoa },
-                update: { ten_khoa, ma_khoa_bv, ten_khoa_bv, type: type || 'CLINICAL' },
-                create: { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, type: type || 'CLINICAL' }
+                update: { ten_khoa, ma_khoa_bv, ten_khoa_bv, ma_khoa_bhyt, type: type || 'CLINICAL' },
+                create: { ma_khoa, ten_khoa, ma_khoa_bv, ten_khoa_bv, ma_khoa_bhyt, type: type || 'CLINICAL' }
             });
             return NextResponse.json(item);
         }

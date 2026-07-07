@@ -13,6 +13,7 @@ interface Department {
     ten_khoa: string;
     ma_khoa_bv?: string;
     ten_khoa_bv?: string;
+    ma_khoa_bhyt?: string;
     type?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -143,6 +144,7 @@ export default function DepartmentPage() {
                     ten_khoa: String(row['ten_khoa'] || row['Tên khoa'] || row['TEN_KHOA'] || ''),
                     ma_khoa_bv: row['ma_khoa_bv'] || row['Mã khoa nội bộ'] || row['MA_KHOA_BV'] ? String(row['ma_khoa_bv'] || row['Mã khoa nội bộ'] || row['MA_KHOA_BV']) : undefined,
                     ten_khoa_bv: row['ten_khoa_bv'] || row['Tên khoa nội bộ'] || row['TEN_KHOA_BV'] ? String(row['ten_khoa_bv'] || row['Tên khoa nội bộ'] || row['TEN_KHOA_BV']) : undefined,
+                    ma_khoa_bhyt: row['ma_khoa_bhyt'] || row['Mã khoa BHYT'] || row['MA_KHOA_BHYT'] ? String(row['ma_khoa_bhyt'] || row['Mã khoa BHYT'] || row['MA_KHOA_BHYT']) : undefined,
                     type: row['type'] || row['Phân loại'] || row['phan_loai'] || row['TYPE'] ? String(row['type'] || row['Phân loại'] || row['phan_loai'] || row['TYPE']) : 'CLINICAL'
                 })).filter(item => item.ma_khoa && item.ten_khoa);
 
@@ -221,6 +223,13 @@ export default function DepartmentPage() {
             key: 'ten_khoa_bv',
             width: 250,
             sorter: (a: Department, b: Department) => (a.ten_khoa_bv || '').localeCompare(b.ten_khoa_bv || ''),
+        },
+        {
+            title: 'Mã Khoa BHYT',
+            dataIndex: 'ma_khoa_bhyt',
+            key: 'ma_khoa_bhyt',
+            width: 150,
+            sorter: (a: Department, b: Department) => (a.ma_khoa_bhyt || '').localeCompare(b.ma_khoa_bhyt || ''),
         },
         {
             title: 'Phân loại',
@@ -369,6 +378,13 @@ export default function DepartmentPage() {
                             label="Tên Khoa Nội Bộ"
                         >
                             <Input placeholder="Nhập tên gọi nội bộ..." />
+                        </Form.Item>
+                        <Form.Item
+                            name="ma_khoa_bhyt"
+                            label="Mã Khoa BHYT (Mẫu 02)"
+                            tooltip="Mã cấu hình dùng để đồng bộ sang Mẫu 02 XML. Ví dụ: K31;17.31"
+                        >
+                            <Input placeholder="VD: K30;14.30" />
                         </Form.Item>
                     </Form>
                 </Drawer>

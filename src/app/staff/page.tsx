@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select } from 'antd';
-import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
 import CertificatesModal from './components/CertificatesModal';
@@ -24,7 +24,26 @@ export default function StaffPage() {
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 20 });
+    const [isSyncing, setIsSyncing] = useState(false);
     const { user } = useAuth();
+
+    const handleSyncMau02 = async () => {
+        try {
+            setIsSyncing(true);
+            const res = await fetch('/api/staff/sync-mau02', { method: 'POST' });
+            if (res.ok) {
+                const result = await res.json();
+                message.success(`Đã đồng bộ thành công ${result.count} nhân sự sang Mẫu 02!`);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Đồng bộ thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối khi đồng bộ');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const fetchStaff = async () => {
         setLoading(true);
@@ -208,6 +227,24 @@ export default function StaffPage() {
                             <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
                         </Popconfirm>
                     )}
+                    <Popconfirm
+                        title="Đồng bộ sang Mẫu 02 XML?"
+                        description="Hành động này sẽ XÓA SẠCH dữ liệu Mẫu 02 hiện tại và đồng bộ lại từ danh sách này. Bạn chắc chắn chứ?"
+                        onConfirm={handleSyncMau02}
+                        okText="Đồng bộ"
+                        cancelText="Hủy"
+                        okButtonProps={{ danger: true }}
+                    >
+                        <Button 
+                            type="primary" 
+                            className="bg-purple-600 hover:bg-purple-700" 
+                            size="large" 
+                            icon={<SyncOutlined />}
+                            loading={isSyncing}
+                        >
+                            Đồng bộ Mẫu 02
+                        </Button>
+                    </Popconfirm>
                     <Popconfirm
                         title="Tạo User tự động?"
                         description="Hệ thống sẽ tạo tài khoản cho tất cả nhân sự chưa có User. Mật khẩu mặc định là 123456."

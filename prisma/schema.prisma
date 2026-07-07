@@ -84,11 +84,12 @@ model Department {
   ten_khoa    String
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  type        String       @default("CLINICAL")
-  ma_khoa_bv  String?
-  ten_khoa_bv String?
-  BedCatalog  BedCatalog[]
-  staff       Staff[]
+  type          String       @default("CLINICAL")
+  ma_khoa_bv    String?
+  ten_khoa_bv   String?
+  ma_khoa_bhyt  String?
+  BedCatalog    BedCatalog[]
+  staff         Staff[]
   warehouses  Warehouse[]
 }
 
