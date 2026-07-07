@@ -13,6 +13,19 @@ function formatDate(date: Date | null | undefined): string | null {
     return `${year}${month}${day}`;
 }
 
+function mapToBhytCode(codeStr: string | null | undefined): string {
+    if (!codeStr) return '';
+    const c = codeStr.toUpperCase();
+    if (c.includes('BAC_SI') || c.includes('BAC_SY')) return '1';
+    if (c.includes('Y_SI') || c.includes('Y_SY')) return '2';
+    if (c.includes('DIEU_DUONG')) return '3';
+    if (c.includes('HO_SINH')) return '4';
+    if (c.includes('KY_THUAT') || c.includes('KTY') || c.includes('KTV')) return '5';
+    if (c.includes('DUOC_SI') || c.includes('DUOC_SY')) return '6';
+    if (c.includes('LUONG_Y')) return '8';
+    return codeStr; // Return original if unknown
+}
+
 export async function POST(request: Request) {
     try {
         // 1. Delete all existing Mau02 records
@@ -76,8 +89,8 @@ export async function POST(request: Request) {
                         HO_TEN: staff.ho_ten,
                         GIOI_TINH: gioi_tinh,
                         SO_DINH_DANH: staff.cccd || staff.ma_nv || '',
-                        CHUCDANH_NN: staff.chuc_danh_ref?.code || '',
-                        VI_TRI: staff.vi_tri_ref?.code || '',
+                        CHUCDANH_NN: mapToBhytCode(staff.chuc_danh_ref?.code),
+                        VI_TRI: mapToBhytCode(staff.vi_tri_ref?.code || staff.chuc_danh_ref?.code),
                         MACCHN: cert.so_cchn,
                         NGAYCAP_CCHN: formatDate(cert.ngay_cap),
                         NOICAP_CCHN: cert.noi_cap_cchn_ref?.name || '',
@@ -104,8 +117,8 @@ export async function POST(request: Request) {
                     HO_TEN: staff.ho_ten,
                     GIOI_TINH: gioi_tinh,
                     SO_DINH_DANH: staff.cccd || staff.ma_nv || '',
-                    CHUCDANH_NN: staff.chuc_danh_ref?.code || '',
-                    VI_TRI: staff.vi_tri_ref?.code || ''
+                    CHUCDANH_NN: mapToBhytCode(staff.chuc_danh_ref?.code),
+                    VI_TRI: mapToBhytCode(staff.vi_tri_ref?.code || staff.chuc_danh_ref?.code)
                 });
             }
         }
