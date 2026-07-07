@@ -133,6 +133,7 @@ model SystemCategory {
   code            String
   name            String
   description     String?
+  bhyt_code       String?
   isActive        Boolean  @default(true)
   order           Int      @default(0)
   createdAt       DateTime @default(now())

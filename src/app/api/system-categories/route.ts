@@ -40,6 +40,7 @@ export async function POST(request: Request) {
                 code: item.code,
                 name: item.name,
                 description: item.description || null,
+                bhyt_code: item.bhyt_code || null,
                 order: item.order || 0,
                 isActive: item.isActive !== undefined ? item.isActive : true
             }));
@@ -54,14 +55,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, count: result.count }, { status: 201 });
         } else {
             // Single insert
-            const { type, code, name, description, order } = body;
+            const { type, code, name, description, bhyt_code, order } = body;
 
             if (!type || !code || !name) {
                 return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
             }
 
             const category = await prisma.systemCategory.create({
-                data: { type, code, name, description, order: order || 0 }
+                data: { type, code, name, description, bhyt_code, order: order || 0 }
             });
 
             return NextResponse.json(category, { status: 201 });
@@ -78,13 +79,13 @@ export async function PUT(request: Request) {
         if (!user || user.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
         const body = await request.json();
-        const { id, code, name, description, order, isActive } = body;
+        const { id, code, name, description, bhyt_code, order, isActive } = body;
 
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
         const category = await prisma.systemCategory.update({
             where: { id },
-            data: { code, name, description, order, isActive }
+            data: { code, name, description, bhyt_code, order, isActive }
         });
 
         return NextResponse.json(category);

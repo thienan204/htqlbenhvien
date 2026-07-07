@@ -149,37 +149,6 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
             type: 'select', 
             span: 12,
             options: qualifications.map(q => ({ value: q.id, label: q.name }))
-        },
-        {
-            id: 'ma_chuc_danh_bhyt',
-            label: 'Mã Chức danh (BHYT)',
-            type: 'select',
-            span: 12,
-            options: [
-                { value: '1', label: '1 - Bác sỹ' },
-                { value: '2', label: '2 - Y sỹ' },
-                { value: '3', label: '3 - Điều dưỡng' },
-                { value: '4', label: '4 - Hộ sinh' },
-                { value: '5', label: '5 - Kỹ thuật y' },
-                { value: '6', label: '6 - Cử nhân tâm lý lâm sàng' },
-                { value: '7', label: '7 - Lương y' },
-                { value: '8', label: '8 - Dược sỹ' },
-                { value: '9', label: '9 - Khác (không cần CCHN)' }
-            ]
-        },
-        {
-            id: 'ma_vi_tri_bhyt',
-            label: 'Mã Vị trí (BHYT)',
-            type: 'select',
-            span: 12,
-            options: [
-                { value: '1', label: '1 - Chịu trách nhiệm CM' },
-                { value: '2', label: '2 - Trưởng khoa/đơn nguyên' },
-                { value: '3', label: '3 - Chịu trách nhiệm CM kiêm Trưởng khoa' },
-                { value: '4', label: '4 - Người đứng đầu cơ sở KCB' },
-                { value: '5', label: '5 - Phụ trách khoa (thay Trưởng khoa)' },
-                { value: '6', label: '6 - Ủy quyền chịu trách nhiệm CMKT' }
-            ]
         }
     ];
 

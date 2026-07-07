@@ -312,6 +312,12 @@ export default function SystemCategoriesPage() {
             key: 'description',
         },
         {
+            title: 'Mã BHYT',
+            dataIndex: 'bhyt_code',
+            key: 'bhyt_code',
+            render: (text: string) => text ? <Tag color="blue">{text}</Tag> : null
+        },
+        {
             title: 'Sắp xếp',
             dataIndex: 'order',
             key: 'order',
@@ -416,6 +422,7 @@ export default function SystemCategoriesPage() {
                         disabled: !!selectedItem?.id // Không cho sửa Code nếu đang Cập nhật để tránh lỗi mapping
                     },
                     { id: 'name', label: 'Tên hiển thị', type: 'input', required: true, span: 24 },
+                    { id: 'bhyt_code', label: 'Mã BHYT chuẩn (Tùy chọn, điền số 1, 2, 3...)', type: 'input', span: 24 },
                     { id: 'description', label: 'Ghi chú (Tùy chọn)', type: 'textarea', span: 24 },
                     { id: 'order', label: 'Thứ tự sắp xếp', type: 'number', span: 12 },
                     { id: 'isActive', label: 'Trạng thái hoạt động', type: 'switch', span: 12, valuePropName: 'checked' }
