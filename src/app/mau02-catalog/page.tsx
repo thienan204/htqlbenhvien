@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, AppstoreOutlined, UserOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, AppstoreOutlined, UserOutlined, ClockCircleOutlined, FileExcelOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
 import { useAuth } from '@/contexts/AuthContext';
@@ -145,6 +145,45 @@ export default function Mau02CatalogPage() {
         XLSX.writeFile(wb, 'Mau02_NhanLuc_Template.xlsx');
     };
 
+    const handleExportExcel = () => {
+        if (data.length === 0) {
+            message.warning('Không có dữ liệu để xuất Excel');
+            return;
+        }
+
+        const exportData = filteredData.map((item, index) => ({
+            'STT': index + 1,
+            'MA_KHOA': item.MA_KHOA || '',
+            'TEN_KHOA': item.TEN_KHOA || '',
+            'HO_TEN': item.HO_TEN || '',
+            'GIOI_TINH': item.GIOI_TINH || '',
+            'SO_DINH_DANH': item.SO_DINH_DANH || '',
+            'CHUCDANH_NN': item.CHUCDANH_NN || '',
+            'VI_TRI': item.VI_TRI || '',
+            'MACCHN': item.MACCHN || '',
+            'NGAYCAP_CCHN': item.NGAYCAP_CCHN || '',
+            'NOICAP_CCHN': item.NOICAP_CCHN || '',
+            'PHAMVI_CM': item.PHAMVI_CM || '',
+            'PHAMVI_CMBS': item.PHAMVI_CMBS || '',
+            'DVKT_KHAC': item.DVKT_KHAC || '',
+            'VB_PHANCONG': item.VB_PHANCONG || '',
+            'THOIGIAN_DK': item.THOIGIAN_DK || '',
+            'THOIGIAN_NGAY': item.THOIGIAN_NGAY || '',
+            'THOIGIAN_TUAN': item.THOIGIAN_TUAN || '',
+            'CSKCB_KHAC': item.CSKCB_KHAC || '',
+            'CSKCB_CGKT': item.CSKCB_CGKT || '',
+            'QD_CGKT': item.QD_CGKT || '',
+            'TU_NGAY': item.TU_NGAY || '',
+            'DEN_NGAY': item.DEN_NGAY || '',
+            'MA_CSKCB': item.MA_CSKCB || ''
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Mau02_DM');
+        XLSX.writeFile(wb, 'Danh_Sach_Mau02.xlsx');
+    };
+
     const handleImportExcel = (info: any) => {
         const file = info.file;
         const reader = new FileReader();
@@ -251,6 +290,9 @@ export default function Mau02CatalogPage() {
                             style={{ width: 350 }}
                         />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
+                        <Button type="default" className="text-green-600 border-green-500 hover:bg-green-50 font-medium" icon={<FileExcelOutlined />} onClick={handleExportExcel}>
+                            Xuất Excel Mẫu 02
+                        </Button>
                     </Space>
                     <Space>
                         {user?.role === 'ADMIN' && (
