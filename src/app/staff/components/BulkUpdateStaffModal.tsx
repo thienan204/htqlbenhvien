@@ -49,7 +49,7 @@ export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkU
         const sampleRow = ['BV0001'];
         selectedFields.forEach(field => {
             if (field.includes('ngay')) {
-                sampleRow.push('1990-01-01');
+                sampleRow.push('20100115');
             } else {
                 sampleRow.push('Dữ liệu mẫu');
             }
@@ -106,9 +106,21 @@ export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkU
                         if (index !== maNvIndex && header) {
                             const val = row[index];
                             if (val !== undefined && val !== null && val !== '') {
-                                if (header.includes('ngay') && typeof val === 'number') {
-                                    const date = new Date((val - (25567 + 2)) * 86400 * 1000); 
-                                    rowUpdate[header] = date.toISOString();
+                                if (header.includes('ngay')) {
+                                    let parsedDate: Date | null = null;
+                                    const valStr = val.toString().trim();
+                                    
+                                    if (typeof val === 'number' && val < 19000000) {
+                                        parsedDate = new Date((val - (25567 + 2)) * 86400 * 1000); 
+                                    } else if (valStr.length === 8 && /^\d{8}$/.test(valStr)) {
+                                        parsedDate = new Date(`${valStr.substring(0,4)}-${valStr.substring(4,6)}-${valStr.substring(6,8)}`);
+                                    } else {
+                                        parsedDate = new Date(valStr);
+                                    }
+
+                                    if (parsedDate && !isNaN(parsedDate.getTime())) {
+                                        rowUpdate[header] = parsedDate.toISOString();
+                                    }
                                 } else {
                                     rowUpdate[header] = val.toString().trim();
                                 }

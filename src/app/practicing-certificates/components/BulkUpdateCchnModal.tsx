@@ -58,7 +58,7 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
             } else if (field === 'pham_vi_hanh_nghe') {
                 sampleRow.push('1234;5678');
             } else if (['ngay_cap', 'tu_ngay', 'den_ngay'].includes(field)) {
-                sampleRow.push('2024-01-01');
+                sampleRow.push('20100115');
             } else {
                 sampleRow.push('Dữ liệu mẫu');
             }
@@ -130,9 +130,21 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
                                     if (ids.length > 0) {
                                         rowUpdate.pham_vi_hanh_nghe_ids = ids;
                                     }
-                                } else if (['ngay_cap', 'tu_ngay', 'den_ngay'].includes(header) && typeof val === 'number') {
-                                    const date = new Date((val - (25567 + 2)) * 86400 * 1000); // Công thức chuẩn Excel
-                                    rowUpdate[header] = date.toISOString();
+                                } else if (['ngay_cap', 'tu_ngay', 'den_ngay'].includes(header)) {
+                                    let parsedDate: Date | null = null;
+                                    const valStr = val.toString().trim();
+                                    
+                                    if (typeof val === 'number' && val < 19000000) {
+                                        parsedDate = new Date((val - (25567 + 2)) * 86400 * 1000); 
+                                    } else if (valStr.length === 8 && /^\d{8}$/.test(valStr)) {
+                                        parsedDate = new Date(`${valStr.substring(0,4)}-${valStr.substring(4,6)}-${valStr.substring(6,8)}`);
+                                    } else {
+                                        parsedDate = new Date(valStr);
+                                    }
+
+                                    if (parsedDate && !isNaN(parsedDate.getTime())) {
+                                        rowUpdate[header] = parsedDate.toISOString();
+                                    }
                                 } else {
                                     rowUpdate[header] = val.toString().trim();
                                 }
