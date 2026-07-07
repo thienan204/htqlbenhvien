@@ -419,8 +419,7 @@ export default function SystemCategoriesPage() {
                         id: 'code', 
                         label: 'Mã (Code - Bắt buộc cho Nhóm Dịch vụ, để trống sẽ tự tạo)', 
                         type: 'input', 
-                        span: 24,
-                        disabled: !!selectedItem?.id // Không cho sửa Code nếu đang Cập nhật để tránh lỗi mapping
+                        span: 24
                     },
                     { id: 'name', label: 'Tên hiển thị', type: 'input', required: true, span: 24 },
                     { id: 'bhyt_code', label: 'Mã BHYT chuẩn (Tùy chọn, điền số 1, 2, 3...)', type: 'input', span: 24 },
