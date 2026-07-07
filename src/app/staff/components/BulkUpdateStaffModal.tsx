@@ -17,6 +17,7 @@ const STAFF_FIELDS = [
     { value: 'dan_toc', label: 'Dân tộc (Danh mục)' },
     { value: 'chuc_danh', label: 'Chức danh nghề nghiệp (Danh mục)' },
     { value: 'chuc_vu', label: 'Chức vụ (Danh mục)' },
+    { value: 'vi_tri_bhyt', label: 'Vị trí CM BHYT (Danh mục)' },
     { value: 'trinh_do', label: 'Trình độ (Danh mục)' },
     { value: 'vi_tri_viec_lam', label: 'Vị trí việc làm (Danh mục)' },
     { value: 'loai_hop_dong', label: 'Loại hợp đồng (Danh mục)' }

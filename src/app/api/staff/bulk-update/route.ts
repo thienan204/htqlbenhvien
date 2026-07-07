@@ -10,7 +10,8 @@ const CATEGORY_MAP: Record<string, { type: string, idField: string }> = {
     'loai_hop_dong': { type: 'LOAI_HOP_DONG', idField: 'loai_hop_dong_id' },
     'trinh_do': { type: 'TRINH_DO', idField: 'trinh_do_id' },
     'vi_tri_viec_lam': { type: 'VI_TRI_VIEC_LAM', idField: 'vi_tri_viec_lam_id' },
-    'dan_toc': { type: 'DAN_TOC', idField: 'dan_toc_id' }
+    'dan_toc': { type: 'DAN_TOC', idField: 'dan_toc_id' },
+    'vi_tri_bhyt': { type: 'VI_TRI_BHYT', idField: 'vi_tri_bhyt_id' }
 };
 
 export async function POST(request: Request) {
