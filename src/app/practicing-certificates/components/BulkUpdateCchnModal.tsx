@@ -51,7 +51,13 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
         // Dòng ví dụ (Mock data)
         const sampleRow = ['CCHN-123456'];
         selectedFields.forEach(field => {
-            if (field.includes('ngay')) {
+            if (field === 'thoi_gian_ngay') {
+                sampleRow.push('T20730-1200;T21330-1700');
+            } else if (field === 'thoi_gian_tuan') {
+                sampleRow.push('2T3T4T5T6');
+            } else if (field === 'pham_vi_hanh_nghe') {
+                sampleRow.push('1234;5678');
+            } else if (['ngay_cap', 'tu_ngay', 'den_ngay'].includes(field)) {
                 sampleRow.push('2024-01-01');
             } else {
                 sampleRow.push('Dữ liệu mẫu');
@@ -124,7 +130,7 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
                                     if (ids.length > 0) {
                                         rowUpdate.pham_vi_hanh_nghe_ids = ids;
                                     }
-                                } else if (header.includes('ngay') && typeof val === 'number') {
+                                } else if (['ngay_cap', 'tu_ngay', 'den_ngay'].includes(header) && typeof val === 'number') {
                                     const date = new Date((val - (25567 + 2)) * 86400 * 1000); // Công thức chuẩn Excel
                                     rowUpdate[header] = date.toISOString();
                                 } else {
