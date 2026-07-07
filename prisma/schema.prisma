@@ -113,6 +113,7 @@ model Staff {
   ma_bhxh                String?
   ma_chuc_danh_bhyt      String?
   ma_vi_tri_bhyt         String?
+  vi_tri_bhyt_id         String?
   dan_toc_id             String?
   certificates           PracticingCertificate[]
   chuc_danh_ref          SystemCategory?         @relation("StaffJobTitle", fields: [chuc_danh_id], references: [id])
@@ -123,6 +124,7 @@ model Staff {
   department             Department              @relation(fields: [ma_khoa], references: [ma_khoa])
   trinh_do_ref           SystemCategory?         @relation("StaffQualification", fields: [trinh_do_id], references: [id])
   vi_tri_ref             SystemCategory?         @relation("StaffJobPosition", fields: [vi_tri_viec_lam_id], references: [id])
+  vi_tri_bhyt_ref        SystemCategory?         @relation("StaffBhytPosition", fields: [vi_tri_bhyt_id], references: [id])
   user                   User?
   storekeeper_warehouses Warehouse[]
 }
@@ -145,6 +147,7 @@ model SystemCategory {
   staff_trinh_do  Staff[]  @relation("StaffQualification")
   staff_vi_tri    Staff[]  @relation("StaffJobPosition")
   staff_dan_toc   Staff[]                 @relation("StaffEthnicity")
+  staff_vi_tri_bhyt Staff[]               @relation("StaffBhytPosition")
   cchn_noi_cap    PracticingCertificate[] @relation("CertIssuePlace")
 
   @@unique([type, code])

@@ -21,6 +21,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
     const [jobPositions, setJobPositions] = useState<any[]>([]);
     const [qualifications, setQualifications] = useState<any[]>([]);
     const [ethnicities, setEthnicities] = useState<any[]>([]);
+    const [bhytPositions, setBhytPositions] = useState<any[]>([]);
 
     useEffect(() => {
         if (open) {
@@ -46,6 +47,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
                 setJobPositions(cats.filter((c: any) => c.type === 'VI_TRI_VIEC_LAM'));
                 setQualifications(cats.filter((c: any) => c.type === 'TRINH_DO'));
                 setEthnicities(cats.filter((c: any) => c.type === 'DAN_TOC'));
+                setBhytPositions(cats.filter((c: any) => c.type === 'VI_TRI_BHYT'));
             }
         } catch (error) {
             console.error('Lỗi tải danh mục', error);
@@ -149,6 +151,13 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
             type: 'select', 
             span: 12,
             options: qualifications.map(q => ({ value: q.id, label: q.name }))
+        },
+        { 
+            id: 'vi_tri_bhyt_id', 
+            label: 'Vị trí chuyên môn (Mẫu 02 BHYT)', 
+            type: 'select', 
+            span: 24,
+            options: bhytPositions.map(p => ({ value: p.id, label: `${p.code} - ${p.name}` }))
         }
     ];
 

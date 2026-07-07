@@ -90,7 +90,7 @@ export async function POST(request: Request) {
                         GIOI_TINH: gioi_tinh,
                         SO_DINH_DANH: staff.cccd || staff.ma_nv || '',
                         CHUCDANH_NN: staff.ma_chuc_danh_bhyt || staff.chuc_danh_ref?.bhyt_code || mapToBhytCode(staff.chuc_danh_ref?.code),
-                        VI_TRI: staff.ma_vi_tri_bhyt || staff.chuc_vu_ref?.bhyt_code || '',
+                        VI_TRI: staff.ma_vi_tri_bhyt || staff.vi_tri_bhyt_ref?.code || staff.chuc_vu_ref?.bhyt_code || '',
                         MACCHN: cert.so_cchn,
                         NGAYCAP_CCHN: formatDate(cert.ngay_cap),
                         NOICAP_CCHN: cert.noi_cap_cchn_ref?.name || '',
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
                     GIOI_TINH: gioi_tinh,
                     SO_DINH_DANH: staff.cccd || staff.ma_nv || '',
                     CHUCDANH_NN: staff.ma_chuc_danh_bhyt || staff.chuc_danh_ref?.bhyt_code || mapToBhytCode(staff.chuc_danh_ref?.code),
-                    VI_TRI: staff.ma_vi_tri_bhyt || staff.chuc_vu_ref?.bhyt_code || ''
+                    VI_TRI: staff.ma_vi_tri_bhyt || staff.vi_tri_bhyt_ref?.code || staff.chuc_vu_ref?.bhyt_code || ''
                 });
             }
         }
