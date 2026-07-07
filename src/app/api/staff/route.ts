@@ -59,7 +59,7 @@ export async function POST(request: Request) {
             id, ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
             trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
             vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-            ma_bhxh, dan_toc_id
+            ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt
         } = body;
 
         if (!ho_ten || !ma_nv || !ma_khoa) {
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
                     ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
                     trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
                     vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-                    ma_bhxh, dan_toc_id
+                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt
                 }
             });
             return NextResponse.json(updated);
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
                     ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
                     trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
                     vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-                    ma_bhxh, dan_toc_id
+                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt
                 }
             });
             return NextResponse.json(created);

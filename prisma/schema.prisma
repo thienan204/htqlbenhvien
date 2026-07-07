@@ -111,6 +111,8 @@ model Staff {
   ma_nv                  String                  @unique
   cccd                   String?
   ma_bhxh                String?
+  ma_chuc_danh_bhyt      String?
+  ma_vi_tri_bhyt         String?
   dan_toc_id             String?
   certificates           PracticingCertificate[]
   chuc_danh_ref          SystemCategory?         @relation("StaffJobTitle", fields: [chuc_danh_id], references: [id])
