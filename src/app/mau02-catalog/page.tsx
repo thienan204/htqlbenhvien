@@ -181,7 +181,14 @@ export default function Mau02CatalogPage() {
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(exportData);
         XLSX.utils.book_append_sheet(wb, ws, 'Mau02_DM');
-        XLSX.writeFile(wb, 'Danh_Sach_Mau02.xlsx');
+
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        const fileName = `02.MAU_02DM_NHANVIEN${dd}${mm}${yyyy}.xlsx`;
+
+        XLSX.writeFile(wb, fileName);
     };
 
     const handleImportExcel = (info: any) => {
