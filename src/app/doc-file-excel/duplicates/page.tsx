@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Spin, Tag, Empty, Input } from 'antd';
-import { DownloadOutlined, AuditOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Spin, Tag, Empty, Input, Modal } from 'antd';
+import { DownloadOutlined, AuditOutlined, SearchOutlined, SettingOutlined, MenuOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Resizable } from 'react-resizable';
 import type { ResizeCallbackData } from 'react-resizable';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const COLOR_PALETTE = [
     { argb: 'FFFFCCCC', css: '#ffcccc' }, // Red
@@ -44,12 +47,38 @@ const ResizableTitle = (props: any) => {
     );
 };
 
+const SortableItem = ({ id, name }: { id: number, name: string }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-3 bg-white border rounded mb-2 shadow-sm group">
+            <div {...attributes} {...listeners} className="cursor-grab text-slate-400 hover:text-blue-500 p-1">
+                <MenuOutlined />
+            </div>
+            <span className="font-medium text-slate-700">{name || `Column ${id + 1}`}</span>
+        </div>
+    );
+};
+
 export default function DuplicatesPage() {
     const [loading, setLoading] = useState(true);
     const [headers, setHeaders] = useState<string[]>([]);
     const [dups, setDups] = useState<any[]>([]);
     const [colWidths, setColWidths] = useState<Record<number, number>>({});
     const [searchText, setSearchText] = useState('');
+    const [columnOrder, setColumnOrder] = useState<number[]>([]);
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
 
     const filteredDups = React.useMemo(() => {
         if (!searchText) return dups;
@@ -93,6 +122,7 @@ export default function DuplicatesPage() {
                 if (data) {
                     setHeaders(data.headers || []);
                     setDups(data.dups || []);
+                    setColumnOrder(data.headers ? data.headers.map((_: any, i: number) => i) : []);
                 }
             } catch (err) {
                 console.error("Failed to load duplicates from DB", err);
@@ -104,19 +134,40 @@ export default function DuplicatesPage() {
         loadData();
     }, []);
 
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: any) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setColumnOrder((items) => {
+                const oldIndex = items.indexOf(active.id as number);
+                const newIndex = items.indexOf(over.id as number);
+
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
+
     const handleExportDuplicates = async () => {
         if (filteredDups.length === 0) return;
 
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet("Du Lieu Trung");
 
-        const headerRow = ws.addRow(headers);
+        const orderedHeaders = columnOrder.map(idx => headers[idx]);
+        const headerRow = ws.addRow(orderedHeaders);
         headerRow.font = { bold: true };
 
         filteredDups.forEach(item => {
             const rowVals: any[] = [];
-            headers.forEach((_, idx) => {
-                rowVals.push(item[idx]);
+            columnOrder.forEach((originalIndex) => {
+                rowVals.push(item[originalIndex]);
             });
             const r = ws.addRow(rowVals);
 
@@ -163,17 +214,18 @@ export default function DuplicatesPage() {
         }));
     };
 
-    const tableColumns = headers.map((header, index) => {
-        const width = colWidths[index] || 150;
+    const tableColumns = columnOrder.map((originalIndex) => {
+        const header = headers[originalIndex];
+        const width = colWidths[originalIndex] || 150;
         return {
-            title: <span className="font-bold">{header || `Column ${index + 1}`}</span>,
-            dataIndex: index,
-            key: index,
+            title: <span className="font-bold">{header || `Column ${originalIndex + 1}`}</span>,
+            dataIndex: originalIndex,
+            key: originalIndex,
             width: width,
             ellipsis: true,
             onHeaderCell: () => ({
                 width: width,
-                onResize: handleResize(index),
+                onResize: handleResize(originalIndex),
             }),
             render: (text: any) => {
                 let stringValue = '';
@@ -234,9 +286,14 @@ export default function DuplicatesPage() {
                     />
                 </div>
 
-                <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportDuplicates} className="bg-green-600 shrink-0" size="large">
-                    Xuất file Excel này
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                    <Button icon={<SettingOutlined />} onClick={() => setIsConfigOpen(true)} size="large">
+                        Cấu hình cột
+                    </Button>
+                    <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportDuplicates} className="bg-green-600 shrink-0" size="large">
+                        Xuất file Excel này
+                    </Button>
+                </div>
             </div>
             
             <div className="flex-1 overflow-hidden p-4">
@@ -264,6 +321,32 @@ export default function DuplicatesPage() {
                     />
                 </div>
             </div>
+
+            <Modal
+                title="Sắp xếp thứ tự cột"
+                open={isConfigOpen}
+                onCancel={() => setIsConfigOpen(false)}
+                footer={null}
+                styles={{ body: { maxHeight: '60vh', overflowY: 'auto' } }}
+            >
+                <div className="mb-4 text-sm text-slate-500">
+                    Kéo thả biểu tượng <MenuOutlined /> để thay đổi thứ tự các cột hiển thị và xuất Excel.
+                </div>
+                <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext 
+                        items={columnOrder}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        {columnOrder.map(id => (
+                            <SortableItem key={id} id={id} name={headers[id]} />
+                        ))}
+                    </SortableContext>
+                </DndContext>
+            </Modal>
         </div>
     );
 }
