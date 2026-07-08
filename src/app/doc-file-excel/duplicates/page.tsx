@@ -54,13 +54,32 @@ export default function DuplicatesPage() {
     const filteredDups = React.useMemo(() => {
         if (!searchText) return dups;
         const lowercasedFilter = searchText.toLowerCase();
-        return dups.filter(item => {
-            return Object.keys(item).some(key => {
+        
+        const matchingGroupIndices = new Set<number>();
+        const matchingIndividualKeys = new Set<any>();
+        
+        dups.forEach((item, index) => {
+            const isMatch = Object.keys(item).some(key => {
                 if (key === '__groupIndex' || key === 'key') return false;
                 const value = item[key];
                 if (value === null || value === undefined) return false;
                 return String(value).toLowerCase().includes(lowercasedFilter);
             });
+            
+            if (isMatch) {
+                if (item.__groupIndex !== undefined) {
+                    matchingGroupIndices.add(item.__groupIndex);
+                } else {
+                    matchingIndividualKeys.add(item.key !== undefined ? item.key : index);
+                }
+            }
+        });
+
+        return dups.filter((item, index) => {
+            if (item.__groupIndex !== undefined) {
+                return matchingGroupIndices.has(item.__groupIndex);
+            }
+            return matchingIndividualKeys.has(item.key !== undefined ? item.key : index);
         });
     }, [dups, searchText]);
 
