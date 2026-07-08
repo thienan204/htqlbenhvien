@@ -1,0 +1,1 @@
+Bạn muốn sửa 2 trường này ở bên bảng Mẫu 02, hay muốn thêm luôn 2 trường này vào Hồ sơ Nhân sự (bên trang Quản lý Nhân sự) để lưu cố định, mỗi lần đồng bộ nó tự động lấy sang và không bị mất?

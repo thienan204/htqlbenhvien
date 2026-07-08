@@ -370,13 +370,19 @@ export default function ConfigPage() {
 
     const fetchRules = async () => {
         setLoading(true)
-        const res = await getSpecializedRules()
-        if (res.success) {
-            setRules(res.data || [])
-        } else {
-            message.error(res.error)
+        try {
+            const res = await getSpecializedRules()
+            if (res && res.success) {
+                setRules(res.data || [])
+            } else {
+                message.error(res?.error || "Không thể tải danh sách quy tắc.")
+            }
+        } catch (error) {
+            console.error("fetchRules failed:", error)
+            message.error("Lỗi kết nối khi tải quy tắc.")
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     useEffect(() => {
