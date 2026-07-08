@@ -5,8 +5,11 @@ import { revalidatePath } from 'next/cache';
 
 export async function getDuplicateRules() {
     try {
-        // Use raw query to bypass Prisma Client cache when server is not restarted yet.
-        const rules: any = await prisma.$queryRaw`SELECT * FROM "DuplicateRule" ORDER BY "createdAt" DESC`;
+        const rules = await prisma.duplicateRule.findMany({
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
         return { success: true, data: rules };
     } catch (error) {
         console.error("Error fetching rules:", error);

@@ -34,13 +34,19 @@ export default function ExcelRulesPage() {
 
     const fetchRules = async () => {
         setLoading(true);
-        const res = await getDuplicateRules();
-        if (res.success && res.data) {
-            setRules(res.data as unknown as DuplicateRule[]);
-        } else {
-            message.error("Không thể tải danh sách quy tắc.");
+        try {
+            const res = await getDuplicateRules();
+            if (res && res.success && res.data) {
+                setRules(res.data as unknown as DuplicateRule[]);
+            } else {
+                message.error("Không thể tải danh sách quy tắc.");
+            }
+        } catch (error) {
+            console.error("fetchRules failed:", error);
+            message.error("Lỗi kết nối khi tải quy tắc.");
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => {
