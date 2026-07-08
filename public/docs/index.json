@@ -34,5 +34,11 @@
         "title": "Quản trị Server & Nginx",
         "icon": "CloudServerOutlined",
         "file": "06-server-nginx.md"
+    },
+    {
+        "id": "07-gia-han-https",
+        "title": "Hướng dẫn gia hạn HTTPS",
+        "icon": "SafetyCertificateOutlined",
+        "file": "07-gia-han-https.md"
     }
 ]
