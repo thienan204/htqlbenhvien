@@ -40,5 +40,11 @@
         "title": "Hướng dẫn gia hạn HTTPS",
         "icon": "SafetyCertificateOutlined",
         "file": "07-gia-han-https.md"
+    },
+    {
+        "id": "08-doc-file-excel",
+        "title": "Phân tích & Xử lý File Excel",
+        "icon": "BookOutlined",
+        "file": "08-doc-file-excel.md"
     }
 ]
