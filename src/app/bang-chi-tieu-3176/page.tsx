@@ -188,11 +188,25 @@ export default function BangChiTieuPage() {
                     return;
                 }
 
-                // Sắp xếp lại theo STT
-                importedItems.sort((a, b) => a.stt - b.stt);
+                // NEW LOGIC: Upsert (Cập nhật & Thêm mới)
+                const existingItems = data[xmlType] || [];
+                const updatedItemsMap = new Map<string, XmlDictionaryItem>();
 
-                // Ghi đè toàn bộ dữ liệu của XML này
-                const newData = { ...data, [xmlType]: importedItems };
+                // 1. Giữ lại toàn bộ item cũ
+                existingItems.forEach(item => {
+                    updatedItemsMap.set(item.chiTieu, item);
+                });
+
+                // 2. Ghi đè/Thêm mới từ file Excel (dựa vào chiTieu)
+                importedItems.forEach(item => {
+                    updatedItemsMap.set(item.chiTieu, item);
+                });
+
+                // 3. Lấy danh sách cuối cùng và sắp xếp lại theo STT
+                const mergedItems = Array.from(updatedItemsMap.values());
+                mergedItems.sort((a, b) => a.stt - b.stt);
+
+                const newData = { ...data, [xmlType]: mergedItems };
 
                 // Lưu lên server
                 setLoading(true);
@@ -204,7 +218,7 @@ export default function BangChiTieuPage() {
 
                 if (res.ok) {
                     setData(newData);
-                    message.success(`Đã import thành công ${importedItems.length} dòng cho ${xmlType} (Ghi đè hoàn toàn)!`);
+                    message.success(`Đã import thành công: Cập nhật & Thêm mới cho ${xmlType} (Đã giữ nguyên trường cũ)!`);
                 } else {
                     message.error('Lỗi khi lưu dữ liệu lên máy chủ.');
                 }
@@ -424,11 +438,7 @@ export default function BangChiTieuPage() {
                         <TextArea rows={2} placeholder="Nội dung thay đổi (nếu có)..." />
                     </Form.Item>
                     <Form.Item name="dieuChinh" label="Điều chỉnh (Ghi chú)">
-                        <Select allowClear placeholder="Chọn trạng thái">
-                            <Option value="Mới">Mới</Option>
-                            <Option value="Sửa đổi">Sửa đổi</Option>
-                            <Option value="Bãi bỏ">Bãi bỏ</Option>
-                        </Select>
+                        <TextArea rows={2} placeholder="Nhập ghi chú điều chỉnh (nếu có)..." />
                     </Form.Item>
                 </Form>
             </Modal>
