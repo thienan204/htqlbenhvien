@@ -497,6 +497,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                             <li>Bắt buộc có mã chi tiết hơn (4 hoặc 5 ký tự): <code className="bg-white px-1 border rounded text-red-600">CHECK_ICD10('requires_more_specific', MA_BENH)</code></li>
                             <li>Mã bệnh kèm theo chỉ dành cho tử vong: <code className="bg-white px-1 border rounded text-red-600">CHECK_ICD10('is_death_cause_only', MA_BENHKHAC)</code></li>
                             <li>Kiểm tra mã bệnh KHÔNG TỒN TẠI trong danh mục ICD10: <code className="bg-white px-1 border rounded text-red-600">CHECK_NOT_IN_ICD10(MA_BENH_KT)</code> (Hỗ trợ tự động tách các mã nối nhau bằng dấu chấm phẩy ;)</li>
+                            <li>Kiểm tra số lượng mã vượt quá giới hạn (ngăn cách bởi dấu ;) : <code className="bg-white px-1 border rounded text-red-600">CHECK_MAX_CODES(MA_BENH_KT, 12)</code> (Ví dụ: Báo lỗi nếu có hơn 12 mã bệnh)</li>
                         </ul>
                     </div>
                 </div>

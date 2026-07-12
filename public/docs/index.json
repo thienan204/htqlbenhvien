@@ -46,5 +46,11 @@
         "title": "Phân tích & Xử lý File Excel",
         "icon": "BookOutlined",
         "file": "08-doc-file-excel.md"
+    },
+    {
+        "id": "09-push-notification-mobile",
+        "title": "Tích hợp Push Notification",
+        "icon": "MobileOutlined",
+        "file": "09-push-notification-mobile.md"
     }
 ]

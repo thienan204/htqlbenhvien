@@ -364,9 +364,9 @@ export function ChatTab({
                     <Input.TextArea 
                         value={chatText}
                         onChange={e => setChatText(e.target.value)}
-                        placeholder="Mô tả sự cố của bạn ở đây..." 
-                        autoSize={{ minRows: 1, maxRows: 4 }}
-                        className="flex-1 !border-none !shadow-none !ring-0 !bg-transparent text-[15px] py-2 px-1"
+                        placeholder="Mô tả chi tiết sự cố của bạn ở đây..." 
+                        autoSize={{ minRows: 2, maxRows: 5 }}
+                        className="flex-1 !border-none !shadow-none !ring-0 !bg-transparent text-[16px] py-3 px-2 leading-relaxed"
                         onPressEnter={(e) => {
                             if (!e.shiftKey) {
                                 e.preventDefault();

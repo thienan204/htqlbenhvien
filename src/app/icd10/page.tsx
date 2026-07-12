@@ -122,9 +122,17 @@ export default function Icd10Page() {
                         </Tag>
                     )}
                     {record.requires_more_specific && (
-                        <Tag icon={<AlertOutlined />} color="magenta" className="w-full truncate text-xs whitespace-normal h-auto py-1">
-                            MÃ KHÔNG ĐƯỢC SỬ DỤNG VÌ CÓ MÃ 4 HOẶC 5 KÝ TỰ CỤ THỂ HƠN
-                        </Tag>
+                        <div className="w-full flex flex-col gap-1">
+                            <Tag icon={<AlertOutlined />} color="magenta" className="w-full truncate text-xs whitespace-normal h-auto py-1">
+                                MÃ KHÔNG ĐƯỢC SỬ DỤNG VÌ CÓ MÃ 4 HOẶC 5 KÝ TỰ CỤ THỂ HƠN
+                            </Tag>
+                            {record.valid_children && record.valid_children.length > 0 && (
+                                <div className="text-[11px] text-slate-500 bg-slate-50 p-1.5 rounded border border-slate-100">
+                                    <span className="font-semibold text-slate-700">Mã chi tiết hợp lệ: </span>
+                                    <span className="text-blue-600 font-medium">{record.valid_children.join(', ')}</span>
+                                </div>
+                            )}
+                        </div>
                     )}
                     {record.is_death_cause_only && (
                         <Tag icon={<InfoCircleOutlined />} color="purple" className="w-full truncate text-xs whitespace-normal h-auto py-1">
@@ -316,7 +324,15 @@ export default function Icd10Page() {
                                         <Tag icon={<WarningOutlined />} color="orange" className="whitespace-normal h-auto py-1">KHÔNG KHUYẾN KHÍCH DÙNG LÀ BỆNH CHÍNH</Tag>
                                     )}
                                     {selectedRecord.requires_more_specific && (
-                                        <Tag icon={<AlertOutlined />} color="magenta" className="whitespace-normal h-auto py-1">MÃ KHÔNG ĐƯỢC SỬ DỤNG VÌ CÓ MÃ 4 HOẶC 5 KÝ TỰ CỤ THỂ HƠN</Tag>
+                                        <div className="w-full flex flex-col gap-1">
+                                            <Tag icon={<AlertOutlined />} color="magenta" className="whitespace-normal h-auto py-1 w-max">MÃ KHÔNG ĐƯỢC SỬ DỤNG VÌ CÓ MÃ 4 HOẶC 5 KÝ TỰ CỤ THỂ HƠN</Tag>
+                                            {selectedRecord.valid_children && selectedRecord.valid_children.length > 0 && (
+                                                <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 mt-1">
+                                                    <span className="font-semibold text-slate-700">Các mã chi tiết hợp lệ có thể sử dụng thay thế: </span>
+                                                    <span className="text-blue-600 font-semibold">{selectedRecord.valid_children.join(', ')}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                     {selectedRecord.is_death_cause_only && (
                                         <Tag icon={<InfoCircleOutlined />} color="purple" className="whitespace-normal h-auto py-1">CHỈ DÙNG CHO NGUYÊN NHÂN TỬ VONG</Tag>

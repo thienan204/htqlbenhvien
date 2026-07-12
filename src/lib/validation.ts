@@ -1062,6 +1062,18 @@ export class ValidationEngine {
                 return isMissing ? "true" : "false";
             });
 
+            // 0.6.6.5. Handle CHECK_MAX_CODES
+            cleanCode = cleanCode.replace(/CHECK_MAX_CODES\(\s*([^,]+)\s*,\s*(\d+)\s*\)/g, (match, field, maxCountStr) => {
+                const val = getVal(field.trim());
+                const valStr = val !== null && val !== undefined ? String(val).trim() : '';
+                if (!valStr) return "false";
+                
+                const maxCount = parseInt(maxCountStr, 10);
+                const codes = valStr.split(';').map(s => s.trim()).filter(Boolean);
+                
+                return codes.length > maxCount ? "true" : "false";
+            });
+
             // 0.6.7. Handle ENDS_WITH
             cleanCode = cleanCode.replace(/ENDS_WITH\(\s*([^,]+)\s*,\s*['"]([^'"]+)['"]\s*\)/g, (match, fieldRef, suffix) => {
                 const val = getVal(fieldRef.trim());
@@ -1353,5 +1365,16 @@ export const DEFAULT_RULES: ValidationRule[] = [
         name: 'Chỉ dùng cho nguyên nhân tử vong',
         code: "CHECK_ICD10('is_death_cause_only', MA_BENH)",
         errorMessage: 'Mã bệnh này chỉ được sử dụng cho nguyên nhân tử vong'
+    },
+    {
+        id: '12',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'MA_BENH_KT',
+        name: 'Mã bệnh kèm theo vượt quá số lượng',
+        code: "CHECK_MAX_CODES(MA_BENH_KT, 12)",
+        errorMessage: 'Mã bệnh kèm theo (MA_BENH_KT) có nhiều hơn 12 mã bệnh'
     }
 ];

@@ -82,6 +82,34 @@ export async function GET(request: Request) {
             })
         ]);
 
+        // Find parents that require more specific codes
+        const parents = data.filter(d => d.requires_more_specific).map(d => d.ma_chi_tiet);
+        if (parents.length > 0) {
+            const children = await prisma.icd10Catalog.findMany({
+                where: {
+                    OR: parents.map(p => ({ ma_chi_tiet: { startsWith: `${p}.` } })),
+                    requires_more_specific: false
+                },
+                select: { ma_chi_tiet: true },
+                orderBy: { ma_chi_tiet: 'asc' }
+            });
+            
+            const childrenMap: Record<string, string[]> = {};
+            children.forEach(c => {
+                const parent = parents.find(p => c.ma_chi_tiet.startsWith(`${p}.`));
+                if (parent) {
+                    if (!childrenMap[parent]) childrenMap[parent] = [];
+                    childrenMap[parent].push(c.ma_chi_tiet);
+                }
+            });
+            
+            data.forEach(d => {
+                if (d.requires_more_specific && d.ma_chi_tiet && childrenMap[d.ma_chi_tiet]) {
+                    (d as any).valid_children = childrenMap[d.ma_chi_tiet];
+                }
+            });
+        }
+
         return NextResponse.json({
             data,
             pagination: {

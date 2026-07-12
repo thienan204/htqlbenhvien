@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from '@/actions/auth';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { sendPushNotification } from '@/lib/firebase-admin';
 
 const prisma = new PrismaClient();
 
@@ -39,13 +40,13 @@ export async function GET(request: Request) {
         const targetDepartment = searchParams.get('targetDepartment');
 
         let whereClause: any = {};
-        
+
         // Cố định targetDepartment theo Role nếu không phải Admin/Khoa
         if (user.role === 'CNTT') whereClause.targetDepartment = 'CNTT';
         else if (user.role === 'VTYT') whereClause.targetDepartment = 'VTYT';
         else if (user.role === 'HCQT') whereClause.targetDepartment = 'HCQT';
         else if (targetDepartment) whereClause.targetDepartment = targetDepartment;
-        
+
         // Phân quyền: KHOA chỉ thấy phiếu của mình
         if (user.role === 'KHOA') {
             if (!user.ma_khoa) return NextResponse.json({ error: 'Tài khoản chưa gán khoa' }, { status: 403 });
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action, targetDepartment = 'CNTT' } = body;
-        
+
         let ma_khoa = body.ma_khoa;
         if (!['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
             ma_khoa = user.ma_khoa; // Ghi đè bằng mã khoa thực tế
@@ -105,11 +106,11 @@ export async function POST(request: Request) {
         const configRule = await prisma.specializedRule.findUnique({
             where: { slug }
         });
-        
+
         let assignmentMode = 'A';
         let targetBotToken = process.env.TELEGRAM_BOT_TOKEN;
         let targetChatId = process.env.TELEGRAM_CHAT_ID;
-        
+
         if (configRule && configRule.logicConfig) {
             const config: any = configRule.logicConfig;
             if (!Array.isArray(config)) {
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
             if (!errorRecord || !errorRecord.itRequestId) {
                 return NextResponse.json({ error: 'Không tìm thấy phiếu IT đã tạo' }, { status: 400 });
             }
-            
+
             // Increment ping count
             const newPingCount = (errorRecord.itRequestPingCount || 0) + 1;
             await prisma.xmlErrorRecord.update({
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
             if (targetChatId) {
                 await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken);
             }
-            
+
             return NextResponse.json({ success: true, pingCount: newPingCount });
         }
 
@@ -195,7 +196,7 @@ export async function POST(request: Request) {
                 } else if (!sdt && staffInDb?.so_dien_thoai) {
                     finalSdt = staffInDb.so_dien_thoai;
                 }
-                
+
                 // Đảm bảo dynamicFields luôn có SĐT mới nhất
                 if (dynamicFields) {
                     dynamicFields['SĐT'] = finalSdt;
@@ -210,8 +211,8 @@ export async function POST(request: Request) {
             if (assignmentMode === 'C') {
                 // Cách C: Chia việc tự động cho người online rảnh nhất
                 const availableUsers = await prisma.user.findMany({
-                    where: { 
-                        role: targetDepartment, 
+                    where: {
+                        role: targetDepartment,
                         isAvailable: true,
                         id: { not: user.id } // Chốt chặn: KHÔNG tự giao việc cho chính người đang bấm nút tạo
                     }
@@ -224,8 +225,8 @@ export async function POST(request: Request) {
                     // Đếm số task đang xử lý hoặc chờ xử lý của mỗi người TRONG NGÀY HÔM NAY
                     const ticketCounts = await Promise.all(availableUsers.map(async (u) => {
                         const count = await prisma.iTRequest.count({
-                            where: { 
-                                assigneeId: u.id, 
+                            where: {
+                                assigneeId: u.id,
                                 status: { in: ['PENDING', 'IN_PROGRESS'] },
                                 createdAt: { gte: startOfDay }
                             }
@@ -291,14 +292,14 @@ export async function POST(request: Request) {
         telegramMsg += `🏢 <b>Khoa:</b> ${tenKhoa}\n`;
         telegramMsg += `👤 <b>Người báo:</b> ${dynamicFields['Người báo'] || 'Không rõ'} - <b>SĐT:</b> ${finalSdt || 'Không có'}\n`;
         telegramMsg += `📌 <b>Loại sự cố:</b> ${category === 'SOFTWARE' ? 'Phần Mềm / Nghiệp Vụ' : 'Phần Cứng / Sửa Chữa'}\n`;
-        
+
         if (category === 'SOFTWARE') {
             telegramMsg += `📝 <b>Bệnh án:</b> ${ma_ba}\n`;
             telegramMsg += `📊 <b>Trạng thái:</b> ${dynamicFields['Trạng thái BA'] || ''}\n`;
         }
-        
+
         telegramMsg += `❌ <b>Lỗi:</b> ${ten_loi}\n`;
-        
+
         if (dynamicFields['Ghi chú']) {
             telegramMsg += `🗒 <b>Ghi chú:</b> ${dynamicFields['Ghi chú']}\n`;
         }
@@ -314,6 +315,33 @@ export async function POST(request: Request) {
         if (assigneeUser && assigneeUser.telegram_id && /^-?\d+$/.test(assigneeUser.telegram_id)) {
             const dmMsg = `🔔 <b>BẠN VỪA ĐƯỢC GIAO MỘT VIỆC MỚI:</b>\n\n${telegramMsg}`;
             await sendTelegramMessage(dmMsg, assigneeUser.telegram_id, targetBotToken);
+        }
+
+        // Bắn Push Notification qua Firebase
+        try {
+            let userIdsToNotify: string[] = [];
+            if (finalAssignee) {
+                userIdsToNotify.push(finalAssignee);
+            } else {
+                const deptUsers = await prisma.user.findMany({ where: { role: targetDepartment }, select: { id: true } });
+                userIdsToNotify = deptUsers.map(u => u.id);
+            }
+
+            if (userIdsToNotify.length > 0) {
+                const deviceTokens = await prisma.userDeviceToken.findMany({
+                    where: { userId: { in: userIdsToNotify } },
+                    select: { token: true }
+                });
+
+                const tokens = deviceTokens.map(dt => dt.token);
+                if (tokens.length > 0) {
+                    const title = finalAssignee ? '🔔 Bạn được giao một việc mới!' : `🚨 Yêu cầu mới từ ${tenKhoa}`;
+                    const body = `Lỗi: ${ten_loi}`;
+                    await sendPushNotification(tokens, title, body, { itRequestId: newRequest.id });
+                }
+            }
+        } catch (pushErr) {
+            console.error('Error sending push notification in it-requests POST:', pushErr);
         }
 
         // Lưu ngược itRequestId vào XmlErrorRecord nếu có xmlErrorId
@@ -358,7 +386,7 @@ export async function PUT(request: Request) {
             if (ticket.status !== 'PENDING') {
                 return NextResponse.json({ error: 'Chỉ có thể sửa yêu cầu khi đang ở trạng thái Chờ xử lý' }, { status: 400 });
             }
-            
+
             // Hợp nhất dynamicFields cũ và mới để giữ lại 'Hình ảnh đính kèm' nếu có
             const mergedDynamicFields = {
                 ...(ticket.dynamicFields as any || {}),
@@ -492,7 +520,7 @@ export async function DELETE(request: Request) {
             if (user.role !== 'ADMIN') {
                 return NextResponse.json({ error: 'Chỉ Admin mới có quyền xóa tất cả' }, { status: 403 });
             }
-            
+
             let whereClause: any = {};
             if (targetDepartment) whereClause.targetDepartment = targetDepartment;
 
@@ -501,7 +529,7 @@ export async function DELETE(request: Request) {
                 where: whereClause,
                 select: { dynamicFields: true }
             });
-            
+
             for (const ticket of allTickets) {
                 if (ticket.dynamicFields) {
                     const fields: any = ticket.dynamicFields;
@@ -512,7 +540,7 @@ export async function DELETE(request: Request) {
                                 if (typeof url === 'string' && url.startsWith('/uploads/tickets/')) {
                                     const filename = url.replace('/uploads/tickets/', '');
                                     const filepath = join(process.cwd(), 'public', 'uploads', 'tickets', filename);
-                                    await unlink(filepath).catch(() => {});
+                                    await unlink(filepath).catch(() => { });
                                 }
                             } catch (e) {
                                 // Bỏ qua lỗi xóa file
@@ -539,7 +567,7 @@ export async function DELETE(request: Request) {
         }
 
         if (ticket.status === 'IN_PROGRESS') {
-             return NextResponse.json({ error: 'Không thể xóa yêu cầu đang xử lý' }, { status: 400 });
+            return NextResponse.json({ error: 'Không thể xóa yêu cầu đang xử lý' }, { status: 400 });
         }
 
         // Xóa các file ảnh vật lý đính kèm nếu có
