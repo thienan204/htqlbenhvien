@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import EditProfileModal from '../profile/EditProfileModal';
 import ChangePasswordModal from '../profile/ChangePasswordModal';
+import { getBasePath } from '@/utils/config';
 
 interface TopHeaderProps {
     onToggleSidebar: () => void;
@@ -91,7 +92,7 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                                         try {
                                             await fetch('/api/auth/logout', { method: 'POST' });
                                         } catch(e) {}
-                                        window.location.href = '/login';
+                                        window.location.href = getBasePath() + '/login';
                                     }
                                 }
                             ]

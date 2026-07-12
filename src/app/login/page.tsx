@@ -25,7 +25,7 @@ export default function LoginPage() {
 
             if (res.ok) {
                 // Force a hard reload to ensure layout and context are fully updated
-                window.location.href = '/';
+                window.location.href = getBasePath() + '/';
             } else {
                 const data = await res.json();
                 setError(data.error || 'Đăng nhập thất bại');
