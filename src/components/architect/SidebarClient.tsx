@@ -63,7 +63,7 @@ export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClie
             {/* Logo Area */}
             <div className="h-[60px] flex items-center px-6 border-b border-slate-100">
                 <Link href="/" className="flex items-center gap-2 text-slate-800 font-bold text-xl tracking-tight no-underline hover:text-slate-800 h-full">
-                    <img src="/logo.png" alt="Logo" className="max-h-[40px] w-auto object-contain" />
+                    <img src={`${getBasePath()}/logo.png`} alt="Logo" className="max-h-[40px] w-auto object-contain" />
                 </Link>
             </div>
 
