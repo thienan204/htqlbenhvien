@@ -168,8 +168,19 @@ export async function POST(request: Request) {
         for (const exRec of excelRecords) {
             let matchedDbRec = null;
 
-            if (dbMap.has(exRec.maThe)) {
-                const dbList = dbMap.get(exRec.maThe)!;
+            // Xử lý trường hợp file Excel có chứa nhiều mã thẻ cách nhau bằng dấu ; hoặc ,
+            const excelCards = exRec.maThe.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
+            let matchedKey = null;
+            
+            for (const card of excelCards) {
+                if (dbMap.has(card)) {
+                    matchedKey = card;
+                    break;
+                }
+            }
+
+            if (matchedKey) {
+                const dbList = dbMap.get(matchedKey)!;
                 // Try to find the best match: by ngayVao + ngayRa, or just ngayVao, or closest money
                 
                 // 1. Match exact ngayVao & ngayRa
