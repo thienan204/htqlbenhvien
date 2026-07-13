@@ -53,20 +53,12 @@ export async function POST(request: Request) {
                 if (!maThe) continue; // Skip empty rows
                 totalRawRecords++;
 
-                const excelNgayRa = norm(row['NGAY_RA'] || row['Ngày ra']);
-
-                if (filterNgayRaTu || filterNgayRaDen) {
-                    const dateOnly = extractDate(excelNgayRa);
-                    if (filterNgayRaTu && dateOnly < filterNgayRaTu) continue;
-                    if (filterNgayRaDen && dateOnly > filterNgayRaDen) continue;
-                }
-
                 excelRecords.push({
                     stt: row['STT'],
                     hoTen: norm(row['HO_TEN'] || row['Họ tên']),
                     maThe: maThe,
                     ngayVao: norm(row['NGAY_VAO'] || row['Ngày vào']),
-                    ngayRa: excelNgayRa,
+                    ngayRa: norm(row['NGAY_RA'] || row['Ngày ra']),
                     tongChi: parseFloat(row['T_TONGCHI_BV'] || row['Tổng chi']) || 0,
                     tongChiBH: parseFloat(row['T_TONGCHI_BH']) || 0,
                     baoHiemTT: parseFloat(row['T_BHTT'] || row['Bảo hiểm TT']) || 0,
