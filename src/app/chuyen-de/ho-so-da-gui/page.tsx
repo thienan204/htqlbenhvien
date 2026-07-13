@@ -45,10 +45,23 @@ export default function HoSoDaGuiPage() {
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
-    const fetchList = async (page = 1, pageSize = 20, search = '', ttHS = filterTrangThaiHS, ttTT = filterTrangThaiTT, modifiedOnly = onlyModified) => {
+    // --- SELECTION & DELETE STATES ---
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [listDateRangeStr, setListDateRangeStr] = useState<[string, string] | null>(null);
+
+    const fetchList = async (page = 1, pageSize = 20, search = '', ttHS = filterTrangThaiHS, ttTT = filterTrangThaiTT, modifiedOnly = onlyModified, dateRange = listDateRangeStr) => {
         setLoading(true);
         try {
-            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui?page=${page}&limit=${pageSize}&search=${encodeURIComponent(search)}&trangThaiHS=${encodeURIComponent(ttHS || '')}&trangThaiTT=${encodeURIComponent(ttTT || '')}&onlyModified=${modifiedOnly}`);
+            let url = `${getBasePath()}/api/ho-so-da-gui?page=${page}&limit=${pageSize}&search=${encodeURIComponent(search)}&trangThaiHS=${encodeURIComponent(ttHS || '')}&trangThaiTT=${encodeURIComponent(ttTT || '')}&onlyModified=${modifiedOnly}`;
+            if (dateRange) {
+                const formatForApi = (dateStr: string) => {
+                    const [d, m, y] = dateStr.split('/');
+                    return `${y}${m}${d}`;
+                };
+                url += `&ngayRaTu=${formatForApi(dateRange[0])}&ngayRaDen=${formatForApi(dateRange[1])}`;
+            }
+            
+            const res = await fetch(url);
             const json = await res.json();
             if (json.success) {
                 let finalData = json.data;
@@ -104,11 +117,11 @@ export default function HoSoDaGuiPage() {
             }
         };
         fetchFilters();
-        fetchList(pagination.current, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified);
+        fetchList(pagination.current, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
     }, []);
 
     const handleTableChange = (newPagination: any) => {
-        fetchList(newPagination.current, newPagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified);
+        fetchList(newPagination.current, newPagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
     };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,7 +133,7 @@ export default function HoSoDaGuiPage() {
         }
 
         const timeout = setTimeout(() => {
-            fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, onlyModified);
+            fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
         }, 500);
 
         setTypingTimeout(timeout);
@@ -129,22 +142,28 @@ export default function HoSoDaGuiPage() {
     const handleSearch = (value: string) => {
         if (typingTimeout) clearTimeout(typingTimeout);
         setSearchText(value);
-        fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, onlyModified);
+        fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
     };
 
     const handleFilterHSChange = (value: string) => {
         setFilterTrangThaiHS(value);
-        fetchList(1, pagination.pageSize, searchText, value, filterTrangThaiTT, onlyModified);
+        fetchList(1, pagination.pageSize, searchText, value, filterTrangThaiTT, onlyModified, listDateRangeStr);
     };
 
     const handleFilterTTChange = (value: string) => {
         setFilterTrangThaiTT(value);
-        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, value, onlyModified);
+        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, value, onlyModified, listDateRangeStr);
     };
 
     const handleOnlyModifiedChange = (checked: boolean) => {
         setOnlyModified(checked);
-        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, checked);
+        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, checked, listDateRangeStr);
+    };
+
+    const handleListDateRangeChange = (dates: any, dateStrings: [string, string]) => {
+        const val = dates ? dateStrings : null;
+        setListDateRangeStr(val);
+        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, val);
     };
 
     const handleViewHistory = async (maLienKet: string) => {
@@ -186,6 +205,72 @@ export default function HoSoDaGuiPage() {
         } catch (error) {
             Modal.error({ title: 'Lỗi', content: 'Không thể kết nối tới máy chủ.' });
         }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedRowKeys.length === 0) return;
+        Modal.confirm({
+            title: 'Xác nhận xóa',
+            content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} hồ sơ đã chọn không? Hành động này không thể hoàn tác.`,
+            okText: 'Xóa',
+            okType: 'danger',
+            cancelText: 'Hủy',
+            onOk: async () => {
+                try {
+                    const res = await fetch(`${getBasePath()}/api/ho-so-da-gui`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: selectedRowKeys })
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        Modal.success({ title: 'Thành công', content: json.message });
+                        setSelectedRowKeys([]);
+                        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
+                    } else {
+                        Modal.error({ title: 'Lỗi', content: json.error });
+                    }
+                } catch (error) {
+                    Modal.error({ title: 'Lỗi', content: 'Không thể kết nối tới máy chủ.' });
+                }
+            }
+        });
+    };
+
+    const handleDeleteAll = () => {
+        Modal.confirm({
+            title: 'Cảnh báo nguy hiểm',
+            content: 'Bạn đang yêu cầu XÓA TOÀN BỘ hồ sơ thỏa mãn bộ lọc hiện tại (hoặc tất cả nếu không lọc). Hành động này cực kỳ nguy hiểm và không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục?',
+            okText: 'Xóa Toàn Bộ',
+            okType: 'danger',
+            cancelText: 'Hủy',
+            onOk: async () => {
+                try {
+                    const res = await fetch(`${getBasePath()}/api/ho-so-da-gui`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            deleteAll: true,
+                            search: searchText,
+                            trangThaiHS: filterTrangThaiHS,
+                            trangThaiTT: filterTrangThaiTT,
+                            ngayRaTu: listDateRangeStr?.[0],
+                            ngayRaDen: listDateRangeStr?.[1]
+                        })
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        Modal.success({ title: 'Thành công', content: json.message });
+                        setSelectedRowKeys([]);
+                        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
+                    } else {
+                        Modal.error({ title: 'Lỗi', content: json.error });
+                    }
+                } catch (error) {
+                    Modal.error({ title: 'Lỗi', content: 'Không thể kết nối tới máy chủ.' });
+                }
+            }
+        });
     };
 
     // --- IMPORT LOGIC ---
@@ -391,17 +476,27 @@ export default function HoSoDaGuiPage() {
     // --- TAB CONTENTS ---
     const listContent = (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <Space>
                     <Title level={4} style={{ margin: 0 }}>Danh Sách Hồ Sơ Đã Gửi</Title>
                     <Button icon={<Download size={16} />} onClick={handleExportDiff} className="ml-4">Xuất File Đối Chiếu</Button>
+                    {selectedRowKeys.length > 0 && (
+                        <Button danger onClick={handleDeleteSelected}>Xóa {selectedRowKeys.length} đã chọn</Button>
+                    )}
+                    <Button danger type="dashed" onClick={handleDeleteAll}>Xóa toàn bộ (theo bộ lọc)</Button>
                 </Space>
-                <Space>
+                <Space className="flex-wrap" style={{ marginTop: '8px' }}>
                     <div className="flex items-center gap-2 mr-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100">
                         <Filter size={16} className="text-orange-600" />
                         <span className="text-sm font-medium text-orange-700">Chỉ hiện hồ sơ sửa đổi</span>
                         <Switch size="small" checked={onlyModified} onChange={handleOnlyModifiedChange} className="ml-1" />
                     </div>
+                    <DatePicker.RangePicker 
+                        format="DD/MM/YYYY"
+                        placeholder={['Ngày ra từ', 'Ngày ra đến']}
+                        style={{ width: 240 }}
+                        onChange={handleListDateRangeChange}
+                    />
                     <Select
                         placeholder="Trạng thái Hồ sơ"
                         allowClear
@@ -435,6 +530,10 @@ export default function HoSoDaGuiPage() {
                 </Space>
             </div>
             <Table
+                rowSelection={{
+                    selectedRowKeys,
+                    onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
+                }}
                 columns={columns}
                 dataSource={data}
                 rowKey="id"

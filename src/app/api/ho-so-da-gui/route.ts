@@ -12,6 +12,8 @@ export async function GET(request: Request) {
         const trangThaiHS = searchParams.get('trangThaiHS') || '';
         const trangThaiTT = searchParams.get('trangThaiTT') || '';
         const onlyModified = searchParams.get('onlyModified') === 'true';
+        const ngayRaTu = searchParams.get('ngayRaTu') || '';
+        const ngayRaDen = searchParams.get('ngayRaDen') || '';
 
         const skip = (page - 1) * limit;
 
@@ -65,6 +67,12 @@ export async function GET(request: Request) {
         
         if (trangThaiTT) {
             where.trangThaiTT = { contains: trangThaiTT, mode: 'insensitive' };
+        }
+
+        if (ngayRaTu || ngayRaDen) {
+            where.ngayRa = {};
+            if (ngayRaTu) where.ngayRa.gte = ngayRaTu;
+            if (ngayRaDen) where.ngayRa.lte = ngayRaDen + '235959';
         }
 
         // Lọc những hồ sơ có lịch sử chỉnh sửa
@@ -156,5 +164,50 @@ export async function GET(request: Request) {
             { error: 'Có lỗi xảy ra khi lấy dữ liệu: ' + error.message },
             { status: 500 }
         );
+    }
+}
+
+export async function DELETE(request: Request) {
+    try {
+        const body = await request.json();
+        const { ids, deleteAll, search, trangThaiHS, trangThaiTT, ngayRaTu, ngayRaDen } = body;
+
+        if (deleteAll) {
+            // Build where clause to delete only filtered items
+            const where: any = {};
+            
+            if (search) {
+                // Simplified search for delete all to avoid complex query overhead
+                where.OR = [
+                    { maLienKet: { contains: search, mode: 'insensitive' } },
+                    { maBN: { contains: search, mode: 'insensitive' } },
+                    { maThe: { contains: search, mode: 'insensitive' } },
+                    { hoTen: { contains: search, mode: 'insensitive' } },
+                ];
+            }
+            
+            if (trangThaiHS) where.trangThaiHS = { contains: trangThaiHS, mode: 'insensitive' };
+            if (trangThaiTT) where.trangThaiTT = { contains: trangThaiTT, mode: 'insensitive' };
+            
+            if (ngayRaTu || ngayRaDen) {
+                where.ngayRa = {};
+                if (ngayRaTu) where.ngayRa.gte = ngayRaTu;
+                if (ngayRaDen) where.ngayRa.lte = ngayRaDen + '235959';
+            }
+
+            const deleted = await prisma.hoSoDaGui.deleteMany({ where });
+            return NextResponse.json({ success: true, count: deleted.count, message: `Đã xóa ${deleted.count} hồ sơ` });
+        } else if (ids && ids.length > 0) {
+            // Delete specific ids
+            const deleted = await prisma.hoSoDaGui.deleteMany({
+                where: { id: { in: ids } }
+            });
+            return NextResponse.json({ success: true, count: deleted.count, message: `Đã xóa ${deleted.count} hồ sơ` });
+        } else {
+            return NextResponse.json({ error: 'Không có dữ liệu để xóa' }, { status: 400 });
+        }
+    } catch (error: any) {
+        console.error('Lỗi API xóa hồ sơ:', error);
+        return NextResponse.json({ error: 'Có lỗi xảy ra khi xóa dữ liệu: ' + error.message }, { status: 500 });
     }
 }
