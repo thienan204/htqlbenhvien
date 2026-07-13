@@ -170,17 +170,19 @@ export async function POST(request: Request) {
 
             // Xử lý trường hợp file Excel có chứa nhiều mã thẻ cách nhau bằng dấu ; hoặc ,
             const excelCards = exRec.maThe.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
-            let matchedKey = null;
             
+            let potentialDbRecords: any[] = [];
             for (const card of excelCards) {
                 if (dbMap.has(card)) {
-                    matchedKey = card;
-                    break;
+                    potentialDbRecords = potentialDbRecords.concat(dbMap.get(card)!);
                 }
             }
 
-            if (matchedKey) {
-                const dbList = dbMap.get(matchedKey)!;
+            // Lọc bỏ những hồ sơ trong DB đã được ghép nối trước đó (đảm bảo 1-1)
+            potentialDbRecords = potentialDbRecords.filter(db => !matchedDbIds.has(db.id));
+
+            if (potentialDbRecords.length > 0) {
+                const dbList = potentialDbRecords;
                 // Try to find the best match: by ngayVao + ngayRa, or just ngayVao, or closest money
                 
                 // 1. Match exact ngayVao & ngayRa
@@ -193,19 +195,29 @@ export async function POST(request: Request) {
                 if (!bestMatch) {
                     bestMatch = dbList.find(db => extractDate(norm(db.ngayVao)) === extractDate(exRec.ngayVao));
                 }
+                
+                // 3. Match exact ngayRa
+                if (!bestMatch) {
+                    bestMatch = dbList.find(db => extractDate(norm(db.ngayRa)) === extractDate(exRec.ngayRa));
+                }
 
-                // 3. Just take the first one if only one exists and money is close
+                // 4. Just take the first one if only one exists and money matches
                 if (!bestMatch && dbList.length === 1) {
                     bestMatch = dbList[0];
                 }
 
-                // 4. Fallback: find closest money
+                // 5. Fallback: find closest money
                 if (!bestMatch && dbList.length > 0) {
-                    bestMatch = dbList.reduce((prev, curr) => {
-                        const prevDiff = Math.abs((prev.tongChi || 0) - exRec.tongChi);
-                        const currDiff = Math.abs((curr.tongChi || 0) - exRec.tongChi);
-                        return (currDiff < prevDiff) ? curr : prev;
-                    });
+                    // Ưu tiên tìm chi phí khớp chính xác trước
+                    bestMatch = dbList.find(db => Math.abs((db.tongChi || 0) - exRec.tongChi) <= 2);
+                    
+                    if (!bestMatch) {
+                        bestMatch = dbList.reduce((prev, curr) => {
+                            const prevDiff = Math.abs((prev.tongChi || 0) - exRec.tongChi);
+                            const currDiff = Math.abs((curr.tongChi || 0) - exRec.tongChi);
+                            return (currDiff < prevDiff) ? curr : prev;
+                        });
+                    }
                 }
 
                 if (bestMatch) {
