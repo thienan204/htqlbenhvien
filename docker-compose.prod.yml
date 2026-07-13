@@ -13,6 +13,8 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL}
     depends_on:
       - db-htql
+    ports:
+      - "3005:3000"
     networks:
       - htql-prod-network
 
@@ -35,8 +37,8 @@ services:
     image: nginx:alpine
     container_name: htqlbenhvien-nginx-prod
     restart: always
-    ports:
-      - "3001:3001" # Cổng mà Router 201 đang trỏ vào
+    # ports:
+    #  - "3001:3001" # Cổng này đang bị global-nginx chiếm, nên tắt đi để khỏi báo lỗi
     volumes:
       - ./nginx-prod.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro # Mount chứng chỉ SSL từ máy chủ vào
