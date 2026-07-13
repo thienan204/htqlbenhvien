@@ -795,7 +795,7 @@ export default function HoSoDaGuiPage() {
                             <h3 className="text-lg font-bold text-slate-800 mb-4">Hồ sơ lệch chi phí</h3>
                             <Table 
                                 dataSource={compareResult.details.diffMatches}
-                                rowKey={(r) => r.excel.maThe + r.excel.ngayVao}
+                                rowKey={(r: any) => r.excel.maThe + r.excel.ngayVao}
                                 size="small"
                                 bordered
                                 pagination={{ pageSize: 10 }}
@@ -848,7 +848,7 @@ export default function HoSoDaGuiPage() {
                             <h3 className="text-lg font-bold text-slate-800 mb-4">Dữ liệu có trong Excel nhưng không có trong phần mềm (hoặc khác trạng thái)</h3>
                             <Table 
                                 dataSource={compareResult.details.notInDb}
-                                rowKey={(r) => r.maThe + r.ngayVao}
+                                rowKey={(r: any) => r.maThe + r.ngayVao}
                                 size="small"
                                 bordered
                                 pagination={{ pageSize: 10 }}
