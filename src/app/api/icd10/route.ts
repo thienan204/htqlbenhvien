@@ -16,6 +16,8 @@ export async function GET(request: Request) {
         const deathCause = searchParams.get('is_death_cause_only') === 'true';
         const femaleOnly = searchParams.get('is_female_only') === 'true';
         const maleOnly = searchParams.get('is_male_only') === 'true';
+        const isPhuLuc1TT25 = searchParams.get('is_phu_luc_1_tt25') === 'true';
+        const isPhuLuc2TT25 = searchParams.get('is_phu_luc_2_tt25') === 'true';
 
         // Pagination
         const page = parseInt(searchParams.get('page') || '1');
@@ -67,6 +69,8 @@ export async function GET(request: Request) {
         if (deathCause) andConditions.push({ is_death_cause_only: true });
         if (femaleOnly) andConditions.push({ is_female_only: true });
         if (maleOnly) andConditions.push({ is_male_only: true });
+        if (isPhuLuc1TT25) andConditions.push({ is_phu_luc_1_tt25: true });
+        if (isPhuLuc2TT25) andConditions.push({ is_phu_luc_2_tt25: true });
 
         if (andConditions.length > 0) {
             where.AND = andConditions;

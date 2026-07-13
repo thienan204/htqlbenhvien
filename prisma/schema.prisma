@@ -684,6 +684,8 @@ model Icd10Catalog {
   is_death_cause_only    Boolean  @default(false)
   is_female_only         Boolean  @default(false)
   is_male_only           Boolean  @default(false)
+  is_phu_luc_1_tt25      Boolean  @default(false)
+  is_phu_luc_2_tt25      Boolean  @default(false)
   ma_qd_cu               String?
   tuyen_dieu_tri         String?
   ma_chuyen_khoa         String?
