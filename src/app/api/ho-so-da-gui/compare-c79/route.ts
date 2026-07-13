@@ -53,19 +53,7 @@ export async function POST(request: Request) {
                 if (!maThe) continue; // Skip empty rows
                 totalRawRecords++;
 
-                const excelTrangThaiHS = norm(row['Trạng thái HS'] || row['Trạng thái hồ sơ']);
-                const excelTrangThaiTT = norm(row['Trạng thái TT'] || row['Trạng thái thanh toán']);
                 const excelNgayRa = norm(row['NGAY_RA'] || row['Ngày ra']);
-
-                if (filterTrangThaiHS) {
-                    const allowedStatuses = filterTrangThaiHS.split(',');
-                    if (!allowedStatuses.includes(excelTrangThaiHS)) continue;
-                }
-                
-                if (filterTrangThaiTT) {
-                    const allowedTT = filterTrangThaiTT.split(',');
-                    if (!allowedTT.includes(excelTrangThaiTT)) continue;
-                }
 
                 if (filterNgayRaTu || filterNgayRaDen) {
                     const dateOnly = extractDate(excelNgayRa);

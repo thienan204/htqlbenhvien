@@ -846,7 +846,7 @@ export default function HoSoDaGuiPage() {
                         />
                     </div>
                     <div className="text-sm text-slate-500 bg-slate-50 p-3 rounded mt-2">
-                        Hệ thống sẽ lọc những hồ sơ thỏa mãn các điều kiện trên ở <b>cả file Excel và trên phần mềm</b> trước khi thực hiện đối chiếu chéo.
+                        Hệ thống sẽ lọc những hồ sơ thỏa mãn các điều kiện trên ở <b>trên phần mềm</b> trước khi thực hiện đối chiếu chéo. (Lưu ý: Bộ lọc Ngày ra viện sẽ được áp dụng cho cả file Excel và trên phần mềm).
                     </div>
                 </div>
             </Modal>
