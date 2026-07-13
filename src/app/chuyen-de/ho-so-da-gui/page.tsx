@@ -864,6 +864,29 @@ export default function HoSoDaGuiPage() {
                             />
                         </div>
                     )}
+
+                    {compareResult.details.notInExcel.length > 0 && (
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mt-6">
+                            <h3 className="text-lg font-bold text-red-800 mb-4">Dữ liệu có trong Phần mềm nhưng không có trong Excel</h3>
+                            <Table 
+                                dataSource={compareResult.details.notInExcel}
+                                rowKey="id"
+                                size="small"
+                                bordered
+                                pagination={{ pageSize: 10 }}
+                                scroll={{ x: 800 }}
+                                columns={[
+                                    { title: 'Mã Liên Kết', dataIndex: 'maLienKet', width: 150 },
+                                    { title: 'Họ Tên', dataIndex: 'hoTen', width: 150 },
+                                    { title: 'Mã Thẻ', dataIndex: 'maThe', width: 150 },
+                                    { title: 'Ngày Vào', dataIndex: 'ngayVao', width: 120 },
+                                    { title: 'Ngày Ra', dataIndex: 'ngayRa', width: 120 },
+                                    { title: 'Tổng Chi', dataIndex: 'tongChi', align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 120 },
+                                    { title: 'Trạng Thái HS', dataIndex: 'trangThaiHS', width: 150 },
+                                ]}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
         </div>
