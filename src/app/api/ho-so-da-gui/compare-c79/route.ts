@@ -108,34 +108,55 @@ export async function POST(request: Request) {
                 
                 // Helper to get value from mapped column or fallback to default heuristic
                 const getValue = (key: string, fallbacks: string[]) => {
-                    if (mapping[key] && row[mapping[key]] !== undefined) {
-                        return row[mapping[key]];
+                    // Nếu mapping object tồn tại key này
+                    if (key in mapping) {
+                        const mappedCol = mapping[key];
+                        if (mappedCol) {
+                            return row[mappedCol] !== undefined ? row[mappedCol] : null;
+                        } else {
+                            // User cố tình bỏ qua cột này (ví dụ: Tổng Chi BH)
+                            return null;
+                        }
                     }
+                    
+                    // Fallback cho API cũ không gửi columnMapping
                     for (const fb of fallbacks) {
                         if (row[fb] !== undefined) return row[fb];
                     }
                     return '';
                 };
 
-                const maThe = norm(getValue('maThe', ['MA_THE_BHYT', 'Mã thẻ BHYT', 'Mã thẻ', 'Mã Thẻ', 'MA_THE']));
+                const parseFloatOrNull = (val: any) => {
+                    if (val === null) return null;
+                    const parsed = parseFloat(val);
+                    return isNaN(parsed) ? 0 : parsed;
+                };
+
+                const getStringOrNull = (val: any) => {
+                    if (val === null) return null;
+                    return norm(val);
+                };
+
+                const maTheRaw = getValue('maThe', ['MA_THE_BHYT', 'Mã thẻ BHYT', 'Mã thẻ', 'Mã Thẻ', 'MA_THE']);
+                const maThe = maTheRaw === null ? null : norm(maTheRaw);
                 if (!maThe) continue; // Skip empty rows
                 totalRawRecords++;
 
                 excelRecords.push({
                     stt: row['STT'] || getValue('stt', ['STT']),
-                    hoTen: norm(getValue('hoTen', ['HO_TEN', 'Họ tên'])),
+                    hoTen: getStringOrNull(getValue('hoTen', ['HO_TEN', 'Họ tên'])),
                     maThe: maThe,
-                    ngaySinh: norm(getValue('ngaySinh', ['NGAY_SINH', 'Ngày sinh', 'Năm sinh'])),
-                    gioiTinh: norm(getValue('gioiTinh', ['GIOI_TINH', 'Giới tính'])),
-                    chanDoan: norm(getValue('chanDoan', ['MA_BENH', 'Mã bệnh', 'Chẩn đoán'])),
-                    ngayVao: norm(getValue('ngayVao', ['NGAY_VAO', 'Ngày vào'])),
-                    ngayRa: norm(getValue('ngayRa', ['NGAY_RA', 'Ngày ra'])),
-                    tongChi: parseFloat(getValue('tongChi', ['T_TONGCHI_BV', 'Tổng chi'])) || 0,
-                    tongChiBH: parseFloat(getValue('tongChiBH', ['T_TONGCHI_BH', 'Tổng chi BH'])) || 0,
-                    baoHiemTT: parseFloat(getValue('baoHiemTT', ['T_BHTT', 'Bảo hiểm TT'])) || 0,
-                    benhNhanCCT: parseFloat(getValue('benhNhanCCT', ['T_BNCCT', 'Bệnh nhân CCT'])) || 0,
-                    benhNhanTT: parseFloat(getValue('benhNhanTT', ['T_BNTT', 'Bệnh nhân TT'])) || 0,
-                    nguonKhac: parseFloat(getValue('nguonKhac', ['T_NGUONKHAC', 'Nguồn khác'])) || 0,
+                    ngaySinh: getStringOrNull(getValue('ngaySinh', ['NGAY_SINH', 'Ngày sinh', 'Năm sinh'])),
+                    gioiTinh: getStringOrNull(getValue('gioiTinh', ['GIOI_TINH', 'Giới tính'])),
+                    chanDoan: getStringOrNull(getValue('chanDoan', ['MA_BENH', 'Mã bệnh', 'Chẩn đoán'])),
+                    ngayVao: getStringOrNull(getValue('ngayVao', ['NGAY_VAO', 'Ngày vào'])),
+                    ngayRa: getStringOrNull(getValue('ngayRa', ['NGAY_RA', 'Ngày ra'])),
+                    tongChi: parseFloatOrNull(getValue('tongChi', ['T_TONGCHI_BV', 'Tổng chi'])),
+                    tongChiBH: parseFloatOrNull(getValue('tongChiBH', ['T_TONGCHI_BH', 'Tổng chi BH'])),
+                    baoHiemTT: parseFloatOrNull(getValue('baoHiemTT', ['T_BHTT', 'Bảo hiểm TT'])),
+                    benhNhanCCT: parseFloatOrNull(getValue('benhNhanCCT', ['T_BNCCT', 'Bệnh nhân CCT'])),
+                    benhNhanTT: parseFloatOrNull(getValue('benhNhanTT', ['T_BNTT', 'Bệnh nhân TT'])),
+                    nguonKhac: parseFloatOrNull(getValue('nguonKhac', ['T_NGUONKHAC', 'Nguồn khác'])),
                 });
             }
         }
@@ -299,21 +320,30 @@ export async function POST(request: Request) {
                 const dbGioiTinh = normalizeGioiTinh(matchedDbRec.gioiTinh);
                 const exGioiTinh = normalizeGioiTinh(exRec.gioiTinh);
 
-                const hoTenDiff = norm(matchedDbRec.hoTen).toUpperCase() !== norm(exRec.hoTen).toUpperCase();
-                const ngaySinhDiff = dbNgaySinh !== exNgaySinh;
-                const gioiTinhDiff = dbGioiTinh !== exGioiTinh;
-                const chanDoanDiff = !!(norm(exRec.chanDoan) && norm(matchedDbRec.chanDoan) !== norm(exRec.chanDoan));
+                const hoTenDiff = exRec.hoTen !== null && norm(matchedDbRec.hoTen).toUpperCase() !== norm(exRec.hoTen).toUpperCase();
+                const ngaySinhDiff = exRec.ngaySinh !== null && dbNgaySinh !== exNgaySinh;
+                const gioiTinhDiff = exRec.gioiTinh !== null && dbGioiTinh !== exGioiTinh;
+                const chanDoanDiff = exRec.chanDoan !== null && !!(norm(exRec.chanDoan) && norm(matchedDbRec.chanDoan) !== norm(exRec.chanDoan));
 
                 const isInfoDiff = hoTenDiff || ngaySinhDiff || gioiTinhDiff || chanDoanDiff;
 
+                const checkCost = (dbVal: any, exVal: any) => {
+                    if (exVal === null) return false;
+                    return Math.abs((dbVal || 0) - exVal) > 5;
+                };
+
                 const isCostDiff = 
-                    Math.abs((matchedDbRec.tongChi || 0) - exRec.tongChi) > 5 ||
-                    Math.abs((matchedDbRec.tongChiBH || 0) - exRec.tongChiBH) > 5 ||
-                    Math.abs((matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT) > 5 ||
-                    Math.abs((matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT) > 5 ||
-                    Math.abs((matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT) > 5 ||
-                    Math.abs((matchedDbRec.nguonKhac || 0) - exRec.nguonKhac) > 5;
+                    checkCost(matchedDbRec.tongChi, exRec.tongChi) ||
+                    checkCost(matchedDbRec.tongChiBH, exRec.tongChiBH) ||
+                    checkCost(matchedDbRec.baoHiemTT, exRec.baoHiemTT) ||
+                    checkCost(matchedDbRec.benhNhanCCT, exRec.benhNhanCCT) ||
+                    checkCost(matchedDbRec.benhNhanTT, exRec.benhNhanTT) ||
+                    checkCost(matchedDbRec.nguonKhac, exRec.nguonKhac);
                 
+                const ngayVaoDiff = exRec.ngayVao !== null && dbNgayVao !== exNgayVao;
+                const ngayRaDiff = exRec.ngayRa !== null && dbNgayRa !== exNgayRa;
+                const isDateDiff = ngayVaoDiff || ngayRaDiff;
+
                 if (isCostDiff || isDateDiff || isInfoDiff) {
                     diffMatches.push({
                         excel: exRec,
@@ -322,18 +352,18 @@ export async function POST(request: Request) {
                             isDateDiff,
                             isCostDiff,
                             isInfoDiff,
-                            ngayVaoDiff: dbNgayVao !== exNgayVao,
-                            ngayRaDiff: dbNgayRa !== exNgayRa,
+                            ngayVaoDiff,
+                            ngayRaDiff,
                             hoTenDiff,
                             ngaySinhDiff,
                             gioiTinhDiff,
                             chanDoanDiff,
-                            tongChi: (matchedDbRec.tongChi || 0) - exRec.tongChi,
-                            tongChiBH: (matchedDbRec.tongChiBH || 0) - exRec.tongChiBH,
-                            baoHiemTT: (matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT,
-                            benhNhanCCT: (matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT,
-                            benhNhanTT: (matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT,
-                            nguonKhac: (matchedDbRec.nguonKhac || 0) - exRec.nguonKhac,
+                            tongChi: exRec.tongChi === null ? 0 : (matchedDbRec.tongChi || 0) - exRec.tongChi,
+                            tongChiBH: exRec.tongChiBH === null ? 0 : (matchedDbRec.tongChiBH || 0) - exRec.tongChiBH,
+                            baoHiemTT: exRec.baoHiemTT === null ? 0 : (matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT,
+                            benhNhanCCT: exRec.benhNhanCCT === null ? 0 : (matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT,
+                            benhNhanTT: exRec.benhNhanTT === null ? 0 : (matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT,
+                            nguonKhac: exRec.nguonKhac === null ? 0 : (matchedDbRec.nguonKhac || 0) - exRec.nguonKhac,
                         }
                     });
                 } else {

@@ -1028,73 +1028,54 @@ export default function HoSoDaGuiPage() {
                                                 return <span className={record.diff?.chanDoanDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
-                                    },
-                                    { 
-                                        title: 'Ngày Vào', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'ngayVao'], width: 130 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayVao'], width: 130, render: (val, record: any) => {
-                                                return <span className={record.diff?.ngayVaoDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Ngày Ra', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'ngayRa'], width: 130 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayRa'], width: 130, render: (val, record: any) => {
-                                                return <span className={record.diff?.ngayRaDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
+                                               { 
                                         title: 'Tổng Chi', 
                                         children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'tongChi'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Excel', dataIndex: ['excel', 'tongChi'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'tongChi'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChi'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChi'], align: 'right', render: (v, record: any) => record.excel.tongChi === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
                                         ]
                                     },
                                     { 
                                         title: 'Tổng Chi BH', 
                                         children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'tongChiBH'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Excel', dataIndex: ['excel', 'tongChiBH'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'tongChiBH'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChiBH'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChiBH'], align: 'right', render: (v, record: any) => record.excel.tongChiBH === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
                                         ]
                                     },
                                     { 
                                         title: 'Bảo Hiểm TT', 
                                         children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'baoHiemTT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Excel', dataIndex: ['excel', 'baoHiemTT'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'baoHiemTT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'baoHiemTT'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'baoHiemTT'], align: 'right', render: (v, record: any) => record.excel.baoHiemTT === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
                                         ]
                                     },
                                     { 
                                         title: 'Bệnh Nhân CCT', 
                                         children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'benhNhanCCT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Excel', dataIndex: ['excel', 'benhNhanCCT'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'benhNhanCCT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanCCT'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanCCT'], align: 'right', render: (v, record: any) => record.excel.benhNhanCCT === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
                                         ]
                                     },
                                     { 
                                         title: 'Bệnh Nhân TT', 
                                         children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'benhNhanTT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Excel', dataIndex: ['excel', 'benhNhanTT'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'benhNhanTT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanTT'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanTT'], align: 'right', render: (v, record: any) => record.excel.benhNhanTT === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
                                         ]
                                     },
                                     { 
-                                        title: 'Nguồn khác', 
+                                        title: 'Nguồn Khác', 
                                         children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'nguonKhac'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Excel', dataIndex: ['excel', 'nguonKhac'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'nguonKhac'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'nguonKhac'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'nguonKhac'], align: 'right', render: (v, record: any) => record.excel.nguonKhac === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
                                         ]
-                                    },
+                                    }
                                 ]}
                             />
                         </div>
