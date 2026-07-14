@@ -57,14 +57,17 @@ export async function POST(request: Request) {
                     stt: row['STT'],
                     hoTen: norm(row['HO_TEN'] || row['Họ tên']),
                     maThe: maThe,
+                    ngaySinh: norm(row['NGAY_SINH'] || row['Ngày sinh'] || row['Năm sinh']),
+                    gioiTinh: norm(row['GIOI_TINH'] || row['Giới tính']),
+                    chanDoan: norm(row['MA_BENH'] || row['Mã bệnh'] || row['Chẩn đoán']),
                     ngayVao: norm(row['NGAY_VAO'] || row['Ngày vào']),
                     ngayRa: norm(row['NGAY_RA'] || row['Ngày ra']),
                     tongChi: parseFloat(row['T_TONGCHI_BV'] || row['Tổng chi']) || 0,
-                    tongChiBH: parseFloat(row['T_TONGCHI_BH']) || 0,
+                    tongChiBH: parseFloat(row['T_TONGCHI_BH']) || parseFloat(row['Tổng chi BH']) || 0,
                     baoHiemTT: parseFloat(row['T_BHTT'] || row['Bảo hiểm TT']) || 0,
                     benhNhanCCT: parseFloat(row['T_BNCCT'] || row['Bệnh nhân CCT']) || 0,
                     benhNhanTT: parseFloat(row['T_BNTT'] || row['Bệnh nhân TT']) || 0,
-                    nguonKhac: parseFloat(row['T_NGUONKHAC']) || 0,
+                    nguonKhac: parseFloat(row['T_NGUONKHAC'] || row['Nguồn khác']) || 0,
                 });
             }
         }
@@ -233,23 +236,34 @@ export async function POST(request: Request) {
 
                 const isDateDiff = (dbNgayVao !== exNgayVao) || (dbNgayRa !== exNgayRa);
 
+                const isInfoDiff = 
+                    norm(matchedDbRec.hoTen).toUpperCase() !== norm(exRec.hoTen).toUpperCase() ||
+                    norm(matchedDbRec.ngaySinh) !== norm(exRec.ngaySinh) ||
+                    norm(matchedDbRec.gioiTinh) !== norm(exRec.gioiTinh) ||
+                    (norm(exRec.chanDoan) && norm(matchedDbRec.chanDoan) !== norm(exRec.chanDoan)); // Only compare chanDoan if Excel has it
+
                 const isCostDiff = 
                     Math.abs((matchedDbRec.tongChi || 0) - exRec.tongChi) > 5 ||
+                    Math.abs((matchedDbRec.tongChiBH || 0) - exRec.tongChiBH) > 5 ||
                     Math.abs((matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT) > 5 ||
                     Math.abs((matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT) > 5 ||
-                    Math.abs((matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT) > 5;
+                    Math.abs((matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT) > 5 ||
+                    Math.abs((matchedDbRec.nguonKhac || 0) - exRec.nguonKhac) > 5;
                 
-                if (isCostDiff || isDateDiff) {
+                if (isCostDiff || isDateDiff || isInfoDiff) {
                     diffMatches.push({
                         excel: exRec,
                         db: matchedDbRec,
                         diff: {
                             isDateDiff,
                             isCostDiff,
+                            isInfoDiff,
                             tongChi: (matchedDbRec.tongChi || 0) - exRec.tongChi,
+                            tongChiBH: (matchedDbRec.tongChiBH || 0) - exRec.tongChiBH,
                             baoHiemTT: (matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT,
                             benhNhanCCT: (matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT,
                             benhNhanTT: (matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT,
+                            nguonKhac: (matchedDbRec.nguonKhac || 0) - exRec.nguonKhac,
                         }
                     });
                 } else {

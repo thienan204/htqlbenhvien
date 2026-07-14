@@ -900,8 +900,48 @@ export default function HoSoDaGuiPage() {
                                 pagination={{ pageSize: 10 }}
                                 scroll={{ x: 1500 }}
                                 columns={[
-                                    { title: 'Mã Thẻ (Excel)', dataIndex: ['excel', 'maThe'], width: 140 },
-                                    { title: 'Họ Tên (Excel)', dataIndex: ['excel', 'hoTen'], width: 150 },
+                                    { 
+                                        title: 'Họ Tên', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'hoTen'], width: 150 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'hoTen'], width: 150, render: (val, record: any) => {
+                                                const isDiff = val?.trim().toUpperCase() !== record.excel.hoTen?.trim().toUpperCase();
+                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
+                                    { 
+                                        title: 'Ngày Sinh', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'ngaySinh'], width: 100 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'ngaySinh'], width: 100, render: (val, record: any) => {
+                                                const isDiff = val?.trim() !== record.excel.ngaySinh?.trim();
+                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
+                                    { 
+                                        title: 'Giới Tính', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'gioiTinh'], width: 80 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'gioiTinh'], width: 80, render: (val, record: any) => {
+                                                const isDiff = val?.trim() !== record.excel.gioiTinh?.trim();
+                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
+                                    { 
+                                        title: 'Mã Bệnh', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'chanDoan'], width: 100 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'chanDoan'], width: 100, render: (val, record: any) => {
+                                                // Only show diff if Excel has chanDoan
+                                                const ex = record.excel.chanDoan?.trim();
+                                                const isDiff = ex && val?.trim() !== ex;
+                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
                                     { 
                                         title: 'Ngày Vào', 
                                         children: [
@@ -932,7 +972,14 @@ export default function HoSoDaGuiPage() {
                                             { title: 'Chênh lệch', dataIndex: ['diff', 'tongChi'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
                                         ]
                                     },
-                                    { title: 'Tổng Chi BH (Excel)', dataIndex: ['excel', 'tongChiBH'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                    { 
+                                        title: 'Tổng Chi BH', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'tongChiBH'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'tongChiBH'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChiBH'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                        ]
+                                    },
                                     { 
                                         title: 'Bảo Hiểm TT', 
                                         children: [
@@ -957,7 +1004,14 @@ export default function HoSoDaGuiPage() {
                                             { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanTT'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
                                         ]
                                     },
-                                    { title: 'Nguồn khác (Excel)', dataIndex: ['excel', 'nguonKhac'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                    { 
+                                        title: 'Nguồn khác', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'nguonKhac'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'nguonKhac'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
+                                            { title: 'Chênh lệch', dataIndex: ['diff', 'nguonKhac'], align: 'right', render: v => v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-', width: 90 }
+                                        ]
+                                    },
                                 ]}
                             />
                         </div>
