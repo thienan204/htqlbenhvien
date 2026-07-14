@@ -305,8 +305,6 @@ export async function POST(request: Request) {
                 const dbNgayRa = normalizeTime(matchedDbRec.ngayRa);
                 const exNgayRa = normalizeTime(exRec.ngayRa);
 
-                const isDateDiff = (dbNgayVao !== exNgayVao) || (dbNgayRa !== exNgayRa);
-
                 // Helper cho giới tính
                 const normalizeGioiTinh = (gt: string) => {
                     const clean = norm(gt).toUpperCase();

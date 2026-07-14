@@ -1028,7 +1028,26 @@ export default function HoSoDaGuiPage() {
                                                 return <span className={record.diff?.chanDoanDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
-                                               { 
+                                    },
+                                    { 
+                                        title: 'Ngày Vào', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'ngayVao'], width: 130 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayVao'], width: 130, render: (val, record: any) => {
+                                                return <span className={record.diff?.ngayVaoDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
+                                    { 
+                                        title: 'Ngày Ra', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'ngayRa'], width: 130 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayRa'], width: 130, render: (val, record: any) => {
+                                                return <span className={record.diff?.ngayRaDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
+                                    { 
                                         title: 'Tổng Chi', 
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'tongChi'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
