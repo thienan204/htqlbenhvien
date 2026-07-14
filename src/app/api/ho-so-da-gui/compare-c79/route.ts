@@ -258,11 +258,25 @@ export async function POST(request: Request) {
 
                 const isDateDiff = (dbNgayVao !== exNgayVao) || (dbNgayRa !== exNgayRa);
 
-                const isInfoDiff = 
-                    norm(matchedDbRec.hoTen).toUpperCase() !== norm(exRec.hoTen).toUpperCase() ||
-                    norm(matchedDbRec.ngaySinh) !== norm(exRec.ngaySinh) ||
-                    norm(matchedDbRec.gioiTinh) !== norm(exRec.gioiTinh) ||
-                    (norm(exRec.chanDoan) && norm(matchedDbRec.chanDoan) !== norm(exRec.chanDoan)); // Only compare chanDoan if Excel has it
+                // Helper cho giới tính
+                const normalizeGioiTinh = (gt: string) => {
+                    const clean = norm(gt).toUpperCase();
+                    if (clean === '1' || clean === '01' || clean === 'NAM') return 'NAM';
+                    if (clean === '2' || clean === '02' || clean === 'NỮ' || clean === 'NU') return 'NỮ';
+                    return clean;
+                };
+
+                const dbNgaySinh = normalizeTime(matchedDbRec.ngaySinh).substring(0, 8);
+                const exNgaySinh = normalizeTime(exRec.ngaySinh).substring(0, 8);
+                const dbGioiTinh = normalizeGioiTinh(matchedDbRec.gioiTinh);
+                const exGioiTinh = normalizeGioiTinh(exRec.gioiTinh);
+
+                const hoTenDiff = norm(matchedDbRec.hoTen).toUpperCase() !== norm(exRec.hoTen).toUpperCase();
+                const ngaySinhDiff = dbNgaySinh !== exNgaySinh;
+                const gioiTinhDiff = dbGioiTinh !== exGioiTinh;
+                const chanDoanDiff = !!(norm(exRec.chanDoan) && norm(matchedDbRec.chanDoan) !== norm(exRec.chanDoan));
+
+                const isInfoDiff = hoTenDiff || ngaySinhDiff || gioiTinhDiff || chanDoanDiff;
 
                 const isCostDiff = 
                     Math.abs((matchedDbRec.tongChi || 0) - exRec.tongChi) > 5 ||
@@ -280,6 +294,12 @@ export async function POST(request: Request) {
                             isDateDiff,
                             isCostDiff,
                             isInfoDiff,
+                            ngayVaoDiff: dbNgayVao !== exNgayVao,
+                            ngayRaDiff: dbNgayRa !== exNgayRa,
+                            hoTenDiff,
+                            ngaySinhDiff,
+                            gioiTinhDiff,
+                            chanDoanDiff,
                             tongChi: (matchedDbRec.tongChi || 0) - exRec.tongChi,
                             tongChiBH: (matchedDbRec.tongChiBH || 0) - exRec.tongChiBH,
                             baoHiemTT: (matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT,

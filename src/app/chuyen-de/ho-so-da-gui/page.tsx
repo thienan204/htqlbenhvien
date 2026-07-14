@@ -998,8 +998,7 @@ export default function HoSoDaGuiPage() {
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'hoTen'], width: 150 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'hoTen'], width: 150, render: (val, record: any) => {
-                                                const isDiff = val?.trim().toUpperCase() !== record.excel.hoTen?.trim().toUpperCase();
-                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                                return <span className={record.diff?.hoTenDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
                                     },
@@ -1008,8 +1007,7 @@ export default function HoSoDaGuiPage() {
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'ngaySinh'], width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'ngaySinh'], width: 100, render: (val, record: any) => {
-                                                const isDiff = val?.trim() !== record.excel.ngaySinh?.trim();
-                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                                return <span className={record.diff?.ngaySinhDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
                                     },
@@ -1018,8 +1016,7 @@ export default function HoSoDaGuiPage() {
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'gioiTinh'], width: 80 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'gioiTinh'], width: 80, render: (val, record: any) => {
-                                                const isDiff = val?.trim() !== record.excel.gioiTinh?.trim();
-                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                                return <span className={record.diff?.gioiTinhDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
                                     },
@@ -1028,10 +1025,7 @@ export default function HoSoDaGuiPage() {
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'chanDoan'], width: 100 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'chanDoan'], width: 100, render: (val, record: any) => {
-                                                // Only show diff if Excel has chanDoan
-                                                const ex = record.excel.chanDoan?.trim();
-                                                const isDiff = ex && val?.trim() !== ex;
-                                                return <span className={isDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                                return <span className={record.diff?.chanDoanDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
                                     },
@@ -1040,9 +1034,7 @@ export default function HoSoDaGuiPage() {
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'ngayVao'], width: 130 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'ngayVao'], width: 130, render: (val, record: any) => {
-                                                const exDate = record.excel.ngayVao?.replace(/[^\d]/g, '');
-                                                const dbDate = val?.replace(/[^\d]/g, '');
-                                                return <span className={exDate !== dbDate ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                                return <span className={record.diff?.ngayVaoDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
                                     },
@@ -1051,9 +1043,7 @@ export default function HoSoDaGuiPage() {
                                         children: [
                                             { title: 'Excel', dataIndex: ['excel', 'ngayRa'], width: 130 },
                                             { title: 'Phần mềm', dataIndex: ['db', 'ngayRa'], width: 130, render: (val, record: any) => {
-                                                const exDate = record.excel.ngayRa?.replace(/[^\d]/g, '');
-                                                const dbDate = val?.replace(/[^\d]/g, '');
-                                                return <span className={exDate !== dbDate ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                                return <span className={record.diff?.ngayRaDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
                                             } },
                                         ]
                                     },
