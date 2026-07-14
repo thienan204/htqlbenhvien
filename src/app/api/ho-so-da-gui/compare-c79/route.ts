@@ -18,20 +18,48 @@ const extractDate = (dateStr: string) => {
     return dateStr;
 };
 
-// Normalize "25/05/2026 08:00" to "202605250800"
+// Normalize date strings into YYYYMMDDHHmm format
 const normalizeTime = (dateStr: string) => {
-    const clean = norm(dateStr).replace(/[^\d]/g, '');
-    // Nếu đã là YYYYMMDD... thì giữ nguyên
-    if (clean.length >= 8 && clean.startsWith('20')) {
-        return clean.substring(0, 12); // Lấy tối đa 12 số (YYYYMMDDHHmm)
+    let clean = norm(dateStr);
+    if (!clean) return '';
+    
+    // Nếu có dạng DD/MM/YYYY hoặc DD-MM-YYYY (VD: 18/08/1964)
+    if (clean.includes('/') || clean.includes('-')) {
+        const parts = clean.split(/[^\d]/); // split by non-digits
+        // parts[0] is DD, parts[1] is MM, parts[2] is YYYY
+        if (parts.length >= 3 && parts[2].length === 4) {
+            const dd = parts[0].padStart(2, '0');
+            const mm = parts[1].padStart(2, '0');
+            const yyyy = parts[2];
+            let time = '0000';
+            if (parts.length >= 5) {
+                time = parts[3].padStart(2, '0') + parts[4].padStart(2, '0');
+            }
+            return `${yyyy}${mm}${dd}${time.substring(0, 4)}`;
+        }
     }
-    // Nếu là DDMMYYYY...
+
+    // Nếu là chuỗi số liền nhau (VD: 196408180000 hoặc 18081964)
+    clean = clean.replace(/[^\d]/g, '');
     if (clean.length >= 8) {
-        const dd = clean.substring(0, 2);
-        const mm = clean.substring(2, 4);
-        const yyyy = clean.substring(4, 8);
-        const time = clean.substring(8, 12);
-        return `${yyyy}${mm}${dd}${time}`;
+        // Kiểm tra xem năm nằm ở đầu hay cuối
+        // Nếu 4 số đầu là 19xx hoặc 20xx -> YYYYMMDD
+        const first4 = parseInt(clean.substring(0, 4));
+        const last4 = parseInt(clean.substring(clean.length >= 12 ? 4 : 4, 8)); // Wait, if 18081964 -> 1964 is at 4..8
+        
+        // Nếu 4 số cuối (của đoạn 8 ký tự đầu) là năm hợp lý (vd 1964) -> DDMMYYYY
+        const yearAtEnd = parseInt(clean.substring(4, 8));
+        if (yearAtEnd >= 1900 && yearAtEnd <= 2100 && (first4 > 31 || first4 < 1900)) {
+             // It's DDMMYYYY
+             const dd = clean.substring(0, 2);
+             const mm = clean.substring(2, 4);
+             const yyyy = clean.substring(4, 8);
+             const time = clean.length >= 12 ? clean.substring(8, 12) : '0000';
+             return `${yyyy}${mm}${dd}${time}`;
+        }
+        
+        // Mặc định xem như YYYYMMDD
+        return clean.substring(0, 12).padEnd(12, '0');
     }
     return clean;
 };
