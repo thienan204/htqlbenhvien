@@ -209,11 +209,11 @@ export async function POST(request: Request) {
                 `;
 
                 if (filterNgayRaTu) {
-                    sql += ` AND ${extractDateSql} >= $${paramIdx++}`;
+                    sql += ' AND ' + extractDateSql + ' >= $' + (paramIdx++);
                     params.push(filterNgayRaTu);
                 }
                 if (filterNgayRaDen) {
-                    sql += ` AND ${extractDateSql} <= $${paramIdx++}`;
+                    sql += ' AND ' + extractDateSql + ' <= $' + (paramIdx++);
                     params.push(filterNgayRaDen);
                 }
                 
