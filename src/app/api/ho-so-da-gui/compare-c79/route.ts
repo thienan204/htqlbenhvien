@@ -18,6 +18,24 @@ const extractDate = (dateStr: string) => {
     return dateStr;
 };
 
+// Normalize "25/05/2026 08:00" to "202605250800"
+const normalizeTime = (dateStr: string) => {
+    const clean = norm(dateStr).replace(/[^\d]/g, '');
+    // Nếu đã là YYYYMMDD... thì giữ nguyên
+    if (clean.length >= 8 && clean.startsWith('20')) {
+        return clean.substring(0, 12); // Lấy tối đa 12 số (YYYYMMDDHHmm)
+    }
+    // Nếu là DDMMYYYY...
+    if (clean.length >= 8) {
+        const dd = clean.substring(0, 2);
+        const mm = clean.substring(2, 4);
+        const yyyy = clean.substring(4, 8);
+        const time = clean.substring(8, 12);
+        return `${yyyy}${mm}${dd}${time}`;
+    }
+    return clean;
+};
+
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
@@ -170,18 +188,18 @@ export async function POST(request: Request) {
                 
                 // 1. Match exact ngayVao & ngayRa
                 let bestMatch = dbList.find(db => 
-                    extractDate(norm(db.ngayVao)) === extractDate(exRec.ngayVao) && 
-                    extractDate(norm(db.ngayRa)) === extractDate(exRec.ngayRa)
+                    normalizeTime(db.ngayVao) === normalizeTime(exRec.ngayVao) && 
+                    normalizeTime(db.ngayRa) === normalizeTime(exRec.ngayRa)
                 );
 
                 // 2. Match exact ngayVao
                 if (!bestMatch) {
-                    bestMatch = dbList.find(db => extractDate(norm(db.ngayVao)) === extractDate(exRec.ngayVao));
+                    bestMatch = dbList.find(db => normalizeTime(db.ngayVao) === normalizeTime(exRec.ngayVao));
                 }
                 
                 // 3. Match exact ngayRa
                 if (!bestMatch) {
-                    bestMatch = dbList.find(db => extractDate(norm(db.ngayRa)) === extractDate(exRec.ngayRa));
+                    bestMatch = dbList.find(db => normalizeTime(db.ngayRa) === normalizeTime(exRec.ngayRa));
                 }
 
                 // 4. Just take the first one if only one exists and money matches
@@ -211,24 +229,6 @@ export async function POST(request: Request) {
 
             if (matchedDbRec) {
                 // Prepare dates for comparison
-                // Normalize "25/05/2026 08:00" to "202605250800"
-                const normalizeTime = (dateStr: string) => {
-                    const clean = norm(dateStr).replace(/[^\d]/g, '');
-                    // Nếu đã là YYYYMMDD... thì giữ nguyên
-                    if (clean.length >= 8 && clean.startsWith('20')) {
-                        return clean.substring(0, 12); // Lấy tối đa 12 số (YYYYMMDDHHmm)
-                    }
-                    // Nếu là DDMMYYYY...
-                    if (clean.length >= 8) {
-                        const dd = clean.substring(0, 2);
-                        const mm = clean.substring(2, 4);
-                        const yyyy = clean.substring(4, 8);
-                        const time = clean.substring(8, 12);
-                        return `${yyyy}${mm}${dd}${time}`;
-                    }
-                    return clean;
-                };
-
                 const dbNgayVao = normalizeTime(matchedDbRec.ngayVao);
                 const exNgayVao = normalizeTime(exRec.ngayVao);
                 const dbNgayRa = normalizeTime(matchedDbRec.ngayRa);
