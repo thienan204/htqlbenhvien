@@ -207,17 +207,45 @@ export async function POST(request: Request) {
             }
 
             if (matchedDbRec) {
+                // Prepare dates for comparison
+                // Normalize "25/05/2026 08:00" to "202605250800"
+                const normalizeTime = (dateStr: string) => {
+                    const clean = norm(dateStr).replace(/[^\d]/g, '');
+                    // Nếu đã là YYYYMMDD... thì giữ nguyên
+                    if (clean.length >= 8 && clean.startsWith('20')) {
+                        return clean.substring(0, 12); // Lấy tối đa 12 số (YYYYMMDDHHmm)
+                    }
+                    // Nếu là DDMMYYYY...
+                    if (clean.length >= 8) {
+                        const dd = clean.substring(0, 2);
+                        const mm = clean.substring(2, 4);
+                        const yyyy = clean.substring(4, 8);
+                        const time = clean.substring(8, 12);
+                        return `${yyyy}${mm}${dd}${time}`;
+                    }
+                    return clean;
+                };
+
+                const dbNgayVao = normalizeTime(matchedDbRec.ngayVao);
+                const exNgayVao = normalizeTime(exRec.ngayVao);
+                const dbNgayRa = normalizeTime(matchedDbRec.ngayRa);
+                const exNgayRa = normalizeTime(exRec.ngayRa);
+
+                const isDateDiff = (dbNgayVao !== exNgayVao) || (dbNgayRa !== exNgayRa);
+
                 const isCostDiff = 
                     Math.abs((matchedDbRec.tongChi || 0) - exRec.tongChi) > 5 ||
                     Math.abs((matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT) > 5 ||
                     Math.abs((matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT) > 5 ||
                     Math.abs((matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT) > 5;
                 
-                if (isCostDiff) {
+                if (isCostDiff || isDateDiff) {
                     diffMatches.push({
                         excel: exRec,
                         db: matchedDbRec,
                         diff: {
+                            isDateDiff,
+                            isCostDiff,
                             tongChi: (matchedDbRec.tongChi || 0) - exRec.tongChi,
                             baoHiemTT: (matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT,
                             benhNhanCCT: (matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT,

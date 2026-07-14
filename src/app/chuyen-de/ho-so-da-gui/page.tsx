@@ -875,7 +875,7 @@ export default function HoSoDaGuiPage() {
                                 <p className="text-3xl font-bold text-green-600 mt-1">{compareResult.summary.exactMatches}</p>
                             </div>
                             <div className="bg-orange-50 rounded-lg p-4 border border-orange-200 border-l-4 border-l-orange-500">
-                                <p className="text-sm text-orange-600 font-medium">Lệch chi phí</p>
+                                <p className="text-sm text-orange-600 font-medium">Lệch thông tin / chi phí</p>
                                 <p className="text-3xl font-bold text-orange-700 mt-1">{compareResult.summary.diffMatches}</p>
                             </div>
                             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 border-l-4 border-l-blue-500">
@@ -891,18 +891,39 @@ export default function HoSoDaGuiPage() {
 
                     {compareResult.details.diffMatches.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">Hồ sơ lệch chi phí</h3>
+                            <h3 className="text-lg font-bold text-slate-800 mb-4">Hồ sơ lệch thông tin / chi phí</h3>
                             <Table 
                                 dataSource={compareResult.details.diffMatches}
                                 rowKey={(r: any) => r.excel.maThe + r.excel.ngayVao}
                                 size="small"
                                 bordered
                                 pagination={{ pageSize: 10 }}
-                                scroll={{ x: 1200 }}
+                                scroll={{ x: 1500 }}
                                 columns={[
-                                    { title: 'Mã Thẻ (Excel)', dataIndex: ['excel', 'maThe'], width: 150 },
+                                    { title: 'Mã Thẻ (Excel)', dataIndex: ['excel', 'maThe'], width: 140 },
                                     { title: 'Họ Tên (Excel)', dataIndex: ['excel', 'hoTen'], width: 150 },
-                                    { title: 'Ngày vào', dataIndex: ['excel', 'ngayVao'], width: 100 },
+                                    { 
+                                        title: 'Ngày Vào', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'ngayVao'], width: 130 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayVao'], width: 130, render: (val, record: any) => {
+                                                const exDate = record.excel.ngayVao?.replace(/[^\d]/g, '');
+                                                const dbDate = val?.replace(/[^\d]/g, '');
+                                                return <span className={exDate !== dbDate ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
+                                    { 
+                                        title: 'Ngày Ra', 
+                                        children: [
+                                            { title: 'Excel', dataIndex: ['excel', 'ngayRa'], width: 130 },
+                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayRa'], width: 130, render: (val, record: any) => {
+                                                const exDate = record.excel.ngayRa?.replace(/[^\d]/g, '');
+                                                const dbDate = val?.replace(/[^\d]/g, '');
+                                                return <span className={exDate !== dbDate ? 'text-red-500 font-bold' : ''}>{val}</span>;
+                                            } },
+                                        ]
+                                    },
                                     { 
                                         title: 'Tổng Chi', 
                                         children: [
