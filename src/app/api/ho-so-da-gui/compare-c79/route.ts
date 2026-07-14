@@ -46,6 +46,16 @@ export async function POST(request: Request) {
         const filterNgayRaTu = formData.get('ngayRaTu') as string;
         const filterNgayRaDen = formData.get('ngayRaDen') as string;
 
+        const columnMappingStr = formData.get('columnMapping') as string;
+        let mapping: Record<string, string> = {};
+        if (columnMappingStr) {
+            try {
+                mapping = JSON.parse(columnMappingStr);
+            } catch (e) {
+                console.error("Lỗi parse columnMapping", e);
+            }
+        }
+
         if (!files || files.length === 0) {
             return NextResponse.json({ error: 'Không tìm thấy file' }, { status: 400 });
         }
@@ -67,25 +77,37 @@ export async function POST(request: Request) {
             let totalRawRecords = 0;
             for (let i = 0; i < rawData.length; i++) {
                 const row = rawData[i];
-                const maThe = norm(row['MA_THE_BHYT'] || row['Mã thẻ BHYT'] || row['Mã thẻ'] || row['Mã Thẻ'] || row['MA_THE'] || '');
+                
+                // Helper to get value from mapped column or fallback to default heuristic
+                const getValue = (key: string, fallbacks: string[]) => {
+                    if (mapping[key] && row[mapping[key]] !== undefined) {
+                        return row[mapping[key]];
+                    }
+                    for (const fb of fallbacks) {
+                        if (row[fb] !== undefined) return row[fb];
+                    }
+                    return '';
+                };
+
+                const maThe = norm(getValue('maThe', ['MA_THE_BHYT', 'Mã thẻ BHYT', 'Mã thẻ', 'Mã Thẻ', 'MA_THE']));
                 if (!maThe) continue; // Skip empty rows
                 totalRawRecords++;
 
                 excelRecords.push({
-                    stt: row['STT'],
-                    hoTen: norm(row['HO_TEN'] || row['Họ tên']),
+                    stt: row['STT'] || getValue('stt', ['STT']),
+                    hoTen: norm(getValue('hoTen', ['HO_TEN', 'Họ tên'])),
                     maThe: maThe,
-                    ngaySinh: norm(row['NGAY_SINH'] || row['Ngày sinh'] || row['Năm sinh']),
-                    gioiTinh: norm(row['GIOI_TINH'] || row['Giới tính']),
-                    chanDoan: norm(row['MA_BENH'] || row['Mã bệnh'] || row['Chẩn đoán']),
-                    ngayVao: norm(row['NGAY_VAO'] || row['Ngày vào']),
-                    ngayRa: norm(row['NGAY_RA'] || row['Ngày ra']),
-                    tongChi: parseFloat(row['T_TONGCHI_BV'] || row['Tổng chi']) || 0,
-                    tongChiBH: parseFloat(row['T_TONGCHI_BH']) || parseFloat(row['Tổng chi BH']) || 0,
-                    baoHiemTT: parseFloat(row['T_BHTT'] || row['Bảo hiểm TT']) || 0,
-                    benhNhanCCT: parseFloat(row['T_BNCCT'] || row['Bệnh nhân CCT']) || 0,
-                    benhNhanTT: parseFloat(row['T_BNTT'] || row['Bệnh nhân TT']) || 0,
-                    nguonKhac: parseFloat(row['T_NGUONKHAC'] || row['Nguồn khác']) || 0,
+                    ngaySinh: norm(getValue('ngaySinh', ['NGAY_SINH', 'Ngày sinh', 'Năm sinh'])),
+                    gioiTinh: norm(getValue('gioiTinh', ['GIOI_TINH', 'Giới tính'])),
+                    chanDoan: norm(getValue('chanDoan', ['MA_BENH', 'Mã bệnh', 'Chẩn đoán'])),
+                    ngayVao: norm(getValue('ngayVao', ['NGAY_VAO', 'Ngày vào'])),
+                    ngayRa: norm(getValue('ngayRa', ['NGAY_RA', 'Ngày ra'])),
+                    tongChi: parseFloat(getValue('tongChi', ['T_TONGCHI_BV', 'Tổng chi'])) || 0,
+                    tongChiBH: parseFloat(getValue('tongChiBH', ['T_TONGCHI_BH', 'Tổng chi BH'])) || 0,
+                    baoHiemTT: parseFloat(getValue('baoHiemTT', ['T_BHTT', 'Bảo hiểm TT'])) || 0,
+                    benhNhanCCT: parseFloat(getValue('benhNhanCCT', ['T_BNCCT', 'Bệnh nhân CCT'])) || 0,
+                    benhNhanTT: parseFloat(getValue('benhNhanTT', ['T_BNTT', 'Bệnh nhân TT'])) || 0,
+                    nguonKhac: parseFloat(getValue('nguonKhac', ['T_NGUONKHAC', 'Nguồn khác'])) || 0,
                 });
             }
         }

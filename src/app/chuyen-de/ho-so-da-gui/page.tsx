@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, FileType, CheckCircle, AlertCircle, RefreshCw, Search, History, Download, Filter, GitCompare, HelpCircle } from 'lucide-react';
-import { Tabs, Table, Input, Button, Tag, Space, Typography, Select, Modal, Switch, DatePicker } from 'antd';
+import { Tabs, Table, Input, Button, Tag, Space, Typography, Select, Modal, Switch, DatePicker, Collapse } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getBasePath } from '@/utils/config';
+import * as xlsx from 'xlsx';
 
 const { Title } = Typography;
 
@@ -28,6 +29,14 @@ export default function HoSoDaGuiPage() {
     const [compareFilterHS, setCompareFilterHS] = useState<string[]>([]);
     const [compareFilterTT, setCompareFilterTT] = useState<string[]>([]);
     const [compareDateRangeStr, setCompareDateRangeStr] = useState<[string, string] | null>(null);
+
+    // --- MAPPING STATES ---
+    const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+    const [columnMapping, setColumnMapping] = useState<Record<string, string>>({
+        maThe: '', hoTen: '', ngaySinh: '', gioiTinh: '', chanDoan: '',
+        ngayVao: '', ngayRa: '', tongChi: '', tongChiBH: '', baoHiemTT: '',
+        benhNhanCCT: '', benhNhanTT: '', nguonKhac: ''
+    });
 
     // --- LIST STATES ---
     const [data, setData] = useState<any[]>([]);
@@ -325,11 +334,57 @@ export default function HoSoDaGuiPage() {
     };
 
     // --- COMPARE LOGIC ---
+    const autoMapColumns = (headers: string[]) => {
+        const mapping: Record<string, string> = {};
+        const findMatch = (keywords: string[]) => {
+            return headers.find(h => keywords.some(k => h.toUpperCase().includes(k.toUpperCase()))) || '';
+        };
+        
+        mapping.maThe = findMatch(['MA_THE', 'Mã thẻ']);
+        mapping.hoTen = findMatch(['HO_TEN', 'Họ tên']);
+        mapping.ngaySinh = findMatch(['NGAY_SINH', 'Ngày sinh', 'Năm sinh']);
+        mapping.gioiTinh = findMatch(['GIOI_TINH', 'Giới tính']);
+        mapping.chanDoan = findMatch(['MA_BENH', 'Mã bệnh', 'Chẩn đoán']);
+        mapping.ngayVao = findMatch(['NGAY_VAO', 'Ngày vào']);
+        mapping.ngayRa = findMatch(['NGAY_RA', 'Ngày ra']);
+        mapping.tongChi = findMatch(['T_TONGCHI_BV', 'Tổng chi', 'T_TONGCHI']);
+        mapping.tongChiBH = findMatch(['T_TONGCHI_BH', 'Tổng chi BH']);
+        mapping.baoHiemTT = findMatch(['T_BHTT', 'Bảo hiểm TT', 'Bảo hiểm thanh toán']);
+        mapping.benhNhanCCT = findMatch(['T_BNCCT', 'Bệnh nhân CCT', 'Cùng chi trả']);
+        mapping.benhNhanTT = findMatch(['T_BNTT', 'Bệnh nhân TT', 'Người bệnh tự trả']);
+        mapping.nguonKhac = findMatch(['T_NGUONKHAC', 'Nguồn khác']);
+        
+        setColumnMapping(mapping);
+    };
+
     const onDropCompare = (acceptedFiles: File[]) => {
         if (acceptedFiles.length > 0) {
             setCompareFiles(prev => [...prev, ...acceptedFiles]);
             setCompareResult(null);
             setCompareError(null);
+            
+            // Đọc dòng đầu tiên của file đầu tiên để lấy Headers
+            if (excelHeaders.length === 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                        const workbook = xlsx.read(data, { type: 'array' });
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const headers: string[] = [];
+                        const range = xlsx.utils.decode_range(sheet['!ref'] || 'A1:A1');
+                        for(let c = range.s.c; c <= range.e.c; ++c) {
+                            const cell = sheet[xlsx.utils.encode_cell({c, r: range.s.r})];
+                            if(cell && cell.v) headers.push(String(cell.v).trim());
+                        }
+                        setExcelHeaders(headers);
+                        autoMapColumns(headers);
+                    } catch (err) {
+                        console.error('Không thể đọc headers từ file Excel', err);
+                    }
+                };
+                reader.readAsArrayBuffer(acceptedFiles[0]);
+            }
         }
     };
 
@@ -369,6 +424,9 @@ export default function HoSoDaGuiPage() {
             formData.append('ngayRaTu', formatForApi(start));
             formData.append('ngayRaDen', formatForApi(end));
         }
+
+        // Gửi thông tin map cột
+        formData.append('columnMapping', JSON.stringify(columnMapping));
 
         try {
             const response = await fetch(`${getBasePath()}/api/ho-so-da-gui/compare-c79`, {
@@ -760,7 +818,12 @@ export default function HoSoDaGuiPage() {
                                 <span className="text-sm text-indigo-600 cursor-pointer hover:underline">Thêm file khác</span>
                                 <span 
                                     className="text-sm text-red-500 cursor-pointer hover:underline"
-                                    onClick={(e) => { e.stopPropagation(); setCompareFiles([]); setCompareResult(null); }}
+                                    onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        setCompareFiles([]); 
+                                        setCompareResult(null); 
+                                        setExcelHeaders([]);
+                                    }}
                                 >
                                     Xóa tất cả
                                 </span>
@@ -848,6 +911,36 @@ export default function HoSoDaGuiPage() {
                     <div className="text-sm text-slate-500 bg-slate-50 p-3 rounded mt-2">
                         Hệ thống sẽ lọc những hồ sơ thỏa mãn các điều kiện trên <b>chỉ ở trên phần mềm</b> trước khi thực hiện đối chiếu chéo. (Toàn bộ dữ liệu trong file Excel tải lên sẽ được giữ nguyên để đem đi đối chiếu).
                     </div>
+                    
+                    {excelHeaders.length > 0 && (
+                        <div className="mt-4 border-t pt-4">
+                            <h4 className="font-semibold text-slate-700 mb-3">Cấu hình Map Cột Excel</h4>
+                            <p className="text-sm text-slate-500 mb-4">Hệ thống đã tự động gán các cột tương ứng từ file Excel. Bạn có thể kiểm tra và tùy chỉnh lại nếu cần thiết.</p>
+                            
+                            <div className="max-h-[300px] overflow-y-auto pr-2 border rounded-lg p-3 bg-slate-50">
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                    {Object.entries({
+                                        maThe: 'Mã Thẻ BHYT (*)', hoTen: 'Họ Tên (*)', ngaySinh: 'Ngày Sinh', gioiTinh: 'Giới Tính', chanDoan: 'Chẩn Đoán',
+                                        ngayVao: 'Ngày Vào (*)', ngayRa: 'Ngày Ra (*)', tongChi: 'Tổng Chi', tongChiBH: 'Tổng Chi BH', 
+                                        baoHiemTT: 'Bảo Hiểm TT', benhNhanCCT: 'Bệnh Nhân CCT', benhNhanTT: 'Bệnh Nhân TT', nguonKhac: 'Nguồn Khác'
+                                    }).map(([key, label]) => (
+                                        <div key={key} className="flex flex-col">
+                                            <label className="text-xs font-medium text-slate-600 mb-1">{label}</label>
+                                            <Select
+                                                allowClear
+                                                showSearch
+                                                size="small"
+                                                placeholder="Bỏ qua"
+                                                value={columnMapping[key]}
+                                                onChange={(val) => setColumnMapping(prev => ({ ...prev, [key]: val || '' }))}
+                                                options={excelHeaders.map(h => ({ value: h, label: h }))}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Modal>
 
