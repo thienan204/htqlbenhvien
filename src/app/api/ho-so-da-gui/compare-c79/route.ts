@@ -196,9 +196,39 @@ export async function POST(request: Request) {
         }
 
         if (filterNgayRaTu || filterNgayRaDen) {
-            dbWhere.ngayRa = {};
-            if (filterNgayRaTu) dbWhere.ngayRa.gte = filterNgayRaTu;
-            if (filterNgayRaDen) dbWhere.ngayRa.lte = filterNgayRaDen + '235959';
+            try {
+                let sql = `SELECT id FROM "HoSoDaGui" WHERE "ngayRa" IS NOT NULL AND "ngayRa" != ''`;
+                const params: any[] = [];
+                let paramIdx = 1;
+                
+                const extractDateSql = `
+                    CASE 
+                        WHEN "ngayRa" LIKE '%/%/%' THEN SUBSTRING("ngayRa" FROM 7 FOR 4) || SUBSTRING("ngayRa" FROM 4 FOR 2) || SUBSTRING("ngayRa" FROM 1 FOR 2)
+                        ELSE SUBSTRING("ngayRa" FROM 1 FOR 8)
+                    END
+                `;
+
+                if (filterNgayRaTu) {
+                    sql += ` AND ${extractDateSql} >= $${paramIdx++}`;
+                    params.push(filterNgayRaTu);
+                }
+                if (filterNgayRaDen) {
+                    sql += ` AND ${extractDateSql} <= $${paramIdx++}`;
+                    params.push(filterNgayRaDen);
+                }
+                
+                sql += ` LIMIT 60000`;
+                
+                const rawDateResults = await prisma.$queryRawUnsafe<{id: string}[]>(sql, ...params);
+                const dateIds = rawDateResults.map((r: any) => r.id);
+                
+                if (dateIds.length === 0) dateIds.push('__NO_MATCH__');
+                
+                dbWhere.id = { in: dateIds };
+            } catch (err) {
+                console.error("Lỗi khi lọc theo ngày ra trong đối chiếu:", err);
+                dbWhere.id = { in: ['__ERROR__'] };
+            }
         }
 
         // Fetch DB records
