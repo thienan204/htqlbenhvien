@@ -70,9 +70,41 @@ export async function GET(request: Request) {
         }
 
         if (ngayRaTu || ngayRaDen) {
-            where.ngayRa = {};
-            if (ngayRaTu) where.ngayRa.gte = ngayRaTu;
-            if (ngayRaDen) where.ngayRa.lte = ngayRaDen + '235959';
+            try {
+                let sql = `SELECT id FROM "HoSoDaGui" WHERE "ngayRa" IS NOT NULL AND "ngayRa" != ''`;
+                const params: any[] = [];
+                let paramIdx = 1;
+                
+                const extractDateSql = `
+                    CASE 
+                        WHEN "ngayRa" LIKE '%/%/%' THEN SUBSTRING("ngayRa" FROM 7 FOR 4) || SUBSTRING("ngayRa" FROM 4 FOR 2) || SUBSTRING("ngayRa" FROM 1 FOR 2)
+                        ELSE SUBSTRING("ngayRa" FROM 1 FOR 8)
+                    END
+                `;
+
+                if (ngayRaTu) {
+                    sql += ` AND ${extractDateSql} >= $${paramIdx++}`;
+                    params.push(ngayRaTu);
+                }
+                if (ngayRaDen) {
+                    sql += ` AND ${extractDateSql} <= $${paramIdx++}`;
+                    params.push(ngayRaDen);
+                }
+                
+                // Limit to prevent huge IN clauses
+                sql += ` LIMIT 60000`;
+                
+                const rawDateResults = await prisma.$queryRawUnsafe<{id: string}[]>(sql, ...params);
+                const dateIds = rawDateResults.map(r => r.id);
+                
+                // Add an impossible ID if array is empty so Prisma returns no results safely
+                if (dateIds.length === 0) dateIds.push('__NO_MATCH__');
+                
+                where.id = { in: dateIds };
+            } catch (err) {
+                console.error("Lỗi khi lọc theo ngày ra:", err);
+                where.id = { in: ['__ERROR__'] };
+            }
         }
 
         // Lọc những hồ sơ có lịch sử chỉnh sửa
