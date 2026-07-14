@@ -19,7 +19,8 @@ const extractDate = (dateStr: string) => {
 };
 
 // Normalize date strings into YYYYMMDDHHmm format
-const normalizeTime = (dateStr: string) => {
+const normalizeTime = (dateStr: string | null) => {
+    if (dateStr === null) return '';
     let clean = norm(dateStr);
     if (!clean) return '';
     
@@ -281,12 +282,12 @@ export async function POST(request: Request) {
                 // 5. Fallback: find closest money
                 if (!bestMatch && dbList.length > 0) {
                     // Ưu tiên tìm chi phí khớp chính xác trước
-                    bestMatch = dbList.find(db => Math.abs((db.tongChi || 0) - exRec.tongChi) <= 2);
+                    bestMatch = dbList.find(db => Math.abs((db.tongChi || 0) - (exRec.tongChi || 0)) <= 2);
                     
                     if (!bestMatch) {
                         bestMatch = dbList.reduce((prev, curr) => {
-                            const prevDiff = Math.abs((prev.tongChi || 0) - exRec.tongChi);
-                            const currDiff = Math.abs((curr.tongChi || 0) - exRec.tongChi);
+                            const prevDiff = Math.abs((prev.tongChi || 0) - (exRec.tongChi || 0));
+                            const currDiff = Math.abs((curr.tongChi || 0) - (exRec.tongChi || 0));
                             return (currDiff < prevDiff) ? curr : prev;
                         });
                     }
@@ -306,7 +307,8 @@ export async function POST(request: Request) {
                 const exNgayRa = normalizeTime(exRec.ngayRa);
 
                 // Helper cho giới tính
-                const normalizeGioiTinh = (gt: string) => {
+                const normalizeGioiTinh = (gt: string | null) => {
+                    if (gt === null) return '';
                     const clean = norm(gt).toUpperCase();
                     if (clean === '1' || clean === '01' || clean === 'NAM') return 'NAM';
                     if (clean === '2' || clean === '02' || clean === 'NỮ' || clean === 'NU') return 'NỮ';
