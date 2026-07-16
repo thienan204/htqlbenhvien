@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { emitEvent } from '@/lib/notificationService';
+import { emitEvent } from '../../../../lib/notificationService';
 
 // Định dạng dữ liệu yêu cầu:
 // {
