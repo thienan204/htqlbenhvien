@@ -810,3 +810,15 @@ model HoSoDaGui {
   @@index([maLienKet])
   @@index([createdAt])
 }
+
+model NotificationSetting {
+  id              String   @id @default(cuid())
+  eventCode       String   @unique
+  eventName       String
+  isEnabled       Boolean  @default(false)
+  titleTemplate   String?
+  messageTemplate String?
+  linkUrl         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

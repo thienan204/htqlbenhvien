@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/actions/auth';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { sendPushNotification } from '@/lib/firebase-admin';
+import { emitEvent } from '@/lib/notificationService';
 
 const prisma = new PrismaClient();
 
@@ -266,6 +267,26 @@ export async function POST(request: Request) {
                 }
             }
         });
+
+        // Trigger SSE Notification (Chỉ gửi về máy có maKhoa tương ứng)
+        try {
+            await emitEvent(
+                'IT_REQUEST_NEW', 
+                {
+                    title: 'Yêu cầu hỗ trợ mới',
+                    body: `Khoa: ${ma_khoa} - Lỗi: ${ten_loi}`,
+                    url: `/error-management/it-requests?highlight=${newRequest.id}`, // Placeholder link
+                    context: {
+                        ma_khoa: ma_khoa,
+                        ten_loi: ten_loi,
+                        id: newRequest.id
+                    }
+                },
+                ma_khoa // Phân luồng về đúng khoa này
+            );
+        } catch (e) {
+            console.error('Lỗi khi gửi SSE Notification', e);
+        }
 
         // Lấy tên Khoa nếu có
         const dept = await prisma.department.findUnique({ where: { ma_khoa } });
