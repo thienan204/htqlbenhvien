@@ -463,6 +463,9 @@ export default function XmlReader() {
                     const validator = new ValidationEngine(rules, masterData);
                     validator.setContextRecords(prev);
                     
+                    const icd10Map = await fetchIcd10Map(prev);
+                    validator.setExternalContext({ icd10Map });
+                    
                     const newRecords = [...prev];
                     const VALIDATION_CHUNK_SIZE = 50;
                     for (let i = 0; i < newRecords.length; i += VALIDATION_CHUNK_SIZE) {
