@@ -282,7 +282,7 @@ export default function XmlReader() {
     const [user, setUser] = useState<any>(null);
     const [processingProgress, setProcessingProgress] = useState<{ current: number, total: number } | null>(null);
     const { rules, saveRules, isLoaded: isRulesLoaded, reloadRules } = useRules();
-    const [mainFilter, setMainFilter] = useState<'ALL' | 'ERROR' | 'VALID'>('ERROR');
+    const [mainFilter, setMainFilter] = useState<string>('ERROR');
     const [searchText, setSearchText] = useState('');
     const [showDetailErrorsOnly, setShowDetailErrorsOnly] = useState(false);
     const [colFilters, setColFilters] = useState<Record<string, string>>({});
@@ -292,6 +292,7 @@ export default function XmlReader() {
     const [masterData, setMasterData] = useState<Record<string, Set<string>>>({});
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
     const isFirstRuleLoad = React.useRef(true);
+    const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
 
     // Load DB
     useEffect(() => {
@@ -328,18 +329,36 @@ export default function XmlReader() {
         fetchUser();
 
         const initDB = async () => {
-            const hasSession = sessionStorage.getItem('xml_reader_session');
-            if (!hasSession) {
-                // Nếu là tab mới hoàn toàn hoặc vừa mở lại trình duyệt -> Dọn dẹp phiên cũ
-                sessionStorage.setItem('xml_reader_session', '1');
+            // Dùng session cookie để nhận diện việc mở/đóng toàn bộ trình duyệt (cookie không set expires)
+            const hasBrowserSession = document.cookie.includes('xml_reader_session_active=1');
+            
+            if (!hasBrowserSession) {
+                // Khởi động lại trình duyệt -> Dọn dẹp DB cũ
+                document.cookie = "xml_reader_session_active=1; path=/";
                 await clearDB();
                 if (!ignore) setInitialDBLoadDone(true);
             } else {
-                // Nếu chỉ là F5 (refresh) -> Load lại dữ liệu từ cache để không bị mất
+                // Luôn load dữ liệu từ IndexedDB để không bị mất khi chuyển tab/trang hoặc tắt tab
                 const saved = await loadRecordsFromDB();
                 if (ignore) return;
                 if (saved.length > 0) {
                     setRecords(saved);
+                    try {
+                        const maLienKetList = Array.from(new Set(saved.map(r => String(r.summary?.MA_LK)).filter(Boolean)));
+                        if (maLienKetList.length > 0) {
+                            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ maLienKetList })
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                setSentRecordsSet(new Set(data.exists || []));
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error checking sent records cache:', e);
+                    }
                 }
                 setInitialDBLoadDone(true);
             }
@@ -520,6 +539,7 @@ export default function XmlReader() {
 
         const BATCH_SIZE = 10;
         let processedCount = 0;
+        const allUploadedMaLk = new Set<string>();
 
         try {
             for (let i = 0; i < fileList.length; i += BATCH_SIZE) {
@@ -543,6 +563,7 @@ export default function XmlReader() {
                             // To support real cross-record during batch load, we might need all batch records
                             // We push it to batchRecords first
                             batchRecords.push(newRecord);
+                            if (newRecord.summary?.MA_LK) allUploadedMaLk.add(String(newRecord.summary.MA_LK));
                         });
                     } catch (error: any) {
                         message.error(`Lỗi đọc file ${file.name}: ${error.message}`);
@@ -577,6 +598,26 @@ export default function XmlReader() {
 
                 // Yield to main thread to allow UI render
                 await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            if (allUploadedMaLk.size > 0) {
+                try {
+                    const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ maLienKetList: Array.from(allUploadedMaLk) })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setSentRecordsSet(prev => {
+                            const next = new Set(prev);
+                            data.exists.forEach((m: string) => next.add(m));
+                            return next;
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error checking sent records:', e);
+                }
             }
 
             message.success(`Đã xử lý xong ${fileList.length} file.`);
@@ -794,6 +835,15 @@ export default function XmlReader() {
             ),
             dataIndex: ['summary', 'MA_LK'],
             key: 'MA_LK',
+            render: (text) => {
+                const isSent = sentRecordsSet.has(String(text));
+                return (
+                    <div className="flex items-center gap-1">
+                        <span>{text}</span>
+                        {isSent && <Tag color="orange" className="m-0 px-1 text-[10px] leading-tight font-bold border-orange-300">Đã gửi</Tag>}
+                    </div>
+                );
+            }
         },
         {
             title: (
@@ -914,6 +964,12 @@ export default function XmlReader() {
         let result = records;
         if (mainFilter === 'ERROR') result = result.filter(r => r.validationResults.some(v => v.isError));
         if (mainFilter === 'VALID') result = result.filter(r => !r.validationResults.some(v => v.isError));
+        if (mainFilter === 'ERROR_SENT') {
+            result = result.filter(r => r.validationResults.some(v => v.isError) && sentRecordsSet.has(String(r.summary?.MA_LK)));
+        }
+        if (mainFilter === 'ERROR_UNSENT') {
+            result = result.filter(r => r.validationResults.some(v => v.isError) && !sentRecordsSet.has(String(r.summary?.MA_LK)));
+        }
 
         // Column Filters
         if (colFilters.MA_LK) {
@@ -1067,6 +1123,9 @@ export default function XmlReader() {
     // Render Detail View
     const renderDetailView = () => {
         if (!selectedRecord) return null;
+
+        const isSent = sentRecordsSet.has(String(selectedRecord.summary?.MA_LK));
+        const hasError = selectedRecord.validationResults.some(v => v.isError);
 
         const items = selectedRecord.groups.map(group => {
             const list = getXmlDataList(group);
@@ -1391,6 +1450,26 @@ export default function XmlReader() {
                     header: { background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '20px 32px' }
                 }}
             >
+                {isSent && hasError && (
+                    <div className="px-8 pt-6">
+                        <Alert
+                            message="Cảnh báo: Hồ sơ này đã được gửi lên hệ thống BHXH nhưng vẫn có lỗi!"
+                            type="warning"
+                            showIcon
+                            className="font-medium bg-amber-50 border-amber-300 text-amber-800 rounded-xl"
+                        />
+                    </div>
+                )}
+                {isSent && !hasError && (
+                    <div className="px-8 pt-6">
+                        <Alert
+                            message="Thông tin: Hồ sơ này đã được gửi lên hệ thống BHXH."
+                            type="info"
+                            showIcon
+                            className="font-medium bg-blue-50 border-blue-300 text-blue-800 rounded-xl"
+                        />
+                    </div>
+                )}
                 <Tabs
                     activeKey={activeTab}
                     onChange={(key) => {
@@ -1471,11 +1550,13 @@ export default function XmlReader() {
                                         <Select
                                             value={mainFilter}
                                             onChange={setMainFilter}
-                                            style={{ width: 150 }}
+                                            style={{ width: 170 }}
                                             options={[
                                                 { value: 'ALL', label: 'Tất cả hồ sơ' },
-                                                { value: 'ERROR', label: 'Chỉ hồ sơ lỗi' },
-                                                { value: 'VALID', label: 'Chỉ hồ sơ đúng' }
+                                                { value: 'VALID', label: 'Chỉ hồ sơ đúng' },
+                                                { value: 'ERROR', label: 'Hồ sơ lỗi (Tất cả)' },
+                                                { value: 'ERROR_SENT', label: 'Hồ sơ lỗi (Đã gửi đề nghị)' },
+                                                { value: 'ERROR_UNSENT', label: 'Hồ sơ lỗi (Chưa gửi đề nghị)' }
                                             ]}
                                         />
                                         <Button

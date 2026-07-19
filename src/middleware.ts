@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
     const bp = request.nextUrl.basePath || '';
     
     // Define all routes that require authentication
-    const isPublic = ['/login', '/favicon.ico'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/api/menus/aliases');
+    const isPublic = ['/login', '/favicon.ico', '/logo.png'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/api/menus/aliases');
 
     if (!isPublic) {
         const token = request.cookies.get('auth_token')?.value;

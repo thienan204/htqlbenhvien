@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Card, Button, Spin, Empty, Descriptions, Input, Space, message, DatePicker, Modal } from 'antd';
+import { Table, Tag, Card, Button, Spin, Empty, Descriptions, Input, Space, message, DatePicker, Modal, Select } from 'antd';
 import { loadRecordsFromDB } from '@/lib/db';
 import { ExtendedHosoRecord, getXmlDataList } from '@/lib/xml';
 import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined, CloudUploadOutlined, FilterOutlined } from '@ant-design/icons';
@@ -37,6 +37,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     const [filterTrinhDo, setFilterTrinhDo] = useState<string>('');
     const [filterNgayRaRange, setFilterNgayRaRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
     const [hide50Percent, setHide50Percent] = useState<boolean>(false);
+    const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
+    const [filterSentStatus, setFilterSentStatus] = useState<string>('ALL');
 
     // Duplicate Doctor specific state
     const [doctorOrders, setDoctorOrders] = useState<any[]>([]);
@@ -91,6 +93,23 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         try {
             const data = await loadRecordsFromDB();
             setRecords(data);
+
+            try {
+                const maLienKetList = Array.from(new Set(data.map(r => String(r.summary?.MA_LK)).filter(Boolean)));
+                if (maLienKetList.length > 0) {
+                    const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ maLienKetList })
+                    });
+                    if (res.ok) {
+                        const resData = await res.json();
+                        setSentRecordsSet(new Set(resData.exists || []));
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking sent records:', e);
+            }
 
             // Detection Logic: Check config type first, then legacy ruleType or slug conventions
             const isDuplicateBed = rule.logicConfig?.type === 'DUPLICATE_BED' ||
@@ -474,6 +493,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         setFilterMaGiuong('');
         setFilterTrinhDo('');
         setFilterNgayRaRange([null, null]);
+        setFilterSentStatus('ALL');
         fetchData();
     };
 
@@ -521,6 +541,10 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             const trinhDoMatch = !filterTrinhDo ||
                 (item.TRINH_DO && item.TRINH_DO.toLowerCase().includes(filterTrinhDo.toLowerCase()));
 
+            const sentMatch = filterSentStatus === 'ALL' ||
+                (filterSentStatus === 'SENT' && sentRecordsSet.has(String(item.MA_LK))) ||
+                (filterSentStatus === 'UNSENT' && !sentRecordsSet.has(String(item.MA_LK)));
+
             let ngayRaMatch = true;
             if (hasDateRange) {
                 const matchesByGroup = item.groupId && matchingGroupsByDate.has(item.groupId);
@@ -539,7 +563,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 ngayRaMatch = matchesByGroup || matchesByRow;
             }
 
-            return searchMatch && khoaMatch && giuongMatch && trinhDoMatch && ngayRaMatch;
+            return searchMatch && khoaMatch && giuongMatch && trinhDoMatch && ngayRaMatch && sentMatch;
         });
 
         if (hide50Percent) {
@@ -1118,7 +1142,11 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 ngayYlMatch = matchesByGroup || matchesByRow;
             }
 
-            return ngayYlMatch;
+            const sentMatch = filterSentStatus === 'ALL' ||
+                (filterSentStatus === 'SENT' && sentRecordsSet.has(String(item.MA_LK))) ||
+                (filterSentStatus === 'UNSENT' && !sentRecordsSet.has(String(item.MA_LK)));
+
+            return ngayYlMatch && sentMatch;
         });
 
         return filtered;
@@ -1218,8 +1246,16 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     const bedColumns = [
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => index + 1 },
         {
-            title: 'Mã LK', dataIndex: 'MA_LK', key: 'MA_LK', width: 120,
-            render: (text: string) => <span className="font-semibold text-blue-600">{text}</span>
+            title: 'Mã LK', dataIndex: 'MA_LK', key: 'MA_LK', width: 140,
+            render: (text: string) => {
+                const isSent = sentRecordsSet.has(String(text));
+                return (
+                    <div className="flex items-center gap-1">
+                        <span className="font-semibold text-blue-600">{text}</span>
+                        {isSent && <Tag color="orange" className="m-0 px-1 text-[10px] leading-tight font-bold border-orange-300">Đã gửi</Tag>}
+                    </div>
+                );
+            }
         },
         { title: 'Mã BN', dataIndex: 'MA_BN', key: 'MA_BN', width: 110 },
         { title: 'Mã Thẻ BHYT', dataIndex: 'MA_THE_BHYT', key: 'MA_THE_BHYT', width: 160 },
@@ -1293,8 +1329,16 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     const doctorColumns = [
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => index + 1 },
         {
-            title: 'Mã LK', dataIndex: 'MA_LK', key: 'MA_LK', width: 120,
-            render: (text: string) => <span className="font-semibold text-blue-600">{text}</span>
+            title: 'Mã LK', dataIndex: 'MA_LK', key: 'MA_LK', width: 140,
+            render: (text: string) => {
+                const isSent = sentRecordsSet.has(String(text));
+                return (
+                    <div className="flex items-center gap-1">
+                        <span className="font-semibold text-blue-600">{text}</span>
+                        {isSent && <Tag color="orange" className="m-0 px-1 text-[10px] leading-tight font-bold border-orange-300">Đã gửi</Tag>}
+                    </div>
+                );
+            }
         },
         { title: 'Mã BN', dataIndex: 'MA_BN', key: 'MA_BN', width: 110 },
         { title: 'Họ Tên', dataIndex: 'HO_TEN', key: 'HO_TEN', width: 200, className: 'uppercase font-medium' },
@@ -1338,6 +1382,16 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-lg font-bold text-slate-700">Kiểm tra Trùng Bác Sĩ (Cùng Y Lệnh)</div>
                     <div className="flex items-center gap-2 flex-wrap">
+                        <Select
+                            value={filterSentStatus}
+                            onChange={setFilterSentStatus}
+                            style={{ width: 150 }}
+                            options={[
+                                { value: 'ALL', label: 'Tất cả' },
+                                { value: 'SENT', label: 'Đã gửi đề nghị' },
+                                { value: 'UNSENT', label: 'Chưa gửi đề nghị' }
+                            ]}
+                        />
                         <DatePicker.RangePicker
                             placeholder={["Từ ngày (Ngày chỉ định)", "Đến ngày (Ngày chỉ định)"]}
                             format="DD/MM/YYYY"
@@ -1465,6 +1519,16 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                 setFilterNgayRaRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null]);
                             }}
                             allowClear
+                        />
+                        <Select
+                            value={filterSentStatus}
+                            onChange={setFilterSentStatus}
+                            style={{ width: 150 }}
+                            options={[
+                                { value: 'ALL', label: 'Tất cả' },
+                                { value: 'SENT', label: 'Đã gửi đề nghị' },
+                                { value: 'UNSENT', label: 'Chưa gửi đề nghị' }
+                            ]}
                         />
                     </div>
 
