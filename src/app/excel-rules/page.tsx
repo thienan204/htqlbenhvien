@@ -20,6 +20,7 @@ interface DuplicateRule {
     serviceValues?: string[];
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
+    minGapMinutes?: number;
 }
 
 export default function ExcelRulesPage() {
@@ -60,7 +61,8 @@ export default function ExcelRulesPage() {
             ...values,
             ignoreMaMayMinusOne: values.ignoreMaMayMinusOne || false,
             active: values.active !== undefined ? values.active : true,
-            ignoreIfSameField: values.ignoreIfSameField || ''
+            ignoreIfSameField: values.ignoreIfSameField || '',
+            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
         });
 
         if (res.success) {
@@ -80,7 +82,8 @@ export default function ExcelRulesPage() {
         const res = await updateDuplicateRule(editingRule.id, {
             ...values,
             ignoreMaMayMinusOne: values.ignoreMaMayMinusOne || false,
-            ignoreIfSameField: values.ignoreIfSameField || ''
+            ignoreIfSameField: values.ignoreIfSameField || '',
+            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
         });
 
         if (res.success) {
@@ -155,6 +158,7 @@ export default function ExcelRulesPage() {
                                         <p><span className="font-semibold text-slate-700">Cột định danh (Gộp nhóm):</span> {rule.machineCols.join(', ')}</p>
                                         <p><span className="font-semibold text-slate-700">Mốc thời gian:</span> {rule.startCol} - {rule.endCol}</p>
                                         {rule.serviceCol && <p><span className="font-semibold text-slate-700">Lọc theo dịch vụ:</span> {rule.serviceCol} {rule.serviceValues?.length ? `(${rule.serviceValues.join(', ')})` : ''}</p>}
+                                        {rule.minGapMinutes ? <p><span className="font-semibold text-slate-700">Khoảng cách tối thiểu:</span> {rule.minGapMinutes} phút</p> : null}
                                         {rule.ignoreMaMayMinusOne && <p className="text-orange-600 italic">Caution: Bỏ qua nếu giá trị = -1</p>}
                                     </div>
                                 </div>
@@ -254,9 +258,14 @@ export default function ExcelRulesPage() {
                                 <Checkbox>Bỏ qua nếu giá trị định danh = -1</Checkbox>
                             </Form.Item>
                         </Col>
-                        <Col span={24}>
+                        <Col span={12}>
                             <Form.Item label="Giá trị cần bỏ qua nếu trùng (Tuỳ chọn)" name="ignoreIfSameField">
-                                <Input placeholder="VD: MA_BN (Bỏ qua báo lỗi nếu 2 đối tượng cùng chung giá trị trường này)" />
+                                <Input placeholder="VD: MA_BN (Bỏ qua báo lỗi nếu chung giá trị)" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item label="Khoảng cách tối thiểu giữa 2 DV (Phút)" name="minGapMinutes">
+                                <Input type="number" min={0} placeholder="VD: 1, 5, 10..." />
                             </Form.Item>
                         </Col>
                     </Row>

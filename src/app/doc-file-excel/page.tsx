@@ -32,6 +32,7 @@ interface DuplicateRule {
     serviceValues?: string[]; // Specific values to filter
     excludedServiceValues?: string[]; // Specific values to exclude
     ignoreIfSameField?: string;
+    minGapMinutes?: number;
 }
 
 
@@ -207,7 +208,8 @@ export default function ExcelReaderPage() {
             active: values.active !== undefined ? values.active : true,
             serviceValues: values.serviceValues || [],
             excludedServiceValues: values.excludedServiceValues || [],
-            ignoreIfSameField: values.ignoreIfSameField || ''
+            ignoreIfSameField: values.ignoreIfSameField || '',
+            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
         });
 
         if (res.success) {
@@ -236,7 +238,8 @@ export default function ExcelReaderPage() {
             active: values.active,
             serviceValues: values.serviceValues || [],
             excludedServiceValues: values.excludedServiceValues || [],
-            ignoreIfSameField: values.ignoreIfSameField || ''
+            ignoreIfSameField: values.ignoreIfSameField || '',
+            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
         });
 
         if (res.success) {
@@ -479,7 +482,8 @@ export default function ExcelReaderPage() {
         ignoreNullValues: boolean,
         filterServiceValues?: string[],
         excludedServiceValues?: string[],
-        ignoreSameColIdx?: number
+        ignoreSameColIdx?: number,
+        minGapMinutes?: number
     ) => {
         setLoading(true);
 
@@ -574,13 +578,27 @@ export default function ExcelReaderPage() {
                     const overlapStart = Math.max(startA.getTime(), startB.getTime());
                     const overlapEnd = Math.min(endA.getTime(), endB.getTime());
 
-                    // Nếu Start = End cho cả 2 (ví dụ trùng đúng 1 thời điểm NGAY_YL)
-                    const isExactMatch = startA.getTime() === startB.getTime() && startA.getTime() === endA.getTime() && startB.getTime() === endB.getTime();
+                    const lenA = endA.getTime() - startA.getTime();
+                    const lenB = endB.getTime() - startB.getTime();
 
-                    // Các trường hợp giao nhau:
-                    // 1. Khoảng thời gian giao nhau > 0 (overlapEnd > overlapStart)
-                    // 2. Điểm thời gian giao nhau giống hệt nhau (isExactMatch)
-                    if (overlapEnd > overlapStart || isExactMatch) {
+                    let isOverlap = false;
+
+                    if (minGapMinutes && minGapMinutes > 0) {
+                        const gapMs = overlapStart - overlapEnd;
+                        if (gapMs < minGapMinutes * 60000) {
+                            isOverlap = true;
+                        }
+                    } else {
+                        if (overlapEnd > overlapStart) {
+                            isOverlap = true;
+                        } else if (overlapEnd === overlapStart) {
+                            if (lenA === 0 || lenB === 0) {
+                                isOverlap = true;
+                            }
+                        }
+                    }
+
+                    if (isOverlap) {
                         adj[i].push(j);
                         adj[j].push(i);
                     }
@@ -679,7 +697,8 @@ export default function ExcelReaderPage() {
             rule.ignoreNullValues || false,
             rule.serviceValues,
             rule.excludedServiceValues,
-            ignoreSameColIdx
+            ignoreSameColIdx,
+            rule.minGapMinutes
         );
     };
 
@@ -1202,13 +1221,26 @@ export default function ExcelReaderPage() {
                     </Form.Item>
 
                     <Divider />
-                    <Form.Item
-                        label="Giá trị cần bỏ qua nếu trùng (Tuỳ chọn)"
-                        name="ignoreIfSameField"
-                        help="Gõ tên Cột trên File Excel (VD: MAHOSOBENHAN). Nếu 2 dòng bị trùng lịch có cùng giá trị ở cột này, hệ thống sẽ BỎ QUA không báo lỗi nó."
-                    >
-                        <Input placeholder="VD: MAHOSOBENHAN" />
-                    </Form.Item>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item
+                                label="Giá trị cần bỏ qua nếu trùng (Tuỳ chọn)"
+                                name="ignoreIfSameField"
+                                help="VD: MAHOSOBENHAN. Bỏ qua không báo lỗi nếu chung trường này."
+                            >
+                                <Input placeholder="VD: MAHOSOBENHAN" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                label="Khoảng cách tối thiểu giữa 2 DV (Phút)"
+                                name="minGapMinutes"
+                                help="VD: 1. Nếu cách nhau dưới 1 phút sẽ báo trùng."
+                            >
+                                <Input type="number" min={0} placeholder="VD: 1, 5, 10..." />
+                            </Form.Item>
+                        </Col>
+                    </Row>
 
                     <div className="flex justify-end gap-2 mt-6">
                         <Button onClick={() => setIsRuleManagerOpen(false)}>Đóng</Button>

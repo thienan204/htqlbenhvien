@@ -209,6 +209,7 @@ model DuplicateRule {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   ignoreIfSameField     String?
+  minGapMinutes         Int      @default(0)
 }
 
 model SpecializedRule {
