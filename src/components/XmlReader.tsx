@@ -961,15 +961,20 @@ export default function XmlReader() {
     // Filter main records (client side filtering for simple cases if needed, but Table handles it mostly)
     // We only use this global 'filtered' for Export currently or custom filtering logic outside Table
     const getFilteredRecords = () => {
-        let result = records;
-        if (mainFilter === 'ERROR') result = result.filter(r => r.validationResults.some(v => v.isError));
-        if (mainFilter === 'VALID') result = result.filter(r => !r.validationResults.some(v => v.isError));
-        if (mainFilter === 'ERROR_SENT') {
-            result = result.filter(r => r.validationResults.some(v => v.isError) && sentRecordsSet.has(String(r.summary?.MA_LK)));
-        }
-        if (mainFilter === 'ERROR_UNSENT') {
-            result = result.filter(r => r.validationResults.some(v => v.isError) && !sentRecordsSet.has(String(r.summary?.MA_LK)));
-        }
+        let result = records.filter(r => {
+            const isErr = r.validationResults.some(v => v.isError);
+            const isSent = sentRecordsSet.has(String(r.summary?.MA_LK));
+            
+            if (mainFilter === 'ALL_SENT') return isSent;
+            if (mainFilter === 'ALL_UNSENT') return !isSent;
+            if (mainFilter === 'ERROR') return isErr;
+            if (mainFilter === 'ERROR_SENT') return isErr && isSent;
+            if (mainFilter === 'ERROR_UNSENT') return isErr && !isSent;
+            if (mainFilter === 'VALID') return !isErr;
+            if (mainFilter === 'VALID_SENT') return !isErr && isSent;
+            if (mainFilter === 'VALID_UNSENT') return !isErr && !isSent;
+            return true;
+        });
 
         // Column Filters
         if (colFilters.MA_LK) {
@@ -1550,13 +1555,17 @@ export default function XmlReader() {
                                         <Select
                                             value={mainFilter}
                                             onChange={setMainFilter}
-                                            style={{ width: 170 }}
+                                            style={{ width: 220 }}
                                             options={[
                                                 { value: 'ALL', label: 'Tất cả hồ sơ' },
-                                                { value: 'VALID', label: 'Chỉ hồ sơ đúng' },
+                                                { value: 'ALL_SENT', label: 'Tất cả (Đã gửi)' },
+                                                { value: 'ALL_UNSENT', label: 'Tất cả (Chưa gửi)' },
                                                 { value: 'ERROR', label: 'Hồ sơ lỗi (Tất cả)' },
-                                                { value: 'ERROR_SENT', label: 'Hồ sơ lỗi (Đã gửi đề nghị)' },
-                                                { value: 'ERROR_UNSENT', label: 'Hồ sơ lỗi (Chưa gửi đề nghị)' }
+                                                { value: 'ERROR_SENT', label: 'Hồ sơ lỗi (Đã gửi)' },
+                                                { value: 'ERROR_UNSENT', label: 'Hồ sơ lỗi (Chưa gửi)' },
+                                                { value: 'VALID', label: 'Hồ sơ đúng (Tất cả)' },
+                                                { value: 'VALID_SENT', label: 'Hồ sơ đúng (Đã gửi)' },
+                                                { value: 'VALID_UNSENT', label: 'Hồ sơ đúng (Chưa gửi)' }
                                             ]}
                                         />
                                         <Button

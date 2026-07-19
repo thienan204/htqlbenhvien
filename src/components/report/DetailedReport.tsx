@@ -68,12 +68,13 @@ interface ReportRow {
 export default function DetailedReport() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const initialFilter = searchParams.get('filter') as 'ALL' | 'ERROR' | 'VALID' || 'ALL';
+    const initialFilter = (searchParams.get('filter') as any) || 'ALL';
 
     const [loading, setLoading] = useState(true);
     const [fullDataSource, setFullDataSource] = useState<ReportRow[]>([]);
     const [departments, setDepartments] = useState<Record<string, string>>({});
-    const [filterType, setFilterType] = useState<'ALL' | 'ERROR' | 'VALID'>(initialFilter);
+    const [filterType, setFilterType] = useState<string>(initialFilter);
+    const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
     const [isSaving, setIsSaving] = useState(false);
     const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
     const [saveNote, setSaveNote] = useState('');
@@ -106,6 +107,25 @@ export default function DetailedReport() {
         const fetchData = async () => {
             try {
                 const records = await loadRecordsFromDB();
+                
+                // Fetch sent status
+                const maLienKetList = Array.from(new Set(records.map(r => String(r.summary?.MA_LK)).filter(Boolean)));
+                if (maLienKetList.length > 0) {
+                    try {
+                        const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ maLienKetList })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            setSentRecordsSet(new Set(data.exists || []));
+                        }
+                    } catch (e) {
+                        console.error('Error checking sent records cache:', e);
+                    }
+                }
+
                 const rows: ReportRow[] = [];
                 let index = 1;
 
@@ -224,14 +244,22 @@ export default function DetailedReport() {
 
     // Filter Logic
     const filteredDataSource = useMemo(() => {
-        if (filterType === 'ALL') return fullDataSource;
-        if (filterType === 'ERROR') return fullDataSource.filter(r => r.isError);
-        if (filterType === 'VALID') return fullDataSource.filter(r => !r.isError);
-        return fullDataSource;
-    }, [fullDataSource, filterType]);
+        switch (filterType) {
+            case 'ALL': return fullDataSource;
+            case 'ALL_SENT': return fullDataSource.filter(r => sentRecordsSet.has(r.ma_lk));
+            case 'ALL_UNSENT': return fullDataSource.filter(r => !sentRecordsSet.has(r.ma_lk));
+            case 'ERROR': return fullDataSource.filter(r => r.isError);
+            case 'ERROR_SENT': return fullDataSource.filter(r => r.isError && sentRecordsSet.has(r.ma_lk));
+            case 'ERROR_UNSENT': return fullDataSource.filter(r => r.isError && !sentRecordsSet.has(r.ma_lk));
+            case 'VALID': return fullDataSource.filter(r => !r.isError);
+            case 'VALID_SENT': return fullDataSource.filter(r => !r.isError && sentRecordsSet.has(r.ma_lk));
+            case 'VALID_UNSENT': return fullDataSource.filter(r => !r.isError && !sentRecordsSet.has(r.ma_lk));
+            default: return fullDataSource;
+        }
+    }, [fullDataSource, filterType, sentRecordsSet]);
 
     // Update URL when filter changes
-    const handleFilterChange = (value: 'ALL' | 'ERROR' | 'VALID') => {
+    const handleFilterChange = (value: string) => {
         setFilterType(value);
         router.replace(`?filter=${value}`);
     };
@@ -523,7 +551,18 @@ export default function DetailedReport() {
             )
         },
         { title: 'Đơn giá BH', dataIndex: 'don_gia_bh', key: 'don_gia_bh', width: 120, onCell: createOnCell('don_gia_bh') },
-        { title: 'Mã LK', dataIndex: 'ma_lk', key: 'ma_lk', width: 120, onCell: createOnCell('ma_lk') },
+        { 
+            title: 'Mã LK', dataIndex: 'ma_lk', key: 'ma_lk', width: 140, onCell: createOnCell('ma_lk'),
+            render: (text: string) => {
+                const isSent = sentRecordsSet.has(text);
+                return (
+                    <div className="flex items-center gap-1">
+                        <span>{text}</span>
+                        {isSent && <Tag color="orange" className="m-0 px-1 text-[10px] leading-tight font-bold border-orange-300">Đã gửi</Tag>}
+                    </div>
+                );
+            }
+        },
         { title: 'Mã thẻ', dataIndex: 'ma_the', key: 'ma_the', width: 150, onCell: createOnCell('ma_the') },
         { title: 'Mã đối tượng', dataIndex: 'ma_doituong_kcb', key: 'ma_doituong_kcb', width: 120, onCell: createOnCell('ma_doituong_kcb') },
     ];
@@ -560,11 +599,17 @@ export default function DetailedReport() {
                             <Select
                                 value={filterType}
                                 onChange={handleFilterChange}
-                                style={{ width: 160 }}
+                                style={{ width: 220 }}
                                 options={[
                                     { value: 'ALL', label: 'Tất cả hồ sơ' },
-                                    { value: 'ERROR', label: 'Chỉ hồ sơ lỗi' },
-                                    { value: 'VALID', label: 'Chỉ hồ sơ đúng' }
+                                    { value: 'ALL_SENT', label: 'Tất cả (Đã gửi)' },
+                                    { value: 'ALL_UNSENT', label: 'Tất cả (Chưa gửi)' },
+                                    { value: 'ERROR', label: 'Hồ sơ lỗi (Tất cả)' },
+                                    { value: 'ERROR_SENT', label: 'Hồ sơ lỗi (Đã gửi)' },
+                                    { value: 'ERROR_UNSENT', label: 'Hồ sơ lỗi (Chưa gửi)' },
+                                    { value: 'VALID', label: 'Hồ sơ đúng (Tất cả)' },
+                                    { value: 'VALID_SENT', label: 'Hồ sơ đúng (Đã gửi)' },
+                                    { value: 'VALID_UNSENT', label: 'Hồ sơ đúng (Chưa gửi)' }
                                 ]}
                             />
                             <Button
