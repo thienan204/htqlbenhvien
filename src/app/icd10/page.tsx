@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Input, Checkbox, Row, Col, Tag, Tooltip, Space, Layout, Menu, Modal, Descriptions } from 'antd';
-import { SearchOutlined, WarningOutlined, InfoCircleOutlined, WomanOutlined, ManOutlined, AlertOutlined, StopOutlined, BookOutlined } from '@ant-design/icons';
+import { Card, Table, Input, Checkbox, Row, Col, Tag, Tooltip, Space, Layout, Menu, Modal, Descriptions, Button, message } from 'antd';
+import { SearchOutlined, WarningOutlined, InfoCircleOutlined, WomanOutlined, ManOutlined, AlertOutlined, StopOutlined, BookOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useDebounce } from '@/hooks/useDebounce';
+import * as xlsx from 'xlsx';
 
 export default function Icd10Page() {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     
@@ -67,6 +69,62 @@ export default function Icd10Page() {
             console.error('Lỗi khi tải ICD-10', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExportExcel = async () => {
+        setExporting(true);
+        try {
+            const params = new URLSearchParams();
+            params.append('page', '1');
+            params.append('limit', '50000'); // Lấy tối đa theo bộ lọc
+            if (debouncedSearch) params.append('search', debouncedSearch);
+            if (selectedChapter) params.append('chapter', selectedChapter);
+            
+            Object.entries(filters).forEach(([key, val]) => {
+                if (val) params.append(key, 'true');
+            });
+
+            const res = await fetch(`/api/icd10?${params.toString()}`);
+            if (res.ok) {
+                const result = await res.json();
+                if (result.data.length === 0) {
+                    message.warning('Không có dữ liệu để xuất!');
+                    return;
+                }
+                const dataToExport = result.data.map((item: any) => ({
+                    'Mã Chương': item.ma_chuong,
+                    'Tên Chương': item.ten_chuong,
+                    'Mã Nhóm': item.ma_nhom,
+                    'Tên Nhóm': item.ten_nhom,
+                    'Mã Loại': item.ma_loai,
+                    'Tên Loại': item.ten_loai,
+                    'Mã Bệnh': item.ma_benh,
+                    'Tên Bệnh': item.ten_benh,
+                    'Mã Chi Tiết': item.ma_chi_tiet,
+                    'Tên Chi Tiết': item.ten_chi_tiet,
+                    'Ghi chú': item.ghi_chu,
+                    'Trạng thái': item.isActive ? 'Đang hiệu lực' : 'Hết hiệu lực',
+                    'Không được dùng làm bệnh chính': item.is_not_main_disease ? 'x' : '',
+                    'Không khuyến khích làm bệnh chính': item.not_recommended_main ? 'x' : '',
+                    'Mã không được sử dụng vì có mã cụ thể hơn': item.requires_more_specific ? 'x' : '',
+                    'Chỉ có ở Nữ giới': item.is_female_only ? 'x' : '',
+                    'Chỉ có ở Nam giới': item.is_male_only ? 'x' : '',
+                    'Chỉ cho nguyên nhân tử vong': item.is_death_cause_only ? 'x' : '',
+                    'Thuộc Phụ lục 1 TT25': item.is_phu_luc_1_tt25 ? 'x' : '',
+                    'Thuộc Phụ lục 2 TT25': item.is_phu_luc_2_tt25 ? 'x' : ''
+                }));
+
+                const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+                const workbook = xlsx.utils.book_new();
+                xlsx.utils.book_append_sheet(workbook, worksheet, 'ICD10');
+                xlsx.writeFile(workbook, `ICD10_Export_${new Date().getTime()}.xlsx`);
+            }
+        } catch (error) {
+            console.error('Lỗi khi xuất Excel', error);
+            message.error('Lỗi khi xuất Excel');
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -293,6 +351,17 @@ export default function Icd10Page() {
                                 >
                                     <span className="text-cyan-600 font-semibold">Thuộc Phụ lục 2 TT25</span>
                                 </Checkbox>
+                            </Col>
+                            <Col span={8}>
+                                <Button 
+                                    type="primary" 
+                                    icon={<DownloadOutlined />} 
+                                    loading={exporting} 
+                                    onClick={handleExportExcel}
+                                    className="bg-green-600 hover:bg-green-700 border-none w-full shadow-sm"
+                                >
+                                    Xuất Excel theo bộ lọc
+                                </Button>
                             </Col>
                         </Row>
                     </div>
