@@ -3,14 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, FileType, CheckCircle, AlertCircle, RefreshCw, Search, History, Download, Filter, GitCompare, HelpCircle } from 'lucide-react';
-import { Tabs, Table, Input, Button, Tag, Space, Typography, Select, Modal, Switch, DatePicker, Collapse } from 'antd';
+import { Tabs, Table, Input, Button, Tag, Space, Typography, Select, Modal, Switch, DatePicker, Collapse, Alert } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getBasePath } from '@/utils/config';
 import * as xlsx from 'xlsx';
+import dayjs from 'dayjs';
 
 const { Title } = Typography;
 
 export default function HoSoDaGuiPage() {
+    const [activeTab, setActiveTab] = useState('1');
+
     // --- IMPORT STATES ---
     const [file, setFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -58,7 +61,19 @@ export default function HoSoDaGuiPage() {
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [listDateRangeStr, setListDateRangeStr] = useState<[string, string] | null>(null);
 
-    const fetchList = async (page = 1, pageSize = 20, search = '', ttHS = filterTrangThaiHS, ttTT = filterTrangThaiTT, modifiedOnly = onlyModified, dateRange = listDateRangeStr) => {
+    // --- REPLACE COMPARE STATES ---
+    const [replaceCompareMlk, setReplaceCompareMlk] = useState('');
+    const [replaceHistoryData, setReplaceHistoryData] = useState<any[]>([]);
+    const [loadingReplace, setLoadingReplace] = useState(false);
+    const [replaceCompareModalVisible, setReplaceCompareModalVisible] = useState(false);
+    const [lastReplaceFetchDate, setLastReplaceFetchDate] = useState<[string, string] | null>(null);
+    
+    // States for Replace List in Tab 4
+    const [replaceData, setReplaceData] = useState<any[]>([]);
+    const [replacePagination, setReplacePagination] = useState({ current: 1, pageSize: 10, total: 0 });
+    const [loadingReplaceList, setLoadingReplaceList] = useState(false);
+
+    const fetchList = async (page = 1, pageSize = 20, search = '', ttHS = filterTrangThaiHS, ttTT = filterTrangThaiTT, modifiedOnly = false, dateRange = listDateRangeStr) => {
         setLoading(true);
         try {
             let url = `${getBasePath()}/api/ho-so-da-gui?page=${page}&limit=${pageSize}&search=${encodeURIComponent(search)}&trangThaiHS=${encodeURIComponent(ttHS || '')}&trangThaiTT=${encodeURIComponent(ttTT || '')}&onlyModified=${modifiedOnly}`;
@@ -126,11 +141,11 @@ export default function HoSoDaGuiPage() {
             }
         };
         fetchFilters();
-        fetchList(pagination.current, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
+        fetchList(pagination.current, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, false, listDateRangeStr);
     }, []);
 
     const handleTableChange = (newPagination: any) => {
-        fetchList(newPagination.current, newPagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
+        fetchList(newPagination.current, newPagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, false, listDateRangeStr);
     };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +157,7 @@ export default function HoSoDaGuiPage() {
         }
 
         const timeout = setTimeout(() => {
-            fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
+            fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, false, listDateRangeStr);
         }, 500);
 
         setTypingTimeout(timeout);
@@ -151,28 +166,23 @@ export default function HoSoDaGuiPage() {
     const handleSearch = (value: string) => {
         if (typingTimeout) clearTimeout(typingTimeout);
         setSearchText(value);
-        fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
+        fetchList(1, pagination.pageSize, value, filterTrangThaiHS, filterTrangThaiTT, false, listDateRangeStr);
     };
 
     const handleFilterHSChange = (value: string) => {
         setFilterTrangThaiHS(value);
-        fetchList(1, pagination.pageSize, searchText, value, filterTrangThaiTT, onlyModified, listDateRangeStr);
+        fetchList(1, pagination.pageSize, searchText, value, filterTrangThaiTT, false, listDateRangeStr);
     };
 
     const handleFilterTTChange = (value: string) => {
         setFilterTrangThaiTT(value);
-        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, value, onlyModified, listDateRangeStr);
-    };
-
-    const handleOnlyModifiedChange = (checked: boolean) => {
-        setOnlyModified(checked);
-        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, checked, listDateRangeStr);
+        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, value, false, listDateRangeStr);
     };
 
     const handleListDateRangeChange = (dates: any, dateStrings: [string, string]) => {
         const val = dates ? dateStrings : null;
         setListDateRangeStr(val);
-        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, val);
+        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, false, val);
     };
 
     const handleViewHistory = async (maLienKet: string) => {
@@ -190,9 +200,112 @@ export default function HoSoDaGuiPage() {
         }
     };
 
-    const handleExportDiff = async () => {
+    const fetchReplaceList = async (page = 1, pageSize = 10, dateRange = listDateRangeStr) => {
+        setLoadingReplaceList(true);
         try {
-            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/export-diff`);
+            let apiUrl = `${getBasePath()}/api/ho-so-da-gui?page=${page}&limit=${pageSize}&onlyModified=true`;
+            if (dateRange && dateRange[0] && dateRange[1]) {
+                const [tu, den] = dateRange;
+                const tuFormatted = tu.split('/').reverse().join('');
+                const denFormatted = den.split('/').reverse().join('');
+                apiUrl += `&ngayRaTu=${tuFormatted}&ngayRaDen=${denFormatted}`;
+            }
+            const res = await fetch(apiUrl);
+            const json = await res.json();
+            if (json.success) {
+                let finalData = json.data;
+                if (finalData.length > 0) {
+                    finalData = finalData.map((row: any, i: number, arr: any[]) => {
+                        const changedFields = new Set<string>();
+                        const checkDiff = (otherRow: any) => {
+                            if (otherRow && otherRow.maLienKet === row.maLienKet) {
+                                Object.keys(row).forEach(key => {
+                                    const skipKeys = ['id', 'createdAt', 'updatedAt', 'versionType', 'hasHistory', 'stt', 'maLienKet'];
+                                    if (!skipKeys.includes(key)) {
+                                        if (String(row[key] || '') !== String(otherRow[key] || '')) {
+                                            changedFields.add(key);
+                                        }
+                                    }
+                                });
+                            }
+                        };
+                        checkDiff(arr[i + 1]); 
+                        checkDiff(arr[i - 1]); 
+                        
+                        return { ...row, changedFields: Array.from(changedFields) };
+                    });
+                }
+                setReplaceData(finalData);
+                setReplacePagination({
+                    current: json.pagination.page,
+                    pageSize: json.pagination.limit,
+                    total: json.pagination.total,
+                });
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải danh sách sửa đổi:', error);
+        } finally {
+            setLoadingReplaceList(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === '4') {
+            if (replaceData.length === 0 || JSON.stringify(listDateRangeStr) !== JSON.stringify(lastReplaceFetchDate)) {
+                fetchReplaceList(1, replacePagination.pageSize, listDateRangeStr);
+                setLastReplaceFetchDate(listDateRangeStr);
+            }
+        }
+    }, [activeTab, listDateRangeStr, replaceData.length]);
+
+    const handleReplaceTableChange = (newPagination: any) => {
+        fetchReplaceList(newPagination.current, newPagination.pageSize, listDateRangeStr);
+    };
+
+    const handleReplaceCompareFromList = async (mlk: string) => {
+        setReplaceCompareMlk(mlk);
+        setActiveTab('4');
+        setLoadingReplace(true);
+        setReplaceHistoryData([]);
+        try {
+            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/${mlk}/history`);
+            const json = await res.json();
+            if (json.success) {
+                if (json.data && json.data.length >= 2) {
+                    setReplaceHistoryData(json.data);
+                    setReplaceCompareModalVisible(true);
+                } else {
+                    Modal.info({ title: 'Thông tin', content: 'Hồ sơ này không có bản thay thế hoặc không đủ dữ liệu để so sánh.' });
+                }
+            } else {
+                Modal.error({ title: 'Lỗi', content: 'Không tìm thấy hồ sơ' });
+            }
+        } catch (error) {
+            console.error("Lỗi:", error);
+            Modal.error({ title: 'Lỗi', content: 'Không thể kết nối tới máy chủ' });
+        } finally {
+            setLoadingReplace(false);
+        }
+    };
+
+    const handleReplaceCompare = () => {
+        if (!replaceCompareMlk) {
+            Modal.warning({ title: 'Cảnh báo', content: 'Vui lòng nhập Mã Liên Kết' });
+            return;
+        }
+        handleReplaceCompareFromList(replaceCompareMlk.trim());
+    };
+
+    const handleExportDiff = async (dateRange: [string, string] | null) => {
+        try {
+            let apiUrl = `${getBasePath()}/api/ho-so-da-gui/export-diff`;
+            if (dateRange && dateRange[0] && dateRange[1]) {
+                const [tu, den] = dateRange;
+                const tuFormatted = tu.split('/').reverse().join('');
+                const denFormatted = den.split('/').reverse().join('');
+                apiUrl += `?ngayRaTu=${tuFormatted}&ngayRaDen=${denFormatted}`;
+            }
+            const res = await fetch(apiUrl);
             if (!res.ok) {
                 const data = await res.json();
                 Modal.error({
@@ -522,11 +635,16 @@ export default function HoSoDaGuiPage() {
             title: 'Thao Tác',
             key: 'action',
             fixed: 'right',
-            width: 120,
+            width: 180,
             render: (_, record) => (
-                <Button type="link" size="small" onClick={() => handleViewHistory(record.maLienKet)} icon={<History size={16} />}>
-                    Lịch sử
-                </Button>
+                <Space size="small">
+                    <Button type="link" size="small" onClick={() => handleViewHistory(record.maLienKet)} icon={<History size={16} />}>
+                        Lịch sử
+                    </Button>
+                    <Button type="link" size="small" onClick={() => handleReplaceCompareFromList(record.maLienKet)} icon={<GitCompare size={16} />} className="text-orange-500 hover:text-orange-600">
+                        Đối chiếu
+                    </Button>
+                </Space>
             )
         }
     ];
@@ -537,22 +655,21 @@ export default function HoSoDaGuiPage() {
             <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <Space>
                     <Title level={4} style={{ margin: 0 }}>Danh Sách Hồ Sơ Đã Gửi</Title>
-                    <Button icon={<Download size={16} />} onClick={handleExportDiff} className="ml-4">Xuất File Đối Chiếu</Button>
+                    <Button icon={<Download size={16} />} onClick={() => handleExportDiff(listDateRangeStr)} className="ml-4">Xuất File Đối Chiếu</Button>
                     {selectedRowKeys.length > 0 && (
                         <Button danger onClick={handleDeleteSelected}>Xóa {selectedRowKeys.length} đã chọn</Button>
                     )}
                     <Button danger type="dashed" onClick={handleDeleteAll}>Xóa toàn bộ (theo bộ lọc)</Button>
                 </Space>
                 <Space className="flex-wrap" style={{ marginTop: '8px' }}>
-                    <div className="flex items-center gap-2 mr-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100">
-                        <Filter size={16} className="text-orange-600" />
-                        <span className="text-sm font-medium text-orange-700">Chỉ hiện hồ sơ sửa đổi</span>
-                        <Switch size="small" checked={onlyModified} onChange={handleOnlyModifiedChange} className="ml-1" />
-                    </div>
                     <DatePicker.RangePicker 
                         format="DD/MM/YYYY"
                         placeholder={['Ngày ra từ', 'Ngày ra đến']}
                         style={{ width: 240 }}
+                        value={listDateRangeStr ? [
+                            dayjs(listDateRangeStr[0].split('/').reverse().join('-')),
+                            dayjs(listDateRangeStr[1].split('/').reverse().join('-'))
+                        ] : null}
                         onChange={handleListDateRangeChange}
                     />
                     <Select
@@ -1149,6 +1266,204 @@ export default function HoSoDaGuiPage() {
         </div>
     );
 
+    const renderReplaceCompareDiffTable = (historyData: any[]) => {
+        if (historyData.length < 2) return null;
+
+        const latest = historyData[historyData.length - 1];
+        const prev = historyData[historyData.length - 2];
+        
+        const fields = [
+            { key: 'hoTen', label: 'Họ Tên' },
+            { key: 'maThe', label: 'Mã Thẻ' },
+            { key: 'maBN', label: 'Mã Bệnh Nhân' },
+            { key: 'ngaySinh', label: 'Ngày Sinh' },
+            { key: 'gioiTinh', label: 'Giới Tính' },
+            { key: 'ngayVao', label: 'Ngày Vào' },
+            { key: 'ngayRa', label: 'Ngày Ra' },
+            { key: 'chanDoan', label: 'Chẩn Đoán' },
+            { key: 'tongChi', label: 'Tổng Chi' },
+            { key: 'tongChiBH', label: 'Tổng Chi BH' },
+            { key: 'baoHiemTT', label: 'Bảo Hiểm TT' },
+            { key: 'benhNhanTT', label: 'Bệnh Nhân TT' },
+            { key: 'benhNhanCCT', label: 'Bệnh Nhân CCT' },
+            { key: 'nguonKhac', label: 'Nguồn Khác' },
+            { key: 'trangThaiHS', label: 'Trạng Thái HS' },
+            { key: 'trangThaiTT', label: 'Trạng Thái TT' },
+            { key: 'maLoi', label: 'Mã Lỗi' },
+            { key: 'mieuTa', label: 'Miêu Tả' }
+        ];
+
+        return (
+            <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-blue-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-lg text-blue-800">Kết quả đối chiếu: Mã Liên Kết {latest.maLienKet}</h3>
+                        <p className="text-sm text-blue-600 mt-1">So sánh giữa bản gốc và bản thay thế mới nhất</p>
+                    </div>
+                </div>
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
+                        <tr>
+                            <th className="px-6 py-4 w-1/4 font-semibold text-base border-r border-slate-200">Trường Dữ Liệu</th>
+                            <th className="px-6 py-4 w-3/8 font-semibold text-base border-r border-slate-200">
+                                <div className="text-slate-500 text-xs uppercase mb-1">Bản gốc / Cũ hơn</div>
+                                <div>{new Date(prev.createdAt).toLocaleString('vi-VN')}</div>
+                            </th>
+                            <th className="px-6 py-4 w-3/8 font-semibold text-base text-blue-700">
+                                <div className="text-blue-500 text-xs uppercase mb-1">Bản thay thế / Mới nhất</div>
+                                <div>{new Date(latest.createdAt).toLocaleString('vi-VN')}</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                        {fields.map(f => {
+                            const valPrev = prev[f.key];
+                            const valLatest = latest[f.key];
+                            const strPrev = valPrev === null || valPrev === undefined ? '' : String(valPrev);
+                            const strLatest = valLatest === null || valLatest === undefined ? '' : String(valLatest);
+                            
+                            const isChanged = strPrev !== strLatest;
+                            
+                            const formatVal = (key: string, val: any) => {
+                                if (val === null || val === undefined) return '-';
+                                if (['tongChi', 'tongChiBH', 'baoHiemTT', 'benhNhanTT', 'benhNhanCCT', 'nguonKhac'].includes(key)) {
+                                    return Number(val).toLocaleString('vi-VN');
+                                }
+                                return String(val);
+                            };
+
+                            return (
+                                <tr key={f.key} className={`hover:bg-slate-50 transition-colors ${isChanged ? 'bg-orange-50/50' : ''}`}>
+                                    <td className="px-6 py-3 font-medium text-slate-700 border-r border-slate-100 flex items-center gap-2">
+                                        {isChanged && <span className="w-2 h-2 rounded-full bg-orange-400"></span>}
+                                        {f.label}
+                                    </td>
+                                    <td className={`px-6 py-3 border-r border-slate-100 ${isChanged ? 'text-slate-500 line-through' : 'text-slate-600'}`}>
+                                        {formatVal(f.key, valPrev)}
+                                    </td>
+                                    <td className={`px-6 py-3 ${isChanged ? 'font-bold text-orange-600 bg-orange-50/30' : 'text-slate-600'}`}>
+                                        {formatVal(f.key, valLatest)}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
+    const replaceCompareContent = (
+        <div className="max-w-[98%] mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col h-full mt-6">
+            <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                    <div className="bg-orange-100 p-3 rounded-full text-orange-600 shrink-0">
+                        <Filter size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-800">Danh Sách Hồ Sơ Thay Thế</h2>
+                        <p className="text-slate-500 text-sm mt-1">
+                            Các hồ sơ có nhiều phiên bản do sửa đổi hoặc thay thế.
+                        </p>
+                    </div>
+                </div>
+                <Button 
+                    icon={<Download size={16} />} 
+                    onClick={() => handleExportDiff(listDateRangeStr)} 
+                    className="border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-600"
+                >
+                    Đối chiếu toàn bộ
+                </Button>
+            </div>
+
+            <div className="mb-6 bg-blue-50/50 rounded-lg border border-blue-100">
+                <Collapse 
+                    ghost 
+                    items={[{
+                        key: '1',
+                        label: <span className="font-medium text-blue-700 flex items-center gap-2"><HelpCircle size={16}/> Hướng dẫn & Cơ chế đối chiếu Hồ sơ thay thế</span>,
+                        children: (
+                            <div className="pl-6 pb-2">
+                                <ul className="list-decimal pl-5 text-sm text-blue-800 space-y-2">
+                                    <li>
+                                        <strong>Cơ chế đối chiếu tự động:</strong> Hệ thống đã ngầm so sánh từng ô dữ liệu của mỗi hồ sơ với phiên bản liền kề của chính nó. Nếu phát hiện có sự sai lệch, ô dữ liệu đó sẽ tự động được <span className="inline-block bg-orange-100 text-orange-800 border border-orange-300 rounded px-1.5 py-0.5 text-xs font-semibold">bôi nền màu cam</span> ngay trên bảng danh sách để bạn dễ dàng nhận diện nhanh chóng.
+                                    </li>
+                                    <li><strong>Lọc hồ sơ:</strong> Sử dụng bộ lọc "Ngày ra từ - Ngày ra đến" để giới hạn danh sách các hồ sơ thay thế trong tháng (hoặc khoảng thời gian) cần báo cáo.</li>
+                                    <li><strong>Xem chi tiết:</strong> Bấm nút "So sánh" trên từng dòng để mở popup xem rõ giá trị dữ liệu cũ và dữ liệu mới của các trường bị thay đổi.</li>
+                                    <li><strong>Xuất Excel:</strong> Bấm nút "Đối chiếu toàn bộ" ở góc phải để xuất file báo cáo. File Excel sẽ chứa danh sách toàn bộ các trường thay đổi của các hồ sơ nằm trong khoảng thời gian đã lọc.</li>
+                                </ul>
+                            </div>
+                        )
+                    }]}
+                />
+            </div>
+
+            <div className="flex gap-2 mb-4 max-w-2xl flex-wrap">
+                <DatePicker.RangePicker 
+                    format="DD/MM/YYYY"
+                    placeholder={['Ngày ra từ', 'Ngày ra đến']}
+                    style={{ width: 240 }}
+                    value={listDateRangeStr ? [
+                        dayjs(listDateRangeStr[0].split('/').reverse().join('-')),
+                        dayjs(listDateRangeStr[1].split('/').reverse().join('-'))
+                    ] : null}
+                    onChange={(dates, dateStrings) => {
+                        const val = dates ? dateStrings : null;
+                        setListDateRangeStr(val as any);
+                        setLastReplaceFetchDate(val as any);
+                        fetchReplaceList(1, replacePagination.pageSize, val as any);
+                        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, false, val as any);
+                    }}
+                />
+                <Input 
+                    placeholder="Tìm Mã Liên Kết..." 
+                    value={replaceCompareMlk}
+                    onChange={e => setReplaceCompareMlk(e.target.value)}
+                    onPressEnter={handleReplaceCompare}
+                    prefix={<Search className="text-slate-400" size={16} />}
+                    className="flex-1"
+                />
+                <Button 
+                    type="primary" 
+                    onClick={handleReplaceCompare} 
+                    loading={loadingReplace}
+                    className="bg-orange-600 hover:bg-orange-700"
+                >
+                    So Sánh
+                </Button>
+            </div>
+
+            <div className="flex-1 overflow-auto">
+                <Table 
+                    dataSource={replaceData}
+                    columns={[
+                        ...columns.slice(0, -1),
+                        { 
+                            title: 'Thao Tác', 
+                            key: 'action', 
+                            fixed: 'right',
+                            width: 120, 
+                            render: (_, record) => (
+                                <Button type="primary" size="small" ghost onClick={() => handleReplaceCompareFromList(record.maLienKet)} icon={<GitCompare size={14} />} className="text-orange-500 border-orange-500 hover:bg-orange-50">
+                                    So sánh
+                                </Button>
+                            ) 
+                        }
+                    ]}
+                    rowKey="id"
+                    loading={loadingReplaceList}
+                    pagination={{
+                        ...replacePagination,
+                        showSizeChanger: true
+                    }}
+                    onChange={handleReplaceTableChange}
+                    size="middle"
+                    scroll={{ x: 'max-content' }}
+                />
+            </div>
+        </div>
+    );
+
     const items = [
         {
             key: '1',
@@ -1162,8 +1477,13 @@ export default function HoSoDaGuiPage() {
         },
         {
             key: '3',
-            label: 'Đối Chiếu C79',
+            label: 'Đối chiếu Mẫu 01/BH-C79',
             children: compareContent,
+        },
+        {
+            key: '4',
+            label: 'Hồ sơ thay thế',
+            children: replaceCompareContent,
         },
     ];
 
@@ -1176,7 +1496,7 @@ export default function HoSoDaGuiPage() {
                 </p>
             </div>
             
-            <Tabs defaultActiveKey="1" items={items} />
+            <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
 
             <Modal
                 title={`Lịch sử đối chiếu: ${selectedMaLienKet || ''}`}
@@ -1190,6 +1510,18 @@ export default function HoSoDaGuiPage() {
                 {loadingHistory ? (
                     <div className="py-10 text-center"><RefreshCw className="animate-spin inline mr-2" size={18} /> Đang tải...</div>
                 ) : renderCompareDiff()}
+            </Modal>
+
+            <Modal
+                title={null}
+                open={replaceCompareModalVisible}
+                onCancel={() => setReplaceCompareModalVisible(false)}
+                footer={null}
+                width={1000}
+                className="replace-compare-modal"
+                centered
+            >
+                {replaceHistoryData.length > 0 ? renderReplaceCompareDiffTable(replaceHistoryData) : null}
             </Modal>
         </div>
     );

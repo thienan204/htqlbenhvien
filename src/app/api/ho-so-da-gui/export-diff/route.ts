@@ -29,6 +29,10 @@ const FIELD_LABELS: any = {
 
 export async function GET(request: Request) {
     try {
+        const searchParams = new URL(request.url).searchParams;
+        const ngayRaTu = searchParams.get('ngayRaTu') || '';
+        const ngayRaDen = searchParams.get('ngayRaDen') || '';
+
         // Find all maLienKet with more than 1 version
         const grouped = await prisma.hoSoDaGui.groupBy({
             by: ['maLienKet'],
@@ -41,7 +45,35 @@ export async function GET(request: Request) {
             }
         });
 
-        const maLienKetList = grouped.map(g => g.maLienKet);
+        let maLienKetList = grouped.map(g => g.maLienKet);
+
+        if (ngayRaTu || ngayRaDen) {
+            let sql = `SELECT DISTINCT "maLienKet" FROM "HoSoDaGui" WHERE "ngayRa" IS NOT NULL AND "ngayRa" != ''`;
+            const params: any[] = [];
+            let paramIdx = 1;
+            
+            const extractDateSql = `
+                CASE 
+                    WHEN "ngayRa" LIKE '%/%/%' THEN SUBSTRING("ngayRa" FROM 7 FOR 4) || SUBSTRING("ngayRa" FROM 4 FOR 2) || SUBSTRING("ngayRa" FROM 1 FOR 2)
+                    ELSE SUBSTRING("ngayRa" FROM 1 FOR 8)
+                END
+            `;
+
+            if (ngayRaTu) {
+                sql += ` AND ${extractDateSql} >= $${paramIdx++}`;
+                params.push(ngayRaTu);
+            }
+            if (ngayRaDen) {
+                sql += ` AND ${extractDateSql} <= $${paramIdx++}`;
+                params.push(ngayRaDen);
+            }
+
+            const rawDateResults = await prisma.$queryRawUnsafe<{maLienKet: string}[]>(sql, ...params);
+            const dateMaLienKets = new Set(rawDateResults.map(r => r.maLienKet));
+            
+            // Intersect with grouped maLienKetList
+            maLienKetList = maLienKetList.filter(m => dateMaLienKets.has(m));
+        }
 
         if (maLienKetList.length === 0) {
             return NextResponse.json({ error: 'Không có hồ sơ nào có sự thay đổi để xuất đối chiếu.' }, { status: 400 });
