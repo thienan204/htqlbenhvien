@@ -8,10 +8,12 @@ import type { ColumnsType } from 'antd/es/table';
 import { getBasePath } from '@/utils/config';
 import * as xlsx from 'xlsx';
 import dayjs from 'dayjs';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
 
 export default function HoSoDaGuiPage() {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('1');
 
     // --- IMPORT STATES ---
@@ -656,10 +658,12 @@ export default function HoSoDaGuiPage() {
                 <Space>
                     <Title level={4} style={{ margin: 0 }}>Danh Sách Hồ Sơ Đã Gửi</Title>
                     <Button icon={<Download size={16} />} onClick={() => handleExportDiff(listDateRangeStr)} className="ml-4">Xuất File Đối Chiếu</Button>
-                    {selectedRowKeys.length > 0 && (
+                    {user?.role === 'admin' && selectedRowKeys.length > 0 && (
                         <Button danger onClick={handleDeleteSelected}>Xóa {selectedRowKeys.length} đã chọn</Button>
                     )}
-                    <Button danger type="dashed" onClick={handleDeleteAll}>Xóa toàn bộ (theo bộ lọc)</Button>
+                    {user?.role === 'admin' && (
+                        <Button danger type="dashed" onClick={handleDeleteAll}>Xóa toàn bộ (theo bộ lọc)</Button>
+                    )}
                 </Space>
                 <Space className="flex-wrap" style={{ marginTop: '8px' }}>
                     <DatePicker.RangePicker 
