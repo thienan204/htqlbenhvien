@@ -30,6 +30,17 @@ export async function GET() {
             }
             message += ' Phụ lục 2 đã đồng bộ.';
         }
+        
+        // Cập nhật Phụ lục 3
+        const sqlPath3 = path.join(process.cwd(), 'update_phuluc3.sql');
+        if (fs.existsSync(sqlPath3)) {
+            const sql3 = fs.readFileSync(sqlPath3, 'utf-8');
+            const commands3 = sql3.split(';').filter(cmd => cmd.trim() !== '');
+            for (const cmd of commands3) {
+                await prisma.$executeRawUnsafe(cmd);
+            }
+            message += ' Phụ lục 3 đã đồng bộ.';
+        }
 
         return NextResponse.json({ success: true, message });
     } catch (error: any) {
