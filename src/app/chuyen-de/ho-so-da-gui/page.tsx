@@ -658,10 +658,10 @@ export default function HoSoDaGuiPage() {
                 <Space>
                     <Title level={4} style={{ margin: 0 }}>Danh Sách Hồ Sơ Đã Gửi</Title>
                     <Button icon={<Download size={16} />} onClick={() => handleExportDiff(listDateRangeStr)} className="ml-4">Xuất File Đối Chiếu</Button>
-                    {user?.role === 'admin' && selectedRowKeys.length > 0 && (
+                    {user?.role === 'ADMIN' && selectedRowKeys.length > 0 && (
                         <Button danger onClick={handleDeleteSelected}>Xóa {selectedRowKeys.length} đã chọn</Button>
                     )}
-                    {user?.role === 'admin' && (
+                    {user?.role === 'ADMIN' && (
                         <Button danger type="dashed" onClick={handleDeleteAll}>Xóa toàn bộ (theo bộ lọc)</Button>
                     )}
                 </Space>
