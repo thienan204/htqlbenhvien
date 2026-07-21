@@ -19,6 +19,7 @@ export async function GET(request: Request) {
         const isPhuLuc1TT25 = searchParams.get('is_phu_luc_1_tt25') === 'true';
         const isPhuLuc2TT25 = searchParams.get('is_phu_luc_2_tt25') === 'true';
         const isPhuLuc3TT25 = searchParams.get('is_phu_luc_3_tt25') === 'true';
+        const isPhuLuc4TT25 = searchParams.get('is_phu_luc_4_tt25') === 'true';
 
         // Pagination
         const page = parseInt(searchParams.get('page') || '1');
@@ -73,6 +74,7 @@ export async function GET(request: Request) {
         if (isPhuLuc1TT25) andConditions.push({ is_phu_luc_1_tt25: true });
         if (isPhuLuc2TT25) andConditions.push({ is_phu_luc_2_tt25: true });
         if (isPhuLuc3TT25) andConditions.push({ is_phu_luc_3_tt25: true });
+        if (isPhuLuc4TT25) andConditions.push({ is_phu_luc_4_tt25: true });
 
         if (andConditions.length > 0) {
             where.AND = andConditions;

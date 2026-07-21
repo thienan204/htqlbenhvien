@@ -41,6 +41,17 @@ export async function GET() {
             }
             message += ' Phụ lục 3 đã đồng bộ.';
         }
+        
+        // Cập nhật Phụ lục 4
+        const sqlPath4 = path.join(process.cwd(), 'update_phuluc4.sql');
+        if (fs.existsSync(sqlPath4)) {
+            const sql4 = fs.readFileSync(sqlPath4, 'utf-8');
+            const commands4 = sql4.split(';').filter(cmd => cmd.trim() !== '');
+            for (const cmd of commands4) {
+                await prisma.$executeRawUnsafe(cmd);
+            }
+            message += ' Phụ lục 4 đã đồng bộ.';
+        }
 
         return NextResponse.json({ success: true, message });
     } catch (error: any) {

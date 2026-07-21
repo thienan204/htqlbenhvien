@@ -32,7 +32,8 @@ export default function Icd10Page() {
         is_male_only: false,
         is_phu_luc_1_tt25: false,
         is_phu_luc_2_tt25: false,
-        is_phu_luc_3_tt25: false
+        is_phu_luc_3_tt25: false,
+        is_phu_luc_4_tt25: false
     });
 
     const fetchChapters = async () => {
@@ -114,7 +115,8 @@ export default function Icd10Page() {
                     'Chỉ cho nguyên nhân tử vong': item.is_death_cause_only ? 'x' : '',
                     'Thuộc Phụ lục 01-TT01/2025': item.is_phu_luc_1_tt25 ? 'x' : '',
                     'Thuộc Phụ lục 02-TT01/2025': item.is_phu_luc_2_tt25 ? 'x' : '',
-                    'Thuộc Phụ lục 3-TT01/2025': item.is_phu_luc_3_tt25 ? 'x' : ''
+                    'Thuộc Phụ lục 3-TT01/2025': item.is_phu_luc_3_tt25 ? 'x' : '',
+                    'Thuộc Phụ lục 4-TT01/2025': item.is_phu_luc_4_tt25 ? 'x' : ''
                 }));
 
                 const worksheet = xlsx.utils.json_to_sheet(dataToExport);
@@ -224,6 +226,11 @@ export default function Icd10Page() {
                     {record.is_phu_luc_3_tt25 && (
                         <Tag icon={<InfoCircleOutlined />} color="purple" className="w-full truncate text-xs whitespace-normal h-auto py-1">
                             THUỘC PHỤ LỤC 3-TT01/2025
+                        </Tag>
+                    )}
+                    {record.is_phu_luc_4_tt25 && (
+                        <Tag icon={<InfoCircleOutlined />} color="orange" className="w-full truncate text-xs whitespace-normal h-auto py-1">
+                            THUỘC PHỤ LỤC 4-TT01/2025
                         </Tag>
                     )}
                 </Space>
@@ -368,6 +375,14 @@ export default function Icd10Page() {
                                 </Checkbox>
                             </Col>
                             <Col span={8}>
+                                <Checkbox 
+                                    checked={filters.is_phu_luc_4_tt25}
+                                    onChange={e => handleFilterChange('is_phu_luc_4_tt25', e.target.checked)}
+                                >
+                                    <span className="text-orange-600 font-semibold">Thuộc Phụ lục 4-TT01/2025</span>
+                                </Checkbox>
+                            </Col>
+                            <Col span={8}>
                                 <Button 
                                     type="primary" 
                                     icon={<DownloadOutlined />} 
@@ -464,7 +479,10 @@ export default function Icd10Page() {
                                     {selectedRecord.is_phu_luc_3_tt25 && (
                                         <Tag icon={<InfoCircleOutlined />} color="purple" className="whitespace-normal h-auto py-1 font-semibold">THUỘC PHỤ LỤC 3-TT01/2025</Tag>
                                     )}
-                                    {!selectedRecord.is_not_main_disease && !selectedRecord.not_recommended_main && !selectedRecord.requires_more_specific && !selectedRecord.is_death_cause_only && !selectedRecord.is_female_only && !selectedRecord.is_male_only && !selectedRecord.is_phu_luc_1_tt25 && !selectedRecord.is_phu_luc_2_tt25 && !selectedRecord.is_phu_luc_3_tt25 && (
+                                    {selectedRecord.is_phu_luc_4_tt25 && (
+                                        <Tag icon={<InfoCircleOutlined />} color="orange" className="whitespace-normal h-auto py-1 font-semibold">THUỘC PHỤ LỤC 4-TT01/2025</Tag>
+                                    )}
+                                    {!selectedRecord.is_not_main_disease && !selectedRecord.not_recommended_main && !selectedRecord.requires_more_specific && !selectedRecord.is_death_cause_only && !selectedRecord.is_female_only && !selectedRecord.is_male_only && !selectedRecord.is_phu_luc_1_tt25 && !selectedRecord.is_phu_luc_2_tt25 && !selectedRecord.is_phu_luc_3_tt25 && !selectedRecord.is_phu_luc_4_tt25 && (
                                         <span className="text-slate-400 italic">Không có cảnh báo đặc biệt</span>
                                     )}
                                 </Space>
