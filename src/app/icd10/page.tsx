@@ -111,8 +111,8 @@ export default function Icd10Page() {
                     'Chỉ có ở Nữ giới': item.is_female_only ? 'x' : '',
                     'Chỉ có ở Nam giới': item.is_male_only ? 'x' : '',
                     'Chỉ cho nguyên nhân tử vong': item.is_death_cause_only ? 'x' : '',
-                    'Thuộc Phụ lục 1 TT25': item.is_phu_luc_1_tt25 ? 'x' : '',
-                    'Thuộc Phụ lục 2 TT25': item.is_phu_luc_2_tt25 ? 'x' : ''
+                    'Thuộc Phụ lục 01-TT01/2025': item.is_phu_luc_1_tt25 ? 'x' : '',
+                    'Thuộc Phụ lục 02-TT01/2025': item.is_phu_luc_2_tt25 ? 'x' : ''
                 }));
 
                 const worksheet = xlsx.utils.json_to_sheet(dataToExport);
@@ -211,12 +211,12 @@ export default function Icd10Page() {
                     )}
                     {record.is_phu_luc_1_tt25 && (
                         <Tag icon={<InfoCircleOutlined />} color="success" className="w-full truncate text-xs whitespace-normal h-auto py-1">
-                            THUỘC PHỤ LỤC 1 TT25
+                            THUỘC PHỤ LỤC 01-TT01/2025
                         </Tag>
                     )}
                     {record.is_phu_luc_2_tt25 && (
                         <Tag icon={<InfoCircleOutlined />} color="cyan" className="w-full truncate text-xs whitespace-normal h-auto py-1">
-                            THUỘC PHỤ LỤC 2 TT25
+                            THUỘC PHỤ LỤC 02-TT01/2025
                         </Tag>
                     )}
                 </Space>
@@ -341,7 +341,7 @@ export default function Icd10Page() {
                                     checked={filters.is_phu_luc_1_tt25}
                                     onChange={e => handleFilterChange('is_phu_luc_1_tt25', e.target.checked)}
                                 >
-                                    <span className="text-emerald-600 font-semibold">Thuộc Phụ lục 1 TT25</span>
+                                    <span className="text-emerald-600 font-semibold">Thuộc Phụ lục 01-TT01/2025</span>
                                 </Checkbox>
                             </Col>
                             <Col span={8}>
@@ -349,7 +349,7 @@ export default function Icd10Page() {
                                     checked={filters.is_phu_luc_2_tt25}
                                     onChange={e => handleFilterChange('is_phu_luc_2_tt25', e.target.checked)}
                                 >
-                                    <span className="text-cyan-600 font-semibold">Thuộc Phụ lục 2 TT25</span>
+                                    <span className="text-cyan-600 font-semibold">Thuộc Phụ lục 02-TT01/2025</span>
                                 </Checkbox>
                             </Col>
                             <Col span={8}>
@@ -441,10 +441,10 @@ export default function Icd10Page() {
                                         <Tag icon={<ManOutlined />} color="blue" className="whitespace-normal h-auto py-1">CHỈ CÓ / CHỦ YẾU Ở NAM GIỚI</Tag>
                                     )}
                                     {selectedRecord.is_phu_luc_1_tt25 && (
-                                        <Tag icon={<InfoCircleOutlined />} color="success" className="whitespace-normal h-auto py-1 font-semibold">THUỘC PHỤ LỤC 1 TT25</Tag>
+                                        <Tag icon={<InfoCircleOutlined />} color="success" className="whitespace-normal h-auto py-1 font-semibold">THUỘC PHỤ LỤC 01-TT01/2025</Tag>
                                     )}
                                     {selectedRecord.is_phu_luc_2_tt25 && (
-                                        <Tag icon={<InfoCircleOutlined />} color="cyan" className="whitespace-normal h-auto py-1 font-semibold">THUỘC PHỤ LỤC 2 TT25</Tag>
+                                        <Tag icon={<InfoCircleOutlined />} color="cyan" className="whitespace-normal h-auto py-1 font-semibold">THUỘC PHỤ LỤC 02-TT01/2025</Tag>
                                     )}
                                     {!selectedRecord.is_not_main_disease && !selectedRecord.not_recommended_main && !selectedRecord.requires_more_specific && !selectedRecord.is_death_cause_only && !selectedRecord.is_female_only && !selectedRecord.is_male_only && !selectedRecord.is_phu_luc_1_tt25 && !selectedRecord.is_phu_luc_2_tt25 && (
                                         <span className="text-slate-400 italic">Không có cảnh báo đặc biệt</span>
