@@ -86,9 +86,10 @@ async function main() {
             });
         }
         
+        // Exact match for exclusions instead of startsWith
         for (const ex of exclude) {
             await prisma.icd10Catalog.updateMany({
-                where: { ma_chi_tiet: { startsWith: ex } },
+                where: { ma_chi_tiet: ex },
                 data: { is_phu_luc_2_tt25: false }
             });
         }
