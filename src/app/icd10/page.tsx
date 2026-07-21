@@ -297,9 +297,21 @@ export default function Icd10Page() {
                     />
 
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                            <AlertOutlined className="text-orange-500" />
-                            Bộ lọc bắt lỗi XML (Theo quy định TT06)
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <AlertOutlined className="text-orange-500" />
+                                Bộ lọc bắt lỗi XML (Theo quy định TT06)
+                            </div>
+                            <Button 
+                                type="primary" 
+                                icon={<DownloadOutlined />} 
+                                loading={exporting} 
+                                onClick={handleExportExcel}
+                                className="bg-green-600 hover:bg-green-700 border-none shadow-sm"
+                                size="small"
+                            >
+                                Xuất Excel theo bộ lọc
+                            </Button>
                         </div>
                         <Row gutter={[16, 16]}>
                             <Col span={8}>
@@ -381,17 +393,6 @@ export default function Icd10Page() {
                                 >
                                     <span className="text-orange-600 font-semibold">Thuộc Phụ lục 4-TT01/2025</span>
                                 </Checkbox>
-                            </Col>
-                            <Col span={8}>
-                                <Button 
-                                    type="primary" 
-                                    icon={<DownloadOutlined />} 
-                                    loading={exporting} 
-                                    onClick={handleExportExcel}
-                                    className="bg-green-600 hover:bg-green-700 border-none w-full shadow-sm"
-                                >
-                                    Xuất Excel theo bộ lọc
-                                </Button>
                             </Col>
                         </Row>
                     </div>
