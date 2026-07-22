@@ -173,6 +173,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
             conditionField: '',
             conditionValue: '',
             conditionMaDichVuValue: '',
+            excludeConditionField: '',
+            excludeConditionValue: '',
             isGroupCount: false,
             minCountVal: null,
             maxCountVal: null
@@ -669,6 +671,19 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                         <Col span={12}>
                                             <Form.Item name="conditionMaDichVuValue" label="Giá trị mã dịch vụ" style={{ marginBottom: 12 }}>
                                                 <TextArea rows={2} placeholder="VD: XN001, TH002" />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={8}>
+                                        <Col span={12}>
+                                            <Form.Item name="excludeConditionField" label="Trường điều kiện loại trừ" style={{ marginBottom: 12 }}>
+                                                <Input placeholder="VD: MA_DICH_VU" />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item name="excludeConditionValue" label="Giá trị loại trừ" style={{ marginBottom: 12 }}>
+                                                <TextArea rows={2} placeholder="VD: MÃ 1, MÃ 2" />
                                             </Form.Item>
                                         </Col>
                                     </Row>

@@ -17,6 +17,8 @@ export interface ValidationRule {
     conditionValue?: string; // Optional: Comma-separated values for the condition field
     conditionMaDichVu?: string; // Optional: Field name for service code
     conditionMaDichVuValue?: string; // Optional: Comma-separated values for service code
+    excludeConditionField?: string; // Optional: Field to check exclusion condition on
+    excludeConditionValue?: string; // Optional: Comma-separated values for exclusion
     errorMessage?: string; // Optional: Custom error message to display
     isGroupCount?: boolean; // Add Group Count Flag
     minCountVal?: number | null; // Min occurrences (e.g. > 1 -> min = 2, or maxCount)
@@ -165,6 +167,17 @@ export class ValidationEngine {
                         }
                     }
 
+                    if (rule.excludeConditionField && rule.excludeConditionValue) {
+                        let excludeVal = context[rule.excludeConditionField];
+                        if (excludeVal === undefined) {
+                            const actualKey = Object.keys(context).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
+                            if (actualKey) excludeVal = context[actualKey];
+                        }
+                        const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                        const valStr = this.getDataValue(excludeVal);
+                        if (valStr && excludedValues.includes(valStr)) return;
+                    }
+
                     let isError = false;
 
                     if (rule.code && rule.code.trim()) {
@@ -221,6 +234,17 @@ export class ValidationEngine {
                                     const allowedValues = rule.conditionMaDichVuValue.split(/[;,\n]+/).map((s: string) => s.trim());
                                     const valStr = this.getDataValue(conditionVal);
                                     if (!valStr || !allowedValues.includes(valStr)) return;
+                                }
+
+                                if (rule.excludeConditionField && rule.excludeConditionValue) {
+                                    let excludeVal = item[rule.excludeConditionField];
+                                    if (excludeVal === undefined) {
+                                        const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
+                                        if (actualKey) excludeVal = item[actualKey];
+                                    }
+                                    const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                                    const valStr = this.getDataValue(excludeVal);
+                                    if (valStr && excludedValues.includes(valStr)) return;
                                 }
 
                                 const itemContext = {
@@ -318,6 +342,19 @@ export class ValidationEngine {
                                     debugMsg = `[DEBUG: RuleCondValue='${rule.conditionMaDichVuValue}', RowVal='${valStr}']`;
                                 }
                                 // End check
+
+                                if (rule.excludeConditionField && rule.excludeConditionValue) {
+                                    let excludeVal = item[rule.excludeConditionField];
+                                    if (excludeVal === undefined) {
+                                        const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
+                                        if (actualKey) excludeVal = item[actualKey];
+                                    }
+                                    const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                                    const valStr = this.getDataValue(excludeVal);
+                                    if (valStr && excludedValues.includes(valStr)) {
+                                        return;
+                                    }
+                                }
 
                                 const itemContext = {
                                     ...rootContext,
@@ -491,6 +528,19 @@ export class ValidationEngine {
                     }
                 }
 
+                if (rule.excludeConditionField && rule.excludeConditionValue) {
+                    let excludeVal = context[rule.excludeConditionField];
+                    if (excludeVal === undefined) {
+                        const actualKey = Object.keys(context).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
+                        if (actualKey) excludeVal = context[actualKey];
+                    }
+                    const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                    const valStr = this.getDataValue(excludeVal);
+                    if (valStr && excludedValues.includes(valStr)) {
+                        return { isMatch: false };
+                    }
+                }
+
                 try {
                     const result = checkLogic(context);
                     return { isMatch: result };
@@ -526,6 +576,17 @@ export class ValidationEngine {
                         const allowedValues = rule.conditionMaDichVuValue.split(/[;,\n]+/).map((s: string) => s.trim());
                         const valStr = this.getDataValue(conditionVal);
                         if (!valStr || !allowedValues.includes(valStr)) continue;
+                    }
+
+                    if (rule.excludeConditionField && rule.excludeConditionValue) {
+                        let excludeVal = item[rule.excludeConditionField];
+                        if (excludeVal === undefined) {
+                            const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
+                            if (actualKey) excludeVal = item[actualKey];
+                        }
+                        const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                        const valStr = this.getDataValue(excludeVal);
+                        if (valStr && excludedValues.includes(valStr)) continue;
                     }
 
                     const itemContext = {
@@ -595,6 +656,19 @@ export class ValidationEngine {
                         // }
 
                         if (!valStr || !allowedValues.includes(valStr)) {
+                            continue;
+                        }
+                    }
+
+                    if (rule.excludeConditionField && rule.excludeConditionValue) {
+                        let excludeVal = item[rule.excludeConditionField];
+                        if (excludeVal === undefined) {
+                            const actualKey = Object.keys(item).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
+                            if (actualKey) excludeVal = item[actualKey];
+                        }
+                        const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
+                        const valStr = this.getDataValue(excludeVal);
+                        if (valStr && excludedValues.includes(valStr)) {
                             continue;
                         }
                     }
