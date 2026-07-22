@@ -1,0 +1,23 @@
+{
+  "name": "htqlbenhvien-tray-app",
+  "version": "1.0.0",
+  "description": "Desktop Tray App for Notifications",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder -w"
+  },
+  "build": {
+    "appId": "com.bvdklangson.htql",
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "dependencies": {
+    "eventsource": "^2.0.2"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^26.15.3"
+  }
+}

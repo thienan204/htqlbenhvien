@@ -1,0 +1,1 @@
+﻿const xlsx = require('xlsx'); const workbook = xlsx.readFile('mau/phụluc1tt25.xlsx'); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 }); const codes = []; for(let i=1; i<rows.length; i++) { if(rows[i] && rows[i][2]) codes.push(rows[i][2]); } console.log(codes.join(' | '));

@@ -1,0 +1,78 @@
+# Project Context
+- **Framework**: Next.js (App Router)
+- **Language**: TypeScript
+- **Directory Structure**: Source code is located entirely inside the `src/` directory.
+- **ORM / Database**: Prisma
+- **Styling / UI**: Tailwind CSS, Ant Design (antd)
+
+# Vibe Coding & Code Modification Rules
+- **Do not modify unrelated code**: Never change or refactor code that is outside the scope of the current task. Keep your modifications as small and isolated as possible.
+- **No unnecessary formatting**: Do not apply sweeping formatting changes (e.g., changing single/double quotes, reordering imports, changing indentation) in areas of the file you are not directly working on.
+- **Respect existing patterns**: Adapt to the existing code style and architecture of the project. Do not introduce new libraries or architectural patterns unless explicitly requested.
+
+# SAFE FEATURE DEVELOPMENT & CODE ISOLATION (BẢO VỆ CHỨC NĂNG CŨ)
+## 1. Nguyên Tắc Trọng Yếu (Non-Negotiable)
+- **Zero Regression**: Tuyệt đối KHÔNG sửa đổi, refactor hay xoá các hàm, Component, API Routes, hoặc Prisma Models đang hoạt động ngoại trừ file liên quan trực tiếp đến task mới.
+- **Additive-Only Approach**: Ưu tiên VIẾT THÊM file mới/hàm mới thay vì sửa trực tiếp vào code cũ sẵn có.
+
+## 2. Quy Tắc Cách Ly Code (Isolation Rules)
+- **File & Thư Mục Mới**: Mọi UI component mới của feature phải được gom gọn trong thư mục con riêng biệt. 
+  - *Ví dụ*: `src/app/(routes)/[new-feature]/_components/`
+- **Server Actions & API Isolation**: Viết Action/API mới độc lập (ví dụ: `src/actions/new-feature.ts` hoặc `src/app/api/new-feature/route.ts`). Không chèn thêm logic vào các file Action/API của module khác.
+- **Utility / Helpers**: Không sửa các hàm helper dùng chung trong `src/lib/` hoặc `src/utils/`. Nếu cần logic xử lý riêng, hãy tạo helper riêng trong scope của feature đó.
+
+## 3. Quy Tắc An Toàn Với Database (Prisma)
+- Khi tính năng mới cần dữ liệu mới: **Thêm Model mới** hoặc **thêm trường mới có tính chất Optional (`?`)** trong `schema.prisma`.
+- KHÔNG đổi tên (rename) hoặc xoá (delete) bất kỳ trường (field) nào đang có trong `schema.prisma` để tránh vỡ các query cũ.
+
+## 4. Quy Tắc Tránh Xung Đột UI (Antd & Tailwind)
+- Không chỉnh sửa file CSS toàn cục (`globals.css`) hoặc `tailwind.config.js` / Antd `ConfigProvider` chung trừ khi người dùng yêu cầu rõ ràng.
+- Mọi custom style cho feature mới phải được bọc gọn trong scope của Feature đó.
+
+## 5. Quy Trình Kiểm Tra Trước Khi Hoàn Thành (Pre-flight Check)
+Trước khi báo hoàn thành công việc, AI phải kiểm tra và xác nhận:
+1. Đã import đúng các hàm/component mới chưa?
+2. Có file cũ nào bị ảnh hưởng ngoài ý muốn không?
+3. Nếu phải sửa file dùng chung, hãy giải thích lý do và chờ user Approve trước.
+
+# TypeScript & Strict Typing
+- **Strict Typing**: Always use strong types. Avoid using `any` type under any circumstances unless absolutely unavoidable.
+- **Define Interfaces/Types**: Explicitly define `interface` or `type` for all Component Props, State, API Requests, and Responses.
+- **Null Safety**: Strictly handle `null` and `undefined`. Do not use the non-null assertion operator (`!`) blindly.
+
+# Next.js App Router (src/app)
+- **Server Components by Default**: All components should be Server Components unless they require state (`useState`), side-effects (`useEffect`), or browser APIs.
+- **Client Components**: Only add the `'use client'` directive at the very top of the file when strictly necessary. Keep Client Components as small as possible and push data fetching to Server Components.
+- **API Routes**: Follow standard App Router API conventions (`src/app/api/.../route.ts`). Always type the request and response appropriately using `NextRequest` and `NextResponse`.
+
+# Styling: Tailwind CSS & Ant Design
+- **Tailwind CSS**: Use Tailwind for layout (flex, grid), spacing (margin, padding), typography, and responsive design. 
+- **Ant Design**: Use Ant Design for complex UI elements (Table, Modal, Form, Select, DatePicker, etc.).
+- **Integration**: When customizing Ant Design components, prefer passing Tailwind classes via the `className` prop. Avoid writing raw CSS/SCSS overrides unless requested.
+
+# Prisma ORM
+- **Query Optimization**: Always use `select` or `include` to fetch only the data you actually need. Avoid `SELECT *` behavior.
+- **Type Safety**: Utilize Prisma's generated types for your variables and function returns to guarantee end-to-end type safety.
+- **Error Handling**: Properly wrap Prisma queries in `try/catch` blocks and handle common database exceptions gracefully.
+
+# General Communication (User Rules)
+- Luôn phản hồi và giải thích bằng Tiếng Việt.
+- Trình bày chi tiết các bước thực hiện.
+- Luôn chờ sự đồng ý (Approve / "Ok") từ người dùng trước khi tiến hành các bước tiếp theo.
+
+# Documentation & Guide Generation Rules
+Khi được yêu cầu tạo tài liệu hướng dẫn hoặc hoàn thành một tính năng/module mới, luôn tuân thủ các quy tắc sau:
+- **Định dạng chuẩn**: Luôn trình bày tài liệu bằng Markdown rõ ràng, dễ đọc, có phân cấp Heading (`##`, `###`), bảng (Table) và highlight code.
+- **Tài liệu API Routes**: Khi tạo/chỉnh sửa API trong `src/app/api/...`:
+  - Mô tả rõ Endpoint (`Method` + `URL`).
+  - Danh sách `Headers`, `Query Params` hoặc `Request Body` (có ví dụ JSON cụ thể).
+  - Cấu trúc `Response` thành công (`200/201`) và các mã lỗi thường gặp (`400`, `401`, `404`, `500`).
+- **Tài liệu Component / Feature (Nghiệp vụ Bệnh viện)**:
+  - Mô tả ngắn gọn mục đích sử dụng của Component/Màn hình.
+  - Liệt kê các Props/State chính và luồng xử lý dữ liệu (Data flow).
+  - Hướng dẫn các bước thao tác cho người dùng (User Guide) dạng từng bước 1, 2, 3 ngắn gọn.
+- **Tài liệu Database / Prisma**:
+  - Khi thêm/sửa Model trong Prisma, phải giải thích rõ ý nghĩa các trường dữ liệu (fields) mới và mối quan hệ (Relations).
+- **Vị trí lưu tài liệu**:
+  - KHÔNG tạo thêm file rải rác ngoài thư mục `docs/`. 
+  - Mọi tài liệu hướng dẫn chi tiết về cách sử dụng và xử lý nghiệp vụ BẮT BUỘC phải tạo và lưu trữ tại thư mục: `docs/Guide/Module_Name/` (Ví dụ: `docs/Guide/QuanLyNhanSu/HDSD_NhanSu.md`).
