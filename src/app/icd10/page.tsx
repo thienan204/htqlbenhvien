@@ -373,12 +373,14 @@ export default function Icd10Page() {
                                 </Tooltip>
                             </Col>
                             <Col span={8}>
-                                <Checkbox 
-                                    checked={filters.is_phu_luc_2_tt25}
-                                    onChange={e => handleFilterChange('is_phu_luc_2_tt25', e.target.checked)}
-                                >
-                                    <span className="text-cyan-600 font-semibold">Thuộc Phụ lục 02-TT01/2025</span>
-                                </Checkbox>
+                                <Tooltip title="DANH MỤC MỘT SỐ BỆNH ĐƯỢC KHÁM BỆNH, CHỮA BỆNH TẠI CƠ SỞ KHÁM BỆNH, CHỮA BỆNH CẤP CƠ BẢN" placement="top">
+                                    <Checkbox 
+                                        checked={filters.is_phu_luc_2_tt25}
+                                        onChange={e => handleFilterChange('is_phu_luc_2_tt25', e.target.checked)}
+                                    >
+                                        <span className="text-cyan-600 font-semibold">Thuộc Phụ lục 02-TT01/2025</span>
+                                    </Checkbox>
+                                </Tooltip>
                             </Col>
                             <Col span={8}>
                                 <Checkbox 
