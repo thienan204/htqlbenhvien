@@ -393,12 +393,14 @@ export default function Icd10Page() {
                                 </Tooltip>
                             </Col>
                             <Col span={8}>
-                                <Checkbox 
-                                    checked={filters.is_phu_luc_4_tt25}
-                                    onChange={e => handleFilterChange('is_phu_luc_4_tt25', e.target.checked)}
-                                >
-                                    <span className="text-orange-600 font-semibold">Thuộc Phụ lục 4-TT01/2025</span>
-                                </Checkbox>
+                                <Tooltip title="DANH MỤC MỘT SỐ BỆNH ĐƯỢC CHUYỂN CƠ SỞ KHÁM BỆNH, CHỮA BỆNH BẢO HIỂM Y TẾ CẤP BAN ĐẦU ĐỂ QUẢN LÝ" placement="top">
+                                    <Checkbox 
+                                        checked={filters.is_phu_luc_4_tt25}
+                                        onChange={e => handleFilterChange('is_phu_luc_4_tt25', e.target.checked)}
+                                    >
+                                        <span className="text-orange-600 font-semibold">Thuộc Phụ lục 4-TT01/2025</span>
+                                    </Checkbox>
+                                </Tooltip>
                             </Col>
                         </Row>
                     </div>
