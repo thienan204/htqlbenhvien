@@ -383,12 +383,14 @@ export default function Icd10Page() {
                                 </Tooltip>
                             </Col>
                             <Col span={8}>
-                                <Checkbox 
-                                    checked={filters.is_phu_luc_3_tt25}
-                                    onChange={e => handleFilterChange('is_phu_luc_3_tt25', e.target.checked)}
-                                >
-                                    <span className="text-purple-600 font-semibold">Thuộc Phụ lục 3-TT01/2025</span>
-                                </Checkbox>
+                                <Tooltip title="DANH MỤC MỘT SỐ BỆNH ĐƯỢC SỬ DỤNG PHIẾU CHUYỂN CƠ SỞ KHÁM BỆNH, CHỮA BỆNH CÓ GIÁ TRỊ SỬ DỤNG MỘT NĂM" placement="top">
+                                    <Checkbox 
+                                        checked={filters.is_phu_luc_3_tt25}
+                                        onChange={e => handleFilterChange('is_phu_luc_3_tt25', e.target.checked)}
+                                    >
+                                        <span className="text-purple-600 font-semibold">Thuộc Phụ lục 3-TT01/2025</span>
+                                    </Checkbox>
+                                </Tooltip>
                             </Col>
                             <Col span={8}>
                                 <Checkbox 
