@@ -69,6 +69,8 @@ export async function POST(request: Request) {
                 conditionValue: rule.conditionValue,
                 conditionMaDichVu: rule.conditionMaDichVu,
                 conditionMaDichVuValue: rule.conditionMaDichVuValue,
+                excludeConditionField: rule.excludeConditionField,
+                excludeConditionValue: rule.excludeConditionValue,
                 errorMessage: rule.errorMessage,
                 isGroupCount: rule.isGroupCount,
                 minCountVal: rule.minCountVal,

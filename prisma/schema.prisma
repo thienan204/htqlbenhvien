@@ -25,6 +25,8 @@ model ValidationRule {
   checkNotNull           Boolean  @default(false)
   conditionMaDichVu      String?
   conditionMaDichVuValue String?
+  excludeConditionField  String?
+  excludeConditionValue  String?
   isGroupCount           Boolean  @default(false)
   mathExpression         String?
   maxCountVal            Int?
@@ -74,6 +76,8 @@ model DraftRule {
   checkNotNull           Boolean  @default(false)
   conditionMaDichVu      String?
   conditionMaDichVuValue String?
+  excludeConditionField  String?
+  excludeConditionValue  String?
   isGroupCount           Boolean  @default(false)
   mathExpression         String?
   maxCountVal            Int?
