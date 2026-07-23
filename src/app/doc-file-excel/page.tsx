@@ -146,6 +146,7 @@ export default function ExcelReaderPage() {
     const [sheetNames, setSheetNames] = useState<string[]>([]);
     const [activeSheet, setActiveSheet] = useState<string>('');
     const [tableData, setTableData] = useState<any[]>([]);
+    const [rawTableData, setRawTableData] = useState<any[]>([]);
     const [tableColumns, setTableColumns] = useState<any[]>([]);
     const [colWidths, setColWidths] = useState<Record<number, number>>({});
     const [loading, setLoading] = useState<boolean>(false);
@@ -160,7 +161,7 @@ export default function ExcelReaderPage() {
 
     // --- Rule Management State ---
     const [rules, setRules] = useState<DuplicateRule[]>([]);
-    const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
+    const [selectedRuleIds, setSelectedRuleIds] = useState<string[]>([]);
     const [isRuleManagerOpen, setIsRuleManagerOpen] = useState(false);
     const [editingRule, setEditingRule] = useState<DuplicateRule | null>(null);
     const [ruleLoading, setRuleLoading] = useState(false);
@@ -259,7 +260,7 @@ export default function ExcelReaderPage() {
         const res = await deleteDuplicateRule(id);
         if (res.success) {
             message.success("Đã xóa quy tắc.");
-            if (selectedRuleId === id) setSelectedRuleId(null);
+            setSelectedRuleIds(prev => prev.filter(rId => rId !== id));
             fetchRules();
         } else {
             message.error("Lỗi khi xóa quy tắc.");
@@ -282,7 +283,7 @@ export default function ExcelReaderPage() {
     // IndexedDB Helper
     const initDB = async () => {
         const { openDB } = await import('idb');
-        return openDB('ExcelReaderDB', 2, {
+        return openDB('ExcelReaderDB', 3, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains('files')) {
                     db.createObjectStore('files');
@@ -384,21 +385,23 @@ export default function ExcelReaderPage() {
 
         setTableColumns(columns);
         setTableData(data);
+        setRawTableData(data);
 
-        // Auto-detect matching rule
-        const matchedRule = rules.find(rule => {
+        // Auto-detect matching rules
+        const matchedRules = rules.filter(rule => {
             if (rule.active === false) return false;
-
             const requiredCols = [...rule.machineCols, rule.startCol, rule.endCol];
             if (rule.serviceCol) requiredCols.push(rule.serviceCol);
-
-            // Check if all required columns exist in headers
             return requiredCols.every(col => h.includes(col));
         });
 
-        if (matchedRule) {
-            setSelectedRuleId(matchedRule.id);
-            message.success(`Đã tự động chọn quy tắc: ${matchedRule.name}`);
+        if (matchedRules.length > 0) {
+            const ruleIds = matchedRules.map(r => r.id);
+            setSelectedRuleIds(ruleIds);
+            message.success(`Đã tự động chọn ${matchedRules.length} quy tắc phù hợp. Đang kiểm tra...`);
+            setTimeout(() => {
+                handleExecuteRule(ruleIds, h, data);
+            }, 100);
         }
     };
 
@@ -473,233 +476,182 @@ export default function ExcelReaderPage() {
     // State for service selection logic mainly for rendering/debugging, 
     // but actual mapping happens at runtime now.
 
-    const performDuplicateCheck = (
-        machineIndices: number[],
-        serviceIndex: number | undefined,
-        startIndex: number,
-        endIndex: number,
-        ignoreMinusOne: boolean,
-        ignoreNullValues: boolean,
-        filterServiceValues?: string[],
-        excludedServiceValues?: string[],
-        ignoreSameColIdx?: number,
-        minGapMinutes?: number
-    ) => {
+    const handleExecuteRule = (ruleIdsToRun?: string[], currentHeaders?: string[], currentData?: any[]) => {
+        const ids = ruleIdsToRun || selectedRuleIds;
+        if (!ids || ids.length === 0) {
+            message.error("Vui lòng chọn ít nhất 1 quy tắc trước!");
+            return;
+        }
+
+        const activeRules = rules.filter(r => ids.includes(r.id));
+        if (activeRules.length === 0) return;
+
+        const hds = currentHeaders || headers;
+        const baseData = currentData || (rawTableData.length > 0 ? rawTableData : tableData);
+
         setLoading(true);
 
-        const items = tableData.filter(row => {
-            if (serviceIndex !== undefined) {
-                const rowVal = String(row[serviceIndex] || '');
-                // Filter by Service Value if selected (Must match one of them)
-                if (filterServiceValues && filterServiceValues.length > 0) {
-                    if (!filterServiceValues.includes(rowVal)) {
-                        return false;
-                    }
-                }
-                // Exclude Service Value if selected (Must NOT match any of them)
-                if (excludedServiceValues && excludedServiceValues.length > 0) {
-                    if (excludedServiceValues.includes(rowVal)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }).map(row => ({
+        const getInd = (name: string, hdArray: string[]) => {
+            const lowerName = String(name).trim().toLowerCase();
+            return hdArray.findIndex(h => h && String(h).trim().toLowerCase() === lowerName);
+        };
+
+        const items = baseData.map((row, idx) => ({
             ...row,
-            _machineKey: machineIndices.map(col => row[col]).join('|'),
-            _machineValues: machineIndices.map(col => row[col]),
-            _start: row[startIndex],
-            _end: row[endIndex],
-            __groupIndex: undefined
+            _uid: idx
         }));
 
-        const mapGroup: Record<string, any[]> = {};
+        let globalGroupCounter = 0;
+        let totalDuplicates = 0;
+        const allDuplicates: any[] = [];
 
-        items.forEach(item => {
-            const valMachineKey = item._machineKey;
+        activeRules.forEach(rule => {
+            const machineIndices = rule.machineCols.map(c => getInd(c, hds)).filter(i => i !== -1);
+            const startIndex = getInd(rule.startCol, hds);
+            const endIndex = getInd(rule.endCol, hds);
+            const serviceIndex = rule.serviceCol ? getInd(rule.serviceCol, hds) : -1;
+            const ignoreSameColIdx = rule.ignoreIfSameField ? getInd(rule.ignoreIfSameField, hds) : -1;
 
-            // Check ignore condition (Minus One)
-            if (ignoreMinusOne) {
-                if (item._machineValues.some((v: any) => String(v) === '-1')) {
-                    return;
-                }
+            if (machineIndices.length === 0 || startIndex === -1 || endIndex === -1) {
+                console.warn(`Bỏ qua quy tắc "${rule.name}" do không tìm thấy đủ cột trong file.`);
+                return;
             }
 
-            // Check ignore condition (Null Values)
-            if (ignoreNullValues) {
-                if (item._machineValues.some((v: any) => v === null || v === undefined || String(v).trim() === '' || String(v).toLowerCase() === 'null')) {
-                    return;
+            const mapGroup: Record<string, any[]> = {};
+
+            items.forEach((item, originalIdx) => {
+                if (serviceIndex !== -1) {
+                    const rowVal = String(item[serviceIndex] || '');
+                    if (rule.serviceValues && rule.serviceValues.length > 0) {
+                        if (!rule.serviceValues.includes(rowVal)) return;
+                    }
+                    if (rule.excludedServiceValues && rule.excludedServiceValues.length > 0) {
+                        if (rule.excludedServiceValues.includes(rowVal)) return;
+                    }
                 }
-            }
 
-            const key = String(valMachineKey || '');
-            if (!key) return;
-            if (!mapGroup[key]) mapGroup[key] = [];
-            mapGroup[key].push(item);
-        });
+                const machineValues = machineIndices.map(col => item[col]);
+                const valMachineKey = machineValues.join('|');
 
-        const duplicates: any[] = [];
-        let groupIndexCounter = 0;
+                if (rule.ignoreMaMayMinusOne && machineValues.some((v: any) => String(v) === '-1')) return;
+                if (rule.ignoreNullValues && machineValues.some((v: any) => v === null || v === undefined || String(v).trim() === '' || String(v).toLowerCase() === 'null')) return;
 
-        Object.values(mapGroup).forEach(group => {
-            if (group.length < 2) return;
+                const key = String(valMachineKey || '');
+                if (!key) return;
+                
+                if (!mapGroup[key]) mapGroup[key] = [];
+                mapGroup[key].push({ ...item, _originalIdx: originalIdx });
+            });
 
-            const adj: Record<number, number[]> = {};
-            for (let i = 0; i < group.length; i++) adj[i] = [];
+            Object.values(mapGroup).forEach(group => {
+                if (group.length < 2) return;
 
-            for (let i = 0; i < group.length; i++) {
-                const itemA = group[i];
-                const startA = parseDateStr(itemA._start);
-                const endA = parseDateStr(itemA._end);
+                const adj: Record<number, number[]> = {};
+                for (let i = 0; i < group.length; i++) adj[i] = [];
 
-                if (!startA || !endA) continue;
+                for (let i = 0; i < group.length; i++) {
+                    const itemA = group[i];
+                    const startA = parseDateStr(itemA[startIndex]);
+                    const endA = parseDateStr(itemA[endIndex]);
 
-                for (let j = i + 1; j < group.length; j++) {
-                    const itemB = group[j];
-                    const startB = parseDateStr(itemB._start);
-                    const endB = parseDateStr(itemB._end);
+                    if (!startA || !endA) continue;
 
-                    if (!startB || !endB) continue;
+                    for (let j = i + 1; j < group.length; j++) {
+                        const itemB = group[j];
+                        const startB = parseDateStr(itemB[startIndex]);
+                        const endB = parseDateStr(itemB[endIndex]);
 
-                    // Ignored Field Logic: Skip if same value in ignoreSameColIdx
-                    if (ignoreSameColIdx !== undefined && ignoreSameColIdx !== -1) {
-                        const valA = itemA[ignoreSameColIdx];
-                        const valB = itemB[ignoreSameColIdx];
-                        if (valA !== undefined && valB !== undefined) {
-                            const strA = String(valA).trim();
-                            const strB = String(valB).trim();
-                            if (strA !== '' && strA === strB) {
-                                continue;
+                        if (!startB || !endB) continue;
+
+                        if (ignoreSameColIdx !== -1) {
+                            const valA = itemA[ignoreSameColIdx];
+                            const valB = itemB[ignoreSameColIdx];
+                            if (valA !== undefined && valB !== undefined) {
+                                const strA = String(valA).trim();
+                                const strB = String(valB).trim();
+                                if (strA !== '' && strA === strB) continue;
                             }
                         }
-                    }
 
-                    // Tính thời gian giao nhau (overlap) giữa 2 khoảng thời gian
-                    const overlapStart = Math.max(startA.getTime(), startB.getTime());
-                    const overlapEnd = Math.min(endA.getTime(), endB.getTime());
+                        const overlapStart = Math.max(startA.getTime(), startB.getTime());
+                        const overlapEnd = Math.min(endA.getTime(), endB.getTime());
+                        const lenA = endA.getTime() - startA.getTime();
+                        const lenB = endB.getTime() - startB.getTime();
 
-                    const lenA = endA.getTime() - startA.getTime();
-                    const lenB = endB.getTime() - startB.getTime();
+                        let isOverlap = false;
 
-                    let isOverlap = false;
-
-                    if (minGapMinutes && minGapMinutes > 0) {
-                        const gapMs = overlapStart - overlapEnd;
-                        if (gapMs < minGapMinutes * 60000) {
-                            isOverlap = true;
-                        }
-                    } else {
-                        if (overlapEnd > overlapStart) {
-                            isOverlap = true;
-                        } else if (overlapEnd === overlapStart) {
-                            if (lenA === 0 || lenB === 0) {
+                        if (rule.minGapMinutes && rule.minGapMinutes > 0) {
+                            const gapMs = overlapStart - overlapEnd;
+                            if (gapMs < rule.minGapMinutes * 60000) {
                                 isOverlap = true;
                             }
+                        } else {
+                            if (overlapEnd > overlapStart) {
+                                isOverlap = true;
+                            } else if (overlapEnd === overlapStart) {
+                                if (lenA === 0 || lenB === 0) {
+                                    isOverlap = true;
+                                }
+                            }
                         }
-                    }
 
-                    if (isOverlap) {
-                        adj[i].push(j);
-                        adj[j].push(i);
-                    }
-                }
-            }
-
-            const visited = new Set<number>();
-            for (let i = 0; i < group.length; i++) {
-                if (visited.has(i)) continue;
-                if (adj[i].length === 0) continue;
-
-                const comp: number[] = [];
-                const q = [i];
-                visited.add(i);
-
-                while (q.length > 0) {
-                    const u = q.shift()!;
-                    comp.push(u);
-                    for (const v of adj[u]) {
-                        if (!visited.has(v)) {
-                            visited.add(v);
-                            q.push(v);
+                        if (isOverlap) {
+                            adj[i].push(j);
+                            adj[j].push(i);
                         }
                     }
                 }
 
-                if (comp.length > 1) {
-                    comp.forEach(idx => {
-                        group[idx].__groupIndex = groupIndexCounter;
-                        duplicates.push(group[idx]);
-                    });
-                    groupIndexCounter++;
+                const visited = new Set<number>();
+                for (let i = 0; i < group.length; i++) {
+                    if (visited.has(i)) continue;
+                    if (adj[i].length === 0) continue;
+
+                    const comp: number[] = [];
+                    const q = [i];
+                    visited.add(i);
+
+                    while (q.length > 0) {
+                        const u = q.shift()!;
+                        comp.push(u);
+                        for (const v of adj[u]) {
+                            if (!visited.has(v)) {
+                                visited.add(v);
+                                q.push(v);
+                            }
+                        }
+                    }
+
+                    if (comp.length > 1) {
+                        comp.forEach(idx => {
+                            const origIdx = group[idx]._originalIdx;
+                            const clone = {
+                                ...items[origIdx],
+                                __groupIndex: globalGroupCounter,
+                                _violations: [rule.name]
+                            };
+                            allDuplicates.push(clone);
+                        });
+                        globalGroupCounter++;
+                        totalDuplicates += comp.length;
+                    }
                 }
-            }
+            });
         });
 
-        if (duplicates.length > 0) {
-            message.warning(`Tìm thấy ${duplicates.length} bản ghi trùng!`);
-            items.sort((a, b) => {
-                const gA = a.__groupIndex !== undefined ? a.__groupIndex : 999999;
-                const gB = b.__groupIndex !== undefined ? b.__groupIndex : 999999;
-                return gA - gB;
-            });
-            setShowOnlyDuplicates(true); // Auto-enable filter
+        if (totalDuplicates > 0) {
+            message.warning(`Tìm thấy bản ghi vi phạm ${activeRules.length} quy tắc trùng lặp!`);
+            setShowOnlyDuplicates(true);
         } else {
-            message.info("Không tìm thấy dữ liệu trùng theo tiêu chí đã chọn.");
+            message.success("Không tìm thấy dữ liệu trùng theo các tiêu chí đã chọn.");
             setShowOnlyDuplicates(false);
         }
 
-        setTableData(items);
+        const violatedUids = new Set(allDuplicates.map(d => d._uid));
+        const nonViolated = items.filter(i => !violatedUids.has(i._uid));
+
+        setTableData([...allDuplicates, ...nonViolated]);
         setLoading(false);
-    };
-
-    const handleExecuteRule = () => {
-        if (!selectedRuleId) {
-            message.error("Vui lòng chọn quy tắc trước!");
-            return;
-        }
-
-        const rule = rules.find(r => r.id === selectedRuleId);
-        if (!rule) return;
-
-        // Map rule column names to indices
-        // headers is array of strings. Handle trimmed cases.
-        const getInd = (name: string) => {
-            const lowerName = String(name).trim().toLowerCase();
-            return headers.findIndex(h => h && String(h).trim().toLowerCase() === lowerName);
-        };
-
-        const machineIndices = rule.machineCols.map(getInd).filter(i => i !== -1);
-        const startIndex = getInd(rule.startCol);
-        const endIndex = getInd(rule.endCol);
-        const serviceIndex = rule.serviceCol ? getInd(rule.serviceCol) : undefined;
-        const ignoreSameColIdx = rule.ignoreIfSameField ? getInd(rule.ignoreIfSameField) : undefined;
-
-        if (machineIndices.length === 0 || startIndex === -1 || endIndex === -1) {
-            message.error("Không tìm thấy các cột tương ứng trong file Excel! Hãy kiểm tra lại tên cột kết nối Mốc thời gian, Máy trong Quy tắc.");
-            return;
-        }
-
-        if (rule.ignoreIfSameField && ignoreSameColIdx === -1) {
-            message.warning(`⚠ Cột "${rule.ignoreIfSameField}" chưa trùng khớp chính xác 100% với tên trên mảng Header dòng đầu của Excel. Đã Trim. Lỗi vẫn sẽ quét!`);
-            console.log("Cofig Rule Ignore:", rule.ignoreIfSameField, "nhưng Headers là:", headers);
-        } else if (rule.ignoreIfSameField && ignoreSameColIdx !== undefined && ignoreSameColIdx !== -1) {
-            message.info(`Đã áp dụng bỏ qua cảnh báo nếu 2 dòng có cùng Dữ liệu ở Cột [${rule.ignoreIfSameField}] (Index Cột thứ: ${ignoreSameColIdx})`);
-        } else {
-            console.log("Rule Object khong chua truong ignoreIfSameField:", rule);
-        }
-
-        performDuplicateCheck(
-            machineIndices,
-            serviceIndex === -1 ? undefined : serviceIndex,
-            startIndex,
-            endIndex,
-            rule.ignoreMaMayMinusOne,
-            rule.ignoreNullValues || false,
-            rule.serviceValues,
-            rule.excludedServiceValues,
-            ignoreSameColIdx,
-            rule.minGapMinutes
-        );
     };
 
     const handleExportDuplicates = async () => {
@@ -712,11 +664,12 @@ export default function ExcelReaderPage() {
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet("Du Lieu Trung");
 
-        const headerRow = ws.addRow(headers);
+        const exportHeaders = ["QUY_TAC_VI_PHAM", ...headers];
+        const headerRow = ws.addRow(exportHeaders);
         headerRow.font = { bold: true };
 
         dups.forEach(item => {
-            const rowVals: any[] = [];
+            const rowVals: any[] = [(item._violations || []).join(', ')];
             headers.forEach((_, idx) => {
                 rowVals.push(item[idx]);
             });
@@ -866,12 +819,14 @@ export default function ExcelReaderPage() {
 
                                 {/* Rule Selection & Controls */}
                                 <Select
+                                    mode="multiple"
                                     placeholder="Chọn Quy tắc kiểm tra..."
-                                    style={{ width: 400 }}
-                                    value={selectedRuleId}
-                                    onChange={setSelectedRuleId}
+                                    style={{ minWidth: 400, flex: 1, maxWidth: 800 }}
+                                    value={selectedRuleIds}
+                                    onChange={setSelectedRuleIds}
                                     allowClear
                                     loading={ruleLoading}
+                                    maxTagCount="responsive"
                                 >
                                     {rules.filter(r => r.active !== false).map(r => (
                                         <Option key={r.id} value={r.id}>{r.name}</Option>
@@ -896,8 +851,8 @@ export default function ExcelReaderPage() {
                                 <Button
                                     type="primary"
                                     icon={<PlayCircleOutlined />}
-                                    onClick={handleExecuteRule}
-                                    disabled={!selectedRuleId}
+                                    onClick={() => handleExecuteRule()}
+                                    disabled={selectedRuleIds.length === 0}
                                     className="bg-blue-600"
                                 >
                                     Kiểm tra ngay
@@ -1003,7 +958,24 @@ export default function ExcelReaderPage() {
                                         cell: ResizableTitle,
                                     },
                                 }}
-                                columns={tableColumns.map((col: any) => {
+                                columns={[
+                                    {
+                                        title: 'Quy tắc vi phạm',
+                                        dataIndex: '_violations',
+                                        key: '_violations',
+                                        width: 250,
+                                        fixed: 'left',
+                                        render: (violations: string[]) => (
+                                            violations && violations.length > 0 ? (
+                                                <div className="flex flex-col gap-1">
+                                                    {violations.map((v, i) => <Tag color="red" key={i} className="whitespace-normal mb-1">{v}</Tag>)}
+                                                </div>
+                                            ) : null
+                                        )
+                                    },
+                                    ...tableColumns
+                                ].map((col: any) => {
+                                    if (col.key === '_violations') return col;
                                     const width = colWidths[col.dataIndex] || col.width || 150;
                                     return {
                                         ...col,

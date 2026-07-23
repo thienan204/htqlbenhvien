@@ -116,7 +116,7 @@ export default function DuplicatesPage() {
         const loadData = async () => {
             try {
                 const { openDB } = await import('idb');
-                const db = await openDB('ExcelReaderDB', 2);
+                const db = await openDB('ExcelReaderDB', 3);
                 const data = await db.get('files', 'currentDuplicates');
                 
                 if (data) {
@@ -161,11 +161,12 @@ export default function DuplicatesPage() {
         const ws = wb.addWorksheet("Du Lieu Trung");
 
         const orderedHeaders = columnOrder.map(idx => headers[idx]);
-        const headerRow = ws.addRow(orderedHeaders);
+        const exportHeaders = ["QUY_TAC_VI_PHAM", ...orderedHeaders];
+        const headerRow = ws.addRow(exportHeaders);
         headerRow.font = { bold: true };
 
         filteredDups.forEach(item => {
-            const rowVals: any[] = [];
+            const rowVals: any[] = [(item._violations || []).join(', ')];
             columnOrder.forEach((originalIndex) => {
                 rowVals.push(item[originalIndex]);
             });
@@ -214,10 +215,25 @@ export default function DuplicatesPage() {
         }));
     };
 
-    const tableColumns = columnOrder.map((originalIndex) => {
-        const header = headers[originalIndex];
-        const width = colWidths[originalIndex] || 150;
-        return {
+    const tableColumns = [
+        {
+            title: 'Quy tắc vi phạm',
+            dataIndex: '_violations',
+            key: '_violations',
+            width: 250,
+            fixed: 'left' as const,
+            render: (violations: string[]) => (
+                violations && violations.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                        {violations.map((v, i) => <Tag color="red" key={i} className="whitespace-normal mb-1">{v}</Tag>)}
+                    </div>
+                ) : null
+            )
+        },
+        ...columnOrder.map((originalIndex) => {
+            const header = headers[originalIndex];
+            const width = colWidths[originalIndex] || 150;
+            return {
             title: <span className="font-bold">{header || `Column ${originalIndex + 1}`}</span>,
             dataIndex: originalIndex,
             key: originalIndex,
@@ -258,7 +274,7 @@ export default function DuplicatesPage() {
                 );
             }
         };
-    });
+    })];
 
     return (
         <div className="flex flex-col h-screen bg-slate-50">
