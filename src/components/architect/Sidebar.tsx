@@ -4,7 +4,7 @@ import {
     RocketOutlined, AppstoreOutlined,
     FileTextOutlined, FileExcelOutlined,
     SettingOutlined, DashboardOutlined,
-    TableOutlined
+    TableOutlined, AuditOutlined
 } from '@ant-design/icons';
 import { Button } from 'antd';
 import prisma from '@/lib/prisma';
