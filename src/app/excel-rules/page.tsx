@@ -23,6 +23,7 @@ interface DuplicateRule {
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
     minGapMinutes?: number;
+    departmentExclusions?: any[];
 }
 
 export default function ExcelRulesPage() {
