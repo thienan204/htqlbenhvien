@@ -10,6 +10,7 @@ export interface RuleConfig {
         endCol?: string;      // e.g., 'GIO_KET_THUC'
         serviceCol?: string;  // e.g., 'MA_DICH_VU'
         minGapMinutes?: number;
+        ignoreValues?: string[];
     };
     permissions?: {
         allowedServices?: string[];
