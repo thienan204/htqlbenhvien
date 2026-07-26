@@ -3,9 +3,11 @@
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
-export async function getDuplicateRules() {
+export async function getDuplicateRules(ruleType?: string) {
     try {
+        const whereClause = ruleType && ruleType !== 'ALL' ? { ruleType } : {};
         const rules = await prisma.duplicateRule.findMany({
+            where: whereClause,
             orderBy: {
                 createdAt: 'desc'
             }
@@ -18,6 +20,7 @@ export async function getDuplicateRules() {
 }
 
 export async function createDuplicateRule(data: {
+    ruleType?: string;
     name: string;
     machineCols: string[];
     serviceCol?: string;
@@ -30,10 +33,12 @@ export async function createDuplicateRule(data: {
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
     minGapMinutes?: number;
+    departmentExclusions?: any;
 }) {
     try {
         const newRule = await prisma.duplicateRule.create({
             data: {
+                ruleType: data.ruleType || 'EXCEL',
                 name: data.name,
                 machineCols: data.machineCols,
                 serviceCol: data.serviceCol,
@@ -45,6 +50,7 @@ export async function createDuplicateRule(data: {
                 serviceValues: data.serviceValues || [],
                 excludedServiceValues: data.excludedServiceValues || [],
                 minGapMinutes: data.minGapMinutes || 0,
+                departmentExclusions: data.departmentExclusions || null,
             }
         });
         if ('ignoreIfSameField' in data) {
@@ -59,6 +65,7 @@ export async function createDuplicateRule(data: {
 }
 
 export async function updateDuplicateRule(id: string, data: {
+    ruleType?: string;
     name: string;
     machineCols: string[];
     serviceCol?: string;
@@ -71,11 +78,13 @@ export async function updateDuplicateRule(id: string, data: {
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
     minGapMinutes?: number;
+    departmentExclusions?: any;
 }) {
     try {
         const updatedRule = await prisma.duplicateRule.update({
             where: { id },
             data: {
+                ruleType: data.ruleType,
                 name: data.name,
                 machineCols: data.machineCols,
                 serviceCol: data.serviceCol,
@@ -87,6 +96,7 @@ export async function updateDuplicateRule(id: string, data: {
                 serviceValues: data.serviceValues || [],
                 excludedServiceValues: data.excludedServiceValues || [],
                 minGapMinutes: data.minGapMinutes || 0,
+                departmentExclusions: data.departmentExclusions || null,
             }
         });
         if ('ignoreIfSameField' in data) {

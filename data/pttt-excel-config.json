@@ -1,0 +1,125 @@
+{
+  "colConfigs": [
+    {
+      "name": "DICHVUKHAMBENHID",
+      "visible": false,
+      "alias": "DICHVUKHAMBE"
+    },
+    {
+      "name": "MABENHNHAN",
+      "visible": false,
+      "alias": "MABENHNHAN"
+    },
+    {
+      "name": "NGAYPTTT",
+      "visible": true,
+      "alias": "NGAYPTTT"
+    },
+    {
+      "name": "NGAYKTTT",
+      "visible": true,
+      "alias": "NGAYKTTT"
+    },
+    {
+      "name": "SOPHIEU",
+      "visible": true,
+      "alias": "SOPHIEU"
+    },
+    {
+      "name": "MAHOSOBENHAN",
+      "visible": true,
+      "alias": "MA BA"
+    },
+    {
+      "name": "TENBENHNHAN",
+      "visible": true,
+      "alias": "TENBENHNHAN"
+    },
+    {
+      "name": "MAMAY",
+      "visible": true,
+      "alias": "MAMAY"
+    },
+    {
+      "name": "TENPTTT",
+      "visible": true,
+      "alias": "TENPTTT"
+    },
+    {
+      "name": "TT_CHINH",
+      "visible": true,
+      "alias": "TT_CHINH"
+    },
+    {
+      "name": "NAMSINH_NAM",
+      "visible": false,
+      "alias": "NAMSINH_NAM"
+    },
+    {
+      "name": "NAMSINH_NU",
+      "visible": false,
+      "alias": "NAMSINH_NU"
+    },
+    {
+      "name": "HANG_DB",
+      "visible": false,
+      "alias": "HANG_DB"
+    },
+    {
+      "name": "HANG_1",
+      "visible": false,
+      "alias": "HANG_1"
+    },
+    {
+      "name": "HANG_2",
+      "visible": false,
+      "alias": "HANG_2"
+    },
+    {
+      "name": "HANG_3",
+      "visible": false,
+      "alias": "HANG_3"
+    },
+    {
+      "name": "PHU_VT",
+      "visible": false,
+      "alias": ""
+    },
+    {
+      "name": "PHU_VN",
+      "visible": false,
+      "alias": "PHU_VN"
+    },
+    {
+      "name": "PHU_VN2",
+      "visible": false,
+      "alias": "PHU_VN2"
+    },
+    {
+      "name": "BS_GAYME",
+      "visible": false,
+      "alias": "BS_GAYME"
+    },
+    {
+      "name": "GM1",
+      "visible": false,
+      "alias": "GM1"
+    },
+    {
+      "name": "GM2",
+      "visible": false,
+      "alias": "GM2"
+    },
+    {
+      "name": "GV",
+      "visible": false,
+      "alias": "GV"
+    },
+    {
+      "name": "DCV",
+      "visible": false,
+      "alias": "DCV"
+    }
+  ],
+  "violationColName": "Quy tắc vi phạm"
+}

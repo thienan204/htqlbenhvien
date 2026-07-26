@@ -1,0 +1,2739 @@
+{
+  "Bảng chỉ tiêu dữ liệu về trạng thái khám bệnh, chữa bệnh": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "STT",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Là số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu."
+    },
+    {
+      "field": "MA_BN",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã người bệnh theo quy định của cơ sở KBCB"
+    },
+    {
+      "field": "HO_TEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Là họ và tên của người bệnh. - Lưu ý: Trường hợp trẻ sau khi sinh ra được hưởng quyền lợi BHYT theo quy định của Luật BHYT nhưng chưa được cơ quan BHXH cấp thẻ BHYT do chưa làm thủ tục cấp giấy khai sinh thì cơ sở KBCB thực hiện ghi họ và tên của trẻ theo quy định tại điểm b khoản 1 Điều 10 Thông tư số 30/2020/TT-BYT ngày 31 tháng 12 năm 2020 của Bộ trưởng Bộ Y tế quy định chi tiết và hướng dẫn biện pháp thi hành một số điều của Nghị định số 146/2018/NĐ-CP ngày 17/10/2018 của Chính phủ quy định chi tiết và hướng dẫn biện pháp thi hành một số điều của Luật BHYT, cụ thể: + Nếu trẻ sơ sinh có mẹ hoặc cha (bố): ghi theo họ và tên của mẹ hoặc của cha (bố); + Nếu trẻ sơ sinh không có mẹ hoặc cha (bố) nhưng có người giám hộ: ghi theo họ và tên của người giám hộ;  + Nếu trẻ sơ sinh không có người nhận hoặc bỏ rơi tại cơ sở KBCB: ghi tên cơ sở KBCB nơi đang thực hiện việc điều trị cho trẻ."
+    },
+    {
+      "field": "SO_CCCD",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi số căn cước công dân hoặc số chứng minh thư nhân dân hoặc số hộ chiếu của người bệnh.Trường hợp không có số căn cước công dân hoặc số chứng minh thư nhân dân hoặc số hộ chiếu thì sử dụng mã tài khoản định danh điện tử."
+    },
+    {
+      "field": "NGAY_SINH",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi ngày, tháng, năm sinh ghi trên thẻ BHYT của người bệnh, gồm 12 ký tự, bao gồm: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày + 02 ký tự giờ + 02 ký tự phút."
+    },
+    {
+      "field": "GIOI_TINH",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Là mã giới tính của người bệnh (1: Nam; 2: Nữ; 3: Chưa xác định)"
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT của người bệnh do cơ quan BHXH cấp."
+    },
+    {
+      "field": "MA_DKBD",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "[object Object]"
+    },
+    {
+      "field": "GT_THE_TU",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm thẻ BHYT bắt đầu có giá trị sử dụng, gồm 08 ký tự, bao gồm: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày."
+    },
+    {
+      "field": "GT_THE_DEN",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_DOITUONG_KCB",
+      "type": "Chuỗi",
+      "maxLength": "4",
+      "description": "Ghi mã đối tượng đến KBCB theo Bộ mã DMDC do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "NGAY_VAO",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh đến KBCB, gồm 12 ký tự, trong đó: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày + 02 ký tự giờ (định dạng theo 24 giờ) + 02 ký tự phút."
+    },
+    {
+      "field": "NGAY_VAO_NOI_TRU",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": ""
+    },
+    {
+      "field": "LY_DO_VNT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": ""
+    },
+    {
+      "field": "MA_LY_DO_VNT",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "MA_LOAI_KCB",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "Ghi mã hình thức KBCB theo Bộ mã DMDC do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "MA_CSKCB",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Ghi mã cơ sở KBCB nơi người bệnh đến khám bệnh, điều trị do cơ quan có thẩm quyền cấp."
+    },
+    {
+      "field": "MA_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã dịch vụ kỹ thuật hoặc mã dịch vụ khám bệnh thực hiện đối với người bệnh, theo quy định tại Bộ mã danh mục dùng chung (DMDC) do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "TEN_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên dịch vụ kỹ thuật hoặc tên dịch vụ khám bệnh."
+    },
+    {
+      "field": "MA_THUOC",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": ""
+    },
+    {
+      "field": "TEN_THUOC",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": ""
+    },
+    {
+      "field": "MA_VAT_TU",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": ""
+    },
+    {
+      "field": "TEN_VAT_TU",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": ""
+    },
+    {
+      "field": "NGAY_YL",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm ra y lệnh (gồm 12 ký tự, theo cấu trúc: yyyymmddHHmm, bao gồm: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày + 02 ký tự giờ (24 giờ) + 02 ký tự phút)."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": ""
+    }
+  ],
+  "Bảng 1. Chỉ tiêu tổng hợp khám bệnh, chữa bệnh": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "STT",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Là số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu."
+    },
+    {
+      "field": "MA_BN",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã người bệnh theo quy định của cơ sở KBCB"
+    },
+    {
+      "field": "HO_TEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Là họ và tên của người bệnh."
+    },
+    {
+      "field": "SO_CCCD",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi số căn cước công dân hoặc số chứng minh thư nhân dân hoặc số hộ chiếu của người bệnh."
+    },
+    {
+      "field": "NGAY_SINH",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi ngày, tháng, năm sinh ghi trên thẻ BHYT của người bệnh, gồm 12 ký tự theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "GIOI_TINH",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Là mã giới tính của người bệnh (1: Nam; 2: Nữ; 3: Chưa xác định)"
+    },
+    {
+      "field": "NHOM_MAU",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "MA_QUOC_TICH",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Ghi mã quốc tịch của người bệnh theo quy định tại Phụ lục 2 Thông tư số 07/2016/TT-BCA ngày 01 tháng 2 năm 2016 của Bộ trưởng Bộ Công an."
+    },
+    {
+      "field": "MA_DAN_TOC",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_NGHE_NGHIEP",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "[object Object]"
+    },
+    {
+      "field": "DIA_CHI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi địa chỉ nơi cư trú hiện tại của người bệnh."
+    },
+    {
+      "field": "MA_TINH_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Mã đơn vị hành chính cấp tỉnh nơi cư trú hiện tại của người bệnh. Ghi theo 02 ký tự cuối của mã đơn vị hành chính của tỉnh, thành phố trực thuộc Trung ương nơi người bệnh cư trú (Quy định tại Phụ lục 1 Thông tư số 07/2016/TT-BCA ngày 01 tháng 2 năm 2016 của Bộ trưởng Bộ Công an)."
+    },
+    {
+      "field": "MAHUYEN_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Mã đơn vị hành chính cấp huyện nơi cư trú hiện tại của người bệnh. Ghi mã đơn vị hành chính cấp huyện theo Quyết định số 124/2004/QĐ-TTg ngày 08/7/2004 của Thủ tướng Chính phủ ban hành danh mục mã đơn vị hành chính."
+    },
+    {
+      "field": "MAXA_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Mã đơn vị hành chính cấp xã nơi cư trú hiện tại của người bệnh. Ghi mã đơn vị hành chính cấp xã theo Quyết định số 124/2004/QĐ-TTg ngày 08/7/2004 của Thủ tướng Chính phủ ban hành danh mục mã đơn vị hành chính."
+    },
+    {
+      "field": "DIEN_THOAI",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi số điện thoại liên lạc của người bệnh hoặc của thân nhân người bệnh. Trường thông tin này chỉ ghi khi người bệnh cung cấp. Trường hợp không có thì để trống trường thông tin này."
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi mã thẻ BHYT của người bệnh do cơ quan BHXH cấp."
+    },
+    {
+      "field": "MA_DKBD",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi mã cơ sở KBCB nơi người bệnh đăng ký ban đầu ghi trên thẻ BHYT, gồm có 05 ký tự."
+    },
+    {
+      "field": "GT_THE_TU",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi thời điểm thẻ BHYT bắt đầu có giá trị sử dụng, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "GT_THE_DEN",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi thời điểm thẻ BHYT hết giá trị sử dụng, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "NGAY_MIEN_CCT",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh tham gia BHYT được hưởng chế độ miễn cùng chi trả;"
+    },
+    {
+      "field": "LY_DO_VV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi lý do đến KBCB của người bệnh;"
+    },
+    {
+      "field": "LY_DO_VNT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi lý do vào nội trú, áp dụng đối với trường hợp điều trị nội trú hoặc nội trú ban ngày (bao gồm cả triệu chứng lâm sàng hoặc các lý do khác khiến cho người bệnh đến cơ sở KBCB)."
+    },
+    {
+      "field": "MA_LY_DO_VNT",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Ghi mã lý do người bệnh vào điều trị nội trú theo quy định của Bộ Y tế."
+    },
+    {
+      "field": "CHAN_DOAN_VAO",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi chẩn đoán của cơ sở KBCB ở thời điểm tiếp nhận người bệnh (Chẩn đoán sơ bộ)."
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi đầy đủ chẩn đoán xác định bệnh chính, bệnh kèm theo và/hoặc các triệu chứng hoặc hội chứng, được bác sỹ ghi trong hồ sơ KBCB tại thời điểm kết thúc KBCB đối với người bệnh."
+    },
+    {
+      "field": "MA_BENH_CHINH",
+      "type": "Chuỗi",
+      "maxLength": "7",
+      "description": "Ghi mã bệnh chính theo mã ICD-10 do Bộ trưởng Bộ Y tế ban hành (Quyết định số 4469/QĐ-BYT ngày 28 tháng 10 năm 2020 và các văn bản cập nhật, bổ sung)."
+    },
+    {
+      "field": "MA_BENH_KT",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Ghi mã các bệnh kèm theo (theo mã ICD-10 do Bộ trưởng Bộ Y tế ban hành kèm theo Quyết định số 4469/QĐ-BYT ngày 28 tháng 10 năm 2020 và các văn bản cập nhật, bổ sung) hoặc mã của triệu chứng, hội chứng."
+    },
+    {
+      "field": "MA_BENH_YHCT",
+      "type": "Chuỗi",
+      "maxLength": "150",
+      "description": "Ghi mã bệnh áp dụng trong KBCB bằng YHCT (nếu có);"
+    },
+    {
+      "field": "MA_PTTT_QT",
+      "type": "Chuỗi",
+      "maxLength": "125",
+      "description": "Ghi mã phẫu thuật, thủ thuật quốc tế ICD-9 CM (theo mã phẫu thuật, thủ thuật ICD-9 CM do Bộ trưởng Bộ Y tế ban hành kèm theo Quyết định số 4440/QĐ-BYT ngày 27 tháng 10 năm 2020);"
+    },
+    {
+      "field": "MA_DOI_TUONG_KCB",
+      "type": "Chuỗi",
+      "maxLength": "4",
+      "description": "Ghi mã đối tượng đến KBCB theo Bộ mã DMDC do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "MA_NOI_DI",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_NOI_DEN",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Ghi mã cơ sở KBCB nơi chuyển người bệnh đến do cơ quan có thẩm quyền cấp."
+    },
+    {
+      "field": "MA_TAI_NAN",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã tai nạn thương tích."
+    },
+    {
+      "field": "NGAY_VAO",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh đến KBCB, gồm 12 ký tự, theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "NGAY_VAO_NOI_TRU",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh được bác sỹ chỉ định vào điều trị nội trú hoặc điều trị nội trú ban ngày, gồm 12 ký tự, theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "NGAY_RA",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh kết thúc điều trị nội trú, kết thúc điều trị nội trú ban ngày, kết thúc điều trị ngoại trú hoặc kết thúc khám bệnh, gồm 12 ký tự theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "GIAY_CHUYEN_TUYEN",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi số giấy chuyển tuyến của cơ sở KBCB nơi chuyển người bệnh chuyển đi (trong trường hợp người bệnh có giấy chuyển tuyến) hoặc số giấy hẹn khám lại (nếu có)."
+    },
+    {
+      "field": "SO_NGAY_DTRI",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Là số ngày điều trị thực tế để phục vụ mục đích thống kê, cụ thể như sau:"
+    },
+    {
+      "field": "PP_DIEU_TRI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_LOAI_RV",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã loại ra viện, trong đó:"
+    },
+    {
+      "field": "GHI_CHU",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi lời dặn của bác sĩ hoặc nhân viên y tế đối với người bệnh sau khi kết thúc lần KBCB."
+    },
+    {
+      "field": "NGAY_TTOAN",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh thanh toán chi phí KBCB, gồm 12 ký tự theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "T_THUOC",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng thành tiền (THANH_TIEN_BV) các khoản chi của thuốc (kể cả oxy), dịch truyền, máu và chế phẩm máu (đã bao gồm chi phí xét nghiệm NAT và kháng thể bất thường, KIT gạn tách tiểu cầu), chi phí vận chuyển máu và chi phí bao bì (đối với thuốc thang) tại bảng XML 2 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_VTYT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng thành tiền của vật tư y tế trong trường thông tin THANH_TIEN_BV tại bảng XML 3 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_TONGCHI_BV",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng chi phí trong lần khám bệnh hoặc trong đợt điều trị, là tổng số tiền THANH_TIEN_BV tại bảng XML2 và XML3 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_TONGCHI_BH",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng chi phí trong phạm vi quỹ BHYT thanh toán của lần khám bệnh hoặc đợt điều trị, là tổng số tiền THANH_TIEN_BH tại bảng XML2 và XML3 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_BNTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng số tiền người bệnh tự trả ngoài phạm vi chi trả của Quỹ BHYT, là tổng số tiền T_BNTT tại bảng XML2 và XML3 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_BNCCT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng số tiền người bệnh cùng chi trả trong phạm vi quyền lợi được hưởng BHYT, là tổng số tiền T_BNCCT tại bảng XML2 và XML3 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_BHTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng số tiền đề nghị cơ quan bảo hiểm xã hội thanh toán, theo công thức sau: T_BHTT = T_TONGCHI_BH – T_BNCCT"
+    },
+    {
+      "field": "T_NGUONKHAC",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi tổng số tiền các nguồn khác chi trả ngoài phạm vi chi trả của quỹ BHYT, là tổng số tiền T_NGUONKHAC tại bảng XML2 và XML3 ban hành kèm theo Quyết định này."
+    },
+    {
+      "field": "T_BHTT_GDV",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền quỹ BHYT thanh toán đối với các khoản chi ngoài định suất hoặc ngoài DRG theo quy định của Bộ Y tế (Là số tiền T_BHTT tại bảng XML2 và XML3 đối với các chi phí có MA_PTTT là “1” (Phí dịch vụ))."
+    },
+    {
+      "field": "NAM_QT",
+      "type": "Số",
+      "maxLength": "4",
+      "description": "Ghi năm mà cơ sở KBCB đề nghị cơ quan BHXH thanh toán."
+    },
+    {
+      "field": "THANG_QT",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Ghi tháng mà cơ sở KBCB đề nghị cơ quan BHXH thanh toán"
+    },
+    {
+      "field": "MA_LOAI_KCB",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "Ghi mã hình thức KBCB theo Bộ mã DMDC do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "MA_KHOA",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã khoa nơi người bệnh điều trị."
+    },
+    {
+      "field": "MA_CSKCB",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Ghi mã cơ sở KBCB nơi người bệnh đến khám bệnh, điều trị do cơ quan có thẩm quyền cấp."
+    },
+    {
+      "field": "MA_KHUVUC",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "Ghi mã nơi sinh sống của người bệnh ghi trên thẻ BHYT (K1 hoặc K2 hoặc K3)"
+    },
+    {
+      "field": "CAN_NANG",
+      "type": "Chuỗi",
+      "maxLength": "6",
+      "description": "Ghi số kilogram (kg) cân nặng của người bệnh, biểu thị đầy đủ cả số thập phân, dấu thập phân là dấu chấm “.”, ghi đến 2 chữ số sau dấu thập phân."
+    },
+    {
+      "field": "CAN_NANG_CON",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Ghi số gram (ký hiệu là: g) cân nặng của con mới sinh."
+    },
+    {
+      "field": "NAM_NAM_LIEN_TUC",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm người bệnh tham gia BHYT đủ 05 năm liên tục, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "NGAY_TAI_KHAM",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi ngày cơ sở KBCB hẹn người bệnh tái khám tiếp theo (nếu có), gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "MA_HSBA",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Ghi mã số hồ sơ bệnh án hoặc số phiếu khám ngoại trú của người bệnh do cơ sở KBCB quy định."
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được người đứng đầu cơ sở KBCB ủy quyền được ký và đóng dấu của cơ sở KBCB đó."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 2. Chỉ tiêu chi tiết thuốc": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "STT",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu."
+    },
+    {
+      "field": "MA_THUOC",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã hoạt chất theo quy định tại Bộ mã danh mục dùng chung do Bộ Y tế ban hành."
+    },
+    {
+      "field": "MA_PP_CHEBIEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã phương pháp chế biến vị thuốc cổ truyền theo Bộ mã DMDC do Bộ trưởng Bộ Y tế ban hành (Phương pháp chế biến vị thuốc cổ truyền theo quy định tại Thông tư số 30/2017/TT-BYT của Bộ trưởng Bộ Y tế)."
+    },
+    {
+      "field": "MA_CSKCB_THUOC",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "- Trường hợp do thiên tai, dịch bệnh phải chuyển thuốc đến cơ sở KBCB khác để điều trị cho người bệnh thì ghi C.XXXXX (XXXXX là mã cơ sở KBCB nơi chuyển thuốc đi)."
+    },
+    {
+      "field": "MA_NHOM",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Là mã nhóm theo chi phí, dùng để phân loại, sắp xếp các chi phí vào các nhóm. Ghi theo Phụ lục số 3 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30 tháng 12 năm 2021 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "TEN_THUOC",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên thuốc theo đúng tên thuốc được Cục Quản lý Dược hoặc Cục Quản lý Y, dược cổ truyền cấp số đăng ký. Trường hợp thuốc do cơ sở KBCB tự bào chế, chế biến thì ghi tên thuốc theo đúng hồ sơ được người đứng đầu cơ sở KBCB phê duyệt."
+    },
+    {
+      "field": "DON_VI_TINH",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi đơn vị tính nhỏ nhất, đơn vị tính của thuốc thực tế sử dụng cho người bệnh."
+    },
+    {
+      "field": "HAM_LUONG",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi hàm lượng của thuốc theo kết quả trúng thầu (Ghi đúng hàm lượng của thuốc được Cục Quản lý Dược hoặc Cục Quản lý Y, dược cổ truyền cấp giấy đăng ký lưu hành hoặc hàm lượng điều chỉnh theo văn bản của Cục Quản lý Dược hoặc Cục Quản lý Y, dược cổ truyền hoặc do cơ sở KBCB tự bào chế)."
+    },
+    {
+      "field": "DUONG_DUNG",
+      "type": "Chuỗi",
+      "maxLength": "4",
+      "description": "Ghi mã đường dùng tương ứng với đường dùng của thuốc theo thông tin được Cục Quản lý Dược hoặc Cục Quản lý Y, dược cổ truyền cấp giấy đăng ký lưu hành. Trường hợp thuốc do cơ sở KBCB tự bào chế, chế biến thì ghi mã đường dùng tương ứng với đường dùng của thuốc theo đúng hồ sơ được người đứng đầu cơ sở KBCB phê duyệt."
+    },
+    {
+      "field": "DANG_BAO_CHE",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi dạng bào chế của thuốc (đối với thuốc hoá dược) hoặc dạng bào chế, chế biến của thuốc (đối với thuốc cổ truyền, thuốc dược liệu) theo thông tin được Cục Quản lý Dược hoặc Cục Quản lý Y, dược cổ truyền cấp giấy đăng ký lưu hành. Trường hợp thuốc do cơ sở KBCB tự bào chế, chế biến thì ghi dạng bào chế, chế biến của thuốc theo đúng hồ sơ được người đứng đầu cơ sở KBCB phê duyệt."
+    },
+    {
+      "field": "LIEU_DUNG",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi liều dùng thuốc cho người bệnh, cụ thể:"
+    },
+    {
+      "field": "CACH_DUNG",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi lời dặn của thầy thuốc trên đơn thuốc hoặc y lệnh."
+    },
+    {
+      "field": "SO_DANG_KY",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi số đăng ký lưu hành của thuốc do Cục Quản lý Dược hoặc Cục Quản lý Y, dược cổ truyền cấp phép (giữa các ký tự không có khoảng trống (space))."
+    },
+    {
+      "field": "TT_THAU",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi thông tin thầu của thuốc theo thứ tự, gồm: số quyết định phê duyệt kết quả lựa chọn nhà thầu; mã gói thầu; mã nhóm thầu (theo quy định tại Phụ lục số 6 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30 tháng 12 năm 2021 của Bộ trưởng Bộ Y tế); năm ban hành quyết định phê duyệt kết quả lựa chọn nhà thầu. Các thông tin này cách nhau bằng dấu chấm phẩy “;”."
+    },
+    {
+      "field": "PHAM_VI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã để xác định phạm vi của thuốc, trong đó:"
+    },
+    {
+      "field": "TYLE_TT_BH",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi tỷ lệ thanh toán BHYT đối với thuốc có quy định tỷ lệ phần trăm (ký hiệu: %); Biểu thị bằng số nguyên dương."
+    },
+    {
+      "field": "SO_LUONG",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Ghi số lượng thuốc thực tế sử dụng cho người bệnh, làm tròn số đến 3 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "DON_GIA",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi đơn giá của thuốc, là giá theo hóa đơn mua vào của cơ sở KBCB; làm tròn đến 3 (ba) chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên, trong đó:"
+    },
+    {
+      "field": "THANH_TIEN_BV",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Được tính theo công thức: THANH_TIEN_BV = SO_LUONG * DON_GIA, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "THANH_TIEN_BH",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Được tính theo công thức: THANH_TIEN_BH = SO_LUONG * DON_GIA * TYLE_TT_BH/100, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_NGUONKHAC_",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền thuốc được ngân sách nhà nước (Trung ương và/hoặc địa phương) hỗ trợ, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "NSNN",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền thuốc được ngân sách nhà nước (Trung ương và/hoặc địa phương) hỗ trợ, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "VTNN",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền thuốc được các tổ chức, đơn vị có trụ sở ngoài lãnh thổ Việt Nam hoặc các cá nhân đang sinh sống, học tập, lao động ngoài lãnh thổ Việt Nam hỗ trợ; làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "CL",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền thuốc được các nguồn khác còn lại (Không thuộc một trong ba nguồn quy định tại các trường thông tin: T_NGUONKHAC_NSNN, T_NGUONKHAC_VTNN, T_NGUONKHAC_VTTN) hỗ trợ; làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_NGUONKHAC",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Công thức tính T_NGUONKHAC = T_NGUONKHAC_NSNN + T_NGUONKHAC_VTNN +"
+    },
+    {
+      "field": "MUC_HUONG",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi mức hưởng tương ứng với từng loại chi phí, trong đó:"
+    },
+    {
+      "field": "T_BNTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền người bệnh tự trả ngoài phạm vi chi trả của quỹ BHYT, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_BNCCT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền người bệnh cùng chi trả trong phạm vi quyền lợi mức hưởng BHYT, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_BHTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền cơ sở KBCB đề nghị cơ quan BHXH thanh toán theo phạm vi quyền lợi mức hưởng BHYT của người bệnh, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "MA_KHOA",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã khoa nơi người bệnh được chỉ định sử dụng thuốc, theo Phụ lục số 5 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30 tháng 12 năm 2021 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "MA_BAC_SI",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Đính chính:"
+    },
+    {
+      "field": "MA_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã dịch vụ kỹ thuật hoặc mã dịch vụ khám bệnh thực hiện đối với người bệnh, theo quy định tại Bộ mã danh mục dùng chung (DMDC) do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "NGAY_YL",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm ra y lệnh thuốc, gồm 12 ký tự, theo cấu trúc: yyyymmddHHmm, trong đó: 04 ký tự năm + 02 ký tự tháng + 02 ký tự ngày + 02 ký tự giờ (tính theo 24 giờ) + 02 ký tự phút)."
+    },
+    {
+      "field": "NGAY_TH_YL",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm thực hiện y lệnh thuốc, gồm 12 ký tự, theo cấu trúc: yyyymmddHHMM"
+    },
+    {
+      "field": "MA_PTTT",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã phương thức thanh toán đối với thuốc, trong đó:"
+    },
+    {
+      "field": "NGUON_CTRA",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã để xác định nguồn thuốc chi trả cho người bệnh, như thuốc ARV, thuốc điều trị viêm gan C..., trong đó:"
+    },
+    {
+      "field": "VET_THUONG_TP",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã của vết thương tái phát. Chỉ ghi số “1” nếu sử dụng thuốc có quy định tỷ lệ thanh toán BHYT để điều trị vết thương tái phát, bệnh tật tái phát cho đối tượng thương binh, người hưởng chính sách như thương binh, thương binh loại B, bệnh binh."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng sử dụng khi cần thiết."
+    }
+  ],
+  "Ghi chú: Ký hiệu trong bảng này được hiểu như sau:": [],
+  "Bảng 3. Chỉ tiêu chi tiết dịch vụ kỹ thuật và vật tư y tế": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "STT",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu."
+    },
+    {
+      "field": "MA_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã dịch vụ kỹ thuật hoặc mã tiền khám hoặc mã tiền giường bệnh theo hạng bệnh viện theo quy định tại Bộ mã DMDC do Bộ Y tế ban hành."
+    },
+    {
+      "field": "MA_PTTT_QT",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã dịch vụ kỹ thuật hoặc mã tiền khám hoặc mã tiền giường bệnh theo hạng bệnh viện theo quy định tại Bộ mã DMDC do Bộ Y tế ban hành."
+    },
+    {
+      "field": "MAVATTU",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã VTYT chi tiết đến từng kích thước cụ thể đã được sử dụng cho người bệnh."
+    },
+    {
+      "field": "MA_NHOM",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Ghi mã nhóm theo chi phí, dùng để phân loại, sắp xếp các chi phí vào các nhóm, ghi theo Phụ lục số 3 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30 tháng 12 năm 2021 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "GOI_VTYT",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Ghi mã gói VTYT trong một lần sử dụng dịch vụ kỹ thuật (lần thứ nhất ghi G1, lần thứ hai ghi G2,.."
+    },
+    {
+      "field": "TEN_VAT_TU",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên thương mại của VTYT."
+    },
+    {
+      "field": "TEN_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên dịch vụ kỹ thuật hoặc tên dịch vụ khám bệnh hoặc tên giường bệnh đề nghị quỹ BHYT thanh toán."
+    },
+    {
+      "field": "MA_XANG_DAU",
+      "type": "Chuỗi",
+      "maxLength": "20",
+      "description": "Ghi mã loại xăng, dầu để tính chi phí vận chuyển người bệnh, ghi theo Bộ mã DMDC do Bộ trưởng Bộ Y tế ban hành."
+    },
+    {
+      "field": "DON_VI_TINH",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi đơn vị tính của VTYT hoặc DVKT đề nghị thanh toán."
+    },
+    {
+      "field": "PHAM_VI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã để xác định phạm vi của VTYT, dịch vụ kỹ thuật, trong đó:"
+    },
+    {
+      "field": "SO_LUONG",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Ghi số lượng dịch vụ kỹ thuật hoặc VTYT thực tế sử dụng cho người bệnh, làm tròn số đến 3 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "DON_GIA_BV",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi đơn giá dịch vụ kỹ thuật, tiền giường bệnh, tiền công khám bệnh (theo giá do cấp có thẩm quyền quy định hoặc giá do cơ sở KBCB xây dựng) hoặc đơn giá của VTYT (Giá theo hóa đơn mua vào của cơ sở KBCB); làm tròn đến 3 (ba) chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "DON_GIA_BH",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi đơn giá dịch vụ kỹ thuật, VTYT, tiền giường bệnh, tiền công khám bệnh do quỹ BHYT thanh toán; làm tròn đến 3 (ba) chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "TT_THAU",
+      "type": "Chuỗi",
+      "maxLength": "25",
+      "description": "Ghi thông tin thầu của VTYT theo thứ tự, gồm: số quyết định phê duyệt kết quả lựa chọn nhà thầu; số gói thầu; mã nhóm thầu (theo quy định tại Phụ lục số 7 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30 tháng 12 năm 2021 của Bộ trưởng Bộ Y tế); năm ban hành quyết định phê duyệt kết quả lựa chọn nhà thầu. Các thông tin này cách nhau bằng dấu chấm phẩy “;”."
+    },
+    {
+      "field": "TYLE_TT_DV",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi tỷ lệ thanh toán VTYT theo dịch vụ kỹ thuật đối với một số dịch vụ kỹ thuật đặc biệt. Tỷ lệ này là số nguyên dương. Cụ thể:"
+    },
+    {
+      "field": "TYLE_TT_BH",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi tỷ lệ thanh toán BHYT đối với dịch vụ kỹ thuật hoặc VTYT có quy định tỷ lệ (%). Tỷ lệ này là số nguyên dương."
+    },
+    {
+      "field": "THANH_TIEN_BV",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền thanh toán theo giá của bệnh viện. Trường thông tin này được xác định như sau: THANH_TIEN_BV = SO_LUONG * DON_GIA_BV, làm, tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "THANH_TIEN_BH",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi mức giá do quỹ BHYT thanh toán theo quy định của cơ quan có thẩm quyền. Trường thông tin này được xác định như sau: THANH_TIEN_BH = SO_LUONG * DON_GIA_BH * TYLE_TT_BH/100, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_TRANTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi mức thanh toán đối đa (45 tháng lương cơ sở) của gói VTYT trong một lần thực hiện DVKT theo quy định tại Thông tư 04/2017/TT-BYT của Bộ Y tế. Trường hợp không có trần thanh toán thì để trống trường thông tin này."
+    },
+    {
+      "field": "MUC_HUONG",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi mức hưởng tương ứng với từng loại chi phí, trong đó:"
+    },
+    {
+      "field": "T_NGUONKHAC_NSNN",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền dịch vụ kỹ thuật hoặc VTYT được ngân sách nhà nước (Trung ương và/hoặc địa phương) hỗ trợ, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_NGUONKHAC_VTNN",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền dịch vụ kỹ thuật hoặc VTYT được các tổ chức, đơn vị có trụ sở ngoài lãnh thổ Việt Nam hoặc các cá nhân đang sinh sống, học tập, lao động ngoài lãnh thổ Việt Nam hỗ trợ, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_NGUONKHAC_VTTN",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền dịch vụ kỹ thuật hoặc VTYT được các tổ chức, cơ quan, đơn vị có trụ sở trong lãnh thổ Việt Nam hoặc các cá nhân đang sinh sống, học tập, lao động trong lãnh thổ Việt Nam hỗ trợ, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_NGUONKHAC_CL",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền dịch vụ kỹ thuật hoặc VTYT được các nguồn khác còn lại (Không thuộc một trong ba nguồn của các trường thông tin trong bảng này:"
+    },
+    {
+      "field": "T_NGUONKHAC",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Là số tiền do nguồn khác chi trả; được tính theo công thức như sau: T_NGUONKHAC = T_NGUONKHAC_NSNN + T_NGUONKHAC_VTNN + T_NGUONKHAC_VTTN + T_NGUONKHAC_CL"
+    },
+    {
+      "field": "T_BNTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền người bệnh tự trả ngoài phạm vi chi trả của Quỹ BHYT, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_BNCCT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền người bệnh cùng chi trả trong phạm vi quyền lợi được hưởng BHYT, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "T_BHTT",
+      "type": "Số",
+      "maxLength": "15",
+      "description": "Ghi số tiền đề nghị cơ quan BHXH thanh toán theo phạm vi quyền lợi hưởng BHYT, làm tròn số đến 2 chữ số thập phân. Sử dụng dấu chấm “.” để phân cách giữa số Nguyên (hàng đơn vị) với số thập phân đầu tiên."
+    },
+    {
+      "field": "MA_KHOA",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã khoa nơi người bệnh được cung cấp DVKT, VTYT, giường bệnh. Mã khoa ghi theo Phụ lục số 5 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30 tháng 12 năm 2021 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "MA_GIUONG",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã giường tại khoa điều trị. Mã giường gồm 04 ký tự và được mã hóa theo nguyên tắc:"
+    },
+    {
+      "field": "MA_BAC_SI",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã nhân viên y tế khám, chỉ định (là mã định danh y tế của nhân viên y tế)."
+    },
+    {
+      "field": "NGUOI_THUC_HIEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã nhân viên y tế thực hiện dịch vụ kỹ thuật (là mã định danh y tế của nhân viên y tế). Trường hợp có nhiều nhân viên y tế cùng thực hiện thì ghi mã định danh y tế của các nhân viên y tế, cách nhau bằng dấu chấm phẩy “;”."
+    },
+    {
+      "field": "MA_BENH",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Ghi mã ICD10 của bệnh cần chỉ định DVKT bổ sung so với mã bệnh chính (nếu có). Trường hợp không có thông tin ở trường này thì được hiểu là DVKT được chỉ định để điều trị bệnh chính (MA_BENH_CHINH)."
+    },
+    {
+      "field": "MA_BENH_YHCT",
+      "type": "Chuỗi",
+      "maxLength": "150",
+      "description": "Trường hợp người bệnh được KBCB bằng YHCT, ghi mã bệnh YHCT của bệnh cần chỉ định DVKT bổ sung so với mã bệnh chính, tương ứng với mã ICD10 (nếu có). Trường hợp không có thông tin ở trường này thì được hiểu là DVKT được chỉ định để điều trị bệnh chính (MA_BENH_CHINH)."
+    },
+    {
+      "field": "NGAY_YL",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm ra y lệnh, gồm 12 ký tự, theo cấu trúc: yyyymmddHHMM, trong đó: 04 ký tự năm (yyyy) + 02 ký tự tháng (mm) + 02 ký tự ngày (dd) + 02 ký tự giờ, tính theo 24 giờ (HH) + 02 ký tự phút (MM)."
+    },
+    {
+      "field": "NGAY_TH_YL",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm thực hiện y lệnh, gồm 12 ký tự, theo cấu trúc: yyyymmddHHMM, trong đó: 04 ký tự năm (yyyy) + 02 ký tự tháng (mm) + 02 ký tự ngày (dd) + 02 ký tự giờ, tính theo 24 giờ (HH) + 02 ký tự phút (MM)."
+    },
+    {
+      "field": "NGAY_KQ",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm có kết quả, gồm 12 ký tự, theo cấu trúc: yyyymmddHHMM, trong đó: 04 ký tự năm (yyyy) + 02 ký tự tháng (mm) + 02 ký tự ngày (dd) + 02 ký tự giờ, tính theo 24 giờ (HH) + 02 ký tự phút (MM)."
+    },
+    {
+      "field": "MA_PTTT",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã phương thức thanh toán, trong đó:"
+    },
+    {
+      "field": "VET_THUONG_TP",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã của vết thương tái phát. Chỉ ghi số “1” nếu sử dụng DVKT, VTYT có quy định tỷ lệ thanh toán BHYT để điều trị vết thương tái phát, bệnh tật tái phát cho các đối tượng là thương binh, bao gồm cả thương binh loại B được công nhận trước ngày 31 tháng 12 năm 1993, người hưởng chính sách như thương binh, bệnh binh khi điều trị vết thương, bệnh tật tái phát (Quy định tại gạch đầu dòng thứ 7, điểm d khoản 1 Điều 183 Nghị định số 131/2021/NĐ-CP  ngày 30/12/2021 của Chính phủ quy định chi tiết và biện pháp thi hành Pháp lệnh Ưu đãi người có công với cách mạng)."
+    },
+    {
+      "field": "PP_VO_CAM",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã phương pháp vô cảm được sử dụng trong phẫu thuật, thủ thuật, trong đó:"
+    },
+    {
+      "field": "VI_TRI_TH_DVKT",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi mã vị trí thực hiện phẫu thuật hoặc thủ thuật theo danh mục mã vị trí cơ thể."
+    },
+    {
+      "field": "MA_MAY",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi mã các máy thực hiện dịch vụ cận lâm sàng, phẫu thuật, thủ thuật (máy xét nghiệm, máy XQuang, máy siêu âm...), tạm thời được ghi theo nguyên tắc: XX.n.YYYYY.Z, trong đó:"
+    },
+    {
+      "field": "MA_HIEU_SP",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã hiệu sản phẩm của VTYT, là mã hiệu do Công ty sản xuất tự đặt cho sản phẩm của mình. Mã hiệu có thể là số Model sản phẩm hoặc số Serial hoặc số EMEI được in trên sản phẩm hoặc bao bì sản phẩm."
+    },
+    {
+      "field": "TAI_SU_DUNG",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Là mã đánh dấu đối với VTYT tái sử dụng, trong đó:"
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần"
+    }
+  ],
+  "Bảng 4. Chỉ tiêu chi tiết dịch vụ cận lâm sàng": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "STT",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu."
+    },
+    {
+      "field": "MA_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi mã dịch vụ kỹ thuật cận lâm sàng, thực hiện theo Phụ lục số 1 ban hành kèm theo Quyết định số 7603/QĐ-BYT ngày 25 tháng 12 năm 2018 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "MA_CHI_SO",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã chỉ số xét nghiệm, chẩn đoán hình ảnh, thăm dò chức năng theo Phụ lục số 11 ban hành kèm theo Quyết định số 7603/QĐ-BYT ngày 25 tháng 12 năm 2018 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "TEN_CHI_SO",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi tên chỉ số xét nghiệm, chẩn đoán hình ảnh, thăm dò chức năng, theo Phụ lục số 11 ban hành kèm theo Quyết định số 7603/QĐ-BYT ngày 25 tháng 12 năm 2018 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "GIA_TRI",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi giá trị chỉ số (kết quả xét nghiệm, chẩn đoán hình ảnh, thăm dò chức năng)."
+    },
+    {
+      "field": "DON_VI_DO",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "Ghi đơn vị đo của chỉ số xét nghiệm, chẩn đoán hình ảnh, thăm dò chức năng theo Phụ lục 11 ban hành kèm theo Quyết định số 7603/QĐ-BYT ngày 25 tháng 12 năm 2018 của Bộ trưởng Bộ Y tế. Đối với các chỉ số không có đơn vị đo thì để trống trường thông tin này."
+    },
+    {
+      "field": "MO_TA",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi các mô tả do người đọc kết quả ghi. Trường hợp không có kết quả thì để trống trường thông tin này."
+    },
+    {
+      "field": "KET_LUAN",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi các kết luận của người đọc kết quả. Trường hợp không có kết quả thì để trống trường thông tin này."
+    },
+    {
+      "field": "NGAY_KQ",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm có kết quả cận lâm sàng; gồm 12 ký tự, theo cấu trúc: yyyymmddHHMM, trong đó: 04 ký tự năm (yyyy) + 02 ký tự tháng (mm) + 02 ký tự ngày (dd) + 02 ký tự giờ, tính theo 24 giờ (HH) + 02 ký tự phút (MM)."
+    },
+    {
+      "field": "MA_BS_DOC_KQ",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã của người có thẩm quyền đọc hoặc duyệt kết quả đọc, ghi mã của người này theo mã định danh y tế."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 5. Chỉ tiêu chi tiết diễn biến lâm sàng": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chi tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "STT",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Số thứ tự tăng từ 1 đến hết trong một lần gửi dữ liệu."
+    },
+    {
+      "field": "DIEN_BIEN_LS",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi diễn biến lâm sàng của người bệnh trong lần khám và/hoặc ghi nội dung chăm sóc của nhân viên y tế."
+    },
+    {
+      "field": "GIAI_DOAN_BENH",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi giai đoạn bệnh trong trường hợp người bệnh đã được cơ sở KBCB xác định giai đoạn bệnh."
+    },
+    {
+      "field": "HOI_CHAN",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi kết quả hội chẩn (nếu có)."
+    },
+    {
+      "field": "PHAU_THUAT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi mô tả cách thức phẫu thuật, thủ thuật (nếu có)."
+    },
+    {
+      "field": "THOI_DIEM_DBLS",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm diễn biến lâm sàng, gồm 12 ký tự, theo cấu trúc: yyyymmddHHMM, trong đó: 04 ký tự năm (yyyy) + 02 ký tự tháng (mm) + 02 ký tự ngày (dd) + 02 ký tự giờ, tính theo 24 giờ (HH) + 02 ký tự phút (MM)."
+    },
+    {
+      "field": "NGUOI_THUC_HIEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã định danh y tế của nhân viên y tế thực hiện ghi chép diễn biến lâm sàng."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 6. Chỉ tiêu hồ sơ bệnh án chăm sóc và điều trị HIV/AIDS": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi mã thẻ BHYT của người bệnh do cơ quan BHXH cấp."
+    },
+    {
+      "field": "SO_CCCD",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi số căn cước công dân hoặc số chứng minh thư nhân dân hoặc số hộ chiếu của người bệnh. Trường hợp không có số căn cước công dân hoặc số chứng minh thư nhân dân hoặc số hộ chiếu thì sử dụng mã tài khoản định danh điện tử."
+    },
+    {
+      "field": "NGAY_SINH",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": ""
+    },
+    {
+      "field": "GIOI_TINH",
+      "type": "Số",
+      "maxLength": "1",
+      "description": ""
+    },
+    {
+      "field": "DIA_CHI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": ""
+    },
+    {
+      "field": "MATINH_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": ""
+    },
+    {
+      "field": "MA_HUYEN_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": ""
+    },
+    {
+      "field": "MAXA_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "NGAYKD_HIV",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm khẳng định HIV của người nhiễm HIV, định dạng yyyymmdd."
+    },
+    {
+      "field": "NOI_LAY_MAU_XN",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "NOI_XN_KD",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "NOI_BDDT_ARV",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "BDDTARV",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm đầu tiên người bệnh nhận thuốc ARV trong chương trình chăm sóc và điều trị được ghi trong hồ sơ bệnh án của người bệnh; được định dạng yyyymmdd."
+    },
+    {
+      "field": "MA_PHAC_DO_DIEU_TRI_BD",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi mã phác đồ điều trị HIV/AIDS khi bắt đầu điều trị ARV theo danh mục mã phác đồ điều trị HIV/AIDS tại Phụ lục 10 ban hành kèm theo Quyết định số 5937/QĐ-BYT ngày 30/12/2021 của Bộ trưởng Bộ Y tế."
+    },
+    {
+      "field": "MA_LYDO_DTRI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã lý do bệnh nhân đăng ký giai đoạn điều trị tại cơ sở KBCB, trong đó:"
+    },
+    {
+      "field": "LOAI_DTRI_LAO",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã loại điều trị lao, trong đó:"
+    },
+    {
+      "field": "SANG_LOC_LAO",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Mã các phương pháp sàng lọc lao được thực hiện, trong đó:"
+    },
+    {
+      "field": "PHAC_DO_DTR_ILAO",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "- Ghi mã phác đồ điều trị bệnh lao ở người nhiễm HIV, trong đó:"
+    },
+    {
+      "field": "NGAYBD_DTRI_LAO",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm bắt đầu điều trị bệnh lao hoặc lao tiềm ẩn tại cơ sở KBCB, định dạng yyyymmdd."
+    },
+    {
+      "field": "NGAYKT_DTRI_LAO",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm kết thúc điều trị bệnh lao hoặc lao tiềm ẩn tại cơ sở KBCB, định dạng yyyymmdd. Trường hợp chưa kết thúc điều trị thì để trống trường thông tin này."
+    },
+    {
+      "field": "KQ_DTRI_LAO",
+      "type": "Số",
+      "maxLength": "1",
+      "description": ""
+    },
+    {
+      "field": "MA_LYDO_XNTL_VR",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã lý do chỉ định xét nghiệm đo tải lượng vi rút ở người bệnh đang điều trị ARV, trong đó:"
+    },
+    {
+      "field": "NGAY_XN_TLVR",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm lấy mẫu làm xét nghiệm tải lượng virus, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "KQ_XNTL_VR",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã kết quả xét nghiệm tải lượng vi rút HIV, là số lượng bản sao vi rút HIV trên 1 ml máu, trong đó:"
+    },
+    {
+      "field": "NGAY_KQ_XN_TLVR",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm có kết quả xét nghiệm tải lượng virus, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "MA_LOAI_BN",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã đối tượng đến khám, trong đó:"
+    },
+    {
+      "field": "GIAI_DOAN_LAM_SANG",
+      "type": "Số",
+      "maxLength": "1",
+      "description": ""
+    },
+    {
+      "field": "NHOM_DOI_TUONG",
+      "type": "Số",
+      "maxLength": "2",
+      "description": ""
+    },
+    {
+      "field": "MA_TINH_TRANG_DK",
+      "type": "Chuỗi",
+      "maxLength": "18",
+      "description": "Ghi mã tình trạng của đối tượng đến khám, trong đó:"
+    },
+    {
+      "field": "LAN_XN_PCR",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã lần thực hiện xét nghiệm PCR. Trong đó:"
+    },
+    {
+      "field": "NGAY_XN_PCR",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "[object Object]"
+    },
+    {
+      "field": "NGAY_KQ_XN_PCR",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày mà người bệnh có kết quả xét nghiệm PCR1, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "MA_KQ_XN_PCR",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã kết quả xét nghiệm PCR1, trong đó:"
+    },
+    {
+      "field": "NGAY_NHAN_TT_MANG_THAI",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm nhận thông tin mang thai, gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "NGAY_BAT_DAU_DT_CTX",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm bắt đầu điều trị Cotrimoxazol (CTX), gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "MA_XU_TRI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã xử trí của cơ sở y tế, trong đó:"
+    },
+    {
+      "field": "NGAY_BAT_DAU_XU_TRI",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày bắt đầu xử trí của đợt điều trị ARV (áp dụng đối với trường hợp có mã xử trí (MA_XU_TRI) là \"1\"), gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "NGAY_KET_THUC_XU_TRI",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày kết thúc xử trí của đợt điều trị ARV (áp dụng đối với trường hợp có mã xử trí (MA_XU_TRI) là \"1\"), gồm 08 ký tự theo định dạng yyyymmdd."
+    },
+    {
+      "field": "MA_BAC_PHAC_DO",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã bậc phác đồ của đợt điều trị khi phác đồ điều trị là \"Khác\", trong đó:"
+    },
+    {
+      "field": "SO_NGAY_CAP_THUOC_ARV",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi số ngày thuốc ARV được cấp (nhỏ hơn hoặc bằng với ngày trong trường thông tin NGAY_KET_THUC_XU_TRI trừ đi (-) ngày trong trường thông tin NGAY_BAT_DAU_XU_TRI)"
+    },
+    {
+      "field": "NGAY_CHUYEN_PHAC_DO",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": ""
+    },
+    {
+      "field": "LY_DO_CHUYEN_PHAC_DO",
+      "type": "Số",
+      "maxLength": "1",
+      "description": ""
+    },
+    {
+      "field": "MA_CSKCB",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": ""
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần"
+    }
+  ],
+  "Bảng 7. Chỉ tiêu dữ liệu giấy ra viện": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bằng XML 1) tổng các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "SO_LUU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi số lưu trữ là số hồ sơ bệnh án của người bệnh trong đợt điều trị"
+    },
+    {
+      "field": "MA_KHOA_RV",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi mã khoa nơi tổng kết hồ sơ bệnh án của người bệnh."
+    },
+    {
+      "field": "NGAY_VAO",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh đến KBCB, gồm 12 ký tự, theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "NGAY_RA",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh kết thúc điều trị nội trú, kết thúc điều trị nội trú ban ngày, kết thúc điều trị ngoại trú hoặc kết thúc khám bệnh, gồm 12 ký tự theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "MA_DINH_CHI_THAI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã \" 1\" là đình chỉ thai nghén, mã \"0\" là không đình chỉ thai nghén."
+    },
+    {
+      "field": "NGUYENNHAN_DINHCHI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi nguyên nhân đình chỉ thai nghén."
+    },
+    {
+      "field": "THOIGIAN_DINHCHI",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm đình chỉ thai nghén, gồm 12 ký tự, theo định dạng yyyymmddHHMM"
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "1500",
+      "description": "Ghi đầy đủ chẩn đoán xác định bệnh chính, bệnh kèm theo và/hoặc các triệu chứng hoặc hội chứng, được bác sỹ ghi trong hồ sơ KBCB tại thời điểm kết thúc KBCB đối với người bệnh."
+    },
+    {
+      "field": "PP_DIEUTRI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "GHI_CHU",
+      "type": "Chuỗi",
+      "maxLength": "1500",
+      "description": "Trường thông tin này áp dụng đối với trường hợp cấp giấy ra viện để giải quyết chế độ BHXH."
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được người đứng đầu cơ sở KBCB ủy quyền được ký và đóng dấu của cơ sở KBCB đó."
+    },
+    {
+      "field": "MA_BS",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của Trường khoa hoặc Phó trưởng khoa được uỷ quyền ký tên theo quy định của Thủ trưởng cơ sở KBCB."
+    },
+    {
+      "field": "TEN_BS",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên của Trưởng khoa hoặc Phó trưởng khoa được ủy quyền ký tên theo quy định của Thủ trưởng cơ sở KBCB."
+    },
+    {
+      "field": "NGAY_CT",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày chứng từ (Giấy ra viện), theo định dạng yyyymmdd, là ngày Trưởng khoa hoặc Trưởng phòng hoặc Phó trưởng khoa hoặc Phó trưởng phòng cấp giấy ra viện."
+    },
+    {
+      "field": "MA_CHA",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người cha đối với trường hợp người bệnh là trẻ em dưới 16 tuổi (Nếu có cha (bố))."
+    },
+    {
+      "field": "MA_ME",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người mẹ đối với trường hợp người bệnh là trẻ em dưới 16 tuổi (Nếu có mẹ)."
+    },
+    {
+      "field": "MA_THE_TAM",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT tạm thời của trẻ em sinh ra hoặc của người hiến tạng nhưng chưa được cơ quan BHXH cấp thẻ BHYT. Cơ sở KBCB sử dụng chức năng “Thông tuyến khám chữa bệnh\\Tra cứu thẻ tạm của trẻ em hoặc của người hiến tạng” trên cổng tiếp nhận dữ liệu Hệ thống thông tin giám định BHYT của BHXH Việt Nam để tra cứu mã thẻ BHYT tạm thời."
+    },
+    {
+      "field": "HO_TEN_CHA",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "[object Object]"
+    },
+    {
+      "field": "HO_TEN_ME",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "[object Object]"
+    },
+    {
+      "field": "SO_NGAY_NGHI",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi rõ số ngày mà người bệnh cần nghỉ để điều trị ngoại trú sau khi ra viện."
+    },
+    {
+      "field": "NGOAITRU_TUNGAY",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày bắt đầu nghỉ ngoại trú sau khi điều trị của người được cấp giấy ra viện theo định dạng yyyymmdd."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 8. Chỉ tiêu dữ liệu tóm tắt hồ sơ bệnh án": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML I) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "MA_LOAI_KCB",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "Ghi mã hình thức KBCB, trong đó:"
+    },
+    {
+      "field": "HO_TEN_CHA",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên cha (bố) theo hồ sơ bệnh án của người bệnh (nếu có)."
+    },
+    {
+      "field": "HO_TEN_ME",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên mẹ theo hồ sơ bệnh án của người bệnh (nếu có)."
+    },
+    {
+      "field": "NGUOI_GIAM_HO",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên người giám hộ theo hồ sơ bệnh án của người bệnh (nếu có)."
+    },
+    {
+      "field": "DON_VI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên đơn vị của người hưởng."
+    },
+    {
+      "field": "NGAY_VAO",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh đến KBCB, gồm 12 ký tự, theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "NGAY_RA",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi thời điểm người bệnh kết thúc điều trị nội trú, kết thúc điều trị nội trú ban ngày, kết thúc điều trị ngoại trú hoặc kết thúc khám bệnh, gồm 12 ký tự theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "CHAN_DOAN_VAO",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi chẩn đoán của cơ sở KBCB ở thời điểm tiếp nhận người bệnh (Chẩn đoán sơ bộ)."
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi đầy đủ chẩn đoán xác định bệnh chính, bệnh kèm theo và/hoặc các triệu chứng hoặc hội chứng, được bác sỹ ghi trong hồ sơ KBCB tại thời điểm kết thúc KBCB đối với người bệnh."
+    },
+    {
+      "field": "QT_BENHLY",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi quá trình bệnh lý và diễn biến lâm sàng."
+    },
+    {
+      "field": "TOMTAT_KQ",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi tóm tắt kết quả xét nghiệm cận lâm sàng có giá trị chẩn đoán."
+    },
+    {
+      "field": "PP_DIEUTRI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "NGAY_SINHCON",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Trường hợp con chết sau khi sinh thì nhập ngày, tháng, năm sinh của con, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "NGAY_CONCHET",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Trường hợp con chết sau khi sinh thì nhập ngày, tháng, năm con chết, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "SO_CONCHET",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Trường hợp con chết sau khi sinh thì nhập số con bị chết."
+    },
+    {
+      "field": "KET_QUA_DTRI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã kết quả điều trị, trong đó:"
+    },
+    {
+      "field": "GHI_CHU",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được người đứng đầu cơ sở KBCB ủy quyền được ký và đóng dấu của cơ sở KBCB đó."
+    },
+    {
+      "field": "NGAY_CT",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày chứng từ (Tóm tắt hồ sơ bệnh án), theo định dạng yyyymmdd, là ngày Trưởng khoa hoặc Trưởng phòng hoặc Phó trưởng khoa hoặc Phó trưởng phòng cấp tóm tắt hồ sơ bệnh án."
+    },
+    {
+      "field": "MA_THE_TAM",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT tạm thời của trẻ em sinh ra hoặc của người hiến tạng nhưng chưa được cơ quan BHXH cấp thẻ BHYT. Cơ sở KBCB sử dụng chức năng “Thông tuyến khám chữa bệnh\\Tra cứu thẻ tạm của trẻ em hoặc của người hiến tạng” trên cổng tiếp nhận dữ liệu Hệ thống thông tin giám định BHYT của BHXH Việt Nam để tra cứu mã thẻ BHYT tạm thời."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 9. Chỉ tiêu dữ liệu giấy chứng sinh": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "MA_BHXH_NND",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "Ghi mã số BHXH người nuôi dưỡng (nếu có)."
+    },
+    {
+      "field": "MA_THE_NND",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT người nuôi dưỡng (nếu có)."
+    },
+    {
+      "field": "HO_TEN_NND",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên của mẹ hoặc của người nuôi dưỡng."
+    },
+    {
+      "field": "NGAYSINH_NND",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày sinh của mẹ hoặc người nuôi dưỡng, định dạng yyyymmdd"
+    },
+    {
+      "field": "MA_DANTOC_NMD",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "[object Object]"
+    },
+    {
+      "field": "SO_CCCD_NND",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi số chứng minh nhân dân hoặc số căn cước công dân hoặc số hộ chiếu của mẹ hoặc người nuôi dưỡng."
+    },
+    {
+      "field": "NGAYCAP_CCCD_NND",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày cấp chứng minh nhân dân hoặc căn cước công dân hoặc hộ chiếu của mẹ hoặc người nuôi dưỡng, định dạng yyyymmdd"
+    },
+    {
+      "field": "NOICAP_CCCD_NND",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi nơi cấp chứng minh nhân dân hoặc căn cước công dân hoặc hộ chiếu của mẹ hoặc người nuôi dưỡng."
+    },
+    {
+      "field": "NOI_CU_TRU_NND",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi địa chỉ nơi cư trú hiện tại của mẹ hoặc người nuôi dưỡng."
+    },
+    {
+      "field": "MA_QUOCTICH",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Ghi mã quốc tịch của mẹ hoặc người nuôi dưỡng theo quy định tại Phụ lục 2 Thông tư số 07/2016/TT-BCA ngày 01 tháng 2 năm 2016 của Bộ trưởng Bộ Công an."
+    },
+    {
+      "field": "MATINH_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Mã đơn vị hành chính cấp tỉnh nơi cư trú hiện tại của mẹ hoặc người nuôi dưỡng. Ghi theo 02 ký tự cuối của mã đơn vị hành chính của tỉnh, thành phố trực thuộc Trung ương nơi người bệnh cư trú (Quy định tại Phụ lục 1 Thông tư số 07/2016/TT-BCA ngày 01 tháng 2 năm 2016 của Bộ trưởng Bộ Công an)."
+    },
+    {
+      "field": "MAHUYEN_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Mã đơn vị hành chính cấp huyện nơi cư trú hiện tại của mẹ hoặc người nuôi dưỡng. Ghi mã đơn vị hành chính cấp huyện theo Quyết định số 124/2004/QĐ-TTg ngày 08/7/2004 của Thủ tướng Chính phủ ban hành danh mục mã đơn vị hành chính."
+    },
+    {
+      "field": "MAXA_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Mã đơn vị hành chính cấp xã nơi cư trú hiện tại của mẹ hoặc người nuôi dưỡng. Ghi mã đơn vị hành chính cấp xã theo Quyết định số 124/2004/QĐ-TTg ngày 08/7/2004 của Thủ tướng Chính phủ ban hành danh mục mã đơn vị hành chính."
+    },
+    {
+      "field": "HO_TEN_CHA",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên cha (bố) của trẻ được cấp giấy chứng sinh."
+    },
+    {
+      "field": "MA_THE_TAM",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT tạm thời của người con. Cơ sở KBCB sử dụng chức năng “Thông tuyến khám chữa bệnh\\Tra cứu thẻ tạm của trẻ em hoặc của người hiến tạng” trên Cổng tiếp nhận dữ liệu Hệ thống thông tin giám định BHYT của BHXH Việt Nam để tra cứu mã thẻ BHYT tạm thời."
+    },
+    {
+      "field": "HO_TEN_CON",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên dự định đặt cho con (nếu có)."
+    },
+    {
+      "field": "GIOI_TINH_CON",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi giới tính con, trong đó:"
+    },
+    {
+      "field": "SO_CON",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Ghi số lượng con trong lần sinh này."
+    },
+    {
+      "field": "LAN_SINH",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Ghi số lần sinh con (tính cả lần sinh này)."
+    },
+    {
+      "field": "SO_CON_SONG",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Ghi số con hiện đang sống (tính cả trẻ sinh ra lần này)."
+    },
+    {
+      "field": "CAN_NANG_CON",
+      "type": "Số",
+      "maxLength": "10",
+      "description": "Ghi số cân nặng của con, tính theo gram (ký hiệu là: g) (ví dụ: 3.6 kg = 3600g)."
+    },
+    {
+      "field": "NGAY_SINH_CON",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Ghi ngày sinh con theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "NOI_SINH_CON",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi địa chỉ nơi con được sinh ra."
+    },
+    {
+      "field": "TINH_TRANG_CON",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi rõ tình trạng của trẻ tại thời điểm làm Giấy chứng sinh: khỏe mạnh, yếu, dị tật hoặc các biểu hiện liên quan đến sức khỏe khác (nếu có)."
+    },
+    {
+      "field": "SINHCON_PHAUTHUAT",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi:"
+    },
+    {
+      "field": "SINHCON_DUOI32TUAN",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi:"
+    },
+    {
+      "field": "GHI_CHU",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường hợp sinh con phải phẫu thuật hoặc sinh con dưới 32 tuần tuổi hoặc vừa sinh con dưới 32 tuần tuổi lại vừa phải phẫu thuật thì trong phần ghi chú phải ghi rõ một trong các nội dung sau \"Sinh con phải phẫu thuật\" hoặc \"Sinh con dưới 32 tuần tuổi\" hoặc \"Phẫu thuật, sinh con dưới 32 tuần tuổi\"."
+    },
+    {
+      "field": "NGUOI_DO_DE",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên người đỡ đẻ."
+    },
+    {
+      "field": "NGUOI_GHI_PHIEU",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên người ghi phiếu."
+    },
+    {
+      "field": "NGAY_CT",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày cấp chứng từ (Giấy chứng sinh), định dạng yyyymmdd, ghi theo ngày dương lịch."
+    },
+    {
+      "field": "SO",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi số của chứng từ (Giấy chứng sinh) tại cơ sở KBCB."
+    },
+    {
+      "field": "QUYEN_SO",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi quyển số của chứng từ (Giấy chứng sinh) tại cơ sở KBCB."
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của Thủ trưởng cơ sở KBCB cấp giấy chứng sinh."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 10. Chỉ tiêu dữ liệu giấy chứng nhận nghỉ dưỡng thai": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "SO_SERI",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "[object Object]"
+    },
+    {
+      "field": "SO_CT",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "[object Object]"
+    },
+    {
+      "field": "SO_NGAY",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi số ngày nghỉ căn cứ vào tình trạng sức khỏe của người bệnh (SO_NGAY = DEN_NGAY - TU_NGAY)."
+    },
+    {
+      "field": "DON_VI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên đơn vị của người hưởng."
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi đầy đủ chẩn đoán xác định bệnh chính, bệnh kèm theo và/hoặc các triệu chứng hoặc hội chứng, được bác sỹ ghi trong hồ sơ KBCB tại thời điểm kết thúc KBCB đối với người bệnh."
+    },
+    {
+      "field": "TU_NGAY",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày bắt đầu nghỉ dưỡng thai, theo định dạng yyyymmdd."
+    },
+    {
+      "field": "DEN_NGAY",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày kết thúc nghỉ dưỡng thai, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được ủy quyền ký xác nhận giấy chứng nhận nghỉ dưỡng thai."
+    },
+    {
+      "field": "TEN_BS",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên của Trưởng khoa hoặc Phó trưởng khoa hoặc Bác sỹ hành nghề KBCB được ủy quyền ký tên theo quy định của Thủ trưởng cơ sở KBCB."
+    },
+    {
+      "field": "NGAY_CT",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày cấp chứng từ, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 11. Chỉ tiêu dữ liệu giấy chứng nhận nghỉ việc hưởng bảo hiểm xã hội": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "SO_CT",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi số chứng từ, là mã lưu trữ giấy chứng nhận nghỉ việc hưởng BHXH tại cơ sở KBCB."
+    },
+    {
+      "field": "SO_SERI",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi số định danh chứng từ (Giấy chứng nhận nghỉ việc hưởng BHXH) của mỗi đợt điều trị theo quy định của cơ sở KBCB."
+    },
+    {
+      "field": "SO_KCB",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "[object Object]"
+    },
+    {
+      "field": "DON_VI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên đơn vị của người hưởng BHXH."
+    },
+    {
+      "field": "MA_BHXH",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "Ghi mã số BHXH của người bệnh."
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi đầy đủ chẩn đoán xác định bệnh chính, bệnh kèm theo và/hoặc các triệu chứng hoặc hội chứng, được bác sỹ ghi trong hồ sơ KBCB tại thời điểm kết thúc KBCB đối với người bệnh."
+    },
+    {
+      "field": "PP_DIEUTRI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_DINH_CHI_THAI",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã “ 1” là đình chỉ thai nghén, mã “0” là không đình chỉ thai nghén."
+    },
+    {
+      "field": "NGUYENNHAN_DINHCHI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi nguyên nhân đình chỉ thai nghén."
+    },
+    {
+      "field": "TUOI_THAI",
+      "type": "Số",
+      "maxLength": "2",
+      "description": "Ghi tuổi thai thực tế (theo tuần), trong đó tuổi thai luôn luôn lớn hơn hoặc bằng 1 và nhỏ hơn hoặc bằng tuổi 42 tuần tuổi."
+    },
+    {
+      "field": "SO_NGAY_NGHI",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi số ngày nghỉ căn cứ vào tình trạng sức khỏe của người bệnh."
+    },
+    {
+      "field": "TU_NGAY",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày bắt đầu hưởng chế độ, theo định dạng yyyymmdd và phải trùng khớp với ngày người bệnh đến khám."
+    },
+    {
+      "field": "DEN_NGAY",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày kết thúc hưởng chế độ, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "HO_TEN_CHA",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "[object Object]"
+    },
+    {
+      "field": "HO_TEN_ME",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được người đứng đầu cơ sở KBCB ủy quyền được ký và đóng dấu của cơ sở KBCB đó."
+    },
+    {
+      "field": "MA_BS",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của Trưởng khoa hoặc Trưởng phòng hoặc Phó trưởng khoa hoặc Phó trưởng phòng hoặc Bác sỹ hành nghề KBCB ký tên theo quy định của Thủ trưởng cơ sở KBCB."
+    },
+    {
+      "field": "NGAY_CT",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày cấp chứng từ (Giấy chứng nhận nghỉ việc hưởng BHXH), theo định dạng yyyymmdd và phải trùng với ngày người lao động đến khám bệnh. Trường hợp đợt khám bệnh kéo dài từ 2 ngày trở lên thì ngày, tháng, năm cấp phải trùng với ngày cuối cùng của đợt người lao động đến khám bệnh và cần được chỉ định nghỉ ngoại trú."
+    },
+    {
+      "field": "MA_THE_TAM",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT tạm thời của trẻ em sinh ra hoặc của người hiến tạng nhưng chưa được cơ quan BHXH cấp thẻ BHYT. Cơ sở KBCB sử dụng chức năng “Thông tuyến khám chữa bệnh\\Tra cứu thẻ tạm của trẻ em hoặc của người hiến tạng” trên Cổng tiếp nhận dữ liệu Hệ thống thông tin giám định BHYT của BHXH Việt Nam để tra cứu mã thẻ BHYT tạm thời."
+    },
+    {
+      "field": "MAU_SO",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Các cơ sở KBCB sử dụng chuỗi CT07 để xác định đây là Giấy nghỉ việc hưởng bảo hiểm xã hội. Mẫu số mặc định để trống không điền thì hệ thống tự điền CT07."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 12. Chỉ tiêu dữ liệu giám định y khoa": [
+    {
+      "field": "NGUOI_CHU_TRI",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên người chủ trì trong danh mục người chủ trì hội đồng giám định y khoa đã nhập trên Cổng tiếp nhận của cơ quan BHXH."
+    },
+    {
+      "field": "CHUC_VU",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi chức vụ của người chủ trì, trong đó: mã “ 1”: Chủ tịch; mã “2”: Người ký thay chủ tịch."
+    },
+    {
+      "field": "NGAY_HOP",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày, tháng, năm họp hội đồng giám định y khoa, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "HO_TEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên người được giám định y khoa."
+    },
+    {
+      "field": "NGAY_SINH",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày, tháng, năm sinh của người được giám định y khoa, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "SO_CCCD",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi số căn cước công dân hoặc số chứng minh thư nhân dân hoặc số hộ chiếu của người được giám định y khoa."
+    },
+    {
+      "field": "NGAY_CAP_CCCD",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày cấp chứng minh nhân dân hoặc thẻ căn cước công dân hoặc hộ chiếu của người được giám định y khoa, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "NOI_CAP_CCCD",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi nơi cấp chứng minh nhân dân hoặc thẻ căn cước công dân hoặc hộ chiếu của người được giám định y khoa."
+    },
+    {
+      "field": "DIA_CHI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MAHUYEN_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Mã đơn vị hành chính cấp huyện nơi cư trú hiện tại của người bệnh. Ghi mã đơn vị hành chính cấp huyện theo Quyết định số 124/2004/QĐ-TTg ngày 08/7/2004 của Thủ tướng Chính phủ ban hành danh mục mã đơn vị hành chính."
+    },
+    {
+      "field": "MAXA_CU_TRU",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Mã đơn vị hành chính cấp xã nơi cư trú hiện tại của người bệnh. Ghi mã đơn vị hành chính cấp xã theo Quyết định số 124/2004/QĐ-TTg ngày 08/7/2004 của Thủ tướng Chính phủ ban hành danh mục mã đơn vị hành chính."
+    },
+    {
+      "field": "MA_BHXH",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "Ghi mã số bảo hiểm xã hội của người được giám định y khoa, tìm kiếm tại địa chỉ: https://baohiemxahoi.gov.vn/Pages/default.aspx"
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi mã thẻ BHYT của người được giám định y khoa (nếu có)."
+    },
+    {
+      "field": "NGHE_NGHIEP",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Ghi nghề nghiệp của người đề nghị khám giám định y khoa (nếu có)."
+    },
+    {
+      "field": "DIEN_THOAI",
+      "type": "Chuỗi",
+      "maxLength": "15",
+      "description": "Ghi số điện thoại liên hệ của người đề nghị giám định y khoa"
+    },
+    {
+      "field": "MA_DOI_TUONG",
+      "type": "Chuỗi",
+      "maxLength": "20",
+      "description": "Ghi mã đối tượng giám định (BB: Bệnh binh; BHXH1L: Hưởng BHXH 1 lần; BNN: Bệnh nghề nghiệp; CĐHH: Chất độc hóa học; KNLĐH: Nghỉ hưu trước tuổi; KNLĐT: Tuất; NKT: Người khuyết tật; NVQS: Khám tuyển nghĩa vụ quân sự; TB: Thương binh; TH: Giám định tổng hợp; TNLĐ: Tai nạn lao động)."
+    },
+    {
+      "field": "KHAM_GIAM_DINH",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã khám giám định, trong đó:"
+    },
+    {
+      "field": "SO_BIEN_BAN",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi số thứ tự trong biên bản họp hội đồng giám định y khoa."
+    },
+    {
+      "field": "TYLE_TTCT_CU",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi tỷ lệ (%) tổn thương cơ thể do thương tật, bệnh tật, bệnh nghề nghiệp của lần giám định trước (lần gần nhất) theo kết luận của Hội đồng giám định y khoa."
+    },
+    {
+      "field": "DANG_HUONG_CHE_DO",
+      "type": "Chuỗi",
+      "maxLength": "10",
+      "description": "Ghi mã chế độ đang hưởng, trong đó:"
+    },
+    {
+      "field": "NGAY_CHUNG_TU",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày chứng từ (ngày họp Hội đồng giám định y khoa), theo định dạng yyyymmdd"
+    },
+    {
+      "field": "SO_GIAY_GIOI_THIEU",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi số giấy giới thiệu."
+    },
+    {
+      "field": "NGAY_DE_NGHI",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày đề nghị, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "MA_DONVI",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "Ghi mã cơ quan, đơn vị quản lý hoặc cơ quan, đơn vị giới thiệu đối tượng khám giám định y khoa."
+    },
+    {
+      "field": "GIOI_THIEU_CUA",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên đầy đủ của cơ quan, đơn vị quản lý hoặc cơ quan, đơn vị giới thiệu đối tượng khám giám định y khoa."
+    },
+    {
+      "field": "KET_QUA_KHAM",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi kết quả khám của Hội đồng Giám định y khoa (được thể hiện trong Biên bản giám định y khoa)."
+    },
+    {
+      "field": "SO_VAN_BAN_CAN_CU",
+      "type": "Chuỗi",
+      "maxLength": "200",
+      "description": "[object Object]"
+    },
+    {
+      "field": "TYLE_TTCT_MOI",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi tỷ lệ (%) tổn thương cơ thể do thương tật, bệnh tật, bệnh nghề nghiệp của lần giám định này theo kết luận của Hội đồng giám định y khoa."
+    },
+    {
+      "field": "TONG_TYLE_TTCT",
+      "type": "Số",
+      "maxLength": "3",
+      "description": "Ghi tổng tỷ lệ tổn thương cơ thể, do thương tật, bệnh tật, bệnh nghề nghiệp (nếu có) theo kết luận của Hội đồng giám định y khoa."
+    },
+    {
+      "field": "DANG_KHUYETTAT",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã dạng khuyết tật theo quy định về dạng khuyết tật tại Mẫu số 01 ban hành kèm theo Thông tư số 01/2019/TT-BLĐTBXH ngày 02/01/2019 của Bộ Lao động - Thương binh - Xã hội, trong đó:"
+    },
+    {
+      "field": "MUC_DO_KHUYETTAT",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã mức độ khuyết tật theo quy định về mức độ khuyết tật tại Mẫu số 01 ban hành kèm theo Thông tư số 01/2019/TT-BLĐTBXH ngày 02/01/2019 của Bộ Lao động - Thương Binh - Xã hội, trong đó:"
+    },
+    {
+      "field": "DE_NGHI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi nội dung đề nghị."
+    },
+    {
+      "field": "DUOC_XACDINH",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "[object Object]"
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần."
+    }
+  ],
+  "Bảng 13. Chỉ tiêu dữ liệu giấy chuyển tuyến/chuyển cơ sở khám bệnh, chữa bệnh bảo hiếm y tế": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "SO_HOSO",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "[object Object]"
+    },
+    {
+      "field": "SO_CHUYENTUYEN",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "[object Object]"
+    },
+    {
+      "field": "GIAY_CHUYEN_TUYEN",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_CSKCB",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Ghi mã cơ sở KBCB nơi cấp giấy chuyển tuyến"
+    },
+    {
+      "field": "MA_NOI_DI",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Sử dụng thông tin tại trường MA_NOI_DI trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_NOI_DEN",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Sử dụng thông tin tại trường MA_NOI_DEN trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "HO_TEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên của người bệnh được chuyển tuyến."
+    },
+    {
+      "field": "NGAY_SINH",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Sử dụng thông tin tại trường NGAY_SINH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "GIOI_TINH",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Sử dụng thông tin tại trường GIOI_TINH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_QUOCTICH",
+      "type": "Chuỗi",
+      "maxLength": "3",
+      "description": "Sử dụng thông tin tại trường MA_QUOCTICH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_DANTOC",
+      "type": "Chuỗi",
+      "maxLength": "2",
+      "description": "Sử dụng thông tin tại trường MA_DANTOC trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_NGHE_NGHIEP",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Sử dụng thông tin tại trường MA_NGHE_NGHIEP trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "DIA_CHI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Sử dụng thông tin tại trường DIA_CHI trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường MA_THE_BHYT trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "GT_THE_DEN",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường GT_THE_DEN trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_VAO",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Sử dụng thông tin tại trường NGAY_VAO trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_VAO_NOI_TRU",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Sử dụng thông tin tại trường NGAY_VAO_NOI_TRU trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_RA",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Sử dụng thông tin tại trường NGAY_RA trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "DAU_HIEU_LS",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi các dấu hiệu lâm sàng của người bệnh khi chuyển tuyến"
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường CHAN_DOAN_RV trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "TOMTAT_KQ",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi tóm tắt kết quả xét nghiệm, cận lâm sàng có giá trị chẩn đoán."
+    },
+    {
+      "field": "PP_DIEUTRI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường PP_DIEUTRI trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BENH_CHINH",
+      "type": "Chuỗi",
+      "maxLength": "7",
+      "description": "Sử dụng thông tin tại trường MA_BENH_CHINH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BENH_KT",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Sử dụng thông tin tại trường MA_BENH_KT trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BENH_YHCT",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Sử dụng thông tin tại trường MA_BENH_YHCT trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "TEN_DICH_VU",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Ghi tên dịch vụ kỹ thuật-đã-sử-dụng cho người bệnh."
+    },
+    {
+      "field": "TEN_THUOC",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Sử dụng thông tin tại trường TEN_THUOC trong Bảng 2 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_LOAI_RV",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Sử dụng thông tin tại trường MA_LOAI_RV trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_LYDO_CT",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Ghi mã lý do chuyển tuyến. Ghi mã 1 trong trường hợp đủ điều kiện chuyển tuyến phù hợp với quy định chuyển tuyến; Ghi mã 2 trong trường hợp đủ điều kiện chuyển tuyến do không phù hợp với khả năng đáp ứng của cơ sở KBCB; Ghi mã 3 trong trường hợp chuyển tuyến theo yêu cầu của người bệnh hoặc người đại diện hợp pháp của người bệnh."
+    },
+    {
+      "field": "HUONG_DIEU_TRI",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Ghi hướng điều trị sắp tới cho người bệnh."
+    },
+    {
+      "field": "PHUONGTIEN_VC",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi phương tiện vận chuyển người bệnh khi thực hiện chuyển tuyến."
+    },
+    {
+      "field": "HOTEN_NGUOI_HT",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên người hộ tống người bệnh (nếu có)."
+    },
+    {
+      "field": "CHUCDANH_NGUOI_HT",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi chức danh, trình độ chuyên môn người hộ tống người bệnh (nếu có)."
+    },
+    {
+      "field": "MA_BACSI",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã bác sỹ, y sỹ khám, điều trị (mã hóa theo số Chứng chỉ hành nghề)."
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được ủy quyền có thẩm quyền ký giấy chuyển tuyến KBCB BHYT."
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ],
+  "Bảng 14. Chỉ tiêu dữ liệu giấy hẹn khám lại": [
+    {
+      "field": "MA_LK",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Là mã đợt điều trị duy nhất (dùng để liên kết giữa Bảng chỉ tiêu tổng hợp khám bệnh, chữa bệnh (bảng XML 1) và các bảng còn lại ban hành kèm theo Quyết định này trong một lần khám bệnh, chữa bệnh (PRIMARY KEY))."
+    },
+    {
+      "field": "SO_GIAYHEN_KL",
+      "type": "Chuỗi",
+      "maxLength": "50",
+      "description": "[object Object]"
+    },
+    {
+      "field": "MA_CSKCB",
+      "type": "Chuỗi",
+      "maxLength": "5",
+      "description": "Ghi mã cơ sở KBCB nơi cấp giấy hẹn khám lại."
+    },
+    {
+      "field": "HO_TEN",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi họ và tên của người bệnh được cấp giấy hẹn khám lại."
+    },
+    {
+      "field": "NGAY_SINH",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Sử dụng thông tin tại trường NGAY_SINH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "GIOI_TINH",
+      "type": "Số",
+      "maxLength": "1",
+      "description": "Sử dụng thông tin tại trường GIOI_TINH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "DIA_CHI",
+      "type": "Chuỗi",
+      "maxLength": "1024",
+      "description": "Sử dụng thông tin tại trường DIA_CHI trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_THE_BHYT",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường MA_THE_BHYT trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "GT_THE_DEN",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường GT_THE_DEN trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_VAO",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Sử dụng thông tin tại trường NGAY_VAO trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_VAO_NOI_TRU",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Sử dụng thông tin tại trường NGAY_VAO_NOI_TRU trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_RA",
+      "type": "Chuỗi",
+      "maxLength": "12",
+      "description": "Sử dụng thông tin tại trường NGAY_RA trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "NGAY_HEN_KL",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi thời điểm người bệnh được hẹn khám lại, gồm 12 ký tự theo định dạng yyyymmddHHMM."
+    },
+    {
+      "field": "CHAN_DOAN_RV",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Sử dụng thông tin tại trường CHAN_DOAN_RV trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BENH_CHINH",
+      "type": "Chuỗi",
+      "maxLength": "7",
+      "description": "Sử dụng thông tin tại trường MA_BENH-CHINH trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BENH_KT",
+      "type": "Chuỗi",
+      "maxLength": "100",
+      "description": "Sử dụng thông tin tại trường MA_BENH_KT trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BENH_YHCT",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Sử dụng thông tin tại trường MA_BENH_YHCT trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_DOITUONG_KCB",
+      "type": "Chuỗi",
+      "maxLength": "4",
+      "description": "Sử dụng thông tin tại trường MA_DOI_TUONG_KCB trong Bảng 1 ban hành kèm theo Quyết định này"
+    },
+    {
+      "field": "MA_BACSI",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã bác sỹ y sỹ khám bệnh (mã hóa theo số Chứng chỉ hành nghề)."
+    },
+    {
+      "field": "MA_TTDV",
+      "type": "Chuỗi",
+      "maxLength": "255",
+      "description": "Ghi mã số định danh y tế (mã số BHXH) của người đứng đầu cơ sở KBCB hoặc người được ủy quyền có thẩm quyền ký giấy hẹn khám lại."
+    },
+    {
+      "field": "NGAY_CT",
+      "type": "Chuỗi",
+      "maxLength": "8",
+      "description": "Ghi ngày cấp giấy hẹn khám lại, theo định dạng yyyymmdd"
+    },
+    {
+      "field": "DU_PHONG",
+      "type": "Chuỗi",
+      "maxLength": "n",
+      "description": "Trường dữ liệu dự phòng khi cần thiết."
+    }
+  ]
+}

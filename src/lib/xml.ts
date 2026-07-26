@@ -24,6 +24,10 @@ export interface XMLData {
 
 export function getXmlDataList(group: XMLGroup | undefined | null): any[] {
     if (!group?.data) return [];
+    
+    // If it's already an array (e.g. from Database), just return it
+    if (Array.isArray(group.data)) return group.data;
+
     const type = group.type;
     if (type === 'XML1') {
         const data = group.data?.TONG_HOP || group.data;

@@ -43,19 +43,19 @@ model FormConfig {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  username    String   @unique
-  password    String
-  name        String?
-  role        String   @default("USER")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  dutyOrder   Int      @default(999)
-  isAvailable Boolean  @default(false)
-  ma_khoa     String?
-  telegram_id String?
-  staffId     String?  @unique
-  staff       Staff?   @relation(fields: [staffId], references: [id])
+  id           String            @id @default(cuid())
+  username     String            @unique
+  password     String
+  name         String?
+  role         String            @default("USER")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  dutyOrder    Int               @default(999)
+  isAvailable  Boolean           @default(false)
+  ma_khoa      String?
+  telegram_id  String?
+  staffId      String?           @unique
+  staff        Staff?            @relation(fields: [staffId], references: [id])
   deviceTokens UserDeviceToken[]
 }
 
@@ -85,17 +85,17 @@ model DraftRule {
 }
 
 model Department {
-  ma_khoa     String       @id
-  ten_khoa    String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  type          String       @default("CLINICAL")
-  ma_khoa_bv    String?
-  ten_khoa_bv   String?
-  ma_khoa_bhyt  String?
-  BedCatalog    BedCatalog[]
-  staff         Staff[]
-  warehouses  Warehouse[]
+  ma_khoa      String       @id
+  ten_khoa     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  type         String       @default("CLINICAL")
+  ma_khoa_bv   String?
+  ten_khoa_bv  String?
+  ma_khoa_bhyt String?
+  BedCatalog   BedCatalog[]
+  staff        Staff[]
+  warehouses   Warehouse[]
 }
 
 model Staff {
@@ -135,31 +135,31 @@ model Staff {
 }
 
 model SystemCategory {
-  id              String   @id @default(cuid())
-  type            String
-  code            String
-  name            String
-  description     String?
-  bhyt_code       String?
-  isActive        Boolean  @default(true)
-  order           Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  staff_chuc_danh Staff[]  @relation("StaffJobTitle")
-  staff_chuc_vu   Staff[]  @relation("StaffPosition")
-  staff_gioi_tinh Staff[]  @relation("StaffGender")
-  staff_hop_dong  Staff[]  @relation("StaffContractType")
-  staff_trinh_do  Staff[]  @relation("StaffQualification")
-  staff_vi_tri    Staff[]  @relation("StaffJobPosition")
-  staff_dan_toc   Staff[]                 @relation("StaffEthnicity")
-  staff_vi_tri_bhyt Staff[]               @relation("StaffBhytPosition")
-  cchn_noi_cap    PracticingCertificate[] @relation("CertIssuePlace")
+  id                String                  @id @default(cuid())
+  type              String
+  code              String
+  name              String
+  description       String?
+  bhyt_code         String?
+  isActive          Boolean                 @default(true)
+  order             Int                     @default(0)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  staff_chuc_danh   Staff[]                 @relation("StaffJobTitle")
+  staff_chuc_vu     Staff[]                 @relation("StaffPosition")
+  staff_gioi_tinh   Staff[]                 @relation("StaffGender")
+  staff_hop_dong    Staff[]                 @relation("StaffContractType")
+  staff_trinh_do    Staff[]                 @relation("StaffQualification")
+  staff_vi_tri      Staff[]                 @relation("StaffJobPosition")
+  staff_dan_toc     Staff[]                 @relation("StaffEthnicity")
+  staff_vi_tri_bhyt Staff[]                 @relation("StaffBhytPosition")
+  cchn_noi_cap      PracticingCertificate[] @relation("CertIssuePlace")
 
   @@unique([type, code])
 }
 
 model PracticingCertificate {
-  id                String          @id @default(cuid())
+  id                String             @id @default(cuid())
   staffId           String
   so_cchn           String
   ngay_cap          DateTime?
@@ -176,30 +176,31 @@ model PracticingCertificate {
   qd_cgkt           String?
   tu_ngay           DateTime?
   den_ngay          DateTime?
-  isActive          Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   tt32_category_id  String?
   CCHNException     CCHNException[]
-  staff             Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  TT32Category      TT32Category?   @relation(fields: [tt32_category_id], references: [id])
-  noi_cap_cchn_ref  SystemCategory? @relation("CertIssuePlace", fields: [noi_cap_cchn_id], references: [id])
+  staff             Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  TT32Category      TT32Category?      @relation(fields: [tt32_category_id], references: [id])
+  noi_cap_cchn_ref  SystemCategory?    @relation("CertIssuePlace", fields: [noi_cap_cchn_id], references: [id])
   scopes            CCHNScopeMapping[]
 }
 
 model CCHNScopeMapping {
-  cchn_id       String
-  ma_pham_vi    String
-  createdAt     DateTime @default(now())
+  cchn_id    String
+  ma_pham_vi String
+  createdAt  DateTime @default(now())
 
-  certificate   PracticingCertificate   @relation(fields: [cchn_id], references: [id], onDelete: Cascade)
-  scope         ScopeOfPracticeCatalog  @relation(fields: [ma_pham_vi], references: [ma_pham_vi], onDelete: Cascade)
+  certificate PracticingCertificate  @relation(fields: [cchn_id], references: [id], onDelete: Cascade)
+  scope       ScopeOfPracticeCatalog @relation(fields: [ma_pham_vi], references: [ma_pham_vi], onDelete: Cascade)
 
   @@id([cchn_id, ma_pham_vi])
 }
 
 model DuplicateRule {
   id                    String   @id @default(cuid())
+  ruleType              String   @default("EXCEL")
   name                  String
   machineCols           String[]
   serviceCol            String?
@@ -214,6 +215,7 @@ model DuplicateRule {
   updatedAt             DateTime @updatedAt
   ignoreIfSameField     String?
   minGapMinutes         Int      @default(0)
+  departmentExclusions  Json?
 }
 
 model SpecializedRule {
@@ -787,32 +789,32 @@ model UserDeviceToken {
 }
 
 model HoSoDaGui {
-  id              String    @id @default(cuid())
-  stt             Int?
-  maLienKet       String    
-  maThe           String?
-  maBN            String?
-  hoTen           String?
-  ngaySinh        String?
-  gioiTinh        String?
-  ngayVao         String?
-  ngayRa          String?
-  chanDoan        String?
-  tongChi         Float?
-  benhNhanTT      Float?
-  benhNhanCCT     Float?
-  baoHiemTT       Float?
-  ngayTT          String?
-  ngayGuiHS       String?
-  ngayDeNghiTT    String?
-  trangThaiHS     String?
-  trangThaiTT     String?
-  loaiHS          String?
-  maLoi           String?
-  mieuTa          String?
+  id           String  @id @default(cuid())
+  stt          Int?
+  maLienKet    String
+  maThe        String?
+  maBN         String?
+  hoTen        String?
+  ngaySinh     String?
+  gioiTinh     String?
+  ngayVao      String?
+  ngayRa       String?
+  chanDoan     String?
+  tongChi      Float?
+  benhNhanTT   Float?
+  benhNhanCCT  Float?
+  baoHiemTT    Float?
+  ngayTT       String?
+  ngayGuiHS    String?
+  ngayDeNghiTT String?
+  trangThaiHS  String?
+  trangThaiTT  String?
+  loaiHS       String?
+  maLoi        String?
+  mieuTa       String?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([maLienKet])
   @@index([createdAt])
@@ -828,4 +830,674 @@ model NotificationSetting {
   linkUrl         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// --- GENERATED XML 3176 MODELS ---
+model XmlStatus {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK            String?
+  STT              String?
+  MA_BN            String?
+  HO_TEN           String?
+  SO_CCCD          String?
+  NGAY_SINH        String?
+  GIOI_TINH        String?
+  MA_THE_BHYT      String?
+  MA_DKBD          String?
+  GT_THE_TU        String?
+  GT_THE_DEN       String?
+  MA_DOITUONG_KCB  String?
+  NGAY_VAO         String?
+  NGAY_VAO_NOI_TRU String?
+  LY_DO_VNT        String?
+  MA_LY_DO_VNT     String?
+  MA_LOAI_KCB      String?
+  MA_CSKCB         String?
+  MA_DICH_VU       String?
+  TEN_DICH_VU      String?
+  MA_THUOC         String?
+  TEN_THUOC        String?
+  MA_VAT_TU        String?
+  TEN_VAT_TU       String?
+  NGAY_YL          String?
+  DU_PHONG         String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml1 {
+  id            String   @id @default(cuid())
+  version       Int      @default(1)
+  importBatchId String
+  checksum      String
+  isLatest      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  xml2Records   Xml2[]
+  xml3Records   Xml3[]
+  xml4Records   Xml4[]
+  xml5Records   Xml5[]
+  xml6Records   Xml6[]
+  xml7Records   Xml7[]
+  xml8Records   Xml8[]
+  xml9Records   Xml9[]
+  xml10Records  Xml10[]
+  xml11Records  Xml11[]
+  xml12Records  Xml12[]
+  xml13Records  Xml13[]
+  xml14Records  Xml14[]
+  xml15Records  Xml15[]
+
+  // Fields
+  MA_LK             String?
+  STT               String?
+  MA_BN             String?
+  HO_TEN            String?
+  SO_CCCD           String?
+  NGAY_SINH         String?
+  GIOI_TINH         String?
+  NHOM_MAU          String?
+  MA_QUOC_TICH      String?
+  MA_DAN_TOC        String?
+  MA_NGHE_NGHIEP    String?
+  DIA_CHI           String?
+  MA_TINH_CU_TRU    String?
+  MAHUYEN_CU_TRU    String?
+  MAXA_CU_TRU       String?
+  DIEN_THOAI        String?
+  MA_THE_BHYT       String?
+  MA_DKBD           String?
+  GT_THE_TU         String?
+  GT_THE_DEN        String?
+  NGAY_MIEN_CCT     String?
+  LY_DO_VV          String?
+  LY_DO_VNT         String?
+  MA_LY_DO_VNT      String?
+  CHAN_DOAN_VAO     String?
+  CHAN_DOAN_RV      String?
+  MA_BENH_CHINH     String?
+  MA_BENH_KT        String?
+  MA_BENH_YHCT      String?
+  MA_PTTT_QT        String?
+  MA_DOI_TUONG_KCB  String?
+  MA_NOI_DI         String?
+  MA_NOI_DEN        String?
+  MA_TAI_NAN        String?
+  NGAY_VAO          String?
+  NGAY_VAO_NOI_TRU  String?
+  NGAY_RA           String?
+  GIAY_CHUYEN_TUYEN String?
+
+  // Error Validation fields
+  hasError          Boolean  @default(false)
+  errorCount        Int      @default(0)
+
+  SO_NGAY_DTRI      String?
+  PP_DIEU_TRI       String?
+  MA_LOAI_RV        String?
+  GHI_CHU           String?
+  NGAY_TTOAN        String?
+  T_THUOC           String?
+  T_VTYT            String?
+  T_TONGCHI_BV      String?
+  T_TONGCHI_BH      String?
+  T_BNTT            String?
+  T_BNCCT           String?
+  T_BHTT            String?
+  T_NGUONKHAC       String?
+  T_BHTT_GDV        String?
+  NAM_QT            String?
+  THANG_QT          String?
+  MA_LOAI_KCB       String?
+  MA_KHOA           String?
+  MA_CSKCB          String?
+  MA_KHUVUC         String?
+  CAN_NANG          String?
+  CAN_NANG_CON      String?
+  NAM_NAM_LIEN_TUC  String?
+  NGAY_TAI_KHAM     String?
+  MA_HSBA           String?
+  MA_TTDV           String?
+  DU_PHONG          String?
+  XmlStatus         XmlStatus[]
+
+  @@index([MA_LK])
+  @@index([importBatchId])
+}
+
+model Xml2 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK          String?
+  STT            String?
+  MA_THUOC       String?
+  MA_PP_CHEBIEN  String?
+  MA_CSKCB_THUOC String?
+  MA_NHOM        String?
+  TEN_THUOC      String?
+  DON_VI_TINH    String?
+  HAM_LUONG      String?
+  DUONG_DUNG     String?
+  DANG_BAO_CHE   String?
+  LIEU_DUNG      String?
+  CACH_DUNG      String?
+  SO_DANG_KY     String?
+  TT_THAU        String?
+  PHAM_VI        String?
+  TYLE_TT_BH     String?
+  SO_LUONG       String?
+  DON_GIA        String?
+  THANH_TIEN_BV  String?
+  THANH_TIEN_BH  String?
+  T_NGUONKHAC_   String?
+  NSNN           String?
+  VTNN           String?
+  CL             String?
+  T_NGUONKHAC    String?
+  MUC_HUONG      String?
+  T_BNTT         String?
+  T_BNCCT        String?
+  T_BHTT         String?
+  MA_KHOA        String?
+  MA_BAC_SI      String?
+  MA_DICH_VU     String?
+  NGAY_YL        String?
+  NGAY_TH_YL     String?
+  MA_PTTT        String?
+  NGUON_CTRA     String?
+  VET_THUONG_TP  String?
+  DU_PHONG       String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml3 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK            String?
+  STT              String?
+  MA_DICH_VU       String?
+  MA_PTTT_QT       String?
+  MAVATTU          String?
+  MA_NHOM          String?
+  GOI_VTYT         String?
+  TEN_VAT_TU       String?
+  TEN_DICH_VU      String?
+  MA_XANG_DAU      String?
+  DON_VI_TINH      String?
+  PHAM_VI          String?
+  SO_LUONG         String?
+  DON_GIA_BV       String?
+  DON_GIA_BH       String?
+  TT_THAU          String?
+  TYLE_TT_DV       String?
+  TYLE_TT_BH       String?
+  THANH_TIEN_BV    String?
+  THANH_TIEN_BH    String?
+  T_TRANTT         String?
+  MUC_HUONG        String?
+  T_NGUONKHAC_NSNN String?
+  T_NGUONKHAC_VTNN String?
+  T_NGUONKHAC_VTTN String?
+  T_NGUONKHAC_CL   String?
+  T_NGUONKHAC      String?
+  T_BNTT           String?
+  T_BNCCT          String?
+  T_BHTT           String?
+  MA_KHOA          String?
+  MA_GIUONG        String?
+  MA_BAC_SI        String?
+  NGUOI_THUC_HIEN  String?
+  MA_BENH          String?
+  MA_BENH_YHCT     String?
+  NGAY_YL          String?
+  NGAY_TH_YL       String?
+  NGAY_KQ          String?
+  MA_PTTT          String?
+  VET_THUONG_TP    String?
+  PP_VO_CAM        String?
+  VI_TRI_TH_DVKT   String?
+  MA_MAY           String?
+  MA_HIEU_SP       String?
+  TAI_SU_DUNG      String?
+  DU_PHONG         String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml4 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK        String?
+  STT          String?
+  MA_DICH_VU   String?
+  MA_CHI_SO    String?
+  TEN_CHI_SO   String?
+  GIA_TRI      String?
+  DON_VI_DO    String?
+  MO_TA        String?
+  KET_LUAN     String?
+  NGAY_KQ      String?
+  MA_BS_DOC_KQ String?
+  DU_PHONG     String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml5 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK           String?
+  STT             String?
+  DIEN_BIEN_LS    String?
+  GIAI_DOAN_BENH  String?
+  HOI_CHAN        String?
+  PHAU_THUAT      String?
+  THOI_DIEM_DBLS  String?
+  NGUOI_THUC_HIEN String?
+  DU_PHONG        String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml6 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK                  String?
+  MA_THE_BHYT            String?
+  SO_CCCD                String?
+  NGAY_SINH              String?
+  GIOI_TINH              String?
+  DIA_CHI                String?
+  MATINH_CU_TRU          String?
+  MA_HUYEN_CU_TRU        String?
+  MAXA_CU_TRU            String?
+  NGAYKD_HIV             String?
+  NOI_LAY_MAU_XN         String?
+  NOI_XN_KD              String?
+  NOI_BDDT_ARV           String?
+  BDDTARV                String?
+  MA_PHAC_DO_DIEU_TRI_BD String?
+  MA_LYDO_DTRI           String?
+  LOAI_DTRI_LAO          String?
+  SANG_LOC_LAO           String?
+  PHAC_DO_DTR_ILAO       String?
+  NGAYBD_DTRI_LAO        String?
+  NGAYKT_DTRI_LAO        String?
+  KQ_DTRI_LAO            String?
+  MA_LYDO_XNTL_VR        String?
+  NGAY_XN_TLVR           String?
+  KQ_XNTL_VR             String?
+  NGAY_KQ_XN_TLVR        String?
+  MA_LOAI_BN             String?
+  GIAI_DOAN_LAM_SANG     String?
+  NHOM_DOI_TUONG         String?
+  MA_TINH_TRANG_DK       String?
+  LAN_XN_PCR             String?
+  NGAY_XN_PCR            String?
+  NGAY_KQ_XN_PCR         String?
+  MA_KQ_XN_PCR           String?
+  NGAY_NHAN_TT_MANG_THAI String?
+  NGAY_BAT_DAU_DT_CTX    String?
+  MA_XU_TRI              String?
+  NGAY_BAT_DAU_XU_TRI    String?
+  NGAY_KET_THUC_XU_TRI   String?
+  MA_BAC_PHAC_DO         String?
+  SO_NGAY_CAP_THUOC_ARV  String?
+  NGAY_CHUYEN_PHAC_DO    String?
+  LY_DO_CHUYEN_PHAC_DO   String?
+  MA_CSKCB               String?
+  DU_PHONG               String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml7 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK              String?
+  SO_LUU_TRU         String?
+  MA_KHOA_RV         String?
+  NGAY_VAO           String?
+  NGAY_RA            String?
+  MA_DINH_CHI_THAI   String?
+  NGUYENNHAN_DINHCHI String?
+  THOIGIAN_DINHCHI   String?
+  CHAN_DOAN_RV       String?
+  PP_DIEUTRI         String?
+  GHI_CHU            String?
+  MA_TTDV            String?
+  MA_BS              String?
+  TEN_BS             String?
+  NGAY_CT            String?
+  MA_CHA             String?
+  MA_ME              String?
+  MA_THE_TAM         String?
+  HO_TEN_CHA         String?
+  HO_TEN_ME          String?
+  SO_NGAY_NGHI       String?
+  NGOAITRU_TUNGAY    String?
+  DU_PHONG           String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml8 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK         String?
+  MA_LOAI_KCB   String?
+  HO_TEN_CHA    String?
+  HO_TEN_ME     String?
+  NGUOI_GIAM_HO String?
+  DON_VI        String?
+  NGAY_VAO      String?
+  NGAY_RA       String?
+  CHAN_DOAN_VAO String?
+  CHAN_DOAN_RV  String?
+  QT_BENHLY     String?
+  TOMTAT_KQ     String?
+  PP_DIEUTRI    String?
+  NGAY_SINHCON  String?
+  NGAY_CONCHET  String?
+  SO_CONCHET    String?
+  KET_QUA_DTRI  String?
+  GHI_CHU       String?
+  MA_TTDV       String?
+  NGAY_CT       String?
+  MA_THE_TAM    String?
+  DU_PHONG      String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml9 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK              String?
+  MA_BHXH_NND        String?
+  MA_THE_NND         String?
+  HO_TEN_NND         String?
+  NGAYSINH_NND       String?
+  MA_DANTOC_NMD      String?
+  SO_CCCD_NND        String?
+  NGAYCAP_CCCD_NND   String?
+  NOICAP_CCCD_NND    String?
+  NOI_CU_TRU_NND     String?
+  MA_QUOCTICH        String?
+  MATINH_CU_TRU      String?
+  MAHUYEN_CU_TRU     String?
+  MAXA_CU_TRU        String?
+  HO_TEN_CHA         String?
+  MA_THE_TAM         String?
+  HO_TEN_CON         String?
+  GIOI_TINH_CON      String?
+  SO_CON             String?
+  LAN_SINH           String?
+  SO_CON_SONG        String?
+  CAN_NANG_CON       String?
+  NGAY_SINH_CON      String?
+  NOI_SINH_CON       String?
+  TINH_TRANG_CON     String?
+  SINHCON_PHAUTHUAT  String?
+  SINHCON_DUOI32TUAN String?
+  GHI_CHU            String?
+  NGUOI_DO_DE        String?
+  NGUOI_GHI_PHIEU    String?
+  NGAY_CT            String?
+  SO                 String?
+  QUYEN_SO           String?
+  MA_TTDV            String?
+  DU_PHONG           String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml10 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK        String?
+  SO_SERI      String?
+  SO_CT        String?
+  SO_NGAY      String?
+  DON_VI       String?
+  CHAN_DOAN_RV String?
+  TU_NGAY      String?
+  DEN_NGAY     String?
+  MA_TTDV      String?
+  TEN_BS       String?
+  NGAY_CT      String?
+  DU_PHONG     String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml11 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK              String?
+  SO_CT              String?
+  SO_SERI            String?
+  SO_KCB             String?
+  DON_VI             String?
+  MA_BHXH            String?
+  MA_THE_BHYT        String?
+  CHAN_DOAN_RV       String?
+  PP_DIEUTRI         String?
+  MA_DINH_CHI_THAI   String?
+  NGUYENNHAN_DINHCHI String?
+  TUOI_THAI          String?
+  SO_NGAY_NGHI       String?
+  TU_NGAY            String?
+  DEN_NGAY           String?
+  HO_TEN_CHA         String?
+  HO_TEN_ME          String?
+  MA_TTDV            String?
+  MA_BS              String?
+  NGAY_CT            String?
+  MA_THE_TAM         String?
+  MAU_SO             String?
+  DU_PHONG           String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml12 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  NGUOI_CHU_TRI      String?
+  CHUC_VU            String?
+  NGAY_HOP           String?
+  HO_TEN             String?
+  NGAY_SINH          String?
+  SO_CCCD            String?
+  NGAY_CAP_CCCD      String?
+  NOI_CAP_CCCD       String?
+  DIA_CHI            String?
+  MAHUYEN_CU_TRU     String?
+  MAXA_CU_TRU        String?
+  MA_BHXH            String?
+  MA_THE_BHYT        String?
+  NGHE_NGHIEP        String?
+  DIEN_THOAI         String?
+  MA_DOI_TUONG       String?
+  KHAM_GIAM_DINH     String?
+  SO_BIEN_BAN        String?
+  TYLE_TTCT_CU       String?
+  DANG_HUONG_CHE_DO  String?
+  NGAY_CHUNG_TU      String?
+  SO_GIAY_GIOI_THIEU String?
+  NGAY_DE_NGHI       String?
+  MA_DONVI           String?
+  GIOI_THIEU_CUA     String?
+  KET_QUA_KHAM       String?
+  SO_VAN_BAN_CAN_CU  String?
+  TYLE_TTCT_MOI      String?
+  TONG_TYLE_TTCT     String?
+  DANG_KHUYETTAT     String?
+  MUC_DO_KHUYETTAT   String?
+  DE_NGHI            String?
+  DUOC_XACDINH       String?
+  DU_PHONG           String?
+
+  @@index([xml1Id])
+}
+
+model Xml13 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK             String?
+  SO_HOSO           String?
+  SO_CHUYENTUYEN    String?
+  GIAY_CHUYEN_TUYEN String?
+  MA_CSKCB          String?
+  MA_NOI_DI         String?
+  MA_NOI_DEN        String?
+  HO_TEN            String?
+  NGAY_SINH         String?
+  GIOI_TINH         String?
+  MA_QUOCTICH       String?
+  MA_DANTOC         String?
+  MA_NGHE_NGHIEP    String?
+  DIA_CHI           String?
+  MA_THE_BHYT       String?
+  GT_THE_DEN        String?
+  NGAY_VAO          String?
+  NGAY_VAO_NOI_TRU  String?
+  NGAY_RA           String?
+  DAU_HIEU_LS       String?
+  CHAN_DOAN_RV      String?
+  TOMTAT_KQ         String?
+  PP_DIEUTRI        String?
+  MA_BENH_CHINH     String?
+  MA_BENH_KT        String?
+  MA_BENH_YHCT      String?
+  TEN_DICH_VU       String?
+  TEN_THUOC         String?
+  MA_LOAI_RV        String?
+  MA_LYDO_CT        String?
+  HUONG_DIEU_TRI    String?
+  PHUONGTIEN_VC     String?
+  HOTEN_NGUOI_HT    String?
+  CHUCDANH_NGUOI_HT String?
+  MA_BACSI          String?
+  MA_TTDV           String?
+  DU_PHONG          String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml14 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK            String?
+  SO_GIAYHEN_KL    String?
+  MA_CSKCB         String?
+  HO_TEN           String?
+  NGAY_SINH        String?
+  GIOI_TINH        String?
+  DIA_CHI          String?
+  MA_THE_BHYT      String?
+  GT_THE_DEN       String?
+  NGAY_VAO         String?
+  NGAY_VAO_NOI_TRU String?
+  NGAY_RA          String?
+  NGAY_HEN_KL      String?
+  CHAN_DOAN_RV     String?
+  MA_BENH_CHINH    String?
+  MA_BENH_KT       String?
+  MA_BENH_YHCT     String?
+  MA_DOITUONG_KCB  String?
+  MA_BACSI         String?
+  MA_TTDV          String?
+  NGAY_CT          String?
+  DU_PHONG         String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
+}
+
+model Xml15 {
+  id     String  @id @default(cuid())
+  xml1Id String?
+  xml1   Xml1?   @relation(fields: [xml1Id], references: [id], onDelete: Cascade)
+
+  // Fields
+  MA_LK               String?
+  STT                 String?
+  MA_BN               String?
+  HO_TEN              String?
+  SO_CCCD             String?
+  PHANLOAI_LAO_VITRI  String?
+  PHANLOAI_LAO_TS     String?
+  PHANLOAI_LAO_HIV    String?
+  PHANLOAI_LAO_VK     String?
+  PHANLOAI_LAO_KT     String?
+  LOAI_DTRI_LAO       String?
+  NGAYBD_DTRI_LAO     String?
+  PHACDO_DTRI_LAO     String?
+  NGAYKT_DTRI_LAO     String?
+  KET_QUA_DTRI_LAO    String?
+  MA_CSKCB            String?
+  NGAYKD_HIV          String?
+  BDDT_ARV            String?
+  NGAY_BAT_DAU_DT_CTX String?
+  DU_PHONG            String?
+
+  @@index([MA_LK])
+  @@index([xml1Id])
 }

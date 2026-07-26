@@ -142,7 +142,7 @@ const ResizableTitle = (props: any) => {
     );
 };
 
-export default function ExcelReaderPage() {
+export default function PTTTReaderPage() {
     const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
     const [sheetNames, setSheetNames] = useState<string[]>([]);
     const [activeSheet, setActiveSheet] = useState<string>('');
@@ -184,7 +184,7 @@ export default function ExcelReaderPage() {
     // Load rules on mount
     const fetchRules = async () => {
         setRuleLoading(true);
-        const res = await getDuplicateRules('EXCEL');
+        const res = await getDuplicateRules('PTTT');
         if (res.success && res.data) {
             setRules(res.data as unknown as DuplicateRule[]);
         } else {
@@ -201,7 +201,7 @@ export default function ExcelReaderPage() {
         setRuleLoading(true);
         const res = await createDuplicateRule({
             name: values.name,
-            ruleType: values.ruleType || 'EXCEL',
+            ruleType: values.ruleType || 'PTTT',
             machineCols: values.machineCols,
             serviceCol: values.serviceCol,
             startCol: values.startCol,
@@ -232,7 +232,7 @@ export default function ExcelReaderPage() {
         setRuleLoading(true);
         const res = await updateDuplicateRule(editingRule.id, {
             name: values.name,
-            ruleType: values.ruleType || 'EXCEL',
+            ruleType: values.ruleType || 'PTTT',
             machineCols: values.machineCols,
             serviceCol: values.serviceCol,
             startCol: values.startCol,
@@ -286,7 +286,7 @@ export default function ExcelReaderPage() {
     // IndexedDB Helper
     const initDB = async () => {
         const { openDB } = await import('idb');
-        return openDB('ExcelReaderDB', 3, {
+        return openDB('PTTTReaderDB', 3, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains('files')) {
                     db.createObjectStore('files');
@@ -297,17 +297,17 @@ export default function ExcelReaderPage() {
 
     const saveFileToDB = async (file: File) => {
         const db = await initDB();
-        await db.put('files', file, 'currentFile');
+        await db.put('files', file, 'ptttFile');
     };
 
     const getFileFromDB = async (): Promise<File | undefined> => {
         const db = await initDB();
-        return await db.get('files', 'currentFile');
+        return await db.get('files', 'ptttFile');
     };
 
     const clearFileFromDB = async () => {
         const db = await initDB();
-        await db.delete('files', 'currentFile');
+        await db.delete('files', 'ptttFile');
     };
 
     React.useEffect(() => {
@@ -641,6 +641,22 @@ export default function ExcelReaderPage() {
                         if (isOverlap) {
                             adj[i].push(j);
                             adj[j].push(i);
+
+                            const formatTime = (ts: number) => {
+                                const d = new Date(ts);
+                                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                            };
+                            let overlapText = '';
+                            if (overlapStart <= overlapEnd) {
+                                overlapText = `${formatTime(overlapStart)} đến ${formatTime(overlapEnd)}`;
+                            } else {
+                                overlapText = `Khoảng cách < ${rule.minGapMinutes} phút`;
+                            }
+                            
+                            if (!itemA._overlapTimes) itemA._overlapTimes = new Set<string>();
+                            if (!itemB._overlapTimes) itemB._overlapTimes = new Set<string>();
+                            itemA._overlapTimes.add(overlapText);
+                            itemB._overlapTimes.add(overlapText);
                         }
                     }
                 }
@@ -671,7 +687,8 @@ export default function ExcelReaderPage() {
                             const clone = {
                                 ...items[origIdx],
                                 __groupIndex: globalGroupCounter,
-                                _violations: [rule.name]
+                                _violations: [rule.name],
+                                _overlapTimes: group[idx]._overlapTimes ? Array.from(group[idx]._overlapTimes) : []
                             };
                             allDuplicates.push(clone);
                         });
@@ -712,14 +729,22 @@ export default function ExcelReaderPage() {
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet("Du Lieu Trung");
 
-        const exportHeaders = ["QUY_TAC_VI_PHAM", ...headers];
+        const exportHeaders = ['STT', 'Quy tắc vi phạm', 'Khoảng thời gian trùng', ...headers];
         const headerRow = ws.addRow(exportHeaders);
         headerRow.font = { bold: true };
 
-        dups.forEach(item => {
-            const rowVals: any[] = [(item._violations || []).join(', ')];
+        dups.forEach((item, index) => {
+            const rowVals: any[] = [
+                index + 1,
+                (item._violations || []).join('\n'),
+                (item._overlapTimes || []).join('\n')
+            ];
             headers.forEach((_, idx) => {
-                rowVals.push(item[idx]);
+                let val = item[idx];
+                if (typeof val === 'number' && val > 999999999) {
+                    val = String(val);
+                }
+                rowVals.push(val);
             });
             const r = ws.addRow(rowVals);
 
@@ -737,6 +762,22 @@ export default function ExcelReaderPage() {
                 });
             }
         });
+
+        // Auto-fit columns
+        const colCount = exportHeaders.length;
+        for (let i = 1; i <= colCount; i++) {
+            const col = ws.getColumn(i);
+            let maxLength = 0;
+            col.eachCell({ includeEmpty: true }, (cell) => {
+                cell.alignment = { vertical: 'middle', wrapText: true };
+                const text = cell.value ? cell.value.toString() : '';
+                const lines = text.split('\n');
+                lines.forEach(line => {
+                    if (line.length > maxLength) maxLength = line.length;
+                });
+            });
+            col.width = Math.min(Math.max(maxLength + 2, 12), 80);
+        }
 
         const buf = await wb.xlsx.writeBuffer();
         saveAs(new Blob([buf]), `DuLieuTrung_${new Date().toISOString().substring(0, 10)}.xlsx`);
@@ -792,12 +833,28 @@ export default function ExcelReaderPage() {
         return data;
     }, [tableData, showOnlyDuplicates, columnFilters, hide50Percent, hidden50PercentDups]);
 
-    if (!hasPermission('MENU_DOC_FILE_EXCEL')) {
+    const maxRuleWidth = React.useMemo(() => {
+        if (filteredTableData.length === 0) return 250;
+        return Math.max(150, Math.min(600, Math.max(...filteredTableData.map(item => {
+            const rules = Array.isArray(item._violations) ? item._violations : (item._violations ? [item._violations] : []);
+            return rules.length === 0 ? 0 : Math.max(...rules.map((r: string) => r.length * 5.8 + 32));
+        }))));
+    }, [filteredTableData]);
+
+    const maxTimeWidth = React.useMemo(() => {
+        if (filteredTableData.length === 0) return 200;
+        return Math.max(180, Math.min(600, Math.max(...filteredTableData.map(item => {
+            const times = Array.isArray(item._overlapTimes) ? item._overlapTimes : (item._overlapTimes ? [item._overlapTimes] : []);
+            return times.length === 0 ? 0 : Math.max(...times.map((t: string) => t.length * 5.8 + 32));
+        }))));
+    }, [filteredTableData]);
+
+    if (!hasPermission('MENU_PTTT_EXCEL')) {
         return (
             <div className="flex flex-col items-center justify-center h-full min-h-[60vh] p-12">
                 <div className="text-red-500 text-7xl mb-4"><AuditOutlined /></div>
                 <h1 className="text-3xl font-bold text-slate-800">Truy cập bị từ chối</h1>
-                <p className="text-slate-500 mt-3 text-lg">Bạn không có quyền truy cập vào chức năng Đọc dữ liệu Excel.</p>
+                <p className="text-slate-500 mt-3 text-lg">Bạn không có quyền truy cập vào chức năng này.</p>
                 <Button type="primary" size="large" className="mt-6 bg-blue-600" onClick={() => router.push('/')}>
                     Về trang chủ
                 </Button>
@@ -809,8 +866,8 @@ export default function ExcelReaderPage() {
         <div className="space-y-6 p-6 max-w-[1600px] mx-auto">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Đọc dữ liệu Excel</h1>
-                    <p className="text-slate-500 font-medium">Tải lên và xem nhanh nội dung file Excel ngay trên trình duyệt</p>
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Dữ liệu Excel PTTT</h1>
+                    <p className="text-slate-500 font-medium">Tải lên và kiểm tra trùng lặp cho file Phẫu thuật - Thủ thuật</p>
                 </div>
                 {workbook && (
                     <Button onClick={reset} icon={<ReloadOutlined />}>Tải file khác</Button>
@@ -1003,7 +1060,14 @@ export default function ExcelReaderPage() {
                                 <Spin size="large" tip="Đang đọc dữ liệu..." />
                             </div>
                         ) : tableColumns.length > 0 ? (
-                            <Table
+                            <>
+                                <style>{`
+                                    .ant-table-cell-fix-left,
+                                    .ant-table-cell-fix-right {
+                                        background-color: inherit !important;
+                                    }
+                                `}</style>
+                                <Table
                                 components={{
                                     header: {
                                         cell: ResizableTitle,
@@ -1011,10 +1075,19 @@ export default function ExcelReaderPage() {
                                 }}
                                 columns={[
                                     {
+                                        title: 'STT',
+                                        dataIndex: 'stt',
+                                        key: 'stt',
+                                        width: 60,
+                                        fixed: 'left',
+                                        align: 'center',
+                                        render: (_: any, __: any, index: number) => <span className="font-medium text-slate-500">{index + 1}</span>
+                                    },
+                                    {
                                         title: 'Quy tắc vi phạm',
                                         dataIndex: '_violations',
                                         key: '_violations',
-                                        width: 250,
+                                        width: maxRuleWidth,
                                         fixed: 'left',
                                         render: (violations: string[]) => (
                                             violations && violations.length > 0 ? (
@@ -1024,9 +1097,23 @@ export default function ExcelReaderPage() {
                                             ) : null
                                         )
                                     },
+                                    {
+                                        title: 'Khoảng thời gian trùng',
+                                        dataIndex: '_overlapTimes',
+                                        key: '_overlapTimes',
+                                        width: maxTimeWidth,
+                                        fixed: 'left',
+                                        render: (times: string[]) => (
+                                            times && times.length > 0 ? (
+                                                <div className="flex flex-col gap-1">
+                                                    {times.map((t, i) => <Tag color="orange" key={i} className="whitespace-normal mb-1 font-medium">{t}</Tag>)}
+                                                </div>
+                                            ) : null
+                                        )
+                                    },
                                     ...tableColumns
                                 ].map((col: any) => {
-                                    if (col.key === '_violations') return col;
+                                    if (col.key === '_violations' || col.key === '_overlapTimes') return col;
                                     const width = colWidths[col.dataIndex] || col.width || 150;
                                     return {
                                         ...col,
@@ -1071,6 +1158,7 @@ export default function ExcelReaderPage() {
                                     return {};
                                 }}
                             />
+                            </>
                         ) : (
                             <Empty description="Sheet này không có dữ liệu" className="py-12" />
                         )}
@@ -1134,7 +1222,7 @@ export default function ExcelReaderPage() {
 
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="ruleType" label="Phân loại Quy tắc" initialValue="EXCEL">
+                            <Form.Item name="ruleType" label="Phân loại Quy tắc" initialValue="PTTT">
                                 <Select>
                                     <Option value="EXCEL">Quy tắc Excel Thường</Option>
                                     <Option value="PTTT">Quy tắc PTTT</Option>
@@ -1288,3 +1376,4 @@ export default function ExcelReaderPage() {
         </div>
     );
 }
+

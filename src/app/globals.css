@@ -106,3 +106,7 @@ body {
 .react-resizable-handle:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
+
+.ant-table-wrapper .ant-table-cell {
+  padding: 8px 6px !important;
+}

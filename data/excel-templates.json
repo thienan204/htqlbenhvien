@@ -1,0 +1,59 @@
+[
+  {
+    "name": "Kiểm tra PTTT excel",
+    "description": "Upload file excel PTTT, để khoa phòng check lỗi lien quan đến PTTT",
+    "rules": [
+      {
+        "id": "rule_1785074366192_0",
+        "ruleName": "Kiểm tra trùng mã máy",
+        "ruleType": "TIME_OVERLAP",
+        "mapping": {
+          "groupCols": [
+            "MAMAY"
+          ],
+          "startCol": "NGAYPTTT",
+          "endCol": "NGAYKTTT",
+          "ignoreValues": [
+            "-1"
+          ],
+          "minGapMinutes": 0
+        },
+        "active": true
+      },
+      {
+        "id": "rule_1785074366192_1",
+        "ruleName": "Kiểm tra trung người thuc hiên",
+        "ruleType": "TIME_OVERLAP",
+        "mapping": {
+          "groupCols": [
+            "TT_CHINH"
+          ],
+          "startCol": "NGAYPTTT",
+          "endCol": "NGAYKTTT",
+          "minGapMinutes": 0
+        },
+        "active": true
+      }
+    ],
+    "outputConfig": {
+      "exportFileName": "Danh_sach_loi",
+      "includeViolationColumn": true
+    },
+    "id": "1785057641902",
+    "slug": "kim-tra-pttt-excel",
+    "createdAt": 1785057641902,
+    "updatedAt": 1785074366395
+  },
+  {
+    "name": "Kiêm tra mã trung giuonwgf",
+    "rules": [],
+    "outputConfig": {
+      "exportFileName": "Danh_sach_loi",
+      "includeViolationColumn": true
+    },
+    "id": "1785068090024",
+    "slug": "kim-tra-m-trung-giuonwgf",
+    "createdAt": 1785068090025,
+    "updatedAt": 1785068090025
+  }
+]
