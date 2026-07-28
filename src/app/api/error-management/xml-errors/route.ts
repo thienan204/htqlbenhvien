@@ -61,12 +61,31 @@ export async function POST(req: NextRequest) {
             };
         });
 
+        const maLks = createData.map(d => d.ma_lk).filter(Boolean);
+        const existingErrors = await prisma.xmlErrorRecord.findMany({
+            where: { ma_lk: { in: maLks } },
+            select: { ma_lk: true, ma_bn: true, ma_dv: true, chi_tiet_loi: true }
+        });
+
+        const existingSet = new Set(existingErrors.map(e => `${e.ma_lk}_${e.ma_bn}_${e.ma_dv}_${e.chi_tiet_loi}`));
+        
+        const newErrors = createData.filter(d => {
+            const sig = `${d.ma_lk}_${d.ma_bn}_${d.ma_dv}_${d.chi_tiet_loi}`;
+            if (existingSet.has(sig)) return false;
+            // Không add ngược lại vào set để cho phép lưu nhiều dòng lỗi giống nhau trên cùng 1 hồ sơ
+            return true;
+        });
+
+        if (newErrors.length === 0) {
+            return NextResponse.json({ success: true, count: 0, duplicateCount: createData.length, message: 'Tất cả các lỗi này đã được lưu trước đó' });
+        }
+
         const result = await prisma.xmlErrorRecord.createMany({
-            data: createData,
+            data: newErrors,
             skipDuplicates: true
         });
 
-        return NextResponse.json({ success: true, count: result.count });
+        return NextResponse.json({ success: true, count: result.count, duplicateCount: createData.length - newErrors.length });
     } catch (error: any) {
         console.error("Save XML errors failed", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

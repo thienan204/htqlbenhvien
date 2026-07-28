@@ -383,6 +383,7 @@ model Mau05Catalog {
   TU_NGAY          String?  @db.VarChar(8)
   DEN_NGAY         String?  @db.VarChar(8)
   MA_CSKCB         String?  @db.VarChar(5)
+  isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -467,8 +468,8 @@ model XmlErrorRecord {
   don_gia_bh         String?
   ma_may             String?
   ma_bac_si          String?
-  nguoi_th           String?
   ten_bac_si         String?
+  nguoi_th           String?
   ten_nguoi_th       String?
   itRequestId        String?
   itRequestPingCount Int       @default(0)
@@ -1500,4 +1501,13 @@ model Xml15 {
 
   @@index([MA_LK])
   @@index([xml1Id])
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

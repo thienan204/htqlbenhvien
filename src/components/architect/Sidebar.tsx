@@ -4,7 +4,8 @@ import {
     RocketOutlined, AppstoreOutlined,
     FileTextOutlined, FileExcelOutlined,
     SettingOutlined, DashboardOutlined,
-    TableOutlined, AuditOutlined
+    TableOutlined, AuditOutlined,
+    WarningOutlined, ToolOutlined
 } from '@ant-design/icons';
 import { Button } from 'antd';
 import prisma from '@/lib/prisma';
@@ -76,6 +77,26 @@ export default async function Sidebar() {
                     <Link href="/chuyen-de" className="text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg px-4 py-2.5 font-medium flex items-center gap-3 cursor-pointer transition-colors mt-1">
                         <SettingOutlined className="text-lg opacity-70" />
                         Quy tắc chuyên đề
+                    </Link>
+                </div>
+
+                {/* Error & Check Section */}
+                <div className="px-4 mb-2 mt-6">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Kiểm tra & Báo lỗi</p>
+
+                    <Link href="/xml-checker" className="text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg px-4 py-2.5 font-medium flex items-center gap-3 cursor-pointer transition-colors">
+                        <FileTextOutlined className="text-lg opacity-70" />
+                        Kiểm tra XML
+                    </Link>
+
+                    <Link href="/error-management/xml-errors" className="text-slate-600 hover:bg-slate-50 hover:text-red-600 rounded-lg px-4 py-2.5 font-medium flex items-center gap-3 cursor-pointer transition-colors mt-1">
+                        <WarningOutlined className="text-lg opacity-70" />
+                        Danh sách lỗi XML
+                    </Link>
+
+                    <Link href="/error-management/it-requests" className="text-slate-600 hover:bg-slate-50 hover:text-purple-600 rounded-lg px-4 py-2.5 font-medium flex items-center gap-3 cursor-pointer transition-colors mt-1">
+                        <ToolOutlined className="text-lg opacity-70" />
+                        Yêu cầu IT
                     </Link>
                 </div>
 

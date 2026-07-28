@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Tag, Switch } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, HeartOutlined, ContainerOutlined, ExperimentOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
@@ -16,6 +16,8 @@ export default function Mau05CatalogPage() {
     const [searchText, setSearchText] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
     const { user } = useAuth();
 
     const fetchData = async () => {
@@ -110,6 +112,57 @@ export default function Mau05CatalogPage() {
         }
     };
 
+    const handleToggleStatus = async (id: string, checked: boolean) => {
+        try {
+            setTogglingId(id);
+            const res = await fetch(`${getBasePath()}/api/mau05-catalog/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: checked })
+            });
+            if (res.ok) {
+                message.success('Đã cập nhật trạng thái');
+                setData(prev => prev.map(item => item.id === id ? { ...item, isActive: checked } : item));
+            } else {
+                message.error('Cập nhật thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
+    const handleBulkUpdateStatus = async (isActive: boolean) => {
+        if (selectedRowKeys.length === 0) return;
+        try {
+            setLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau05-catalog/bulk`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys, isActive })
+            });
+            if (res.ok) {
+                message.success(`Đã cập nhật trạng thái cho ${selectedRowKeys.length} dòng`);
+                setSelectedRowKeys([]);
+                fetchData();
+            } else {
+                message.error('Cập nhật thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[]) => {
+            setSelectedRowKeys(newSelectedRowKeys);
+        },
+    };
+
     const handleDownloadTemplate = () => {
         const headers = [
             'MA_DICH_VU', 'TEN_DICH_VU', 'TEN_DVKT_GIA', 'DON_GIA', 'QUY_TRINH',
@@ -147,7 +200,11 @@ export default function Mau05CatalogPage() {
 
                 if (res.ok) {
                     const result = await res.json();
-                    message.success(`Đã Import thành công ${result.count || jsonData.length} dòng.`);
+                    if (result.inserted !== undefined || result.updated !== undefined) {
+                        message.success(`Import hoàn tất! Thêm mới: ${result.inserted}, Cập nhật: ${result.updated}, Bỏ qua: ${result.skipped} (không đổi).`, 5);
+                    } else {
+                        message.success(`Đã Import thành công ${result.count || jsonData.length} dòng.`);
+                    }
                     fetchData();
                 } else {
                     message.error('Import thất bại');
@@ -165,14 +222,23 @@ export default function Mau05CatalogPage() {
     const columns = [
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1 },
         { title: 'Mã Dịch Vụ', dataIndex: 'MA_DICH_VU', width: 120 },
+        { title: 'Trạng thái', dataIndex: 'isActive', width: 120, align: 'center' as const, render: (isActive: boolean, record: any) => (
+            <Switch 
+                checked={isActive} 
+                checkedChildren="Đang dùng" 
+                unCheckedChildren="Lịch sử"
+                onChange={(checked) => handleToggleStatus(record.id, checked)}
+                loading={togglingId === record.id}
+            />
+        )},
         { title: 'Tên Dịch Vụ', dataIndex: 'TEN_DICH_VU', width: 250 },
         { title: 'Tên DVKT Giá', dataIndex: 'TEN_DVKT_GIA', width: 250 },
         { title: 'Đơn giá', dataIndex: 'DON_GIA', width: 120, align: 'right' as const, render: (val: number) => val?.toLocaleString() },
         { title: 'Quy trình', dataIndex: 'QUY_TRINH', width: 150 },
         { title: 'Ghi chú', dataIndex: 'GHI_CHU', width: 200 },
         { title: 'QĐ DVKT', dataIndex: 'QD_DVKT', width: 120 },
-        { title: 'Mã Thuốc ĐD', dataIndex: 'MA_THUOC', width: 120 },
-        { title: 'Tên Thuốc ĐD', dataIndex: 'TEN_THUOC', width: 200 },
+        { title: 'Mã Thuốc CĐ', dataIndex: 'MA_THUOC', width: 120 },
+        { title: 'Tên Thuốc CĐ', dataIndex: 'TEN_THUOC', width: 200 },
         {
             title: 'Hành động',
             key: 'action',
@@ -202,7 +268,6 @@ export default function Mau05CatalogPage() {
                 <div className="flex justify-between items-center mb-4">
                     <Space>
                         <Input.Search placeholder="Tìm Mã DV, Tên DV..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
-                        <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
                         {user?.role === 'ADMIN' && (
@@ -221,15 +286,34 @@ export default function Mau05CatalogPage() {
                         <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">
                             <Button type="default" icon={<UploadOutlined />} className="bg-blue-50 border-blue-200 text-blue-700">Import Excel</Button>
                         </Upload>
-                        <Button type="primary" className="bg-red-500 hover:bg-red-600" icon={<PlusOutlined />} onClick={handleAdd}>Thêm DV Mới</Button>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Thêm DV Mới</Button>
+                        <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
+                        {selectedRowKeys.length > 0 && (
+                            <>
+                                <Button 
+                                    className="bg-green-500 text-white border-none hover:bg-green-600" 
+                                    onClick={() => handleBulkUpdateStatus(true)}
+                                >
+                                    Đánh dấu Đang dùng ({selectedRowKeys.length})
+                                </Button>
+                                <Button 
+                                    className="bg-gray-400 text-white border-none hover:bg-gray-500" 
+                                    onClick={() => handleBulkUpdateStatus(false)}
+                                >
+                                    Đánh dấu Lịch sử ({selectedRowKeys.length})
+                                </Button>
+                            </>
+                        )}
                     </Space>
                 </div>
 
                 <Table
+                    rowSelection={rowSelection}
                     columns={columns}
                     dataSource={filteredData}
                     rowKey="id"
                     loading={loading}
+                    rowClassName={(record) => !record.isActive ? 'bg-gray-50 opacity-60' : ''}
                     pagination={{ 
                         current: currentPage,
                         pageSize: pageSize, 

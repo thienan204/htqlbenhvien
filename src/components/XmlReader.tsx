@@ -10,19 +10,26 @@ import { DEFAULT_RULES, ValidationEngine, ValidationRule, ValidationResult } fro
 import { useRules } from "@/hooks/useRules";
 import { copyToClipboard } from '@/utils/clipboard';
 import { getBasePath } from '@/utils/config';
+import { addWorkingDays, calculateRemainingTime } from '@/utils/dateUtils';
 
+import { getSpecializedRules } from '@/actions/specialized-rules';
+import { runDuplicateBedRule, runDuplicateDoctorRule, runMachineCheckRule } from '@/lib/specialized-rules-engine';
+import { exportDuplicateBedExcel, exportDuplicateDoctorExcel } from '@/lib/specialized-export';
+
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
     Table, Button, Upload, Tabs, Tag, message, Card, Input, Space,
-    Descriptions, Badge, Spin, Progress, Modal, Select, Tooltip, Row, Col, Alert, Switch
+    Descriptions, Badge, Spin, Progress, Modal, Select, Tooltip, Row, Col, Alert, Switch, Dropdown, Menu, InputNumber, DatePicker
 } from 'antd';
 import {
     InboxOutlined, UploadOutlined, FileExcelOutlined, SearchOutlined,
     CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, DeleteOutlined,
-    CloudUploadOutlined, ContainerOutlined
+    CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 
 const { Dragger } = Upload;
 const { TabPane } = Tabs;
@@ -274,10 +281,19 @@ const applyIcd10Validation = (r: ExtendedHosoRecord, icd10Map: Record<string, an
 };
 
 export default function XmlReader() {
+    const { user: authUser } = useAuth();
+    const canUploadFile = authUser?.role === 'ADMIN' || authUser?.role === 'CNTT' || authUser?.role === 'BHYT';
+    
     const router = useRouter();
     const [records, setRecords] = useState<ExtendedHosoRecord[]>([]);
     const [departments, setDepartments] = useState<Record<string, string>>({});
     const [selectedRecord, setSelectedRecord] = useState<ExtendedHosoRecord | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+    const [selectedKhoa, setSelectedKhoa] = useState<string | null>(null);
+
+    // Specialized rules state
+    const [specializedRules, setSpecializedRules] = useState<any[]>([]);
+    const [isSpecializedChecking, setIsSpecializedChecking] = useState(false);
     const [activeTab, setActiveTab] = useState<string>('XML1');
     const [user, setUser] = useState<any>(null);
     const [processingProgress, setProcessingProgress] = useState<{ current: number, total: number } | null>(null);
@@ -290,13 +306,85 @@ export default function XmlReader() {
     const [headerDepartmentFilter, setHeaderDepartmentFilter] = useState<string | null>(null);
     const [initialDBLoadDone, setInitialDBLoadDone] = useState(false);
     const [masterData, setMasterData] = useState<Record<string, Set<string>>>({});
+    
+    // DB Fetching State
+    const [dbDateRange, setDbDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
+    const [isLoadingDB, setIsLoadingDB] = useState(false);
+
+    const fetchDataFromDB = async () => {
+        if (!dbDateRange[0] || !dbDateRange[1]) {
+            message.warning("Vui lòng chọn Từ ngày - Đến ngày để tải dữ liệu từ CSDL");
+            return;
+        }
+        setIsLoadingDB(true);
+        try {
+            const fromDateStr = dbDateRange[0].format('YYYYMMDDHHmm');
+            const toDateStr = dbDateRange[1].format('YYYYMMDDHHmm');
+            const res = await fetch(`${getBasePath()}/api/xml1/fetch-full?fromDate=${fromDateStr}&toDate=${toDateStr}`);
+            
+            if (res.ok) {
+                const data = await res.json();
+                const initializedData = data.map((r: any) => ({
+                    ...r,
+                    validationResults: r.validationResults || []
+                }));
+                setRecords(initializedData);
+                
+                // Set sent records map
+                try {
+                    const maLienKetList = Array.from(new Set(data.map((r: any) => String(r.summary?.MA_LK)).filter(Boolean)));
+                    if (maLienKetList.length > 0) {
+                        const sentRes = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ maLienKetList })
+                        });
+                        if (sentRes.ok) {
+                            const sentData = await sentRes.json();
+                            setSentRecordsSet(new Set(sentData.exists || []));
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error checking sent records:', e);
+                }
+
+                // Chạy kiểm tra lỗi mặc định sẽ tự động chạy qua useEffect khi records thay đổi
+                message.success(`Đã tải ${data.length} hồ sơ từ CSDL.`);
+            } else {
+                const err = await res.json();
+                message.error(`Lỗi: ${err.error}`);
+            }
+        } catch (error: any) {
+            console.error("Error loading data from DB:", error);
+            message.error(`Lỗi kết nối: ${error.message}`);
+        } finally {
+            setIsLoadingDB(false);
+        }
+    };
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
     const isFirstRuleLoad = React.useRef(true);
     const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
+    const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
+    const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
 
     // Load DB
     useEffect(() => {
         let ignore = false;
+
+        const fetchConfig = async () => {
+            try {
+                const res = await fetch(`${getBasePath()}/api/configs`);
+                if (res.ok && !ignore) {
+                    const data = await res.json();
+                    if (data && typeof data.value === 'number') {
+                        setEditDeadlineDays(data.value);
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching config", e);
+            }
+        };
+        fetchConfig();
 
         const fetchDepts = async () => {
             try {
@@ -327,6 +415,15 @@ export default function XmlReader() {
             }
         };
         fetchUser();
+
+        const fetchSpecRules = async () => {
+            const res = await getSpecializedRules();
+            if (res && res.success) {
+                setSpecializedRules((res.data || []).filter((r: any) => r.isActive && r.ruleType !== 'SYSTEM_CONFIG' && r.ruleType !== 'SQL'));
+            }
+        };
+        fetchSpecRules();
+
 
         const initDB = async () => {
             // Dùng session cookie để nhận diện việc mở/đóng toàn bộ trình duyệt (cookie không set expires)
@@ -663,6 +760,12 @@ export default function XmlReader() {
                     let ngayTHYL = null;
                     let ngayKQ = null;
                     let maKhoa = renderValue(record.summary?.MA_KHOA);
+                    let maBacSi = '';
+                    let tenBacSi = '';
+                    let nguoiTH = '';
+                    let tenNguoiTH = '';
+                    let maMay = '';
+                    let donGiaBH = '';
 
                     if (err.xmlType && err.index !== undefined) {
                         const group = record.groups.find(g => g.type === err.xmlType);
@@ -676,6 +779,13 @@ export default function XmlReader() {
                                 ngayTHYL = item.NGAY_TH_YL;
                                 ngayKQ = item.NGAY_KQ;
                                 if (item.MA_KHOA) maKhoa = renderValue(item.MA_KHOA);
+                                
+                                maBacSi = item.MA_BAC_SI || item.MA_BS || '';
+                                tenBacSi = item.TEN_BAC_SI || item.TEN_BS || '';
+                                nguoiTH = item.NGUOI_THUC_HIEN || item.MA_NGUOI_TH || '';
+                                tenNguoiTH = item.TEN_NGUOI_THUC_HIEN || '';
+                                maMay = item.MA_MAY || '';
+                                donGiaBH = item.DON_GIA || item.DON_GIA_BH || '';
                             }
                         }
                     }
@@ -695,6 +805,12 @@ export default function XmlReader() {
                         ma_dv: renderValue(code),
                         ten_dv: renderValue(name),
                         ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
+                        ma_bac_si: maBacSi,
+                        ten_bac_si: tenBacSi,
+                        nguoi_th: nguoiTH,
+                        ten_nguoi_th: tenNguoiTH,
+                        ma_may: maMay,
+                        don_gia_bh: donGiaBH,
                         chi_tiet_loi: `[${err.xmlType}] ${err.message || err.ruleName}`,
                         sourceType: 'XML'
                     });
@@ -724,6 +840,238 @@ export default function XmlReader() {
             }
         } catch (error) {
             message.error({ content: 'Không thể kết nối đến máy chủ', key: 'saveErrors' });
+        }
+    };
+
+    const handleRunSpecializedRule = (rule: any) => {
+        if (!rule.logicConfig) {
+            message.error("Quy tắc chưa có cấu hình logic");
+            return;
+        }
+
+        setIsSpecializedChecking(true);
+        message.loading({ content: `Đang kiểm tra ${rule.name}...`, key: 'spec_check' });
+        
+        setTimeout(() => {
+            let result: any;
+            if (rule.ruleType === 'DUPLICATE_BED' || rule.logicConfig?.type === 'DUPLICATE_BED' || rule.slug?.includes('trung-giuong')) {
+                result = runDuplicateBedRule(records, rule.logicConfig);
+            } else if (rule.ruleType === 'DUPLICATE_DOCTOR' || rule.logicConfig?.type === 'DUPLICATE_DOCTOR' || rule.slug?.includes('trung-bac-si')) {
+                result = runDuplicateDoctorRule(records, rule.logicConfig);
+            } else if (rule.ruleType === 'MACHINE_CHECK' || rule.logicConfig?.type === 'MACHINE_CHECK' || rule.slug?.includes('may')) {
+                result = runMachineCheckRule(records, rule.logicConfig);
+            }
+
+            if (result) {
+                const overlaps = result.overlaps as Set<string>;
+                if (overlaps.size > 0) {
+                    const newRecords = records.map(r => {
+                        if (overlaps.has(r.id)) {
+                            // avoid duplicate tags
+                            const existingResults = r.validationResults || [];
+                            const hasThisError = existingResults.some((e: any) => e.message?.includes(rule.name));
+                            if (!hasThisError) {
+                                return {
+                                    ...r,
+                                    validationResults: [
+                                        ...existingResults,
+                                        { 
+                                            ruleId: `CHUYEN_DE_${rule.id || 'RULE'}`,
+                                            ruleName: rule.name,
+                                            type: 'Cảnh báo',
+                                            xmlType: 'XML1',
+                                            field: 'MA_LK',
+                                            message: `[Chuyên đề] ${rule.name}`,
+                                            isError: true 
+                                        } as ValidationResult
+                                    ]
+                                };
+                            }
+                        }
+                        return r;
+                    });
+                    setRecords(newRecords);
+                    message.success({ content: `Phát hiện ${overlaps.size} hồ sơ vi phạm chuyên đề ${rule.name}`, key: 'spec_check', duration: 4 });
+                } else {
+                    message.success({ content: `Không phát hiện vi phạm chuyên đề ${rule.name}`, key: 'spec_check', duration: 3 });
+                }
+            } else {
+                message.warning({ content: `Chuyên đề ${rule.name} (Loại: ${rule.ruleType}) chưa được hỗ trợ kiểm tra trực tiếp.`, key: 'spec_check', duration: 4 });
+            }
+            setIsSpecializedChecking(false);
+        }, 100);
+    };
+
+    const handleRunAllSpecializedRules = () => {
+        setIsSpecializedChecking(true);
+        message.loading({ content: `Đang chạy kiểm tra ${specializedRules.length} chuyên đề...`, key: 'spec_check_all' });
+        
+        setTimeout(() => {
+            let totalOverlaps = 0;
+            let currentRecords = [...records];
+            
+            for (const rule of specializedRules) {
+                if (!rule.logicConfig) continue;
+                
+                let result: any;
+                if (rule.ruleType === 'DUPLICATE_BED' || rule.logicConfig?.type === 'DUPLICATE_BED' || rule.slug?.includes('trung-giuong')) {
+                    result = runDuplicateBedRule(currentRecords, rule.logicConfig);
+                } else if (rule.ruleType === 'DUPLICATE_DOCTOR' || rule.logicConfig?.type === 'DUPLICATE_DOCTOR' || rule.slug?.includes('trung-bac-si')) {
+                    result = runDuplicateDoctorRule(currentRecords, rule.logicConfig);
+                } else if (rule.ruleType === 'MACHINE_CHECK' || rule.logicConfig?.type === 'MACHINE_CHECK' || rule.slug?.includes('may')) {
+                    result = runMachineCheckRule(currentRecords, rule.logicConfig);
+                }
+                
+                if (result) {
+                    const overlaps = result.overlaps as Set<string>;
+                    if (overlaps.size > 0) {
+                        totalOverlaps += overlaps.size;
+                        currentRecords = currentRecords.map(r => {
+                            if (overlaps.has(r.id)) {
+                                const existingResults = r.validationResults || [];
+                                const hasThisError = existingResults.some((e: any) => e.message?.includes(rule.name));
+                                if (!hasThisError) {
+                                    return {
+                                        ...r,
+                                        validationResults: [
+                                            ...existingResults,
+                                            { 
+                                                ruleId: `CHUYEN_DE_${rule.id || 'RULE'}`,
+                                                ruleName: rule.name,
+                                                type: 'Cảnh báo',
+                                                xmlType: 'XML1',
+                                                field: 'MA_LK',
+                                                message: `[Chuyên đề] ${rule.name}`,
+                                                isError: true 
+                                            } as ValidationResult
+                                        ]
+                                    };
+                                }
+                            }
+                            return r;
+                        });
+                    }
+                }
+            }
+            
+            setRecords(currentRecords);
+            setIsSpecializedChecking(false);
+            if (totalOverlaps > 0) {
+                message.success({ content: `Đã phát hiện tổng cộng ${totalOverlaps} lỗi trên các hồ sơ`, key: 'spec_check_all', duration: 4 });
+            } else {
+                message.success({ content: `Tuyệt vời! Không phát hiện vi phạm chuyên đề nào`, key: 'spec_check_all', duration: 3 });
+            }
+        }, 100);
+    };
+
+    const handleExportSpecializedRule = (rule: any) => {
+        if (!rule.logicConfig) {
+            message.error("Quy tắc chưa có cấu hình logic");
+            return;
+        }
+
+        setIsSpecializedChecking(true);
+        message.loading({ content: `Đang xuất báo cáo ${rule.name}...`, key: 'spec_export' });
+
+        setTimeout(async () => {
+            try {
+                if (rule.ruleType === 'DUPLICATE_BED' || rule.logicConfig?.type === 'DUPLICATE_BED' || rule.slug?.includes('trung-giuong') || rule.ruleType === 'MACHINE_CHECK' || rule.logicConfig?.type === 'MACHINE_CHECK' || rule.slug?.includes('may')) {
+                    const result = runDuplicateBedRule(records, rule.logicConfig, departments, {});
+                    if (result && result.results && result.results.length > 0) {
+                        await exportDuplicateBedExcel(result.results, rule.name);
+                        message.success({ content: `Đã xuất báo cáo ${rule.name}`, key: 'spec_export', duration: 3 });
+                    } else {
+                        message.warning({ content: `Không có dữ liệu vi phạm để xuất`, key: 'spec_export', duration: 3 });
+                    }
+                } else if (rule.ruleType === 'DUPLICATE_DOCTOR' || rule.logicConfig?.type === 'DUPLICATE_DOCTOR' || rule.slug?.includes('trung-bac-si')) {
+                    const result = runDuplicateDoctorRule(records, rule.logicConfig, departments, {});
+                    if (result && result.results && result.results.length > 0) {
+                        await exportDuplicateDoctorExcel(result.results, rule.name);
+                        message.success({ content: `Đã xuất báo cáo ${rule.name}`, key: 'spec_export', duration: 3 });
+                    } else {
+                        message.warning({ content: `Không có dữ liệu vi phạm để xuất`, key: 'spec_export', duration: 3 });
+                    }
+                } else {
+                    message.warning({ content: `Chuyên đề ${rule.name} chưa được hỗ trợ xuất báo cáo.`, key: 'spec_export', duration: 3 });
+                }
+            } catch (error) {
+                console.error(error);
+                message.error({ content: `Lỗi xuất báo cáo`, key: 'spec_export', duration: 3 });
+            } finally {
+                setIsSpecializedChecking(false);
+            }
+        }, 100);
+    };
+
+    const handleSaveToDBForViewer = async () => {
+        const targetRecords = getFilteredRecords();
+        if (targetRecords.length === 0) {
+            message.warning("Không có hồ sơ nào để lưu");
+            return;
+        }
+
+        try {
+            message.loading({ content: 'Đang kiểm tra trùng lặp...', key: 'saveXMLDB' });
+            
+            const maLkList = targetRecords.map(r => String(r.id || r.summary?.MA_LK)).filter(Boolean);
+            const checkRes = await fetch('/api/xml1/check-exists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ maLkList })
+            });
+
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.exists && checkData.exists.length > 0) {
+                    Modal.confirm({
+                        title: 'Cảnh báo trùng lặp hồ sơ',
+                        content: `Phát hiện ${checkData.exists.length} hồ sơ đã tồn tại trong Database. Việc tiếp tục lưu sẽ tự động bỏ qua nếu dữ liệu giống hệt, hoặc cập nhật phiên bản mới nếu có thay đổi. Bạn có muốn tiếp tục?`,
+                        okText: 'Tiếp tục lưu',
+                        cancelText: 'Hủy bỏ',
+                        onOk: () => proceedSaveToDBForViewer(targetRecords)
+                    });
+                    return;
+                }
+            }
+
+            // No duplicates or error checking, proceed directly
+            proceedSaveToDBForViewer(targetRecords);
+
+        } catch (error: any) {
+            message.error({ content: `Lỗi kết nối: ${error.message}`, key: 'saveXMLDB' });
+        }
+    };
+
+    const proceedSaveToDBForViewer = async (targetRecords: ExtendedHosoRecord[]) => {
+        try {
+            message.loading({ content: 'Đang gửi dữ liệu...', key: 'saveXMLDB' });
+            
+            const payload = targetRecords.map(r => {
+                return {
+                    id: r.id || r.summary?.MA_LK,
+                    summary: r.summary,
+                    groups: r.groups,
+                };
+            });
+
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const formData = new FormData();
+            formData.append('file', blob, 'filtered_records.json');
+
+            const res = await fetch('/api/xml-import-json', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                message.success({ content: data.message || 'Bắt đầu lưu vào CSDL.', key: 'saveXMLDB' });
+            } else {
+                const err = await res.json();
+                message.error({ content: `Lỗi: ${err.error || 'Có lỗi xảy ra'}`, key: 'saveXMLDB' });
+            }
+        } catch (error: any) {
+            message.error({ content: `Lỗi kết nối: ${error.message}`, key: 'saveXMLDB' });
         }
     };
 
@@ -817,6 +1165,74 @@ export default function XmlReader() {
             onFilter: (value, record) => {
                 const hasError = record.validationResults.some(v => v.isError);
                 return value === 'ERROR' ? hasError : !hasError;
+            }
+        },
+        {
+            title: (
+                <div className="flex flex-col gap-1 items-center">
+                    <span>Trạng thái Sửa BA</span>
+                </div>
+            ),
+            key: 'edit_status',
+            width: 130,
+            align: 'center',
+            render: (_, record) => {
+                const ngayRaStr = String(record.summary?.NGAY_RA || '');
+                if (!ngayRaStr || ngayRaStr.length < 8) return <Tag>Không rõ</Tag>;
+                
+                const year = parseInt(ngayRaStr.substring(0, 4));
+                const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                const day = parseInt(ngayRaStr.substring(6, 8));
+                let hour = 0; let min = 0;
+                if (ngayRaStr.length >= 12) {
+                    hour = parseInt(ngayRaStr.substring(8, 10));
+                    min = parseInt(ngayRaStr.substring(10, 12));
+                }
+                const dateNgayRa = new Date(year, month, day, hour, min);
+                const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                const timeInfo = calculateRemainingTime(deadline);
+                
+                return timeInfo.isExpired 
+                    ? <Tag color="error" className="m-0 border-red-300">Hết hạn</Tag> 
+                    : <Tag color="success" className="m-0 border-green-300">Còn hạn</Tag>;
+            }
+        },
+        {
+            title: (
+                <div className="flex flex-col gap-1 items-center">
+                    <span className="flex items-center justify-center gap-2">
+                        Thời gian còn lại
+                        {user?.role === 'ADMIN' && (
+                            <Tooltip title={`Cấu hình hạn sửa (đang là ${editDeadlineDays} ngày)`}>
+                                <SettingOutlined 
+                                    className="cursor-pointer text-slate-400 hover:text-blue-600 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); setIsConfigModalVisible(true); }}
+                                />
+                            </Tooltip>
+                        )}
+                    </span>
+                </div>
+            ),
+            key: 'remaining_time',
+            width: 150,
+            align: 'center',
+            render: (_, record) => {
+                const ngayRaStr = String(record.summary?.NGAY_RA || '');
+                if (!ngayRaStr || ngayRaStr.length < 8) return '-';
+                
+                const year = parseInt(ngayRaStr.substring(0, 4));
+                const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                const day = parseInt(ngayRaStr.substring(6, 8));
+                let hour = 0; let min = 0;
+                if (ngayRaStr.length >= 12) {
+                    hour = parseInt(ngayRaStr.substring(8, 10));
+                    min = parseInt(ngayRaStr.substring(10, 12));
+                }
+                const dateNgayRa = new Date(year, month, day, hour, min);
+                const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                const timeInfo = calculateRemainingTime(deadline);
+                
+                return <span className={timeInfo.isExpired ? 'text-red-500 font-medium text-xs' : 'text-green-600 font-medium text-xs'}>{timeInfo.text}</span>;
             }
         },
         {
@@ -1458,7 +1874,7 @@ export default function XmlReader() {
                 {isSent && hasError && (
                     <div className="px-8 pt-6">
                         <Alert
-                            message="Cảnh báo: Hồ sơ này đã được gửi lên hệ thống BHXH nhưng vẫn có lỗi!"
+                            title="Cảnh báo: Hồ sơ này đã được gửi lên hệ thống BHXH nhưng vẫn có lỗi!"
                             type="warning"
                             showIcon
                             className="font-medium bg-amber-50 border-amber-300 text-amber-800 rounded-xl"
@@ -1468,7 +1884,7 @@ export default function XmlReader() {
                 {isSent && !hasError && (
                     <div className="px-8 pt-6">
                         <Alert
-                            message="Thông tin: Hồ sơ này đã được gửi lên hệ thống BHXH."
+                            title="Thông tin: Hồ sơ này đã được gửi lên hệ thống BHXH."
                             type="info"
                             showIcon
                             className="font-medium bg-blue-50 border-blue-300 text-blue-800 rounded-xl"
@@ -1509,16 +1925,47 @@ export default function XmlReader() {
                 <div className="space-y-6">
                     {/* Header Actions */}
                     {/* Upload Area */}
-                    <div className="flex justify-center mb-4">
-                        <Dragger {...uploadProps} style={{ padding: '10px 20px', border: '2px dashed #1890ff', background: '#f0faff', borderRadius: '8px', cursor: 'pointer' }} showUploadList={false}>
-                            <div className="flex flex-col items-center group">
-                                <div className="p-1.5 bg-blue-100 rounded-full mb-1.5 group-hover:bg-blue-200 transition-colors">
-                                    <CloudUploadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
-                                </div>
-                                <div className="text-sm font-medium text-gray-700">Tải file XML</div>
-                                <div className="text-[10px] text-gray-500">Kéo thả hoặc click</div>
+                    {/* Source Selection Area */}
+                    <div className="flex flex-col md:flex-row justify-center gap-6 mb-4 items-stretch">
+                        {/* Option 1: Upload from local (restricted by role) */}
+                        {canUploadFile && (
+                            <div className="flex-1 max-w-md bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+                                <div className="text-sm font-semibold text-slate-600 mb-3 uppercase tracking-wider text-center">Tải file từ máy tính</div>
+                                <Dragger {...uploadProps} style={{ padding: '10px 20px', border: '2px dashed #1890ff', background: '#f0faff', borderRadius: '8px', cursor: 'pointer', width: '100%' }} showUploadList={false}>
+                                    <div className="flex flex-col items-center group">
+                                        <div className="p-1.5 bg-blue-100 rounded-full mb-1.5 group-hover:bg-blue-200 transition-colors">
+                                            <CloudUploadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
+                                        </div>
+                                        <div className="text-sm font-medium text-gray-700">Tải file XML</div>
+                                        <div className="text-[10px] text-gray-500">Kéo thả hoặc click</div>
+                                    </div>
+                                </Dragger>
                             </div>
-                        </Dragger>
+                        )}
+
+                        {/* Option 2: Load from DB */}
+                        <div className="flex-1 max-w-md bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+                            <div className="text-sm font-semibold text-slate-600 mb-3 uppercase tracking-wider text-center">Tải từ Cơ sở dữ liệu</div>
+                            <Space orientation="vertical" className="w-full">
+                                <DatePicker.RangePicker
+                                    placeholder={["Từ ngày (Ngày ra)", "Đến ngày (Ngày ra)"]}
+                                    format="DD/MM/YYYY"
+                                    style={{ width: '100%' }}
+                                    value={dbDateRange}
+                                    onChange={(dates) => setDbDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+                                    allowClear
+                                />
+                                <Button 
+                                    type="primary" 
+                                    icon={<CloudDownloadOutlined />} 
+                                    onClick={fetchDataFromDB} 
+                                    className="bg-green-600 hover:bg-green-700 w-full"
+                                    loading={isLoadingDB}
+                                >
+                                    Tải dữ liệu
+                                </Button>
+                            </Space>
+                        </div>
                     </div>
 
                     {(() => {
@@ -1536,6 +1983,47 @@ export default function XmlReader() {
                                         </span>
                                     </div>
                                     <Space>
+                                        {user?.role === 'ADMIN' && (
+                                            <Button 
+                                                icon={<CloudUploadOutlined />} 
+                                                type="default"
+                                                className="text-purple-600 border-purple-200 hover:border-purple-400 hover:text-purple-700 bg-purple-50"
+                                                onClick={handleSaveToDBForViewer}
+                                                title="Lưu những hồ sơ lỗi (theo filter) vào Database để có thể xem lại ở XML Viewer"
+                                            >
+                                                Lưu DB (XML Viewer)
+                                            </Button>
+                                        )}
+                                        <Dropdown
+                                            menu={{
+                                                items: [
+                                                    {
+                                                        key: 'run-all',
+                                                        label: <span className="font-bold text-blue-600">Kiểm tra tất cả trên lưới</span>,
+                                                        onClick: () => handleRunAllSpecializedRules()
+                                                    },
+                                                    { type: 'divider' },
+                                                    ...specializedRules.map(rule => ({
+                                                        key: rule.id,
+                                                        label: rule.name,
+                                                        children: [
+                                                            { key: `${rule.id}-check`, label: 'Kiểm tra trên lưới', onClick: () => handleRunSpecializedRule(rule) },
+                                                            { key: `${rule.id}-export`, label: 'Xuất Báo cáo Excel', onClick: () => handleExportSpecializedRule(rule) }
+                                                        ]
+                                                    }))
+                                                ]
+                                            }}
+                                            trigger={['click']}
+                                            disabled={specializedRules.length === 0}
+                                        >
+                                            <Button 
+                                                type="default" 
+                                                loading={isSpecializedChecking}
+                                                className="text-teal-600 border-teal-200 hover:text-teal-700 hover:border-teal-400"
+                                            >
+                                                Kiểm tra theo chuyên đề {specializedRules.length > 0 && `(${specializedRules.length})`}
+                                            </Button>
+                                        </Dropdown>
                                         <Select
                                             placeholder="Lọc theo Khoa"
                                             allowClear
@@ -1664,6 +2152,46 @@ export default function XmlReader() {
             ) : (
                 renderDetailView()
             )}
+
+            <Modal
+                title="Cấu hình Hạn sửa Bệnh án"
+                open={isConfigModalVisible}
+                onOk={async () => {
+                    try {
+                        const res = await fetch(`${getBasePath()}/api/configs`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ value: editDeadlineDays })
+                        });
+                        if (res.ok) {
+                            message.success('Đã lưu cấu hình thành công!');
+                            setIsConfigModalVisible(false);
+                        } else {
+                            message.error('Lỗi khi lưu cấu hình.');
+                        }
+                    } catch (e) {
+                        message.error('Lỗi kết nối.');
+                    }
+                }}
+                onCancel={() => setIsConfigModalVisible(false)}
+            >
+                <div className="flex flex-col gap-4 py-4">
+                    <Alert 
+                        message="Hạn sửa bệnh án được tính từ Ngày Ra Viện cộng thêm số ngày quy định (không tính Thứ 7, Chủ Nhật)."
+                        type="info" 
+                        showIcon 
+                    />
+                    <div className="flex items-center gap-4">
+                        <span className="font-medium">Số ngày cho phép sửa (sau xuất viện):</span>
+                        <InputNumber
+                            min={0}
+                            max={365}
+                            value={editDeadlineDays}
+                            onChange={(val) => setEditDeadlineDays(val || 0)}
+                        />
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

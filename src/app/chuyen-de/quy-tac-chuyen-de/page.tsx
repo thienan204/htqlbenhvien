@@ -373,7 +373,8 @@ export default function ConfigPage() {
         try {
             const res = await getSpecializedRules()
             if (res && res.success) {
-                setRules(res.data || [])
+                const filteredRules = (res.data || []).filter((rule: any) => rule.ruleType !== 'SYSTEM_CONFIG');
+                setRules(filteredRules)
             } else {
                 message.error(res?.error || "Không thể tải danh sách quy tắc.")
             }

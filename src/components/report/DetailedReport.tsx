@@ -367,7 +367,13 @@ export default function DetailedReport() {
 
             if (res.ok) {
                 const data = await res.json();
-                message.success({ content: `Lưu thành công ${data.count} lỗi vào hệ thống!`, key: 'saveErrors' });
+                if (data.count === 0 && data.duplicateCount > 0) {
+                    message.warning({ content: `Tất cả ${data.duplicateCount} lỗi đã được lưu từ trước, bỏ qua lưu trùng lặp!`, key: 'saveErrors' });
+                } else if (data.duplicateCount > 0) {
+                    message.success({ content: `Lưu thành công ${data.count} lỗi mới (bỏ qua ${data.duplicateCount} lỗi đã tồn tại)`, key: 'saveErrors' });
+                } else {
+                    message.success({ content: `Lưu thành công ${data.count} lỗi vào hệ thống!`, key: 'saveErrors' });
+                }
             } else {
                 const err = await res.json();
                 message.error({ content: `Lỗi: ${err.error}`, key: 'saveErrors' });

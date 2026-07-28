@@ -6,7 +6,10 @@ const prisma = new PrismaClient();
 export async function GET() {
     try {
         const records = await prisma.mau05Catalog.findMany({
-            orderBy: { createdAt: 'desc' }
+            orderBy: [
+                { MA_DICH_VU: 'asc' },
+                { createdAt: 'desc' }
+            ]
         });
         return NextResponse.json(records);
     } catch (error) {
@@ -31,42 +34,97 @@ export async function POST(request: Request) {
 
         // Bulk insert
         if (Array.isArray(body)) {
-            const createData = body.map((row: any) => ({
-                STT: row.STT ? Number(row.STT) : null,
-                MA_DICH_VU: row.MA_DICH_VU ? String(row.MA_DICH_VU).substring(0, 20) : null,
-                TEN_DICH_VU: row.TEN_DICH_VU ? String(row.TEN_DICH_VU) : null,
-                TEN_DVKT_GIA: row.TEN_DVKT_GIA ? String(row.TEN_DVKT_GIA) : null,
-                DON_GIA: row.DON_GIA ? Number(row.DON_GIA) : null,
-                QUY_TRINH: row.QUY_TRINH ? String(row.QUY_TRINH).substring(0, 50) : null,
-                SO_LUONG_CGKT: row.SO_LUONG_CGKT ? Number(row.SO_LUONG_CGKT) : null,
-                CSKCB_CGKT: row.CSKCB_CGKT ? String(row.CSKCB_CGKT).substring(0, 5) : null,
-                CSKCB_CLS: row.CSKCB_CLS ? String(row.CSKCB_CLS).substring(0, 5) : null,
-                QD_DVKT: row.QD_DVKT ? String(row.QD_DVKT).substring(0, 50) : null,
-                QD_PD_GIA: row.QD_PD_GIA ? String(row.QD_PD_GIA).substring(0, 50) : null,
-                GHI_CHU: row.GHI_CHU ? String(row.GHI_CHU) : null,
-                MA_THUOC: row.MA_THUOC ? String(row.MA_THUOC).substring(0, 15) : null,
-                TEN_THUOC: row.TEN_THUOC ? String(row.TEN_THUOC) : null,
-                SO_DANG_KY: row.SO_DANG_KY ? String(row.SO_DANG_KY).substring(0, 50) : null,
-                DON_VI_TINH: row.DON_VI_TINH ? String(row.DON_VI_TINH) : null,
-                TT_THAU: row.TT_THAU ? String(row.TT_THAU) : null,
-                DON_GIA_THUOC: row.DON_GIA_THUOC ? Number(row.DON_GIA_THUOC) : null,
-                DM_NSX_CDD: row.DM_NSX_CDD ? Number(row.DM_NSX_CDD) : null,
-                DM_THUCTE_CDD: row.DM_THUCTE_CDD ? Number(row.DM_THUCTE_CDD) : null,
-                LIEU_BQ_PX: row.LIEU_BQ_PX ? Number(row.LIEU_BQ_PX) : null,
-                TL_THUCTE_BQ_PX: row.TL_THUCTE_BQ_PX ? Number(row.TL_THUCTE_BQ_PX) : null,
-                THANH_TIEN_THUOC: row.THANH_TIEN_THUOC ? Number(row.THANH_TIEN_THUOC) : null,
-                GIA_THANH_TOAN: row.GIA_THANH_TOAN ? Number(row.GIA_THANH_TOAN) : null,
-                TU_NGAY: row.TU_NGAY ? String(row.TU_NGAY).substring(0, 8) : null,
-                DEN_NGAY: row.DEN_NGAY ? String(row.DEN_NGAY).substring(0, 8) : null,
-                MA_CSKCB: row.MA_CSKCB ? String(row.MA_CSKCB).substring(0, 5) : null,
-            }));
-
-            const result = await prisma.mau05Catalog.createMany({
-                data: createData,
-                skipDuplicates: true,
+            const existingRecords = await prisma.mau05Catalog.findMany();
+            const existingMap = new Map();
+            existingRecords.forEach(r => {
+                const key = r.MA_DICH_VU || r.MA_THUOC || '';
+                if (key) existingMap.set(key, r);
             });
 
-            return NextResponse.json({ success: true, count: result.count });
+            const toInsert = [];
+            const toUpdate = [];
+            let skipCount = 0;
+
+            for (const row of body) {
+                const key = row.MA_DICH_VU || row.MA_THUOC || '';
+                const newData: any = {
+                    STT: row.STT ? Number(row.STT) : null,
+                    MA_DICH_VU: row.MA_DICH_VU ? String(row.MA_DICH_VU).substring(0, 20) : null,
+                    TEN_DICH_VU: row.TEN_DICH_VU ? String(row.TEN_DICH_VU) : null,
+                    TEN_DVKT_GIA: row.TEN_DVKT_GIA ? String(row.TEN_DVKT_GIA) : null,
+                    DON_GIA: row.DON_GIA ? Number(row.DON_GIA) : null,
+                    QUY_TRINH: row.QUY_TRINH ? String(row.QUY_TRINH).substring(0, 50) : null,
+                    SO_LUONG_CGKT: row.SO_LUONG_CGKT ? Number(row.SO_LUONG_CGKT) : null,
+                    CSKCB_CGKT: row.CSKCB_CGKT ? String(row.CSKCB_CGKT).substring(0, 5) : null,
+                    CSKCB_CLS: row.CSKCB_CLS ? String(row.CSKCB_CLS).substring(0, 5) : null,
+                    QD_DVKT: row.QD_DVKT ? String(row.QD_DVKT).substring(0, 50) : null,
+                    QD_PD_GIA: row.QD_PD_GIA ? String(row.QD_PD_GIA).substring(0, 50) : null,
+                    GHI_CHU: row.GHI_CHU ? String(row.GHI_CHU) : null,
+                    MA_THUOC: row.MA_THUOC ? String(row.MA_THUOC).substring(0, 15) : null,
+                    TEN_THUOC: row.TEN_THUOC ? String(row.TEN_THUOC) : null,
+                    SO_DANG_KY: row.SO_DANG_KY ? String(row.SO_DANG_KY).substring(0, 50) : null,
+                    DON_VI_TINH: row.DON_VI_TINH ? String(row.DON_VI_TINH) : null,
+                    TT_THAU: row.TT_THAU ? String(row.TT_THAU) : null,
+                    DON_GIA_THUOC: row.DON_GIA_THUOC ? Number(row.DON_GIA_THUOC) : null,
+                    DM_NSX_CDD: row.DM_NSX_CDD ? Number(row.DM_NSX_CDD) : null,
+                    DM_THUCTE_CDD: row.DM_THUCTE_CDD ? Number(row.DM_THUCTE_CDD) : null,
+                    LIEU_BQ_PX: row.LIEU_BQ_PX ? Number(row.LIEU_BQ_PX) : null,
+                    TL_THUCTE_BQ_PX: row.TL_THUCTE_BQ_PX ? Number(row.TL_THUCTE_BQ_PX) : null,
+                    THANH_TIEN_THUOC: row.THANH_TIEN_THUOC ? Number(row.THANH_TIEN_THUOC) : null,
+                    GIA_THANH_TOAN: row.GIA_THANH_TOAN ? Number(row.GIA_THANH_TOAN) : null,
+                    TU_NGAY: row.TU_NGAY ? String(row.TU_NGAY).substring(0, 8) : null,
+                    DEN_NGAY: row.DEN_NGAY ? String(row.DEN_NGAY).substring(0, 8) : null,
+                    MA_CSKCB: row.MA_CSKCB ? String(row.MA_CSKCB).substring(0, 5) : null,
+                };
+
+                if (!key) {
+                    toInsert.push(newData);
+                    continue;
+                }
+
+                const existing = existingMap.get(key);
+                if (!existing) {
+                    toInsert.push(newData);
+                } else {
+                    let changed = false;
+                    for (const [k, v] of Object.entries(newData)) {
+                        const existingVal = existing[k];
+                        if (existingVal !== v && !(existingVal === null && v === null)) {
+                            // Handle primitive comparisons properly
+                            if (String(existingVal || '') !== String(v || '')) {
+                                changed = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (changed) {
+                        toUpdate.push({ id: existing.id, data: { isActive: false } });
+                        toInsert.push(newData);
+                    } else {
+                        skipCount++;
+                    }
+                }
+            }
+
+            if (toInsert.length > 0) {
+                await prisma.mau05Catalog.createMany({ data: toInsert, skipDuplicates: true });
+            }
+
+            // Execute updates in chunks of 50 to avoid timeout
+            for (let i = 0; i < toUpdate.length; i += 50) {
+                const chunk = toUpdate.slice(i, i + 50);
+                await Promise.all(chunk.map(item => 
+                    prisma.mau05Catalog.update({ where: { id: item.id }, data: item.data })
+                ));
+            }
+
+            return NextResponse.json({ 
+                success: true, 
+                inserted: toInsert.length,
+                updated: toUpdate.length,
+                skipped: skipCount
+            });
         }
 
         // Single insert

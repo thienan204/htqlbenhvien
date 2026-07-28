@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip } from 'antd';
-import { InboxOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, FileTextOutlined, MedicineBoxOutlined, ExperimentOutlined, ProfileOutlined, ToolOutlined, DashboardOutlined, DatabaseOutlined, PlayCircleOutlined, FileExcelOutlined, WarningOutlined } from '@ant-design/icons';
+import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip, InputNumber, Alert } from 'antd';
+import { InboxOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, FileTextOutlined, MedicineBoxOutlined, ExperimentOutlined, ProfileOutlined, ToolOutlined, DashboardOutlined, DatabaseOutlined, PlayCircleOutlined, FileExcelOutlined, WarningOutlined, SettingOutlined } from '@ant-design/icons';
+import { addWorkingDays, calculateRemainingTime } from '@/utils/dateUtils';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +48,26 @@ export default function XmlViewerPage() {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
 
+    const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
+    const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const res = await fetch('/api/configs');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && typeof data.value === 'number') {
+                        setEditDeadlineDays(data.value);
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching config", e);
+            }
+        };
+        fetchConfig();
+    }, []);
+
     const { user } = useAuth();
 
     const fetchData = async (p = page, s = searchText, fDate = fromDate, tDate = toDate, errStt = errorStatus) => {
@@ -66,7 +87,16 @@ export default function XmlViewerPage() {
     };
 
     useEffect(() => {
-        fetchData();
+        let currentSearch = searchText;
+        if (page === 1 && typeof window !== 'undefined' && !searchText) {
+            const params = new URLSearchParams(window.location.search);
+            const searchParam = params.get('search');
+            if (searchParam) {
+                setSearchText(searchParam);
+                currentSearch = searchParam;
+            }
+        }
+        fetchData(page, currentSearch, fromDate, toDate, errorStatus);
     }, [page]);
 
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -199,6 +229,33 @@ export default function XmlViewerPage() {
         }
     };
 
+    const handleDeleteByFilter = async () => {
+        if (!fromDate && !toDate && !searchText && errorStatus === 'ALL') {
+             message.error('Vui lòng chọn ít nhất một điều kiện lọc (ngày ra viện, tìm kiếm, v.v.) để xóa hàng loạt.');
+             return;
+        }
+        
+        try {
+            const res = await fetch('/api/xml1', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filters: { search: searchText, fromDate, toDate, errorStatus } })
+            });
+            const json = await res.json();
+            if (json.success) {
+                message.success(`Đã xóa ${json.count} hồ sơ thành công!`);
+                setSelectedRowKeys([]);
+                setSelectedRecord(null);
+                setRecordDetails(null);
+                fetchData();
+            } else {
+                message.error('Lỗi khi xóa: ' + json.error);
+            }
+        } catch (error) {
+            message.error('Lỗi hệ thống khi xóa');
+        }
+    };
+
     const uploadProps: UploadProps = {
         name: 'file',
         multiple: false,
@@ -226,7 +283,17 @@ export default function XmlViewerPage() {
                 clearInterval(timer);
                 setUploadProgress(100);
 
-                const json = await res.json();
+                if (res.status === 413) {
+                    throw new Error('File tải lên quá lớn (vượt giới hạn của hệ thống/Nginx). Vui lòng chia nhỏ file ZIP.');
+                }
+
+                let json;
+                try {
+                    json = await res.json();
+                } catch (parseError) {
+                    throw new Error(`Lỗi máy chủ (${res.status}): Không thể đọc dữ liệu trả về (có thể cấu hình Nginx chặn file lớn).`);
+                }
+
                 if (res.ok && json.success) {
                     message.success(json.message || 'Tải lên và xử lý thành công');
                     if (onSuccess) onSuccess("ok");
@@ -236,7 +303,7 @@ export default function XmlViewerPage() {
                     if (onError) onError(new Error(json.error));
                 }
             } catch (error: any) {
-                message.error('Lỗi mạng khi tải file');
+                message.error(error.message || 'Lỗi mạng khi tải file');
                 if (onError) onError(error);
             } finally {
                 setTimeout(() => {
@@ -254,7 +321,7 @@ export default function XmlViewerPage() {
         // Ensure hasError is explicitly placed at the beginning
         const orderedKeys = keys.filter(k => k !== 'hasError' && k !== 'errorCount');
         
-        return ['hasError', ...orderedKeys.filter(k => !metadataKeys.includes(k)), ...metadataKeys].filter(k => keys.includes(k) || k === 'hasError').map(k => {
+        return ['hasError', '__edit_status', '__remaining_time', ...orderedKeys.filter(k => !metadataKeys.includes(k)), ...metadataKeys].filter(k => keys.includes(k) || ['hasError', '__edit_status', '__remaining_time'].includes(k)).map(k => {
             if (k === 'version') {
                 return { title: 'VERSION', dataIndex: 'version', key: 'version', render: (v: any) => <Tag color="blue">v{v}</Tag> };
             }
@@ -271,6 +338,74 @@ export default function XmlViewerPage() {
                     render: (v: boolean, record: any) => v 
                         ? <Tag color="error" icon={<WarningOutlined />}>Lỗi ({record.errorCount || 0})</Tag> 
                         : <Tag color="success">Hợp lệ</Tag>
+                };
+            }
+            if (k === '__edit_status') {
+                return {
+                    title: 'TRẠNG THÁI SỬA BA',
+                    key: '__edit_status',
+                    width: 150,
+                    align: 'center',
+                    fixed: 'left',
+                    render: (_: any, record: any) => {
+                        const ngayRaStr = String(record.NGAY_RA || '');
+                        if (!ngayRaStr || ngayRaStr.length < 8) return <Tag>Không rõ</Tag>;
+                        
+                        const year = parseInt(ngayRaStr.substring(0, 4));
+                        const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                        const day = parseInt(ngayRaStr.substring(6, 8));
+                        let hour = 0; let min = 0;
+                        if (ngayRaStr.length >= 12) {
+                            hour = parseInt(ngayRaStr.substring(8, 10));
+                            min = parseInt(ngayRaStr.substring(10, 12));
+                        }
+                        const dateNgayRa = new Date(year, month, day, hour, min);
+                        const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                        const timeInfo = calculateRemainingTime(deadline);
+                        
+                        return timeInfo.isExpired 
+                            ? <Tag color="error" className="m-0 border-red-300">Hết hạn</Tag> 
+                            : <Tag color="success" className="m-0 border-green-300">Còn hạn</Tag>;
+                    }
+                };
+            }
+            if (k === '__remaining_time') {
+                return {
+                    title: (
+                        <div className="flex items-center justify-center gap-2">
+                            THỜI GIAN CÒN LẠI
+                            {user?.role === 'ADMIN' && (
+                                <Tooltip title={`Cấu hình hạn sửa (đang là ${editDeadlineDays} ngày)`}>
+                                    <SettingOutlined 
+                                        className="cursor-pointer text-slate-400 hover:text-blue-600 transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); setIsConfigModalVisible(true); }}
+                                    />
+                                </Tooltip>
+                            )}
+                        </div>
+                    ),
+                    key: '__remaining_time',
+                    width: 170,
+                    align: 'center',
+                    fixed: 'left',
+                    render: (_: any, record: any) => {
+                        const ngayRaStr = String(record.NGAY_RA || '');
+                        if (!ngayRaStr || ngayRaStr.length < 8) return '-';
+                        
+                        const year = parseInt(ngayRaStr.substring(0, 4));
+                        const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                        const day = parseInt(ngayRaStr.substring(6, 8));
+                        let hour = 0; let min = 0;
+                        if (ngayRaStr.length >= 12) {
+                            hour = parseInt(ngayRaStr.substring(8, 10));
+                            min = parseInt(ngayRaStr.substring(10, 12));
+                        }
+                        const dateNgayRa = new Date(year, month, day, hour, min);
+                        const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                        const timeInfo = calculateRemainingTime(deadline);
+                        
+                        return <span className={timeInfo.isExpired ? 'text-red-500 font-medium text-xs' : 'text-green-600 font-medium text-xs'}>{timeInfo.text}</span>;
+                    }
                 };
             }
 
@@ -404,15 +539,26 @@ export default function XmlViewerPage() {
                         </Space>
                         
                         {user?.role === 'ADMIN' && (
-                            <Popconfirm 
-                                title="Xóa hồ sơ" 
-                                description="Bạn có chắc chắn muốn xóa? Tất cả XML2..15 của MA_LK này cũng sẽ bị xóa vĩnh viễn (Cascade)."
-                                onConfirm={handleDelete}
-                            >
-                                <Button type="primary" danger disabled={selectedRowKeys.length === 0} icon={<DeleteOutlined />}>
-                                    Xóa {selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''} hồ sơ
-                                </Button>
-                            </Popconfirm>
+                            <Space>
+                                <Popconfirm 
+                                    title="Xóa theo bộ lọc" 
+                                    description="Bạn có chắc chắn muốn xóa TẤT CẢ hồ sơ theo bộ lọc hiện tại? Tất cả XML liên quan cũng sẽ bị xóa vĩnh viễn (Cascade)."
+                                    onConfirm={handleDeleteByFilter}
+                                >
+                                    <Button type="primary" danger ghost icon={<DeleteOutlined />}>
+                                        Xóa theo bộ lọc
+                                    </Button>
+                                </Popconfirm>
+                                <Popconfirm 
+                                    title="Xóa hồ sơ" 
+                                    description="Bạn có chắc chắn muốn xóa? Tất cả XML2..15 của MA_LK này cũng sẽ bị xóa vĩnh viễn (Cascade)."
+                                    onConfirm={handleDelete}
+                                >
+                                    <Button type="primary" danger disabled={selectedRowKeys.length === 0} icon={<DeleteOutlined />}>
+                                        Xóa {selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''} hồ sơ
+                                    </Button>
+                                </Popconfirm>
+                            </Space>
                         )}
                     </div>
 
@@ -602,6 +748,60 @@ export default function XmlViewerPage() {
                     </div>
                 )}
             </Card>
+
+            <Modal
+                title="Cấu hình Hạn sửa Bệnh án"
+                open={isConfigModalVisible}
+                onCancel={() => setIsConfigModalVisible(false)}
+                footer={[
+                    <Button key="close" onClick={() => setIsConfigModalVisible(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                destroyOnHidden
+            >
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="flex flex-col gap-2">
+                        <label className="font-semibold text-slate-700">
+                            Số ngày làm việc cho phép sửa Bệnh án:
+                        </label>
+                        <div className="flex items-center gap-3">
+                            <InputNumber 
+                                min={1} 
+                                max={365} 
+                                value={editDeadlineDays} 
+                                onChange={async (val) => {
+                                    if (val) {
+                                        setEditDeadlineDays(val);
+                                        try {
+                                            await fetch('/api/configs', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    key: 'editDeadlineDays',
+                                                    value: val,
+                                                    description: 'Số ngày làm việc cho phép sửa bệnh án'
+                                                })
+                                            });
+                                            message.success('Đã lưu cấu hình!');
+                                        } catch (e) {
+                                            message.error('Lỗi khi lưu cấu hình');
+                                        }
+                                    }
+                                }}
+                            />
+                            <span className="text-slate-500">ngày</span>
+                        </div>
+                        <Alert 
+                            type="info" 
+                            showIcon 
+                            title="Quy tắc tính Hạn sửa BA"
+                            description="Thời hạn sửa bệnh án được tính bằng: Ngày ra viện + Số ngày làm việc (Được tự động loại trừ các ngày Thứ 7 và Chủ nhật)."
+                            className="mt-4"
+                        />
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

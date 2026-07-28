@@ -76,16 +76,64 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         const body = await req.json();
-        const { ids } = body;
+        const { ids, filters } = body;
 
-        if (!Array.isArray(ids) || ids.length === 0) {
-            return NextResponse.json({ error: 'No IDs provided' }, { status: 400 });
+        let whereClause: any = {};
+
+        if (ids && Array.isArray(ids) && ids.length > 0) {
+            whereClause = { id: { in: ids } };
+        } else if (filters) {
+            const { search, fromDate, toDate, errorStatus } = filters;
+            const andConditions: any[] = [];
+
+            if (search) {
+                if (!search.includes(' ')) {
+                    const fuzzyPattern = '%' + search.split('').join('%') + '%';
+                    const exactPattern = '%' + search + '%';
+                    const matchedRecords = await (prisma as any).$queryRaw`
+                        SELECT id FROM "Xml1" 
+                        WHERE "MA_LK" ILIKE ${exactPattern} 
+                           OR "HO_TEN" ILIKE ${fuzzyPattern}
+                        LIMIT 500
+                    `;
+                    const searchIds = matchedRecords.map((r: any) => r.id);
+                    andConditions.push({ id: { in: searchIds } });
+                } else {
+                    andConditions.push({
+                        OR: [
+                            { MA_LK: { contains: search, mode: 'insensitive' } },
+                            { HO_TEN: { contains: search, mode: 'insensitive' } }
+                        ]
+                    });
+                }
+            }
+
+            if (fromDate && toDate) {
+                andConditions.push({
+                    NGAY_RA: {
+                        gte: fromDate,
+                        lte: toDate
+                    }
+                });
+            }
+
+            if (errorStatus === 'ERROR') {
+                andConditions.push({ hasError: true });
+            } else if (errorStatus === 'VALID') {
+                andConditions.push({ hasError: false });
+            }
+
+            if (andConditions.length > 0) {
+                whereClause = { AND: andConditions };
+            } else {
+                 return NextResponse.json({ error: 'Please provide either IDs or valid filters to delete' }, { status: 400 });
+            }
+        } else {
+            return NextResponse.json({ error: 'No IDs or filters provided' }, { status: 400 });
         }
 
         const result = await (prisma as any).xml1.deleteMany({
-            where: {
-                id: { in: ids }
-            }
+            where: whereClause
         });
 
         return NextResponse.json({ success: true, count: result.count });

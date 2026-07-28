@@ -484,9 +484,9 @@ export default function XmlErrorManager() {
                 </div>
             )
         },
-        { title: 'Khoa', dataIndex: 'ma_khoa', width: 100 },
+        { title: 'Khoa RV', dataIndex: 'ma_khoa', width: 100 },
         { 
-            title: 'Tên Khoa', 
+            title: 'Tên Khoa RV', 
             dataIndex: 'ten_khoa', 
             width: 200,
             render: (text: string, record: any) => text || departments[record.ma_khoa] || ''

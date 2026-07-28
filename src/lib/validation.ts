@@ -923,7 +923,18 @@ export class ValidationEngine {
                 CHECK_DUPLICATE_IN_LIST: CHECK_DUPLICATE_IN_LIST,
                 CHECK_MAU05_PRICE_MISMATCH: CHECK_MAU05_PRICE_MISMATCH,
                 CHECK_MISMATCH: CHECK_MISMATCH,
-                CHECK_PRICE_MISMATCH_MAU03_04: CHECK_PRICE_MISMATCH_MAU03_04
+                CHECK_PRICE_MISMATCH_MAU03_04: CHECK_PRICE_MISMATCH_MAU03_04,
+                ROUND: (num: any, decimals = 2) => {
+                    const factor = Math.pow(10, decimals);
+                    return Math.round((Number(num) || 0) * factor) / factor;
+                },
+                SUM: (...args: any[]) => {
+                    let total = 0;
+                    for (const arg of args) {
+                        total += Math.round((Number(arg) || 0) * 10000);
+                    }
+                    return total / 10000;
+                }
             };
 
             const keys = [...Object.keys(context), ...Object.keys(helpers)];

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -214,6 +214,18 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             </>
                         )}
                         
+                        {record.ma_ba && (
+                            <Button 
+                                size="small" 
+                                type="default"
+                                icon={<FileTextOutlined />}
+                                title="Xem hồ sơ XML gốc"
+                                onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')}
+                            >
+                                XML
+                            </Button>
+                        )}
+
                         {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
                             <Button size="small" type="primary" ghost onClick={() => onProcessClick(record)}>Xử lý</Button>
                         )}

@@ -68,7 +68,7 @@ export default function ExcelRulesPage() {
             .catch(console.error);
         fetch('/api/mau05-catalog')
             .then(res => res.json())
-            .then(data => setMau05Services(Array.isArray(data) ? data : []))
+            .then(data => setMau05Services(Array.isArray(data) ? data.filter(item => item && item.MA_DICH_VU != null) : []))
             .catch(console.error);
     }, []);
 

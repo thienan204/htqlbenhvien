@@ -40,6 +40,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                 TU_NGAY: body.TU_NGAY ? String(body.TU_NGAY).substring(0, 8) : null,
                 DEN_NGAY: body.DEN_NGAY ? String(body.DEN_NGAY).substring(0, 8) : null,
                 MA_CSKCB: body.MA_CSKCB ? String(body.MA_CSKCB).substring(0, 5) : null,
+                isActive: body.isActive !== undefined ? Boolean(body.isActive) : undefined,
             }
         });
 

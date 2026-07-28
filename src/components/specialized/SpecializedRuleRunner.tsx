@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Tag, Card, Button, Spin, Empty, Descriptions, Input, Space, message, DatePicker, Modal, Select } from 'antd';
 import { loadRecordsFromDB } from '@/lib/db';
 import { ExtendedHosoRecord, getXmlDataList } from '@/lib/xml';
-import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined, CloudUploadOutlined, FilterOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, SearchOutlined, FileExcelOutlined, ScanOutlined, FileTextOutlined, CloudUploadOutlined, CloudDownloadOutlined, FilterOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { getDepartments } from '@/actions/department';
@@ -145,6 +145,72 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         fetchData();
     }, [rule]);
 
+    const [dbDateRange, setDbDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
+
+    const fetchDataFromDB = async () => {
+        if (!dbDateRange[0] || !dbDateRange[1]) {
+            message.warning("Vui lòng chọn Từ ngày - Đến ngày để tải dữ liệu từ CSDL (định dạng ngày sinh YYYYMMDD)");
+            return;
+        }
+        setLoading(true);
+        try {
+            const fromDateStr = dbDateRange[0].format('YYYYMMDDHHmm');
+            const toDateStr = dbDateRange[1].format('YYYYMMDDHHmm');
+            const res = await fetch(`${getBasePath()}/api/xml1/fetch-full?fromDate=${fromDateStr}&toDate=${toDateStr}`);
+            
+            if (res.ok) {
+                const data = await res.json();
+                setRecords(data);
+                
+                try {
+                    const maLienKetList = Array.from(new Set(data.map((r: any) => String(r.summary?.MA_LK)).filter(Boolean)));
+                    if (maLienKetList.length > 0) {
+                        const sentRes = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ maLienKetList })
+                        });
+                        if (sentRes.ok) {
+                            const sentData = await sentRes.json();
+                            setSentRecordsSet(new Set(sentData.exists || []));
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error checking sent records:', e);
+                }
+
+                const isDuplicateBed = rule.logicConfig?.type === 'DUPLICATE_BED' ||
+                    rule.ruleType === 'DUPLICATE_BED' ||
+                    rule.slug?.includes('trung-giuong') ||
+                    rule.slug?.includes('trung-ma-giuong');
+
+                const isDuplicateDoctor = rule.logicConfig?.type === 'DUPLICATE_DOCTOR' ||
+                    rule.ruleType === 'DUPLICATE_DOCTOR';
+
+                if (isDuplicateDoctor) {
+                    setIsDuplicateDoctorMode(true);
+                    setIsDuplicateBedMode(false);
+                } else if (isDuplicateBed) {
+                    setIsDuplicateBedMode(true);
+                    setIsDuplicateDoctorMode(false);
+                } else {
+                    setIsDuplicateBedMode(false);
+                    setIsDuplicateDoctorMode(false);
+                    executeRule(data);
+                }
+                message.success(`Đã tải ${data.length} hồ sơ từ CSDL.`);
+            } else {
+                const err = await res.json();
+                message.error(`Lỗi: ${err.error}`);
+            }
+        } catch (error: any) {
+            console.error("Error loading data from DB:", error);
+            message.error(`Lỗi kết nối: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Trigger preparation when records or deps change
     useEffect(() => {
         if (isDuplicateBedMode && records.length > 0) {
@@ -167,7 +233,86 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         setResults(validationResults);
     };
 
-    const handleSaveErrorsToDB = async () => {
+    const handleSaveErrorsLogToDB = async () => {
+        let targetRecords = [];
+        if (isDuplicateDoctorMode) {
+            targetRecords = getFilteredDoctorData();
+        } else if (isDuplicateBedMode) {
+            targetRecords = getFilteredData();
+        } else {
+            targetRecords = results;
+        }
+
+        if (targetRecords.length === 0) {
+            message.warning("Không có dữ liệu lỗi để lưu");
+            return;
+        }
+
+        const errorsToSave = targetRecords.map((item: any) => {
+            const parseDateString = (d: any) => {
+                if (!d) return null;
+                if (d instanceof Date) return d;
+                const dStr = String(d);
+                if (dStr.length === 12 && !dStr.includes("-")) {
+                    return new Date(`${dStr.substring(0,4)}-${dStr.substring(4,6)}-${dStr.substring(6,8)}T${dStr.substring(8,10)}:${dStr.substring(10,12)}:00`);
+                }
+                const parsed = new Date(d);
+                return isNaN(parsed.getTime()) ? null : parsed;
+            };
+
+            return {
+                ma_lk: item.MA_LK || item.ma_lk || "",
+                ma_bn: item.MA_BN || item.ma_bn || "",
+                ma_khoa: item.MA_KHOA || item.ma_khoa || "",
+                ho_ten: item.HO_TEN || item.ho_ten || "",
+                ngay_vao: parseDateString(item.NGAY_VAO || item.ngay_vao),
+                ngay_ra: parseDateString(item.NGAY_RA || item.ngay_ra),
+                ngay_yl: parseDateString(item.NGAY_YL || item.ngay_yl || item._start),
+                ngay_th_yl: parseDateString(item.NGAY_TH_YL || item.ngay_th_yl),
+                ngay_kq: parseDateString(item.NGAY_KQ || item.ngay_kq || item._end),
+                ngay_vao_noi_tru: parseDateString(item.NGAY_VAO_NOI_TRU || item.ngay_vao_noi_tru),
+                ma_dv: item.MA_DICH_VU || item.MA_THUOC || item.MA_VAT_TU || item.ma_dv || "",
+                ten_dv: item.TEN_DICH_VU || item.TEN_THUOC || item.TEN_VAT_TU || item.ten_dv || "",
+                don_gia_bh: item.DON_GIA || item.don_gia_bh || "",
+                ma_may: item.KEY_VALUE ? String(item.KEY_VALUE).split('-')[0] : (item.ma_may || ""),
+                ten_khoa: item.TEN_KHOA || item.ten_khoa || "",
+                ma_doituong_kcb: item.MA_DOITUONG_KCB || item.ma_doituong_kcb || "",
+                ma_bac_si: item.MA_BAC_SI || item.MA_BS || "",
+                ten_bac_si: item.TEN_BAC_SI || item.TEN_BS || "",
+                nguoi_th: item.NGUOI_THUC_HIEN || item.MA_NGUOI_TH || "",
+                ten_nguoi_th: item.TEN_NGUOI_THUC_HIEN || "",
+                chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || 'Quy tắc'} - ${item.message || 'Phát hiện trùng lặp'} [Nhóm: ${item.groupId || '1'}]`,
+                sourceType: 'CHUYEN_DE'
+            };
+        });
+
+        try {
+            message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrorsLog' });
+            const res = await fetch('/api/error-management/xml-errors', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ errors: errorsToSave })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.count === 0 && data.duplicateCount > 0) {
+                    message.warning({ content: `Tất cả ${data.duplicateCount} lỗi đã được lưu từ trước, bỏ qua lưu trùng lặp!`, key: 'saveErrorsLog' });
+                } else if (data.duplicateCount > 0) {
+                    message.success({ content: `Lưu thành công ${data.count} lỗi mới (bỏ qua ${data.duplicateCount} lỗi đã tồn tại)`, key: 'saveErrorsLog' });
+                } else {
+                    message.success({ content: `Lưu thành công ${data.count} lỗi chuyên đề!`, key: 'saveErrorsLog' });
+                }
+            } else {
+                const err = await res.json();
+                message.error({ content: `Lỗi: ${err.error}`, key: 'saveErrorsLog' });
+            }
+        } catch (error) {
+            message.error({ content: 'Không thể kết nối đến máy chủ', key: 'saveErrorsLog' });
+        }
+    };
+
+    const handleSaveXmlsToDB = async () => {
         let targetRecords = [];
         if (isDuplicateDoctorMode) {
             targetRecords = getFilteredDoctorData();
@@ -182,45 +327,73 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             return;
         }
 
-        const errorsToSave = targetRecords.map(item => ({
-            ma_lk: item.MA_LK || '',
-            ma_bn: item.MA_BN || '',
-            ma_khoa: item.MA_KHOA || '',
-            ho_ten: item.HO_TEN || '',
-            ma_the: item.MA_THE_BHYT || item.MA_THE || '',
-            ngay_vao: item.NGAY_VAO || null,
-            ngay_ra: item.NGAY_RA || null,
-            ngay_yl: item.NGAY_YL || item.THOI_GIAN_YL || null,
-            ngay_th_yl: item.NGAY_TH_YL || null,
-            ngay_kq: item.NGAY_KQ || null,
-            ma_dv: item.MA_DICH_VU || item.MA_LOAI || '',
-            ten_dv: item.TEN_DICH_VU || item.TEN_LOAI || '',
-            ma_may: item.MA_MAY || item.KEY_VALUE || '',
-            ma_bac_si: item.MA_BAC_SI || '',
-            ten_bac_si: item.TEN_BAC_SI || '',
-            nguoi_th: item.NGUOI_THUC_HIEN || '',
-            ten_nguoi_th: item.TEN_NGUOI_THUC_HIEN || '',
-            chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || ''} - Phát hiện lỗi/Trùng lặp${item.groupId ? ` [Nhóm: ${item.groupId}]` : ''}`,
-            sourceType: 'CHUYEN_DE'
-        }));
+        // Gather unique record IDs
+        const recordIds = new Set(targetRecords.map((item: any) => item.recordId).filter(Boolean));
+        if (recordIds.size === 0) {
+            message.warning("Không tìm thấy thông tin gốc của hồ sơ để lưu.");
+            return;
+        }
+
+        // Map back to original records and inject the validation result so it shows up in xml1-viewer
+        const errorRecords = records.filter(r => recordIds.has(r.id)).map(r => {
+            const existingResults = r.validationResults || [];
+            const hasThisError = existingResults.some((e: any) => e.message?.includes(rule.name));
+            if (!hasThisError) {
+                return {
+                    ...r,
+                    validationResults: [
+                        ...existingResults,
+                        { 
+                            ruleId: `CHUYEN_DE_${rule.id || 'RULE'}`,
+                            ruleName: rule.name,
+                            type: 'Cảnh báo',
+                            xmlType: 'XML1',
+                            field: 'MA_LK',
+                            message: `[Chuyên đề] ${rule.name}`,
+                            isError: true 
+                        }
+                    ]
+                };
+            }
+            return r;
+        });
 
         try {
-            message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrors' });
-            const res = await fetch('/api/error-management/xml-errors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ errors: errorsToSave })
+            message.loading({ content: 'Đang lưu toàn bộ XML vào CSDL...', key: 'saveErrors' });
+            
+            const payload = errorRecords.map(r => {
+                return {
+                    id: r.id || r.summary?.MA_LK,
+                    summary: r.summary,
+                    groups: r.groups,
+                    validationResults: r.validationResults
+                };
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                message.success({ content: `Lưu thành công ${data.count} lỗi vào hệ thống!`, key: 'saveErrors' });
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const formData = new FormData();
+            formData.append('file', blob, 'filtered_records.json');
+
+            const response = await fetch('/api/xml-import-json', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.count === 0 && data.duplicateCount > 0) {
+                    message.warning({ content: data.message, key: 'saveErrors' });
+                } else if (data.duplicateCount > 0) {
+                    message.success({ content: data.message, key: 'saveErrors' });
+                } else {
+                    message.success({ content: data.message || `Đã lưu thành công ${data.count} hồ sơ!`, key: 'saveErrors' });
+                }
             } else {
-                const err = await res.json();
-                message.error({ content: `Lỗi: ${err.error}`, key: 'saveErrors' });
+                const err = await response.json();
+                message.error({ content: `Lỗi: ${err.error || 'Có lỗi xảy ra'}`, key: 'saveErrors' });
             }
-        } catch (error) {
-            message.error({ content: 'Không thể kết nối đến máy chủ', key: 'saveErrors' });
+        } catch (error: any) {
+            message.error({ content: `Lỗi kết nối: ${error.message}`, key: 'saveErrors' });
         }
     };
 
@@ -309,7 +482,14 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
                             const startTime = fields?.startTime ? item[fields.startTime] : item.NGAY_YL;
                             const endTime = fields?.endTime ? item[fields.endTime] : item.NGAY_KQ;
-                            const deptCode = fields?.department ? item[fields.department] : (item.MA_KHOA || record.summary?.MA_KHOA);
+                            const getMaKhoaRV = () => {
+                                const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
+                                if (xml7Group && xml7Group.data && xml7Group.data.length > 0) {
+                                    return xml7Group.data[0].MA_KHOA_RV || '';
+                                }
+                                return '';
+                            };
+                            const deptCode = getMaKhoaRV() || (fields?.department ? item[fields.department] : (item.MA_KHOA || record.summary?.MA_KHOA));
                             const maBs = item.MA_BS || item.MA_BAC_SI || '';
                             const nguoiThucHien = item.NGUOI_THUC_HIEN || '';
 
@@ -336,6 +516,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                     NGAY_KQ: item.NGAY_KQ || '',
                                     NGAY_VAO: record.summary?.NGAY_VAO || '',
                                     NGAY_RA: record.summary?.NGAY_RA || '',
+                                    NGAY_VAO_NOI_TRU: record.summary?.NGAY_VAO_NOI_TRU || '',
                                     NGAY_TH_YL: item.NGAY_TH_YL || '',
                                     MA_DICH_VU: item.MA_DICH_VU,
                                     TEN_DICH_VU: item.TEN_DICH_VU,
@@ -1000,7 +1181,14 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                 }
                             }
 
-                            const deptCode = item.MA_KHOA || record.summary?.MA_KHOA || '';
+                            const getMaKhoaRV = () => {
+                                const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
+                                if (xml7Group && xml7Group.data && xml7Group.data.length > 0) {
+                                    return xml7Group.data[0].MA_KHOA_RV || '';
+                                }
+                                return '';
+                            };
+                            const deptCode = getMaKhoaRV() || item.MA_KHOA || record.summary?.MA_KHOA || '';
                             const isThuoc = group.type === 'XML2';
 
                             list.push({
@@ -1020,6 +1208,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                 TEN_LOAI: isThuoc ? item.TEN_THUOC : item.TEN_DICH_VU,
                                 NGAY_VAO: record.summary?.NGAY_VAO || '',
                                 NGAY_RA: record.summary?.NGAY_RA || '',
+                                NGAY_VAO_NOI_TRU: record.summary?.NGAY_VAO_NOI_TRU || '',
 
                                 // Grouping properties
                                 _ma_bs: maBs,
@@ -1401,8 +1590,35 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             }}
                             allowClear
                         />
-                        <Button icon={<ReloadOutlined />} onClick={fetchData}>Tải lại dữ liệu</Button>
+                        <DatePicker.RangePicker
+                            placeholder={["Từ ngày (CSDL)", "Đến ngày (CSDL)"]}
+                            format="DD/MM/YYYY"
+                            style={{ width: 280 }}
+                            value={dbDateRange}
+                            onChange={(dates) => setDbDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+                            allowClear
+                        />
+                        <Button type="primary" icon={<CloudDownloadOutlined />} onClick={fetchDataFromDB} className="bg-green-600 hover:bg-green-700">Tải từ CSDL</Button>
+                        <Button icon={<ReloadOutlined />} onClick={fetchData}>Tải lại dữ liệu (Local)</Button>
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcelDoctor}>Xuất Excel</Button>
+                        <Button
+                            type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveErrorsLogToDB}
+                            className="bg-red-600 hover:bg-red-700 shadow-md shadow-red-200"
+                            disabled={getFilteredDoctorData().length === 0}
+                        >
+                            Lưu lỗi vào CSDL
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveXmlsToDB}
+                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                            disabled={getFilteredDoctorData().length === 0}
+                        >
+                            Lưu DB (XMLVIEW)
+                        </Button>
                         <Button
                             type="primary"
                             icon={<CloudUploadOutlined />}
@@ -1415,10 +1631,11 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         <Button
                             type="primary"
                             icon={<CloudUploadOutlined />}
-                            onClick={handleSaveErrorsToDB}
+                            onClick={handleSaveXmlsToDB}
                             className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                            disabled={getFilteredDoctorData().length === 0}
                         >
-                            Lưu lỗi vào CSDL
+                            Lưu DB (XMLVIEW)
                         </Button>
                         <Button
                             type="primary"
@@ -1533,7 +1750,16 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                        <Button icon={<ReloadOutlined />} onClick={handleReload}>Tải lại</Button>
+                        <DatePicker.RangePicker
+                            placeholder={["Từ ngày (CSDL)", "Đến ngày (CSDL)"]}
+                            format="DD/MM/YYYY"
+                            style={{ width: 280 }}
+                            value={dbDateRange}
+                            onChange={(dates) => setDbDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+                            allowClear
+                        />
+                        <Button type="primary" icon={<CloudDownloadOutlined />} onClick={fetchDataFromDB} className="bg-green-600 hover:bg-green-700">Tải từ CSDL</Button>
+                        <Button icon={<ReloadOutlined />} onClick={handleReload}>Tải lại (Local)</Button>
                         <Button 
                             icon={<FilterOutlined />} 
                             onClick={() => setHide50Percent(!hide50Percent)}
@@ -1541,6 +1767,24 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             danger={hide50Percent}
                         >
                             {hide50Percent ? "Đang ẩn cặp 50%" : "Ẩn cặp 50%"}
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveErrorsLogToDB}
+                            className="bg-red-600 hover:bg-red-700 shadow-md shadow-red-200"
+                            disabled={getFilteredData().length === 0}
+                        >
+                            Lưu lỗi vào CSDL
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<CloudUploadOutlined />}
+                            onClick={handleSaveXmlsToDB}
+                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                            disabled={getFilteredData().length === 0}
+                        >
+                            Lưu DB (XMLVIEW)
                         </Button>
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
                         <Button
@@ -1551,14 +1795,6 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             className="bg-blue-600 hover:bg-blue-700"
                         >
                             Lưu Excel máy chủ
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveErrorsToDB}
-                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
-                        >
-                            Lưu lỗi vào CSDL
                         </Button>
                         <Button
                             type="primary"
@@ -1619,14 +1855,24 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         <div className="space-y-6">
             <Card title={`Kết quả kiểm tra (${records.length} hồ sơ)`} extra={
                 <Space>
-                    <Button icon={<ReloadOutlined />} onClick={fetchData}>Chạy lại</Button>
+                    <DatePicker.RangePicker
+                        placeholder={["Từ ngày (CSDL)", "Đến ngày (CSDL)"]}
+                        format="DD/MM/YYYY"
+                        style={{ width: 280 }}
+                        value={dbDateRange}
+                        onChange={(dates) => setDbDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+                        allowClear
+                    />
+                    <Button type="primary" icon={<CloudDownloadOutlined />} onClick={fetchDataFromDB} className="bg-green-600 hover:bg-green-700">Tải từ CSDL</Button>
+                    <Button icon={<ReloadOutlined />} onClick={fetchData}>Chạy lại (Local)</Button>
                     <Button
                         type="primary"
                         icon={<CloudUploadOutlined />}
-                        onClick={handleSaveErrorsToDB}
+                        onClick={handleSaveXmlsToDB}
                         className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                        disabled={results.length === 0}
                     >
-                        Lưu lỗi vào CSDL
+                        Lưu DB (XMLVIEW)
                     </Button>
                 </Space>
             }>
@@ -1646,3 +1892,4 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         </div>
     );
 }
+
