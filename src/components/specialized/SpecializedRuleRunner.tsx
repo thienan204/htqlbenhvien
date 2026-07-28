@@ -551,8 +551,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             const groups: Record<string, typeof bedServices> = {};
 
             bedServices.forEach(item => {
-                const groupKeyStr = item._key_value || item._ma_giuong;
-                if (!groupKeyStr) return;
+                const groupKeyStr = String(item._key_value || item._ma_giuong || '');
+                if (!groupKeyStr || groupKeyStr.trim() === '' || groupKeyStr === 'null') return;
                 const key = groupKeyStr;
                 if (!groups[key]) groups[key] = [];
                 groups[key].push(item);
@@ -1254,7 +1254,10 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             const groups: Record<string, typeof doctorOrders> = {};
 
             doctorOrders.forEach(item => {
-                const groupKey = `${item._ma_bs}_${item._ngay_yl}`;
+                const maBS = String(item._ma_bs || '');
+                if (!maBS || maBS.trim() === '' || maBS === 'null') return;
+                
+                const groupKey = `${maBS}_${item._ngay_yl}`;
                 if (!groups[groupKey]) groups[groupKey] = [];
                 groups[groupKey].push(item);
             });
