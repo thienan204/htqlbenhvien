@@ -281,7 +281,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 ten_bac_si: item.TEN_BAC_SI || item.TEN_BS || "",
                 nguoi_th: item.NGUOI_THUC_HIEN || item.MA_NGUOI_TH || "",
                 ten_nguoi_th: item.TEN_NGUOI_THUC_HIEN || "",
-                khoang_thoi_gian_trung: item._maxOverlap !== undefined ? `${item._maxOverlap} phút` : (isDuplicateDoctorMode ? "Cùng thời điểm" : ""),
+                khoang_thoi_gian_trung: item._overlapStr || (item._maxOverlap !== undefined ? `${Math.ceil(item._maxOverlap)} phút` : (isDuplicateDoctorMode ? "Cùng thời điểm" : "")),
                 chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || 'Quy tắc'} - ${item.message || 'Phát hiện trùng lặp'} [Nhóm: ${item.groupId || '1'}]`,
                 sourceType: 'CHUYEN_DE'
             };
@@ -1271,10 +1271,13 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                     colorIdx++;
 
                     items.forEach(item => {
+                        const timeStr = item.THOI_GIAN_YL; 
+                        const formattedTime = dayjs(parseDate(timeStr)).format('DD/MM/YYYY HH:mm');
                         filteredList.push({
                             ...item,
                             groupId: groupKey,
-                            rowColor: assignedColor
+                            rowColor: assignedColor,
+                            _overlapStr: `${formattedTime} đến ${formattedTime}`
                         });
                         overlaps.add(item.key);
                     });
