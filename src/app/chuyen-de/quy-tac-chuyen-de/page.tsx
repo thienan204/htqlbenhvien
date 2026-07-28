@@ -34,7 +34,8 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
                     includeServices: parsed.filter?.MA_DICH_VU_INCLUDE || [],
                     excludeServices: parsed.filter?.MA_DICH_VU_EXCLUDE || [],
                     tolerance: parsed.toleranceMinutes !== undefined ? parsed.toleranceMinutes : 15,
-                    ignoreIfSameField: parsed.ignoreIfSameField || ''
+                    ignoreIfSameField: parsed.ignoreIfSameField || '',
+                    ignoreNullValues: parsed.ignoreNullValues !== undefined ? parsed.ignoreNullValues : true
                 };
             }
         } catch (e) { }
@@ -47,7 +48,8 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
             includeServices: [],
             excludeServices: [],
             tolerance: 15,
-            ignoreIfSameField: ''
+            ignoreIfSameField: '',
+            ignoreNullValues: true
         };
     };
 
@@ -91,7 +93,8 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
                 },
                 filter: filter,
                 toleranceMinutes: Number(newState.tolerance),
-                ignoreIfSameField: newState.ignoreIfSameField
+                ignoreIfSameField: newState.ignoreIfSameField,
+                ignoreNullValues: newState.ignoreNullValues
             };
             onChange(JSON.stringify(json, null, 2));
         }
@@ -165,6 +168,16 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
                         ]}
                     />
                     <div className="text-xs text-slate-400 mt-1">Để trống nếu muốn luôn kiểm tra. Gõ tên trường XML nếu cần.</div>
+                </div>
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Bỏ qua giá trị null (Khuyết mã)</label>
+                    <div className="flex items-center gap-2 mt-1">
+                        <Switch
+                            checked={state.ignoreNullValues}
+                            onChange={(v) => handleChange('ignoreNullValues', v)}
+                        />
+                        <span className="text-sm text-slate-600">Tự động bỏ qua không quét các dịch vụ không có mã</span>
+                    </div>
                 </div>
             </div>
 
@@ -247,7 +260,8 @@ const DuplicateDoctorConfigInput = ({ value, onChange }: { value?: string, onCha
                     doctor: parsed.fields?.doctor || 'MA_BAC_SI',
                     time: parsed.fields?.time || 'NGAY_YL',
                     maNhom: parsed.filter?.MA_NHOM ? parsed.filter.MA_NHOM.join(', ') : '',
-                    tolerance: parsed.toleranceMinutes !== undefined ? parsed.toleranceMinutes : 0
+                    tolerance: parsed.toleranceMinutes !== undefined ? parsed.toleranceMinutes : 0,
+                    ignoreNullValues: parsed.ignoreNullValues !== undefined ? parsed.ignoreNullValues : true
                 };
             }
         } catch (e) { }
@@ -255,7 +269,8 @@ const DuplicateDoctorConfigInput = ({ value, onChange }: { value?: string, onCha
             doctor: 'MA_BAC_SI',
             time: 'NGAY_YL',
             maNhom: '',
-            tolerance: 0
+            tolerance: 0,
+            ignoreNullValues: true
         };
     };
 
@@ -285,7 +300,8 @@ const DuplicateDoctorConfigInput = ({ value, onChange }: { value?: string, onCha
                     time: newState.time
                 },
                 filter: filter,
-                toleranceMinutes: Number(newState.tolerance)
+                toleranceMinutes: Number(newState.tolerance),
+                ignoreNullValues: newState.ignoreNullValues
             };
             onChange(JSON.stringify(json, null, 2));
         }
@@ -323,6 +339,19 @@ const DuplicateDoctorConfigInput = ({ value, onChange }: { value?: string, onCha
                             { label: 'NGAY_KQ', value: 'NGAY_KQ' },
                         ]}
                     />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Bỏ qua giá trị null (Khuyết mã)</label>
+                    <div className="flex items-center gap-2 mt-1">
+                        <Switch
+                            checked={state.ignoreNullValues}
+                            onChange={(v) => handleChange('ignoreNullValues', v)}
+                        />
+                        <span className="text-sm text-slate-600">Tự động bỏ qua không quét các dịch vụ không có mã</span>
+                    </div>
                 </div>
             </div>
 

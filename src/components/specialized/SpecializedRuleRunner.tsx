@@ -550,9 +550,12 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             // Group by Dynamic Key (fallback to MA_GIUONG)
             const groups: Record<string, typeof bedServices> = {};
 
+            const ignoreNullValues = rule.logicConfig?.ignoreNullValues !== false;
+
             bedServices.forEach(item => {
                 const groupKeyStr = String(item._key_value || item._ma_giuong || '');
-                if (!groupKeyStr || groupKeyStr.trim() === '' || groupKeyStr === 'null') return;
+                if (!groupKeyStr || groupKeyStr.trim() === '') return;
+                if (ignoreNullValues && groupKeyStr === 'null') return;
                 const key = groupKeyStr;
                 if (!groups[key]) groups[key] = [];
                 groups[key].push(item);
@@ -1253,9 +1256,12 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             // We only flag duplicates occurring ON DIFFERENT PATIENTS, at the EXACT SAME SECOND, by the SAME DOCTOR.
             const groups: Record<string, typeof doctorOrders> = {};
 
+            const ignoreNullValues = rule?.logicConfig?.ignoreNullValues !== false;
+
             doctorOrders.forEach(item => {
                 const maBS = String(item._ma_bs || '');
-                if (!maBS || maBS.trim() === '' || maBS === 'null') return;
+                if (!maBS || maBS.trim() === '') return;
+                if (ignoreNullValues && maBS === 'null') return;
                 
                 const groupKey = `${maBS}_${item._ngay_yl}`;
                 if (!groups[groupKey]) groups[groupKey] = [];
