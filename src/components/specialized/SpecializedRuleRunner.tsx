@@ -281,6 +281,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 ten_bac_si: item.TEN_BAC_SI || item.TEN_BS || "",
                 nguoi_th: item.NGUOI_THUC_HIEN || item.MA_NGUOI_TH || "",
                 ten_nguoi_th: item.TEN_NGUOI_THUC_HIEN || "",
+                khoang_thoi_gian_trung: item._maxOverlap !== undefined ? `${item._maxOverlap} phút` : (isDuplicateDoctorMode ? "Cùng thời điểm" : ""),
                 chi_tiet_loi: `[CHUYEN_DE] ${rule?.name || 'Quy tắc'} - ${item.message || 'Phát hiện trùng lặp'} [Nhóm: ${item.groupId || '1'}]`,
                 sourceType: 'CHUYEN_DE'
             };
@@ -605,6 +606,20 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         if (overlapMinutes > tolerance || isExactMatch || isZeroDurationCollision) {
                             adj[i].push(j);
                             adj[j].push(i);
+                            
+                            const maxStart = new Date(Math.max(curr._start.getTime(), next._start.getTime()));
+                            const minEnd = new Date(Math.min(curr._end.getTime(), next._end.getTime()));
+                            const overlapStr = `${dayjs(maxStart).format('DD/MM/YYYY HH:mm')} đến ${dayjs(minEnd).format('DD/MM/YYYY HH:mm')}`;
+
+                            if (!curr._overlapStr || Math.ceil(overlapMinutes) >= (curr._maxOverlap || 0)) {
+                                curr._overlapStr = overlapStr;
+                            }
+                            if (!next._overlapStr || Math.ceil(overlapMinutes) >= (next._maxOverlap || 0)) {
+                                next._overlapStr = overlapStr;
+                            }
+
+                            curr._maxOverlap = Math.max(curr._maxOverlap || 0, Math.ceil(overlapMinutes));
+                            next._maxOverlap = Math.max(next._maxOverlap || 0, Math.ceil(overlapMinutes));
                         }
                     }
                 }

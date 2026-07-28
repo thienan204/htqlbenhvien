@@ -8,6 +8,8 @@ export const exportDuplicateDoctorExcel = async (data: any[], ruleName: string) 
 
     const columns = [
         { header: 'STT', key: 'stt', width: 5 },
+        { header: 'Tên quy tắc', key: 'RULE_NAME', width: 35 },
+        { header: 'Khoảng TG trùng', key: 'OVERLAP_TIME', width: 35 },
         { header: 'Mã LK', key: 'MA_LK', width: 15 },
         { header: 'Mã BN', key: 'MA_BN', width: 15 },
         { header: 'Họ Tên', key: 'HO_TEN', width: 25 },
@@ -26,6 +28,8 @@ export const exportDuplicateDoctorExcel = async (data: any[], ruleName: string) 
     data.forEach((item, index) => {
         const row = sheet.addRow({
             stt: index + 1,
+            RULE_NAME: ruleName,
+            OVERLAP_TIME: item._overlapStr || 'Cùng thời điểm',
             MA_LK: item.MA_LK,
             MA_BN: item.MA_BN,
             HO_TEN: item.HO_TEN,
@@ -66,6 +70,8 @@ export const exportDuplicateBedExcel = async (data: any[], ruleName: string) => 
 
     const columns = [
         { header: 'STT', key: 'stt', width: 5 },
+        { header: 'Tên quy tắc', key: 'RULE_NAME', width: 35 },
+        { header: 'Khoảng TG trùng', key: 'OVERLAP_TIME', width: 35 },
         { header: 'Mã LK', key: 'MA_LK', width: 15 },
         { header: 'Mã BN', key: 'MA_BN', width: 15 },
         { header: 'Mã Thẻ BHYT', key: 'MA_THE_BHYT', width: 20 },
@@ -91,6 +97,8 @@ export const exportDuplicateBedExcel = async (data: any[], ruleName: string) => 
     data.forEach((item, index) => {
         const row = sheet.addRow({
             stt: index + 1,
+            RULE_NAME: ruleName,
+            OVERLAP_TIME: item._overlapStr || `${Math.ceil(item._maxOverlap || 0)} phút`,
             MA_LK: item.MA_LK,
             MA_BN: item.MA_BN,
             MA_THE_BHYT: item.MA_THE_BHYT,
