@@ -55,8 +55,8 @@ export async function middleware(request: NextRequest) {
             const adminOnlyPaths = ADMIN_ONLY_PATHS;
             const tccbPaths = ['/staff', '/departments'];
             
-            const isAdminRoute = adminOnlyPaths.some(p => path.startsWith(p));
-            const isTccbRoute = tccbPaths.some(p => path.startsWith(p));
+            const isAdminRoute = adminOnlyPaths.some((p: string) => path.startsWith(p));
+            const isTccbRoute = tccbPaths.some((p: string) => path.startsWith(p));
             
             if (isAdminRoute && payload.role !== 'ADMIN') {
                 return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));

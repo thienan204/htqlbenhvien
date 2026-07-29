@@ -1,9 +1,9 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Card, Button, message, Spin, Modal, Form, Input, Select, Checkbox, Row, Col, Space, Popconfirm, Tag, Switch, Upload, AutoComplete, Tabs } from 'antd';
 import { PlusOutlined, DeleteOutlined, EditOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'next/navigation';
 import ExcelJS from 'exceljs';
 import { createDuplicateRule, deleteDuplicateRule, getDuplicateRules, updateDuplicateRule } from '@/actions/duplicate-rules';
 import { getCurrentUser, type UserPayload } from '@/actions/auth';
@@ -42,10 +42,14 @@ export default function ExcelRulesPage() {
     const [form] = Form.useForm();
     const [deptForm] = Form.useForm();
 
+    const searchParams = useSearchParams();
+    const defaultRuleType = searchParams.get('type') || 'EXCEL';
+
     const fetchRules = async () => {
         setLoading(true);
         try {
-            const res = await getDuplicateRules('ALL');
+            const type = searchParams.get('type') || 'ALL';
+            const res = await getDuplicateRules(type);
             if (res && res.success && res.data) {
                 setRules(res.data as unknown as DuplicateRule[]);
             } else {
@@ -70,7 +74,7 @@ export default function ExcelRulesPage() {
             .then(res => res.json())
             .then(data => setMau05Services(Array.isArray(data) ? data.filter(item => item && item.MA_DICH_VU != null) : []))
             .catch(console.error);
-    }, []);
+    }, [searchParams]);
 
     const handleCreateRule = async (values: any) => {
         setLoading(true);
@@ -168,6 +172,7 @@ export default function ExcelRulesPage() {
         }
         setEditingRule(null);
         form.resetFields();
+        form.setFieldsValue({ ignoreMaMayMinusOne: false, active: true, ruleType: defaultRuleType });
         setIsModalOpen(true);
     };
 
@@ -245,7 +250,7 @@ export default function ExcelRulesPage() {
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
                                         <h3 className="font-bold text-lg text-slate-800">{rule.name}</h3>
-                                        {rule.ruleType === 'PTTT' ? <Tag color="purple">PTTT</Tag> : <Tag color="blue">Excel Thường</Tag>}
+                                        <Tag color="blue">{rule.ruleType}</Tag>
                                         {rule.active === false ? <Tag color="default">Đã ẩn</Tag> : <Tag color="green">Hoạt động</Tag>}
                                     </div>
                                     <div className="text-sm text-slate-500 space-y-1">
@@ -321,7 +326,7 @@ export default function ExcelRulesPage() {
                     form={form}
                     layout="vertical"
                     onFinish={editingRule ? handleUpdateRule : handleCreateRule}
-                    initialValues={{ ignoreMaMayMinusOne: false, active: true, ruleType: 'EXCEL' }}
+                    initialValues={{ ignoreMaMayMinusOne: false, active: true, ruleType: defaultRuleType }}
                 >
                     <Form.Item
                         label="Tên Quy tắc"
@@ -332,11 +337,8 @@ export default function ExcelRulesPage() {
                     </Form.Item>
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="ruleType" label="Loại quy tắc">
-                                <Select>
-                                    <Select.Option value="EXCEL">Quy tắc Excel thường</Select.Option>
-                                    <Select.Option value="PTTT">Quy tắc Phẫu thuật - Thủ thuật</Select.Option>
-                                </Select>
+                            <Form.Item name="ruleType" label="Loại quy tắc (Rule Type)" help="Phải nhập khớp với đuôi đường dẫn URL. VD: GIUONG1">
+                                <Input placeholder="Ví dụ: PTTT, GIUONG, XE-CAP-CUU" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
