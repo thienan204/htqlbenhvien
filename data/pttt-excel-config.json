@@ -1,29 +1,9 @@
 {
   "colConfigs": [
     {
-      "name": "DICHVUKHAMBENHID",
-      "visible": false,
-      "alias": "DICHVUKHAMBE"
-    },
-    {
       "name": "MABENHNHAN",
       "visible": false,
       "alias": "MABENHNHAN"
-    },
-    {
-      "name": "NGAYPTTT",
-      "visible": true,
-      "alias": "NGAYPTTT"
-    },
-    {
-      "name": "NGAYKTTT",
-      "visible": true,
-      "alias": "NGAYKTTT"
-    },
-    {
-      "name": "SOPHIEU",
-      "visible": true,
-      "alias": "SOPHIEU"
     },
     {
       "name": "MAHOSOBENHAN",
@@ -36,89 +16,139 @@
       "alias": "TENBENHNHAN"
     },
     {
-      "name": "MAMAY",
+      "name": "MADICHVU",
       "visible": true,
-      "alias": "MAMAY"
+      "alias": "MADICHVU"
     },
     {
-      "name": "TENPTTT",
+      "name": "TENNHOM",
       "visible": true,
-      "alias": "TENPTTT"
+      "alias": "TENNHOM"
     },
     {
-      "name": "TT_CHINH",
+      "name": "LOAIDIEUTRI",
       "visible": true,
-      "alias": "TT_CHINH"
+      "alias": "LOAIDIEUTRI"
     },
     {
-      "name": "NAMSINH_NAM",
-      "visible": false,
-      "alias": "NAMSINH_NAM"
+      "name": "TEN_DTBN",
+      "visible": true,
+      "alias": "TEN_DTBN"
     },
     {
-      "name": "NAMSINH_NU",
-      "visible": false,
-      "alias": "NAMSINH_NU"
+      "name": "LOAIDICHVU",
+      "visible": true,
+      "alias": "LOAIDICHVU"
     },
     {
-      "name": "HANG_DB",
-      "visible": false,
-      "alias": "HANG_DB"
+      "name": "KHOAKHAM",
+      "visible": true,
+      "alias": "KHOAKHAM"
     },
     {
-      "name": "HANG_1",
-      "visible": false,
-      "alias": "HANG_1"
+      "name": "MAMKHOA",
+      "visible": true,
+      "alias": "MAMKHOA"
     },
     {
-      "name": "HANG_2",
-      "visible": false,
-      "alias": "HANG_2"
+      "name": "BSCHIDINH",
+      "visible": true,
+      "alias": "BSCHIDINH"
     },
     {
-      "name": "HANG_3",
-      "visible": false,
-      "alias": "HANG_3"
+      "name": "PHONGTHUCHIEN",
+      "visible": true,
+      "alias": "PHONGTHUCHIEN"
     },
     {
-      "name": "PHU_VT",
-      "visible": false,
-      "alias": ""
+      "name": "NGUOITHUCHIEN",
+      "visible": true,
+      "alias": "NGUOITHUCHIEN"
     },
     {
-      "name": "PHU_VN",
-      "visible": false,
-      "alias": "PHU_VN"
+      "name": "TENDICHVU",
+      "visible": true,
+      "alias": "TENDICHVU"
     },
     {
-      "name": "PHU_VN2",
-      "visible": false,
-      "alias": "PHU_VN2"
+      "name": "SOLUONG",
+      "visible": true,
+      "alias": "SOLUONG"
     },
     {
-      "name": "BS_GAYME",
-      "visible": false,
-      "alias": "BS_GAYME"
+      "name": "TIEN_CHITRA",
+      "visible": true,
+      "alias": "TIEN_CHITRA"
     },
     {
-      "name": "GM1",
-      "visible": false,
-      "alias": "GM1"
+      "name": "THANHTIEN",
+      "visible": true,
+      "alias": "THANHTIEN"
     },
     {
-      "name": "GM2",
-      "visible": false,
-      "alias": "GM2"
+      "name": "NGAYTIEPNHAN",
+      "visible": true,
+      "alias": "NGAYTIEPNHAN"
     },
     {
-      "name": "GV",
-      "visible": false,
-      "alias": "GV"
+      "name": "NGAY_RAVIEN",
+      "visible": true,
+      "alias": "NGAY_RAVIEN"
     },
     {
-      "name": "DCV",
+      "name": "DIACHI",
+      "visible": true,
+      "alias": "DIACHI"
+    },
+    {
+      "name": "NGAYSINH",
+      "visible": true,
+      "alias": "NGAYSINH"
+    },
+    {
+      "name": "NAMSINH",
+      "visible": true,
+      "alias": "NAMSINH"
+    },
+    {
+      "name": "MA_BHYT",
+      "visible": true,
+      "alias": "MA_BHYT"
+    },
+    {
+      "name": "MACHANDOANRAVIEN",
+      "visible": true,
+      "alias": "MACHANDOANRAVIEN"
+    },
+    {
+      "name": "NGAYCHIDINH",
+      "visible": true,
+      "alias": "NGAYCHIDINH"
+    },
+    {
+      "name": "NGAYKETTHUC",
+      "visible": true,
+      "alias": "NGAYKETTHUC"
+    },
+    {
+      "name": "MAGIUONG",
+      "visible": true,
+      "alias": "MAGIUONG"
+    },
+    {
+      "name": "TYLE_DV",
       "visible": false,
-      "alias": "DCV"
+      "alias": "TYLE_DV"
+    },
+    {
+      "name": "THOIGIAN_BD",
+      "visible": true,
+      "alias": "THOIGIAN_BD"
+    },
+    {
+      "name": "THOIGIAN_KT",
+      "visible": true,
+      "alias": "THOIGIAN_KT"
     }
   ],
   "violationColName": "Quy tắc vi phạm"

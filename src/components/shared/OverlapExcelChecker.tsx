@@ -841,13 +841,7 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
         return data;
     }, [tableData, showOnlyDuplicates, columnFilters, hide50Percent, hidden50PercentDups]);
 
-    const maxRuleWidth = React.useMemo(() => {
-        if (filteredTableData.length === 0) return 250;
-        return Math.max(150, Math.min(600, Math.max(...filteredTableData.map(item => {
-            const rules = Array.isArray(item._violations) ? item._violations : (item._violations ? [item._violations] : []);
-            return rules.length === 0 ? 0 : Math.max(...rules.map((r: string) => r.length * 5.8 + 32));
-        }))));
-    }, [filteredTableData]);
+    const maxRuleWidth = 140;
 
     const maxTimeWidth = React.useMemo(() => {
         if (filteredTableData.length === 0) return 200;
@@ -1084,11 +1078,21 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                         key: '_violations',
                                         width: maxRuleWidth,
                                         fixed: 'left',
+                                        align: 'center',
                                         render: (violations: string[]) => (
                                             violations && violations.length > 0 ? (
-                                                <div className="flex flex-col gap-1">
-                                                    {violations.map((v, i) => <Tag color="red" key={i} className="whitespace-normal mb-1">{v}</Tag>)}
-                                                </div>
+                                                <Tooltip title={
+                                                    <div className="flex flex-col gap-1 p-1 max-w-sm">
+                                                        <strong className="text-white mb-1">Các quy tắc vi phạm:</strong>
+                                                        {violations.map((v, i) => (
+                                                            <Tag color="error" key={i} className="whitespace-normal mb-1">{v}</Tag>
+                                                        ))}
+                                                    </div>
+                                                } color="#1e293b" placement="right">
+                                                    <Tag color="red" className="m-0 cursor-help font-medium">
+                                                        <AuditOutlined className="mr-1" /> {violations.length} Quy tắc
+                                                    </Tag>
+                                                </Tooltip>
                                             ) : null
                                         )
                                     },
