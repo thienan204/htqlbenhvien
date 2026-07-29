@@ -258,6 +258,7 @@ export default function ITConfigPage() {
                                 value={assignmentMode} 
                                 onChange={e => setAssignmentMode(e.target.value)}
                                 className="flex flex-col gap-2"
+                                disabled={user?.role !== 'ADMIN'}
                             >
                                 <Radio value="A">
                                     <span className="font-medium text-slate-700">Tự do nhận việc</span>
@@ -272,7 +273,9 @@ export default function ITConfigPage() {
                                     <div className="text-xs text-slate-500">Hệ thống tự động tìm nhân viên đang Online và rảnh việc nhất trong ngày để gán ngay lập tức.</div>
                                 </Radio>
                             </Radio.Group>
-                            <Button type="primary" onClick={handleSaveGeneralConfig} className="w-fit mt-2">Lưu cấu hình</Button>
+                            {user?.role === 'ADMIN' && (
+                                <Button type="primary" onClick={handleSaveGeneralConfig} className="w-fit mt-2">Lưu cấu hình</Button>
+                            )}
                         </div>
                     </Card>
 
@@ -283,9 +286,12 @@ export default function ITConfigPage() {
                                 max={50} 
                                 value={maxImageSizeMB} 
                                 onChange={val => setMaxImageSizeMB(val || 10)} 
+                                disabled={user?.role !== 'ADMIN'}
                             />
                             <span className="text-slate-500 font-medium">MB</span>
-                            <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
+                            {user?.role === 'ADMIN' && (
+                                <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
+                            )}
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Dung lượng tối đa (MB) cho mỗi ảnh khi tải lên. Khuyến nghị 10MB để tránh treo trình duyệt. Hệ thống sẽ tự nén lại sau khi chọn.</div>
                     </Card>
@@ -298,6 +304,7 @@ export default function ITConfigPage() {
                                     placeholder="Ví dụ: 123456789:ABCdefGHIjklmNOPqrsTUVwxyz..." 
                                     value={telegramBotToken} 
                                     onChange={e => setTelegramBotToken(e.target.value)} 
+                                    disabled={user?.role !== 'ADMIN'}
                                 />
                             </div>
                             <div>
@@ -306,9 +313,12 @@ export default function ITConfigPage() {
                                     placeholder="Ví dụ: -100123456789" 
                                     value={telegramChatId} 
                                     onChange={e => setTelegramChatId(e.target.value)} 
+                                    disabled={user?.role !== 'ADMIN'}
                                 />
                             </div>
-                            <Button type="default" onClick={handleSaveGeneralConfig} className="w-fit">Lưu cấu hình Bot</Button>
+                            {user?.role === 'ADMIN' && (
+                                <Button type="default" onClick={handleSaveGeneralConfig} className="w-fit">Lưu cấu hình Bot</Button>
+                            )}
                         </div>
                     </Card>
                 </div>

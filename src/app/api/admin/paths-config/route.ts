@@ -15,8 +15,15 @@ export async function GET() {
     }
 }
 
+import { getCurrentUser } from '@/actions/auth';
+
 export async function POST(request: Request) {
     try {
+        const user = await getCurrentUser();
+        if (user?.role !== 'ADMIN') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
         const paths = await request.json();
         
         if (!Array.isArray(paths)) {

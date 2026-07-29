@@ -51,8 +51,17 @@ export async function middleware(request: NextRequest) {
             const { payload } = await jose.jwtVerify(token, secret);
             
             // 1. Admin-Only Routes
-            const { ADMIN_ONLY_PATHS } = require('@/lib/constants');
-            const adminOnlyPaths = ADMIN_ONLY_PATHS;
+            let adminOnlyPaths: string[] = [];
+            try {
+                const adminPathsUrl = new URL('/api/admin/paths-config', request.url);
+                const adminPathsRes = await fetch(adminPathsUrl, { next: { revalidate: 60 } });
+                if (adminPathsRes.ok) {
+                    adminOnlyPaths = await adminPathsRes.json();
+                }
+            } catch (e) {
+                console.error("Middleware fetch admin-paths error:", e);
+            }
+            
             const tccbPaths = ['/staff', '/departments'];
             
             const isAdminRoute = adminOnlyPaths.some((p: string) => path.startsWith(p));

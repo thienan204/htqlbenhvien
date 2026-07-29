@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Button, List, Typography, Space, message, Popconfirm, Spin, Layout, Breadcrumb } from 'antd';
+import { Card, Input, Button, Typography, Space, message, Popconfirm, Spin, Layout, Breadcrumb } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, ReloadOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -89,7 +89,7 @@ export default function PathsConfigPage() {
                         <Text className="text-blue-800">
                             <strong>Lưu ý quan trọng:</strong> Bất kỳ đường dẫn nào (hoặc bắt đầu bằng) các cấu hình dưới đây sẽ yêu cầu tài khoản phải có quyền <code>ADMIN</code> mới được phép truy cập.
                             <br />
-                            <small className="text-blue-600">Thay đổi cấu hình có thể cần khởi động lại Server (hoặc đợi Hệ thống tự động Re-build) để có tác dụng ở môi trường Production.</small>
+                            <small className="text-emerald-600 font-medium">Hệ thống đã được nâng cấp: Các thay đổi sẽ có tác dụng ngay lập tức (Real-time) mà không cần khởi động lại Server!</small>
                         </Text>
                     </div>
 
@@ -110,29 +110,31 @@ export default function PathsConfigPage() {
                     {loading ? (
                         <div className="text-center py-10"><Spin size="large" /></div>
                     ) : (
-                        <List
-                            bordered
-                            dataSource={paths}
-                            renderItem={(item) => (
-                                <List.Item
-                                    actions={[
-                                        <Popconfirm
-                                            key="delete"
-                                            title="Bạn có chắc muốn xóa đường dẫn này?"
-                                            onConfirm={() => handleRemovePath(item)}
-                                            okText="Xóa"
-                                            cancelText="Hủy"
-                                            okButtonProps={{ danger: true }}
-                                        >
-                                            <Button danger type="text" icon={<DeleteOutlined />} />
-                                        </Popconfirm>
-                                    ]}
-                                    className="hover:bg-slate-50 transition-colors"
+                        <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200">
+                            {paths.map((item) => (
+                                <div
+                                    key={item}
+                                    className="flex justify-between items-center p-4 hover:bg-slate-50 transition-colors"
                                 >
                                     <Text strong className="font-mono text-slate-700">{item}</Text>
-                                </List.Item>
+                                    <Popconfirm
+                                        key="delete"
+                                        title="Bạn có chắc muốn xóa đường dẫn này?"
+                                        onConfirm={() => handleRemovePath(item)}
+                                        okText="Xóa"
+                                        cancelText="Hủy"
+                                        okButtonProps={{ danger: true }}
+                                    >
+                                        <Button danger type="text" icon={<DeleteOutlined />} />
+                                    </Popconfirm>
+                                </div>
+                            ))}
+                            {paths.length === 0 && (
+                                <div className="p-8 text-center text-slate-500">
+                                    Chưa có đường dẫn nào được cấu hình
+                                </div>
                             )}
-                        />
+                        </div>
                     )}
                 </Card>
             </Content>
