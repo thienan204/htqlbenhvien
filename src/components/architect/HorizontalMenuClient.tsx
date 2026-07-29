@@ -10,6 +10,7 @@ interface HorizontalMenuClientProps {
     rules: any[]; 
     menus?: any[];
     adminMode?: boolean;
+    adminOnlyPaths?: string[];
 }
 
 const checkPathMatch = (patterns: string[], currentPath: string) => {
@@ -21,20 +22,19 @@ const checkPathMatch = (patterns: string[], currentPath: string) => {
 };
 
 import { useAuth } from '@/contexts/AuthContext';
-import { ADMIN_ONLY_PATHS } from '@/lib/constants';
 
-const isMenuAdmin = (menu: any, rules: any[], allMenus: any[]): boolean => {
+const isMenuAdmin = (menu: any, rules: any[], allMenus: any[], adminOnlyPaths: string[]): boolean => {
     if (menu.path) {
-        return ADMIN_ONLY_PATHS.some(p => menu.path.startsWith(p));
+        return adminOnlyPaths.some(p => menu.path.startsWith(p));
     }
     const children = allMenus.filter(m => m.parentId === menu.id);
     if (children.length > 0) {
-        return children.every(c => isMenuAdmin(c, rules, allMenus));
+        return children.every(c => isMenuAdmin(c, rules, allMenus, adminOnlyPaths));
     }
     return false;
 };
 
-export default function HorizontalMenuClient({ rules, menus = [], adminMode = false }: HorizontalMenuClientProps) {
+export default function HorizontalMenuClient({ rules, menus = [], adminMode = false, adminOnlyPaths = [] }: HorizontalMenuClientProps) {
     const { user, hasPermission } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
@@ -59,7 +59,7 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
         const children = menus.filter(m => m.parentId === group.id).sort((a, b) => a.order - b.order);
         
         if (children.length === 0) {
-            const isAdminGroup = isMenuAdmin(group, rules, menus);
+            const isAdminGroup = isMenuAdmin(group, rules, menus, adminOnlyPaths);
             if (adminMode && !isAdminGroup) continue;
             if (!adminMode && isAdminGroup) continue;
 
@@ -75,7 +75,7 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
         }
 
         const visibleChildren = children.filter(child => {
-            const isAdminChild = isMenuAdmin(child, rules, menus);
+            const isAdminChild = isMenuAdmin(child, rules, menus, adminOnlyPaths);
             if (adminMode && !isAdminChild) return false;
             if (!adminMode && isAdminChild) return false;
 

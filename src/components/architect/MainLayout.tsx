@@ -4,14 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import SidebarClient from './SidebarClient';
 import TopHeader from './TopHeader';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
     children: React.ReactNode;
     rules: any[];
     menus?: any[];
+    adminOnlyPaths?: string[];
 }
 
-export default function MainLayout({ children, rules, menus = [] }: MainLayoutProps) {
+export default function MainLayout({ children, rules, menus = [], adminOnlyPaths = [] }: MainLayoutProps) {
+    const { user } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [menuLayout, setMenuLayout] = useState<'horizontal' | 'vertical'>('horizontal');
     const [adminMode, setAdminMode] = useState<boolean>(false);
@@ -31,10 +34,15 @@ export default function MainLayout({ children, rules, menus = [] }: MainLayoutPr
         }
 
         const savedAdminMode = localStorage.getItem('adminMode');
-        if (savedAdminMode) {
-            setAdminMode(savedAdminMode === 'true');
+        if (savedAdminMode === 'true') {
+            if (user?.role === 'ADMIN') {
+                setAdminMode(true);
+            } else {
+                localStorage.setItem('adminMode', 'false');
+                setAdminMode(false);
+            }
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (menuLayout === 'vertical') {
@@ -66,6 +74,7 @@ export default function MainLayout({ children, rules, menus = [] }: MainLayoutPr
                 menus={menus} 
                 isOpen={isSidebarOpen && menuLayout === 'vertical'} 
                 adminMode={adminMode}
+                adminOnlyPaths={adminOnlyPaths}
             />
             
             <TopHeader
@@ -78,6 +87,7 @@ export default function MainLayout({ children, rules, menus = [] }: MainLayoutPr
                 onToggleAdminMode={handleToggleAdminMode}
                 rules={rules}
                 menus={menus}
+                adminOnlyPaths={adminOnlyPaths}
             />
 
             <div

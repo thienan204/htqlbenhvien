@@ -25,6 +25,7 @@ interface TopHeaderProps {
     onToggleAdminMode?: (mode: boolean) => void;
     rules?: any[];
     menus?: any[];
+    adminOnlyPaths?: string[];
 }
 
 const TopHeader = ({ 
@@ -36,7 +37,8 @@ const TopHeader = ({
     adminMode = false,
     onToggleAdminMode,
     rules = [], 
-    menus = [] 
+    menus = [],
+    adminOnlyPaths = []
 }: TopHeaderProps) => {
     const router = useRouter();
     const { user } = useAuth();
@@ -68,8 +70,8 @@ const TopHeader = ({
                 )}
 
                 {menuLayout === 'horizontal' && (
-                    <div className="flex-1 overflow-hidden ml-2">
-                        <HorizontalMenuClient rules={rules} menus={menus} adminMode={adminMode} />
+                    <div className="flex-1 ml-4 min-w-0">
+                        <HorizontalMenuClient rules={rules} menus={menus} adminMode={adminMode} adminOnlyPaths={adminOnlyPaths} />
                     </div>
                 )}
             </div>

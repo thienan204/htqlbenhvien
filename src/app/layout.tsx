@@ -25,6 +25,8 @@ import MainLayout from "@/components/architect/MainLayout";
 import { getCurrentUser } from "@/actions/auth";
 import { AuthProvider } from "@/contexts/AuthContext";
 import FetchInterceptor from "@/components/FetchInterceptor";
+import { promises as fs } from 'fs';
+import path from 'path';
 
 async function getSpecializedRules() {
   try {
@@ -81,6 +83,16 @@ export default async function RootLayout({
 
   console.log("Current user from JWT:", user);
 
+  // Fetch Admin Paths dynamically
+  let adminOnlyPaths: string[] = [];
+  try {
+    const configPath = path.join(process.cwd(), 'data', 'admin-paths.json');
+    const fileContent = await fs.readFile(configPath, 'utf-8');
+    adminOnlyPaths = JSON.parse(fileContent);
+  } catch (e) {
+    console.error("Failed to read admin-paths.json in layout", e);
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -91,7 +103,7 @@ export default async function RootLayout({
           <AuthProvider user={user} guestPermissions={guestPermissions}>
             <FetchInterceptor />
             {/* Main Layout Wrapper */}
-            <MainLayout rules={rules} menus={menus}>
+            <MainLayout rules={rules} menus={menus} adminOnlyPaths={adminOnlyPaths}>
               {children}
             </MainLayout>
           </AuthProvider>
