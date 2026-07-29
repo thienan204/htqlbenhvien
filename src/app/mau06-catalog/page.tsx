@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
@@ -12,6 +12,8 @@ export default function Mau06CatalogPage() {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -45,6 +47,50 @@ export default function Mau06CatalogPage() {
             }
         }
     }, [isModalOpen, editingRecord, form]);
+
+    const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+        setTogglingId(id);
+        try {
+            const res = await fetch(`${getBasePath()}/api/mau06-catalog/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !currentStatus })
+            });
+            if (res.ok) {
+                message.success(`Đã ${!currentStatus ? 'kích hoạt' : 'vô hiệu hóa'} bản ghi`);
+                fetchData();
+            } else message.error('Lỗi khi cập nhật trạng thái');
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
+    const handleBulkUpdateStatus = async (isActive: boolean) => {
+        if (selectedRowKeys.length === 0) return;
+        try {
+            const res = await fetch(`${getBasePath()}/api/mau06-catalog/bulk`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys, isActive })
+            });
+            if (res.ok) {
+                message.success(`Đã ${isActive ? 'kích hoạt' : 'vô hiệu hóa'} ${selectedRowKeys.length} bản ghi`);
+                setSelectedRowKeys([]);
+                fetchData();
+            } else message.error('Lỗi khi cập nhật trạng thái');
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        }
+    };
+
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[]) => {
+            setSelectedRowKeys(newSelectedRowKeys);
+        },
+    };
 
     const handleAdd = () => {
         setEditingRecord(null);
@@ -122,6 +168,20 @@ export default function Mau06CatalogPage() {
         XLSX.writeFile(wb, 'Mau06_TBYT_Template.xlsx');
     };
 
+    const handleExportData = () => {
+        const headers = [
+            'TEN_TB', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
+            'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
+        ];
+
+        const exportData = data.map(item => headers.map(key => item[key] !== undefined && item[key] !== null ? item[key] : ''));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...exportData]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Mau06_DM_Export');
+        XLSX.writeFile(wb, 'Mau06_TBYT_Export.xlsx');
+    };
+
     const handleImportExcel = (info: any) => {
         const file = info.file;
         const reader = new FileReader();
@@ -166,6 +226,15 @@ export default function Mau06CatalogPage() {
         { title: 'Công ty SX', dataIndex: 'CONGTY_SX', width: 200 },
         { title: 'Nước SX', dataIndex: 'NUOC_SX', width: 120 },
         { title: 'Năm SX', dataIndex: 'NAM_SX', width: 100, align: 'center' as const },
+        { title: 'Trạng thái', dataIndex: 'isActive', width: 120, align: 'center' as const, render: (isActive: boolean, record: any) => (
+            <Switch 
+                checked={isActive} 
+                checkedChildren="Đang dùng" 
+                unCheckedChildren="Lịch sử"
+                onChange={(checked) => handleToggleStatus(record.id, checked)}
+                loading={togglingId === record.id}
+            />
+        )},
         {
             title: 'Hành động',
             key: 'action',
@@ -196,8 +265,19 @@ export default function Mau06CatalogPage() {
                     <Space>
                         <Input.Search placeholder="Tìm Tên TB, Mã máy, Model..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
+                        {selectedRowKeys.length > 0 && (
+                            <>
+                                <Button className="bg-green-500 text-white border-none hover:bg-green-600" onClick={() => handleBulkUpdateStatus(true)}>
+                                    Đánh dấu Đang dùng ({selectedRowKeys.length})
+                                </Button>
+                                <Button className="bg-gray-400 text-white border-none hover:bg-gray-500" onClick={() => handleBulkUpdateStatus(false)}>
+                                    Đánh dấu Lịch sử ({selectedRowKeys.length})
+                                </Button>
+                            </>
+                        )}
                     </Space>
                     <Space>
+                        <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
                         {user?.role === 'ADMIN' && (
                             <Popconfirm 
                                 title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
@@ -219,6 +299,7 @@ export default function Mau06CatalogPage() {
                 </div>
 
                 <Table
+                    rowSelection={rowSelection}
                     columns={columns}
                     dataSource={filteredData}
                     rowKey="id"

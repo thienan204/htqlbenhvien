@@ -245,6 +245,7 @@ model DepartmentCatalog {
   TU_NGAY     String?  @db.VarChar(8)
   DEN_NGAY    String?  @db.VarChar(8)
   MA_CSKCB    String?  @db.VarChar(5)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -275,6 +276,7 @@ model Mau02Catalog {
   TU_NGAY       String?  @db.VarChar(8)
   DEN_NGAY      String?  @db.VarChar(8)
   MA_CSKCB      String?  @db.VarChar(5)
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -318,6 +320,7 @@ model Mau03Catalog {
   MA_CSKCB_THUOC String?  @db.VarChar(5)
   TU_NGAY        String?  @db.VarChar(8)
   DEN_NGAY       String?  @db.VarChar(8)
+  isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -350,6 +353,7 @@ model Mau04Catalog {
   MA_CSKCB_TBYT String?  @db.VarChar(5)
   TU_NGAY       String?  @db.VarChar(8)
   DEN_NGAY      String?  @db.VarChar(8)
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -404,6 +408,7 @@ model Mau06Catalog {
   TU_NGAY     String?  @db.VarChar(8)
   DEN_NGAY    String?  @db.VarChar(8)
   MA_CSKCB    String?  @db.VarChar(5)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

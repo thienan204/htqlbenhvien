@@ -22,7 +22,8 @@ export async function POST(request: Request) {
         if (Array.isArray(body)) {
             // Bulk Create
             // Validate and prepare data
-            const cleanData = body.map(row => ({
+            const validBody = body.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
+            const cleanData = validBody.map((row: any) => ({
                 STT: row.STT ? Number(row.STT) : null,
                 MA_KHOA: String(row.MA_KHOA || '').substring(0, 50),
                 TEN_KHOA: String(row.TEN_KHOA || ''),

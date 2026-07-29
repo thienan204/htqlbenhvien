@@ -31,7 +31,8 @@ export async function POST(request: Request) {
 
         // Bulk insert
         if (Array.isArray(body)) {
-            const createData = body.map((row: any) => ({
+            const validBody = body.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
+            const createData = validBody.map((row: any) => ({
                 STT: row.STT ? Number(row.STT) : null,
                 TEN_TB: row.TEN_TB ? String(row.TEN_TB) : null,
                 KY_HIEU: row.KY_HIEU ? String(row.KY_HIEU) : null,

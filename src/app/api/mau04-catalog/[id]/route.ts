@@ -13,6 +13,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const updated = await prisma.mau04Catalog.update({
             where: { id },
             data: {
+                isActive: body.isActive !== undefined ? Boolean(body.isActive) : undefined,
                 STT: body.STT ? Number(body.STT) : null,
                 MA_VAT_TU: body.MA_VAT_TU ? String(body.MA_VAT_TU).substring(0, 50) : null,
                 NHOM_VAT_TU: body.NHOM_VAT_TU ? String(body.NHOM_VAT_TU) : null,

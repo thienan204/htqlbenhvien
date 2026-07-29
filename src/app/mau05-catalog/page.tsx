@@ -179,6 +179,24 @@ export default function Mau05CatalogPage() {
         XLSX.writeFile(wb, 'Mau05_DVKT_Template.xlsx');
     };
 
+    const handleExportData = () => {
+        const headers = [
+            'MA_DICH_VU', 'TEN_DICH_VU', 'TEN_DVKT_GIA', 'DON_GIA', 'QUY_TRINH',
+            'SO_LUONG_CGKT', 'CSKCB_CGKT', 'CSKCB_CLS', 'QD_DVKT', 'QD_PD_GIA',
+            'GHI_CHU', 'MA_THUOC', 'TEN_THUOC', 'SO_DANG_KY', 'DON_VI_TINH',
+            'TT_THAU', 'DON_GIA_THUOC', 'DM_NSX_CDD', 'DM_THUCTE_CDD', 'LIEU_BQ_PX',
+            'TL_THUCTE_BQ_PX', 'THANH_TIEN_THUOC', 'GIA_THANH_TOAN', 'TU_NGAY',
+            'DEN_NGAY', 'MA_CSKCB'
+        ];
+
+        const exportData = data.map(item => headers.map(key => item[key] !== undefined && item[key] !== null ? item[key] : ''));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...exportData]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Mau05_DM_Export');
+        XLSX.writeFile(wb, 'Mau05_DVKT_Export.xlsx');
+    };
+
     const handleImportExcel = (info: any) => {
         const file = info.file;
         const reader = new FileReader();
@@ -222,6 +240,14 @@ export default function Mau05CatalogPage() {
     const columns = [
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1 },
         { title: 'Mã Dịch Vụ', dataIndex: 'MA_DICH_VU', width: 120 },
+        { title: 'Tên Dịch Vụ', dataIndex: 'TEN_DICH_VU', width: 250 },
+        { title: 'Tên DVKT Giá', dataIndex: 'TEN_DVKT_GIA', width: 250 },
+        { title: 'Đơn giá', dataIndex: 'DON_GIA', width: 120, align: 'right' as const, render: (val: number) => val?.toLocaleString() },
+        { title: 'Quy trình', dataIndex: 'QUY_TRINH', width: 150 },
+        { title: 'Ghi chú', dataIndex: 'GHI_CHU', width: 200 },
+        { title: 'QĐ DVKT', dataIndex: 'QD_DVKT', width: 120 },
+        { title: 'Mã Thuốc CĐ', dataIndex: 'MA_THUOC', width: 120 },
+        { title: 'Tên Thuốc CĐ', dataIndex: 'TEN_THUOC', width: 200 },
         { title: 'Trạng thái', dataIndex: 'isActive', width: 120, align: 'center' as const, render: (isActive: boolean, record: any) => (
             <Switch 
                 checked={isActive} 
@@ -231,14 +257,6 @@ export default function Mau05CatalogPage() {
                 loading={togglingId === record.id}
             />
         )},
-        { title: 'Tên Dịch Vụ', dataIndex: 'TEN_DICH_VU', width: 250 },
-        { title: 'Tên DVKT Giá', dataIndex: 'TEN_DVKT_GIA', width: 250 },
-        { title: 'Đơn giá', dataIndex: 'DON_GIA', width: 120, align: 'right' as const, render: (val: number) => val?.toLocaleString() },
-        { title: 'Quy trình', dataIndex: 'QUY_TRINH', width: 150 },
-        { title: 'Ghi chú', dataIndex: 'GHI_CHU', width: 200 },
-        { title: 'QĐ DVKT', dataIndex: 'QD_DVKT', width: 120 },
-        { title: 'Mã Thuốc CĐ', dataIndex: 'MA_THUOC', width: 120 },
-        { title: 'Tên Thuốc CĐ', dataIndex: 'TEN_THUOC', width: 200 },
         {
             title: 'Hành động',
             key: 'action',
@@ -270,6 +288,7 @@ export default function Mau05CatalogPage() {
                         <Input.Search placeholder="Tìm Mã DV, Tên DV..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
                     </Space>
                     <Space>
+                        <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
                         {user?.role === 'ADMIN' && (
                             <Popconfirm 
                                 title="Xác nhận xóa TOÀN BỘ dữ liệu?" 

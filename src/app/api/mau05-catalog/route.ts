@@ -37,7 +37,7 @@ export async function POST(request: Request) {
             const existingRecords = await prisma.mau05Catalog.findMany();
             const existingMap = new Map();
             existingRecords.forEach(r => {
-                const key = r.MA_DICH_VU || r.MA_THUOC || '';
+                const key = r.MA_DICH_VU || r.MA_THUOC || r.TEN_DICH_VU || r.TEN_THUOC || '';
                 if (key) existingMap.set(key, r);
             });
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
             let skipCount = 0;
 
             for (const row of body) {
-                const key = row.MA_DICH_VU || row.MA_THUOC || '';
+                const key = row.MA_DICH_VU || row.MA_THUOC || row.TEN_DICH_VU || row.TEN_THUOC || '';
                 const newData: any = {
                     STT: row.STT ? Number(row.STT) : null,
                     MA_DICH_VU: row.MA_DICH_VU ? String(row.MA_DICH_VU).substring(0, 20) : null,
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
                 };
 
                 if (!key) {
-                    toInsert.push(newData);
+                    skipCount++;
                     continue;
                 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Switch } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, AppstoreOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
@@ -12,6 +12,8 @@ export default function Mau01CatalogPage() {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -47,6 +49,50 @@ export default function Mau01CatalogPage() {
             }
         }
     }, [isModalOpen, editingRecord, form]);
+
+    const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+        setTogglingId(id);
+        try {
+            const res = await fetch(`${getBasePath()}/api/mau01-catalog/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !currentStatus })
+            });
+            if (res.ok) {
+                message.success(`Đã ${!currentStatus ? 'kích hoạt' : 'vô hiệu hóa'} bản ghi`);
+                fetchData();
+            } else message.error('Lỗi khi cập nhật trạng thái');
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
+    const handleBulkUpdateStatus = async (isActive: boolean) => {
+        if (selectedRowKeys.length === 0) return;
+        try {
+            const res = await fetch(`${getBasePath()}/api/mau01-catalog/bulk`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys, isActive })
+            });
+            if (res.ok) {
+                message.success(`Đã ${isActive ? 'kích hoạt' : 'vô hiệu hóa'} ${selectedRowKeys.length} bản ghi`);
+                setSelectedRowKeys([]);
+                fetchData();
+            } else message.error('Lỗi khi cập nhật trạng thái');
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        }
+    };
+
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[]) => {
+            setSelectedRowKeys(newSelectedRowKeys);
+        },
+    };
 
     const handleAdd = () => {
         setEditingRecord(null);
@@ -145,6 +191,26 @@ export default function Mau01CatalogPage() {
         XLSX.writeFile(wb, 'Mau01_DanhMuc_Template.xlsx');
     };
 
+    const handleExportData = () => {
+        const headers = [
+            'MA_KHOA', 'TEN_KHOA', 'BAN_KHAM', 'GIUONG_PD',
+            'GIUONG_TK', 'GIUONG_HSTC', 'GIUONG_HSCC', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
+        ];
+
+        const exportData = data.map(item => headers.map(key => item[key] !== undefined && item[key] !== null ? item[key] : ''));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...exportData]);
+        
+        ws['!cols'] = [
+            { wpx: 80 }, { wpx: 150 }, { wpx: 80 }, { wpx: 80 },
+            { wpx: 80 }, { wpx: 80 }, { wpx: 80 }, { wpx: 80 }, { wpx: 80 }, { wpx: 80 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Mau01_DM_Export');
+        XLSX.writeFile(wb, 'Mau01_DanhMuc_Export.xlsx');
+    };
+
     const handleImportExcel = (info: any) => {
         const file = info.file;
         const reader = new FileReader();
@@ -210,6 +276,15 @@ export default function Mau01CatalogPage() {
         { title: 'Từ Ngày', dataIndex: 'TU_NGAY', width: 100, align: 'center' as const },
         { title: 'Đến Ngày', dataIndex: 'DEN_NGAY', width: 100, align: 'center' as const },
         { title: 'Mã CSKCB', dataIndex: 'MA_CSKCB', width: 100 },
+        { title: 'Trạng thái', dataIndex: 'isActive', width: 120, align: 'center' as const, render: (isActive: boolean, record: any) => (
+            <Switch 
+                checked={isActive} 
+                checkedChildren="Đang dùng" 
+                unCheckedChildren="Lịch sử"
+                onChange={(checked) => handleToggleStatus(record.id, checked)}
+                loading={togglingId === record.id}
+            />
+        )},
         {
             title: 'Hành động',
             key: 'action',
@@ -255,6 +330,9 @@ export default function Mau01CatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
+                        <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">
+                            Export Dữ liệu
+                        </Button>
                         {user?.role === 'ADMIN' && (
                             <Popconfirm
                                 title="Xóa toàn bộ danh mục?"
@@ -280,10 +358,21 @@ export default function Mau01CatalogPage() {
                         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                             Thêm mới thủ công
                         </Button>
+                        {selectedRowKeys.length > 0 && (
+                            <>
+                                <Button className="bg-green-500 text-white border-none hover:bg-green-600" onClick={() => handleBulkUpdateStatus(true)}>
+                                    Đánh dấu Đang dùng ({selectedRowKeys.length})
+                                </Button>
+                                <Button className="bg-gray-400 text-white border-none hover:bg-gray-500" onClick={() => handleBulkUpdateStatus(false)}>
+                                    Đánh dấu Lịch sử ({selectedRowKeys.length})
+                                </Button>
+                            </>
+                        )}
                     </Space>
                 </div>
 
                 <Table
+                    rowSelection={rowSelection}
                     columns={columns}
                     dataSource={filteredData}
                     rowKey="id"
