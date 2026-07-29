@@ -41,7 +41,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
             isManager = true;
-            finalName = payload.username === 'admin' ? 'Quản trị viên (Gốc)' : (payload.name as string);
+            finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
         } else {
             const { PrismaClient } = await import('@prisma/client');
             const prisma = new PrismaClient();
@@ -145,7 +145,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
             isManager = true;
-            finalName = payload.username === 'admin' ? 'Quản trị viên (Gốc)' : (payload.name as string);
+            finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
         } else {
             const { PrismaClient } = await import('@prisma/client');
             const prisma = new PrismaClient();

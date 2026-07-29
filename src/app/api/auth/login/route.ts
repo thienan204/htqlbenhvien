@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         // Hardcode admin account bypass
         if (username === 'admin' && password === '123456') {
             finalUserId = 'admin-hardcoded';
-            finalUserName = 'Quản trị viên (Gốc)';
+            finalUserName = 'Quản trị viên';
             finalRole = 'ADMIN';
             finalPermissions = ['*']; // ADMIN has all permissions
         } else {
