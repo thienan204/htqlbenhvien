@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
                 ten_nguoi_th: e.ten_nguoi_th || null,
                 ten_khoa: e.ten_khoa || null,
                 chi_tiet_loi: e.chi_tiet_loi || null,
+                khoang_thoi_gian_trung: e.khoang_thoi_gian_trung || null,
                 sourceType: e.sourceType || 'XML',
                 status: 'PENDING',
             };

@@ -494,9 +494,39 @@ export default function XmlErrorManager() {
         { title: 'Họ tên', dataIndex: 'ho_ten', width: 180 },
         { title: 'Ngày vào', dataIndex: 'ngay_vao', width: 150, render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '' },
         { title: 'Ngày ra', dataIndex: 'ngay_ra', width: 150, render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '' },
-        { title: 'Ngày YL', dataIndex: 'ngay_yl', width: 150, render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '' },
-        { title: 'Ngày TH YL', dataIndex: 'ngay_th_yl', width: 150, render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '' },
-        { title: 'Ngày KQ', dataIndex: 'ngay_kq', width: 150, render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '' },
+        { 
+            title: 'Ngày YL', 
+            dataIndex: 'ngay_yl', 
+            width: 150, 
+            render: (d: string, record: any) => {
+                const isChecking = record.chi_tiet_loi?.includes('Trùng thời gian - Bác sĩ') || record.chi_tiet_loi?.includes('Trùng bác sĩ');
+                return d ? <div className={isChecking ? "bg-red-50 text-red-700 p-1 rounded font-medium text-center border border-red-200" : ""}>{dayjs(d).format('DD/MM/YYYY HH:mm')}</div> : '';
+            }
+        },
+        { 
+            title: 'Ngày TH YL', 
+            dataIndex: 'ngay_th_yl', 
+            width: 150, 
+            render: (d: string, record: any) => {
+                const isChecking = record.chi_tiet_loi?.includes('Trùng mã máy') || record.chi_tiet_loi?.includes('Trùng giường');
+                return d ? <div className={isChecking ? "bg-red-50 text-red-700 p-1 rounded font-medium text-center border border-red-200" : ""}>{dayjs(d).format('DD/MM/YYYY HH:mm')}</div> : '';
+            }
+        },
+        { 
+            title: 'Ngày KQ', 
+            dataIndex: 'ngay_kq', 
+            width: 150, 
+            render: (d: string, record: any) => {
+                const isChecking = record.chi_tiet_loi?.includes('Trùng KQ') || record.chi_tiet_loi?.includes('Ngày KQ');
+                return d ? <div className={isChecking ? "bg-red-50 text-red-700 p-1 rounded font-medium text-center border border-red-200" : ""}>{dayjs(d).format('DD/MM/YYYY HH:mm')}</div> : '';
+            }
+        },
+        { 
+            title: 'Khoảng TG trùng', 
+            dataIndex: 'khoang_thoi_gian_trung', 
+            width: 140,
+            render: (text: string) => text ? <Tag color="purple">{text}</Tag> : '-'
+        },
         {
             title: 'Mã Bác sĩ',
             dataIndex: 'ma_bac_si',

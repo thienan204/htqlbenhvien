@@ -3,23 +3,41 @@
 import React, { useState } from 'react';
 import {
     AppstoreOutlined, SearchOutlined,
-    BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined
+    BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined,
+    MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined
 } from '@ant-design/icons';
-import { Button, Badge, Avatar, Dropdown } from 'antd';
-// Removed server action import
+import { Button, Badge, Avatar, Dropdown, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import EditProfileModal from '../profile/EditProfileModal';
 import ChangePasswordModal from '../profile/ChangePasswordModal';
 import { getBasePath } from '@/utils/config';
+import HorizontalMenuClient from './HorizontalMenuClient';
+import Link from 'next/link';
 
 interface TopHeaderProps {
     onToggleSidebar: () => void;
     isSidebarOpen: boolean;
     hideToggle?: boolean;
+    menuLayout?: 'horizontal' | 'vertical';
+    onToggleLayout?: () => void;
+    adminMode?: boolean;
+    onToggleAdminMode?: (mode: boolean) => void;
+    rules?: any[];
+    menus?: any[];
 }
 
-const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProps) => {
+const TopHeader = ({ 
+    onToggleSidebar, 
+    isSidebarOpen, 
+    hideToggle, 
+    menuLayout = 'horizontal', 
+    onToggleLayout, 
+    adminMode = false,
+    onToggleAdminMode,
+    rules = [], 
+    menus = [] 
+}: TopHeaderProps) => {
     const router = useRouter();
     const { user } = useAuth();
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -30,21 +48,63 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
         <div
             className={`
                 h-[60px] bg-white/90 backdrop-blur fixed top-0 right-0 z-10 border-b border-slate-200 px-8 flex items-center justify-between shadow-sm transition-all duration-300 ease-in-out
-                ${isSidebarOpen ? 'left-[280px]' : 'left-0'}
+                ${(isSidebarOpen && menuLayout === 'vertical') ? 'left-[280px]' : 'left-0'}
             `}
         >
-            <div className="flex items-center gap-4">
-                {!hideToggle && (
+            <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                {menuLayout === 'horizontal' && (
+                    <Link href="/" className="flex items-center gap-2 text-slate-800 font-bold text-xl tracking-tight no-underline shrink-0 pr-4 border-r border-slate-100">
+                        <img src={`${getBasePath()}/logo.png`} alt="Logo" className="max-h-[36px] w-auto object-contain" />
+                    </Link>
+                )}
+
+                {menuLayout === 'vertical' && !hideToggle && (
                     <Button
                         shape="circle"
-                        icon={<AppstoreOutlined className="text-slate-500" />}
-                        className="border-none shadow-none bg-transparent hover:bg-slate-100"
+                        icon={<MenuFoldOutlined className="text-slate-500" />}
+                        className="border-none shadow-none bg-transparent hover:bg-slate-100 shrink-0"
                         onClick={onToggleSidebar}
                     />
                 )}
+
+                {menuLayout === 'horizontal' && (
+                    <div className="flex-1 overflow-hidden ml-2">
+                        <HorizontalMenuClient rules={rules} menus={menus} adminMode={adminMode} />
+                    </div>
+                )}
             </div>
 
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
+            <div className="flex items-center gap-3 pl-4 shrink-0 ml-4">
+                {/* Nút chuyển Không gian làm việc cho ADMIN */}
+                {user?.role === 'ADMIN' && onToggleAdminMode && (
+                    <div className="bg-slate-100 p-1 rounded-lg flex items-center mr-2 border border-slate-200">
+                        <button
+                            onClick={() => onToggleAdminMode(false)}
+                            className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${!adminMode ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Người dùng
+                        </button>
+                        <button
+                            onClick={() => onToggleAdminMode(true)}
+                            className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${adminMode ? 'bg-white shadow text-red-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Quản trị
+                        </button>
+                    </div>
+                )}
+
+                {onToggleLayout && (
+                    <Tooltip title={`Chuyển sang menu ${menuLayout === 'horizontal' ? 'dọc' : 'ngang'}`}>
+                        <Button
+                            shape="circle"
+                            icon={<LayoutOutlined className="text-slate-500" />}
+                            className="border-none shadow-none bg-transparent hover:bg-slate-100"
+                            onClick={onToggleLayout}
+                        />
+                    </Tooltip>
+                )}
+                <div className="h-6 w-px bg-slate-200 mx-1"></div>
+                
                 {user ? (
                     <>
                         <Dropdown menu={{
@@ -71,7 +131,7 @@ const TopHeader = ({ onToggleSidebar, isSidebarOpen, hideToggle }: TopHeaderProp
                                 {
                                     key: 'services',
                                     label: 'Phạm vi chuyên môn',
-                                    icon: <AppstoreOutlined />, // or MedicineBoxOutlined, but AppstoreOutlined is already imported
+                                    icon: <AppstoreOutlined />, 
                                     onClick: () => { setProfileInitialTab('2'); setIsEditProfileOpen(true); }
                                 },
                                 {

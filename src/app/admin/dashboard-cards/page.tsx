@@ -1,4 +1,5 @@
 'use client';
+// Force Next.js recompilation
 
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Button, Form, Input, Select, Switch, message, Modal, Popconfirm, Tag, Space, Divider } from 'antd';

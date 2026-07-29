@@ -12,30 +12,39 @@ interface SidebarClientProps {
     rules: any[]; 
     menus?: any[];
     isOpen: boolean;
+    adminMode?: boolean;
 }
 
 const checkPathMatch = (patterns: string[], currentPath: string) => {
     if (!patterns || patterns.length === 0) return true;
     return patterns.some((pattern: string) => {
-        // Loại bỏ ký tự wildcard ở cuối (* hoặc /*)
         const cleanPattern = pattern.replace(/\/\*$/, '').replace(/\*$/, '');
-        // Khớp nếu đường dẫn giống hệt hoặc là đường dẫn con
         return currentPath === cleanPattern || currentPath.startsWith(`${cleanPattern}/`) || currentPath.startsWith(pattern);
     });
 };
 
+import { ADMIN_ONLY_PATHS } from '@/lib/constants';
 
-export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClientProps) {
+const isMenuAdmin = (menu: any, rules: any[], allMenus: any[]): boolean => {
+    if (menu.path) {
+        return ADMIN_ONLY_PATHS.some(p => menu.path.startsWith(p));
+    }
+    const children = allMenus.filter(m => m.parentId === menu.id);
+    if (children.length > 0) {
+        return children.every(c => isMenuAdmin(c, rules, allMenus));
+    }
+    return false;
+};
+
+
+export default function SidebarClient({ rules, menus = [], isOpen, adminMode = false }: SidebarClientProps) {
     const { user, hasPermission } = useAuth();
     const pathname = usePathname();
 
     const allRootMenus = menus.filter(m => !m.parentId).sort((a, b) => a.order - b.order);
     
     const rootMenus = allRootMenus.filter(group => {
-        // Nếu không có showInPaths (mảng rỗng), mặc định hiển thị ở mọi nơi
         if (!group.showInPaths || group.showInPaths.length === 0) return true;
-        
-        // Nếu URL khớp với bất kỳ tiền tố nào trong showInPaths thì hiển thị
         return checkPathMatch(group.showInPaths, pathname);
     });
 
@@ -73,9 +82,18 @@ export default function SidebarClient({ rules, menus = [], isOpen }: SidebarClie
                 {rootMenus.map(group => {
                     const children = menus.filter(m => m.parentId === group.id).sort((a, b) => a.order - b.order);
 
+                    if (children.length === 0) {
+                        const isAdminGroup = isMenuAdmin(group, rules, menus);
+                        if (adminMode && !isAdminGroup) return null;
+                        if (!adminMode && isAdminGroup) return null;
+                    }
+
                     // Lọc những menu con mà user có quyền xem
                     const visibleChildren = children.filter(child => {
-                        // 1. Lọc theo showInPaths
+                        const isAdminChild = isMenuAdmin(child, rules, menus);
+                        if (adminMode && !isAdminChild) return false;
+                        if (!adminMode && isAdminChild) return false;
+
                         if (child.showInPaths && child.showInPaths.length > 0) {
                             if (!checkPathMatch(child.showInPaths, pathname)) return false;
                         }

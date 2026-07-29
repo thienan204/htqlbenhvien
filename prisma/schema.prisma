@@ -459,6 +459,7 @@ model XmlErrorRecord {
   ten_dv             String?
   ma_doituong_kcb    String?
   chi_tiet_loi       String?
+  khoang_thoi_gian_trung String?
   status             String    @default("PENDING")
   departmentNote     String?
   adminNote          String?

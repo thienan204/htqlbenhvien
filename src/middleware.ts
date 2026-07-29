@@ -51,7 +51,8 @@ export async function middleware(request: NextRequest) {
             const { payload } = await jose.jwtVerify(token, secret);
             
             // 1. Admin-Only Routes
-            const adminOnlyPaths = ['/rules', '/roles', '/settings', '/admin', '/mau'];
+            const { ADMIN_ONLY_PATHS } = require('@/lib/constants');
+            const adminOnlyPaths = ADMIN_ONLY_PATHS;
             const tccbPaths = ['/staff', '/departments'];
             
             const isAdminRoute = adminOnlyPaths.some(p => path.startsWith(p));

@@ -1,5 +1,5 @@
 'use client';
-
+// Force Next.js recompilation
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Table, Button, Card, Space, Tag, Popconfirm, message, Upload, Dropdown } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TagsOutlined, PartitionOutlined, UserOutlined, IdcardOutlined, BookOutlined, UploadOutlined, DownloadOutlined, DownOutlined } from '@ant-design/icons';
