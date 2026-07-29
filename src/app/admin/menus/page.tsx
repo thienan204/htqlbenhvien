@@ -149,7 +149,7 @@ export default function MenuBuilderPage() {
             }
         };
 
-        const data = [...treeData];
+        const data = JSON.parse(JSON.stringify(treeData));
         let dragObj: TreeDataNode;
         loop(data, dragKey, (item, index, arr) => {
             arr.splice(index, 1);
@@ -257,10 +257,16 @@ export default function MenuBuilderPage() {
             const url = isCreating ? `${getBasePath()}/api/menus` : `${getBasePath()}/api/menus/${selectedNode?.id}`;
             const method = isCreating ? 'POST' : 'PUT';
 
+            // Xử lý parentId nếu bị clear (undefined) thì đưa về null để Prisma có thể update thành Root
+            const payload = {
+                ...values,
+                parentId: values.parentId === undefined ? null : values.parentId
+            };
+
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {

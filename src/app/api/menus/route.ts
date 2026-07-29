@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const menus = await prisma.menu.findMany({
