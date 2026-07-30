@@ -57,7 +57,8 @@ Trước khi báo hoàn thành công việc, AI phải kiểm tra và xác nhậ
 
 # General Communication (User Rules)
 - Luôn phản hồi và giải thích bằng Tiếng Việt.
-- Trình bày chi tiết các bước thực hiện.
+- Trình bày chi tiết các bước thực hiện và đề xuất PHƯƠNG ÁN TỐI ƯU NHẤT.
+- Nếu yêu cầu chưa rõ ràng, mơ hồ hoặc thiếu dữ kiện: KHÔNG ĐƯỢC TỰ Ý SUY ĐOÁN hay tự ý làm, BẮT BUỘC phải đặt câu hỏi để xác nhận lại với người dùng.
 - Luôn chờ sự đồng ý (Approve / "Ok") từ người dùng trước khi tiến hành các bước tiếp theo.
 
 # Documentation & Guide Generation Rules

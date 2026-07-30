@@ -1,0 +1,155 @@
+{
+  "colConfigs": [
+    {
+      "name": "TENNHOM",
+      "visible": false,
+      "alias": "TENNHOM"
+    },
+    {
+      "name": "MADICHVU",
+      "visible": true,
+      "alias": "MADICHVU"
+    },
+    {
+      "name": "LOAIDIEUTRI",
+      "visible": false,
+      "alias": "LOAIDIEUTRI"
+    },
+    {
+      "name": "TEN_DTBN",
+      "visible": true,
+      "alias": "TEN_DTBN"
+    },
+    {
+      "name": "LOAIDICHVU",
+      "visible": true,
+      "alias": "LOAIDICHVU"
+    },
+    {
+      "name": "KHOAKHAM",
+      "visible": true,
+      "alias": "KHOAKHAM"
+    },
+    {
+      "name": "MAMKHOA",
+      "visible": true,
+      "alias": "MAMKHOA"
+    },
+    {
+      "name": "BSCHIDINH",
+      "visible": true,
+      "alias": "BSCHIDINH"
+    },
+    {
+      "name": "PHONGTHUCHIEN",
+      "visible": true,
+      "alias": "PHONGTHUCHIEN"
+    },
+    {
+      "name": "NGUOITHUCHIEN",
+      "visible": true,
+      "alias": "NGUOITHUCHIEN"
+    },
+    {
+      "name": "TENDICHVU",
+      "visible": true,
+      "alias": "TENDICHVU"
+    },
+    {
+      "name": "SOLUONG",
+      "visible": true,
+      "alias": "SOLUONG"
+    },
+    {
+      "name": "TIEN_CHITRA",
+      "visible": true,
+      "alias": "TIEN_CHITRA"
+    },
+    {
+      "name": "THANHTIEN",
+      "visible": true,
+      "alias": "THANHTIEN"
+    },
+    {
+      "name": "NGAYTIEPNHAN",
+      "visible": true,
+      "alias": "NGAYTIEPNHAN"
+    },
+    {
+      "name": "NGAY_RAVIEN",
+      "visible": true,
+      "alias": "NGAY_RAVIEN"
+    },
+    {
+      "name": "MABENHNHAN",
+      "visible": true,
+      "alias": "MABENHNHAN"
+    },
+    {
+      "name": "MAHOSOBENHAN",
+      "visible": true,
+      "alias": "MAHOSOBENHAN"
+    },
+    {
+      "name": "TENBENHNHAN",
+      "visible": true,
+      "alias": "TENBENHNHAN"
+    },
+    {
+      "name": "DIACHI",
+      "visible": true,
+      "alias": "DIACHI"
+    },
+    {
+      "name": "NGAYSINH",
+      "visible": true,
+      "alias": "NGAYSINH"
+    },
+    {
+      "name": "NAMSINH",
+      "visible": true,
+      "alias": "NAMSINH"
+    },
+    {
+      "name": "MA_BHYT",
+      "visible": true,
+      "alias": "MA_BHYT"
+    },
+    {
+      "name": "MACHANDOANRAVIEN",
+      "visible": true,
+      "alias": "MACHANDOANRAVIEN"
+    },
+    {
+      "name": "NGAYCHIDINH",
+      "visible": true,
+      "alias": "NGAYCHIDINH"
+    },
+    {
+      "name": "NGAYKETTHUC",
+      "visible": true,
+      "alias": "NGAYKETTHUC"
+    },
+    {
+      "name": "MAGIUONG",
+      "visible": true,
+      "alias": "MAGIUONG"
+    },
+    {
+      "name": "TYLE_DV",
+      "visible": false,
+      "alias": "TYLE_DV"
+    },
+    {
+      "name": "THOIGIAN_BD",
+      "visible": false,
+      "alias": "THOIGIAN_BD"
+    },
+    {
+      "name": "THOIGIAN_KT",
+      "visible": false,
+      "alias": "THOIGIAN_KT"
+    }
+  ],
+  "violationColName": "Quy tắc vi phạm"
+}
