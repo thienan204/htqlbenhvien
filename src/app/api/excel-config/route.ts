@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-const configPath = path.join(process.cwd(), 'data', 'pttt-excel-config.json');
-
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const ruleType = searchParams.get('ruleType') || 'default';
+        const configPath = path.join(process.cwd(), 'data', `${ruleType}-excel-config.json`);
+
         const fileContent = await fs.readFile(configPath, 'utf-8');
         return NextResponse.json(JSON.parse(fileContent));
     } catch (error: any) {
@@ -18,6 +20,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const ruleType = searchParams.get('ruleType') || 'default';
+        const configPath = path.join(process.cwd(), 'data', `${ruleType}-excel-config.json`);
+
         const body = await request.json();
         await fs.mkdir(path.dirname(configPath), { recursive: true });
         await fs.writeFile(configPath, JSON.stringify(body, null, 2), 'utf-8');

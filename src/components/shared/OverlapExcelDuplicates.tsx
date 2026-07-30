@@ -163,7 +163,7 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
                     setDups(data.dups || []);
                     
                     try {
-                        const res = await fetch('/api/pttt-excel/config');
+                        const res = await fetch(`/api/excel-config?ruleType=${ruleType}`);
                         if (res.ok) {
                             const configData = await res.json();
                             if (configData.violationColName) {
@@ -225,7 +225,7 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
     const saveConfigToServer = async () => {
         setLoadingConfig(true);
         try {
-            await fetch('/api/pttt-excel/config', {
+            await fetch(`/api/excel-config?ruleType=${ruleType}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -494,7 +494,7 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
             </div>
 
             <Modal
-                title="Cấu hình hiển thị cột (PTTT)"
+                title={`Cấu hình hiển thị cột (${ruleType})`}
                 open={isConfigOpen}
                 onCancel={() => setIsConfigOpen(false)}
                 onOk={saveConfigToServer}

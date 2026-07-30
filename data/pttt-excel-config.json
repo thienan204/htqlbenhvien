@@ -6,8 +6,13 @@
       "alias": "MABENHNHAN"
     },
     {
-      "name": "MAHOSOBENHAN",
+      "name": "MADICHVU",
       "visible": true,
+      "alias": "MADICHVU"
+    },
+    {
+      "name": "MAHOSOBENHAN",
+      "visible": false,
       "alias": "MA BA"
     },
     {
@@ -16,139 +21,114 @@
       "alias": "TENBENHNHAN"
     },
     {
-      "name": "MADICHVU",
+      "name": "DICHVUKHAMBENHID",
       "visible": true,
-      "alias": "MADICHVU"
+      "alias": "DICHVUKHAMBENHID"
     },
     {
-      "name": "TENNHOM",
+      "name": "SOPHIEU",
       "visible": true,
-      "alias": "TENNHOM"
+      "alias": "SOPHIEU"
     },
     {
-      "name": "LOAIDIEUTRI",
+      "name": "MAMAY",
       "visible": true,
-      "alias": "LOAIDIEUTRI"
+      "alias": "MAMAY"
     },
     {
-      "name": "TEN_DTBN",
+      "name": "NAMSINH_NAM",
       "visible": true,
-      "alias": "TEN_DTBN"
+      "alias": "NAMSINH_NAM"
     },
     {
-      "name": "LOAIDICHVU",
+      "name": "NAMSINH_NU",
       "visible": true,
-      "alias": "LOAIDICHVU"
+      "alias": "NAMSINH_NU"
     },
     {
-      "name": "KHOAKHAM",
+      "name": "TENPTTT",
       "visible": true,
-      "alias": "KHOAKHAM"
+      "alias": "TENPTTT"
     },
     {
-      "name": "MAMKHOA",
+      "name": "NGAYPTTT",
       "visible": true,
-      "alias": "MAMKHOA"
+      "alias": "NGAYPTTT"
     },
     {
-      "name": "BSCHIDINH",
+      "name": "NGAYKTTT",
       "visible": true,
-      "alias": "BSCHIDINH"
+      "alias": "NGAYKTTT"
     },
     {
-      "name": "PHONGTHUCHIEN",
+      "name": "HANG_DB",
       "visible": true,
-      "alias": "PHONGTHUCHIEN"
+      "alias": "HANG_DB"
     },
     {
-      "name": "NGUOITHUCHIEN",
+      "name": "HANG_1",
       "visible": true,
-      "alias": "NGUOITHUCHIEN"
+      "alias": "HANG_1"
     },
     {
-      "name": "TENDICHVU",
+      "name": "HANG_2",
       "visible": true,
-      "alias": "TENDICHVU"
+      "alias": "HANG_2"
     },
     {
-      "name": "SOLUONG",
+      "name": "HANG_3",
       "visible": true,
-      "alias": "SOLUONG"
+      "alias": "HANG_3"
     },
     {
-      "name": "TIEN_CHITRA",
+      "name": "TT_CHINH",
       "visible": true,
-      "alias": "TIEN_CHITRA"
+      "alias": "TT_CHINH"
     },
     {
-      "name": "THANHTIEN",
+      "name": "MAKHOA",
       "visible": true,
-      "alias": "THANHTIEN"
+      "alias": "MAKHOA"
     },
     {
-      "name": "NGAYTIEPNHAN",
+      "name": "PHU_VT",
       "visible": true,
-      "alias": "NGAYTIEPNHAN"
+      "alias": "PHU_VT"
     },
     {
-      "name": "NGAY_RAVIEN",
+      "name": "PHU_VN",
       "visible": true,
-      "alias": "NGAY_RAVIEN"
+      "alias": "PHU_VN"
     },
     {
-      "name": "DIACHI",
+      "name": "PHU_VN2",
       "visible": true,
-      "alias": "DIACHI"
+      "alias": "PHU_VN2"
     },
     {
-      "name": "NGAYSINH",
+      "name": "BS_GAYME",
       "visible": true,
-      "alias": "NGAYSINH"
+      "alias": "BS_GAYME"
     },
     {
-      "name": "NAMSINH",
+      "name": "GM1",
       "visible": true,
-      "alias": "NAMSINH"
+      "alias": "GM1"
     },
     {
-      "name": "MA_BHYT",
+      "name": "GM2",
       "visible": true,
-      "alias": "MA_BHYT"
+      "alias": "GM2"
     },
     {
-      "name": "MACHANDOANRAVIEN",
+      "name": "GV",
       "visible": true,
-      "alias": "MACHANDOANRAVIEN"
+      "alias": "GV"
     },
     {
-      "name": "NGAYCHIDINH",
+      "name": "DCV",
       "visible": true,
-      "alias": "NGAYCHIDINH"
-    },
-    {
-      "name": "NGAYKETTHUC",
-      "visible": true,
-      "alias": "NGAYKETTHUC"
-    },
-    {
-      "name": "MAGIUONG",
-      "visible": true,
-      "alias": "MAGIUONG"
-    },
-    {
-      "name": "TYLE_DV",
-      "visible": false,
-      "alias": "TYLE_DV"
-    },
-    {
-      "name": "THOIGIAN_BD",
-      "visible": true,
-      "alias": "THOIGIAN_BD"
-    },
-    {
-      "name": "THOIGIAN_KT",
-      "visible": true,
-      "alias": "THOIGIAN_KT"
+      "alias": "DCV"
     }
   ],
   "violationColName": "Quy tắc vi phạm"
