@@ -435,13 +435,13 @@ export default function ClinicalSchedulingPage() {
     `;
 
     const handlePrintPatient = useReactToPrint({
-        content: () => patientRef.current,
+        contentRef: patientRef,
         documentTitle: 'Danh Sách Bệnh Nhân',
         pageStyle: pageStyleForPrint,
     });
 
     const handlePrintReport = useReactToPrint({
-        content: () => reportRef.current,
+        contentRef: reportRef,
         documentTitle: 'Tổng Hợp Y Lệnh Thủ Thuật',
         pageStyle: pageStyleForPrint,
     });
