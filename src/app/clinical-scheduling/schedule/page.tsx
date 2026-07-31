@@ -7,6 +7,8 @@ import * as XLSX from 'xlsx';
 import { useAuth } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import ClinicalSchedulingConfigPage from '../config/page';
+import ClinicalSchedulingAttendancePage from '../attendance/page';
 
 const { Option } = Select;
 
@@ -783,6 +785,16 @@ export default function ClinicalSchedulingPage() {
                     key: '3',
                     label: <strong style={{fontSize: 16, color: '#16a34a'}}>Lịch sử lưu báo cáo</strong>,
                     children: <SavedPdfReportsTab />
+                },
+                {
+                    key: '4',
+                    label: <strong style={{fontSize: 16}}>Điểm danh</strong>,
+                    children: <ClinicalSchedulingAttendancePage />
+                },
+                {
+                    key: '5',
+                    label: <strong style={{fontSize: 16}}>Cấu hình</strong>,
+                    children: <ClinicalSchedulingConfigPage />
                 }
             ]} />
 

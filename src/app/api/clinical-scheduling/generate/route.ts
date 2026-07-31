@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
         // 1b. Lấy cấu hình giờ làm việc theo Khoa
         const deptHoursConfig = await prisma.systemConfig.findUnique({ where: { key: 'clinical_scheduling_dept_hours' } });
-        let deptHours = { morningStart: '07:30', morningEnd: '11:30', afternoonStart: '13:30', afternoonEnd: '17:30' }; // Default
+        let deptHours: { morningStart: string; morningEnd: string; afternoonStart: string; afternoonEnd: string; bufferTime?: number | string } = { morningStart: '07:30', morningEnd: '11:30', afternoonStart: '13:30', afternoonEnd: '17:30' }; // Default
         if (deptHoursConfig && deptHoursConfig.value) {
             const allHours = JSON.parse(deptHoursConfig.value);
             if (allHours[maKhoa]) {
