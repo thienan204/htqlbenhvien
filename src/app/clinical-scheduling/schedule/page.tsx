@@ -424,7 +424,7 @@ export default function ClinicalSchedulingPage() {
         body { padding: 0; font-size: 11px; background: #fff !important; color: #000 !important; }
         .ant-table { width: 100% !important; }
         table { width: 100% !important; border-collapse: collapse; table-layout: fixed !important; }
-        th, td { padding: 4px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
+        th, td { padding: 2px 4px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
         .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; color: #000 !important; text-align: center !important; }
         .ant-table-row-expand-icon { display: none !important; }
         .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container { display: block !important; overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; }
