@@ -233,7 +233,8 @@ export async function POST(request: Request) {
                             machineFree = false;
                             // Tìm 1 máy rảnh trong số các máy phù hợp
                             for (const machine of capableMachines) {
-                                const mTracker = machineTracker[machine.MA_MAY];
+                                if (!machine.MA_MAY) continue;
+                                const mTracker = machineTracker[machine.MA_MAY as string];
                                 if (isSlotFree(mTracker, currentTime, requiredTime)) {
                                     machineFree = true;
                                     selectedMachine = machine;
@@ -267,8 +268,8 @@ export async function POST(request: Request) {
                 patientTracker[ma_ba].push({ start: earliestGlobalTime, end: endTime + currentServiceBufferTime }); 
                 
                 // Máy móc bị giam 100% thời gian (kể cả làm song song), cộng thêm buffer time để máy được vệ sinh/nghỉ ngơi
-                if (chosenMachineForEarliest) {
-                    machineTracker[chosenMachineForEarliest.MA_MAY].push({ start: earliestGlobalTime, end: endTime + currentServiceBufferTime });
+                if (chosenMachineForEarliest && chosenMachineForEarliest.MA_MAY) {
+                    machineTracker[chosenMachineForEarliest.MA_MAY as string].push({ start: earliestGlobalTime, end: endTime + currentServiceBufferTime });
                 }
 
                 scheduledResults.push({

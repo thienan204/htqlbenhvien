@@ -422,13 +422,30 @@ export default function ClinicalSchedulingPage() {
         const element = document.getElementById(elementId);
         if (!element) return;
         
-        const originalContents = document.body.innerHTML;
-        const printContents = element.innerHTML;
-        
-        document.body.innerHTML = printContents;
-        window.print();
-        document.body.innerHTML = originalContents;
-        window.location.reload(); // To restore event listeners
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            message.warning("Vui lòng cho phép trình duyệt mở pop-up để in.");
+            return;
+        }
+
+        printWindow.document.write('<html><head><title>In Báo Cáo</title>');
+        const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
+        styleNodes.forEach(node => printWindow.document.write(node.outerHTML));
+        printWindow.document.write(`
+            <style>
+                body { padding: 20px; background: #fff !important; }
+                .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
+            </style>
+        </head><body>`);
+        printWindow.document.write(element.innerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }, 500);
     };
 
     const handleExportPDF = async (elementId: string, title: string) => {
