@@ -472,7 +472,7 @@ export default function ClinicalSchedulingPage() {
             formData.append('ten_bao_cao', `${title} - Ngày ${dayjs(selectedDate || new Date()).format('DD/MM/YYYY')}`);
             formData.append('loai_bao_cao', title);
             formData.append('ma_khoa', selectedDept);
-            formData.append('nguoi_tao', user?.ho_ten || 'Unknown');
+            formData.append('nguoi_tao', (user as any)?.ho_ten || 'Unknown');
 
             try {
                 const res = await fetch('/api/clinical-scheduling/save-report', {
