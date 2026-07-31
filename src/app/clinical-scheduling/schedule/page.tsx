@@ -436,17 +436,17 @@ export default function ClinicalSchedulingPage() {
                 body { padding: 20px; background: #fff !important; }
                 .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
                 @media print {
-                    @page { margin: 10mm; }
-                    body { padding: 0; font-size: 1.4vw; }
+                    @page { margin: 10mm; size: landscape; }
+                    body { padding: 0; font-size: 11px; }
                     /* Tự động thu gọn bảng cho vừa trang */
                     .ant-table { width: 100% !important; }
-                    table { width: 100% !important; table-layout: fixed; border-collapse: collapse; }
-                    th, td { padding: 0.6vw !important; word-wrap: break-word; white-space: normal !important; font-size: 1.4vw !important; line-height: 1.4 !important; }
+                    table { width: 100% !important; border-collapse: collapse; }
+                    th, td { padding: 6px !important; word-wrap: break-word; font-size: 11px !important; }
                     .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; }
                     /* Ẩn dấu cộng/trừ của Ant Design Table */
                     .ant-table-row-expand-icon { display: none !important; }
                     /* Class cắt chữ thành ... khi in */
-                    .print-truncate { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; max-width: 100% !important; }
+                    .print-truncate { display: -webkit-box !important; -webkit-line-clamp: 1 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; white-space: normal !important; word-break: break-word !important; }
                     /* Ép trình duyệt in màu nền và màu chữ chính xác */
                     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
