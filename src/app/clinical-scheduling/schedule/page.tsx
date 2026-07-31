@@ -534,7 +534,7 @@ export default function ClinicalSchedulingPage() {
 
         dataSource.forEach(row => processRow(row));
 
-        const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' });
+        const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' } as any);
         
         // Thêm Header
         const deptName = departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa || '';
