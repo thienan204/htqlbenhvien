@@ -251,7 +251,7 @@ export default function ClinicalSchedulingConfigPage() {
             dataIndex: 'is_concurrent',
             key: 'is_concurrent',
             width: 120,
-            align: 'center',
+            align: 'center' as const,
             render: (text: boolean, record: any) => (
                 <Checkbox
                     checked={text}
