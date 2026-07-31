@@ -501,15 +501,48 @@ export default function ClinicalSchedulingPage() {
 
     const handleExportExcelTab = (dataSource: any[], columns: any[], title: string) => {
         if (!dataSource || dataSource.length === 0) return;
-        const ws = XLSX.utils.json_to_sheet(dataSource.map(row => {
+        
+        const exportData: any[] = [];
+        
+        const processRow = (row: any) => {
             const newRow: any = {};
-            Object.keys(row).forEach(k => {
-                if (k !== 'key' && k !== 'children' && k !== '_originalRow') {
-                    newRow[k] = row[k];
+            columns.forEach((col: any) => {
+                if (col.children) {
+                    col.children.forEach((c: any) => {
+                        newRow[c.title] = row[c.dataIndex] || '';
+                    });
+                } else {
+                    let dataKey = col.dataIndex || col.key;
+                    if (dataKey) {
+                        let val = row[dataKey] !== undefined && row[dataKey] !== null ? row[dataKey] : '';
+                        if (col.key === 'ten_dich_vu' && row.ma_dich_vu) {
+                            val = `[${row.ma_dich_vu}] ${val}`;
+                        }
+                        if (col.key === 'may_thuc_hien' && row.ten_may) {
+                            val = `${row.ten_may} (${row.ma_may})`;
+                        }
+                        newRow[col.title] = val;
+                    }
                 }
             });
-            return newRow;
-        }));
+            exportData.push(newRow);
+            
+            if (row.children && row.children.length > 0) {
+                row.children.forEach((child: any) => processRow(child));
+            }
+        };
+
+        dataSource.forEach(row => processRow(row));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        
+        if (columns && columns.length > 0) {
+            let colCount = 0;
+            columns.forEach((c: any) => { if(c.children) { colCount += c.children.length; } else { colCount++; } });
+            const wscols = Array(colCount).fill({ wch: 25 });
+            ws['!cols'] = wscols;
+        }
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Report');
         XLSX.writeFile(wb, `${title}_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`);
