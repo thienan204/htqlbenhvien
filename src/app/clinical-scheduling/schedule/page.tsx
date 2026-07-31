@@ -435,6 +435,19 @@ export default function ClinicalSchedulingPage() {
             <style>
                 body { padding: 20px; background: #fff !important; }
                 .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
+                @media print {
+                    @page { size: A4 landscape; margin: 10mm; }
+                    body { padding: 0; font-size: 11px; }
+                    /* Tự động thu gọn bảng cho vừa trang */
+                    .ant-table { width: 100% !important; }
+                    table { width: 100% !important; table-layout: fixed; border-collapse: collapse; }
+                    th, td { padding: 6px !important; word-wrap: break-word; white-space: normal !important; font-size: 11px !important; }
+                    .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; }
+                    /* Ẩn dấu cộng/trừ của Ant Design Table */
+                    .ant-table-row-expand-icon { display: none !important; }
+                    /* Ép trình duyệt in màu nền và màu chữ chính xác */
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                }
             </style>
         </head><body>`);
         printWindow.document.write(element.innerHTML);
