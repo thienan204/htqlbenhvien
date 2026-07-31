@@ -340,9 +340,9 @@ export default function ClinicalSchedulingPage() {
             thoi_gian_chi_dinh: row[columnMapping.thoi_gian_chi_dinh] || '',
             ma_dich_vu: row[columnMapping.ma_dich_vu] || '',
             ten_dich_vu: row[columnMapping.ten_dich_vu] || '',
-            ten_khoa: row[columnMapping.ten_khoa] || '',
-            ma_khoa: row[columnMapping.ma_khoa] || '',
-            phong_thuc_hien: row[columnMapping.phong_thuc_hien] || '',
+            ten_khoa: row[columnMapping.ten_khoa as string] || '',
+            ma_khoa: row[columnMapping.ma_khoa as string] || '',
+            phong_thuc_hien: row[columnMapping.phong_thuc_hien as string] || '',
             _originalRow: row
         }));
 
