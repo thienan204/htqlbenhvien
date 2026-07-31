@@ -1500,7 +1500,7 @@ export default function HoSoDaGuiPage() {
                 </p>
             </div>
             
-            <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
+            <Tabs type="card" activeKey={activeTab} onChange={setActiveTab} items={items} />
 
             <Modal
                 title={`Lịch sử đối chiếu: ${selectedMaLienKet || ''}`}

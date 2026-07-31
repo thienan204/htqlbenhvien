@@ -555,7 +555,7 @@ export default function ClinicalSchedulingPage() {
     return (
         <div style={{ padding: 24, width: '100%', maxWidth: 1800, margin: '0 auto' }}>
             <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống Xếp lịch Dịch vụ Tự động (Lõi)</h1>
-            <Tabs defaultActiveKey="1" items={[
+            <Tabs type="card" defaultActiveKey="1" items={[
                 {
                     key: '1',
                     label: <strong style={{fontSize: 16}}>Công cụ Xếp lịch</strong>,
@@ -635,7 +635,7 @@ export default function ClinicalSchedulingPage() {
                     extra={<Button type="primary" icon={<DownloadOutlined />} onClick={handleExportExcel}>Tải File Excel Hoàn Chỉnh</Button>}
                     style={{ marginBottom: 24, border: '1px solid #16a34a' }}
                 >
-                    <Tabs
+                    <Tabs type="card" 
                         defaultActiveKey="1"
                         items={[
                             {

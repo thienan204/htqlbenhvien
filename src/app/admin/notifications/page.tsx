@@ -376,7 +376,7 @@ export default function NotificationConfigPage() {
 
   return (
     <div className="p-6">
-      <Tabs defaultActiveKey="1" items={items} />
+      <Tabs type="card" defaultActiveKey="1" items={items} />
 
       <Modal
         title={isAddMode ? 'Thêm sự kiện thông báo mới' : `Cấu hình thông báo: ${editingSetting?.eventName}`}

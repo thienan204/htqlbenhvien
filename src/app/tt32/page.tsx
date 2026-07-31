@@ -224,7 +224,7 @@ export default function TT32ManagementPage() {
             </div>
 
             <Card className="shadow-sm rounded-2xl border-slate-100">
-                <Tabs 
+                <Tabs type="card" 
                     defaultActiveKey="1"
                     items={[
                         {

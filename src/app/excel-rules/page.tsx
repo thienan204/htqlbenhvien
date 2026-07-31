@@ -295,7 +295,7 @@ export default function ExcelRulesPage() {
                 footer={null}
                 width={1000}
             >
-                <Tabs
+                <Tabs type="card" 
                     defaultActiveKey="1"
                     items={[
                         {

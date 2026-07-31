@@ -1,0 +1,1 @@
+- Always use `type="card"` when using Ant Design Tabs components to maintain UI consistency across the project.

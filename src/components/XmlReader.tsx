@@ -1891,7 +1891,7 @@ export default function XmlReader() {
                         />
                     </div>
                 )}
-                <Tabs
+                <Tabs type="card" 
                     activeKey={activeTab}
                     onChange={(key) => {
                         setActiveTab(key);

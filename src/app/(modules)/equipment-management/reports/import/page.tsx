@@ -222,7 +222,7 @@ export default function ImportReportPage() {
             </Card>
 
             <Card className="shadow-sm border-slate-200" styles={{ body: { padding: 0 } }}>
-                <Tabs 
+                <Tabs type="card" 
                     activeKey={reportType} 
                     onChange={(key) => setReportType(key as 'summary' | 'detail')}
                     className="px-4 pt-2"

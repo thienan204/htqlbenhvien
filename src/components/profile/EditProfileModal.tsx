@@ -216,7 +216,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
             style={{ top: 20 }}
             styles={{ body: { padding: '0 24px 24px 24px' } }}
         >
-            <Tabs 
+            <Tabs type="card" 
                 activeKey={activeTab} 
                 onChange={setActiveTab}
                 items={[

@@ -347,7 +347,7 @@ export default function ITConfigPage() {
                         </Button>
                     }
                 >
-                    <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+                    <Tabs type="card" activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
                 </Card>
 
                 <Drawer
