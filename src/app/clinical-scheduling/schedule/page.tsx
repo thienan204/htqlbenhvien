@@ -429,14 +429,15 @@ export default function ClinicalSchedulingPage() {
         }
 
         printWindow.document.write('<html><head><title>In Báo Cáo</title>');
+        printWindow.document.write(`<base href="${window.location.origin}">`);
         const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
         styleNodes.forEach(node => printWindow.document.write(node.outerHTML));
         printWindow.document.write(`
             <style>
-                body { padding: 20px; background: #fff !important; }
+                body { padding: 20px; background: #fff !important; color: #000 !important; }
                 .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
                 @media print {
-                    @page { margin: 10mm; size: landscape; }
+                    @page { margin: 10mm; }
                     body { padding: 0; font-size: 11px; }
                     /* Tự động thu gọn bảng cho vừa trang */
                     .ant-table { width: 100% !important; }
@@ -446,8 +447,8 @@ export default function ClinicalSchedulingPage() {
                     /* Ẩn dấu cộng/trừ của Ant Design Table */
                     .ant-table-row-expand-icon { display: none !important; }
                     /* Fix lỗi Antd bị trắng trang khi in */
-                    .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container { overflow: visible !important; height: auto !important; max-height: none !important; }
-                    body { color: #000 !important; }
+                    .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container, .ant-table-tbody { display: block !important; overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; }
+                    tr { display: table-row !important; page-break-inside: avoid; }
                     /* Class cắt chữ thành ... khi in */
                     .print-truncate { display: -webkit-box !important; -webkit-line-clamp: 1 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; white-space: normal !important; word-break: break-word !important; }
                     /* Ép trình duyệt in màu nền và màu chữ chính xác */
@@ -463,7 +464,7 @@ export default function ClinicalSchedulingPage() {
             printWindow.focus();
             printWindow.print();
             printWindow.close();
-        }, 500);
+        }, 1000); // Tăng thời gian chờ load CSS
     };
 
     const handleExportPDF = async (elementId: string, title: string) => {
