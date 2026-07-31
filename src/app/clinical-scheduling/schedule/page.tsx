@@ -789,7 +789,7 @@ export default function ClinicalSchedulingPage() {
                 },
                 {
                     key: '4',
-                    label: <strong style={{fontSize: 16}}>Điểm danh</strong>,
+                    label: <strong style={{fontSize: 16}}>Người thực hiện</strong>,
                     children: <ClinicalSchedulingAttendancePage />
                 },
                 {
