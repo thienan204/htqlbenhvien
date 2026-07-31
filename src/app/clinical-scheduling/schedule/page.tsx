@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm } from 'antd';
 import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { useAuth } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -553,6 +553,28 @@ export default function ClinicalSchedulingPage() {
             { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
             { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }
         );
+
+        // Styling for headers and page setup
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+        
+        // Căn giữa 3 dòng tiêu đề đầu
+        for (let R = 0; R <= 2; R++) {
+            const cell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+            if (cell) {
+                cell.s = { font: { bold: true, sz: R === 2 ? 14 : 11 }, alignment: { horizontal: 'center', vertical: 'center' } };
+            }
+        }
+
+        // In đậm dòng tiêu đề các cột (dòng số 3, do data bắt đầu từ A4)
+        for (let C = range.s.c; C <= range.e.c; C++) {
+            const cell = ws[XLSX.utils.encode_cell({ r: 3, c: C })];
+            if (cell && typeof cell === 'object') {
+                cell.s = { font: { bold: true }, alignment: { horizontal: 'center', vertical: 'center' } };
+            }
+        }
+        
+        // Mặc định xuất Excel ngang khổ A4
+        ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9 };
         
         // Tính toán độ rộng tự động cho các cột (Auto Width)
         if (exportData.length > 0) {
