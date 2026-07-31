@@ -132,6 +132,7 @@ model Staff {
   vi_tri_bhyt_ref        SystemCategory?         @relation("StaffBhytPosition", fields: [vi_tri_bhyt_id], references: [id])
   user                   User?
   storekeeper_warehouses Warehouse[]
+  attendances            StaffAttendance[]
 }
 
 model SystemCategory {
@@ -154,6 +155,7 @@ model SystemCategory {
   staff_dan_toc     Staff[]                 @relation("StaffEthnicity")
   staff_vi_tri_bhyt Staff[]                 @relation("StaffBhytPosition")
   cchn_noi_cap      PracticingCertificate[] @relation("CertIssuePlace")
+  staff_attendances StaffAttendance[]       @relation("AttendanceStatus")
 
   @@unique([type, code])
 }
@@ -390,6 +392,11 @@ model Mau05Catalog {
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  thoigian_thuc_hien Int?
+  yeu_cau_trinh_do   String?
+  buffer_time      Int?
+  is_concurrent    Boolean  @default(false)
+  yeu_cau_may_moc  String?
 }
 
 model Mau06Catalog {
@@ -402,6 +409,7 @@ model Mau06Catalog {
   NAM_SX      Int?
   NAM_SD      Int?
   MA_MAY      String?
+  TEN_BV      String?
   SO_LUU_HANH String?  @db.VarChar(20)
   HD_TU       String?  @db.VarChar(8)
   HD_DEN      String?  @db.VarChar(8)
@@ -411,6 +419,17 @@ model Mau06Catalog {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  loai_may_code String?
+}
+
+model MachineLocationHistory {
+  id        String   @id @default(uuid())
+  ma_may    String
+  ma_khoa   String
+  tu_ngay   DateTime?
+  den_ngay  DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ITRequest {
@@ -1516,4 +1535,29 @@ model SystemConfig {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model StaffAttendance {
+  id            String   @id @default(cuid())
+  staffId       String
+  staff         Staff    @relation(fields: [staffId], references: [id])
+  workDate      String   @db.VarChar(10) // YYYY-MM-DD
+  statusId      String?
+  status_ref    SystemCategory? @relation("AttendanceStatus", fields: [statusId], references: [id])
+  is_thuc_hien_dvkt Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([staffId, workDate])
+}
+
+model PdfReport {
+  id            String   @id @default(cuid())
+  url           String
+  ten_bao_cao   String
+  loai_bao_cao  String?
+  ma_khoa       String?
+  nguoi_tao     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

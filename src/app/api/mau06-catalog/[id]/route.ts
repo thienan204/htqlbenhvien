@@ -22,12 +22,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                 NAM_SX: body.NAM_SX ? Number(body.NAM_SX) : null,
                 NAM_SD: body.NAM_SD ? Number(body.NAM_SD) : null,
                 MA_MAY: body.MA_MAY ? String(body.MA_MAY) : null,
+                TEN_BV: body.TEN_BV ? String(body.TEN_BV) : null,
                 SO_LUU_HANH: body.SO_LUU_HANH ? String(body.SO_LUU_HANH).substring(0, 20) : null,
                 HD_TU: body.HD_TU ? String(body.HD_TU).substring(0, 8) : null,
                 HD_DEN: body.HD_DEN ? String(body.HD_DEN).substring(0, 8) : null,
                 TU_NGAY: body.TU_NGAY ? String(body.TU_NGAY).substring(0, 8) : null,
                 DEN_NGAY: body.DEN_NGAY ? String(body.DEN_NGAY).substring(0, 8) : null,
                 MA_CSKCB: body.MA_CSKCB ? String(body.MA_CSKCB).substring(0, 5) : null,
+                loai_may_code: body.loai_may_code !== undefined ? (body.loai_may_code ? String(body.loai_may_code) : null) : undefined,
             }
         });
 

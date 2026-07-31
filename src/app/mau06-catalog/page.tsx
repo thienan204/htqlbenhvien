@@ -1,32 +1,56 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Mau06CatalogPage() {
     const [data, setData] = useState<any[]>([]);
+    const [machineTypes, setMachineTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [selectedMachineForLocation, setSelectedMachineForLocation] = useState<any>(null);
+    const [departments, setDepartments] = useState<any[]>([]);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [form] = Form.useForm();
+    const [locationForm] = Form.useForm();
     const [searchText, setSearchText] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
+    const [isMounted, setIsMounted] = useState(false);
     const { user } = useAuth();
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${getBasePath()}/api/mau06-catalog`);
+            const [res, typeRes, deptRes] = await Promise.all([
+                fetch(`${getBasePath()}/api/mau06-catalog`),
+                fetch(`${getBasePath()}/api/system-categories?type=LOAI_MAY`),
+                fetch(`${getBasePath()}/api/departments`)
+            ]);
+            
             if (!res.ok) throw new Error('Failed to fetch data');
             const result = await res.json();
             setData(result);
+            
+            if (typeRes.ok) {
+                const types = await typeRes.json();
+                setMachineTypes(types);
+            }
+            if (deptRes.ok) {
+                const depts = await deptRes.json();
+                setDepartments(depts);
+            }
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -47,6 +71,20 @@ export default function Mau06CatalogPage() {
             }
         }
     }, [isModalOpen, editingRecord, form]);
+
+    useEffect(() => {
+        if (isLocationModalOpen && selectedMachineForLocation) {
+            locationForm.resetFields();
+            fetch(`${getBasePath()}/api/machine-location?ma_may=${selectedMachineForLocation.MA_MAY}`)
+                .then(res => res.ok ? res.json() : [])
+                .then(locations => {
+                    if (locations && locations.length > 0) {
+                        locationForm.setFieldsValue({ ma_khoa: locations[0].ma_khoa });
+                    }
+                })
+                .catch(err => console.error('Error fetching location', err));
+        }
+    }, [isLocationModalOpen, selectedMachineForLocation, locationForm]);
 
     const handleToggleStatus = async (id: string, currentStatus: boolean) => {
         setTogglingId(id);
@@ -156,9 +194,33 @@ export default function Mau06CatalogPage() {
         }
     };
 
+    const handleSaveLocation = async (values: any) => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/machine-location`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ma_may: selectedMachineForLocation.MA_MAY, ma_khoa: values.ma_khoa })
+            });
+
+            if (res.ok) {
+                message.success('Đã phân bổ thiết bị cho khoa');
+                setIsLocationModalOpen(false);
+            } else {
+                message.error('Lỗi khi phân bổ');
+            }
+        } catch (error) {
+            message.error('Lỗi hệ thống');
+        }
+    };
+
+    const handleOpenLocation = (record: any) => {
+        setSelectedMachineForLocation(record);
+        setIsLocationModalOpen(true);
+    };
+
     const handleDownloadTemplate = () => {
         const headers = [
-            'TEN_TB', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
+            'TEN_TB', 'TEN_BV', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
             'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
         ];
 
@@ -170,7 +232,7 @@ export default function Mau06CatalogPage() {
 
     const handleExportData = () => {
         const headers = [
-            'TEN_TB', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
+            'TEN_TB', 'TEN_BV', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
             'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
         ];
 
@@ -222,6 +284,16 @@ export default function Mau06CatalogPage() {
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1 },
         { title: 'Mã Máy', dataIndex: 'MA_MAY', width: 150 },
         { title: 'Tên Thiết Bị', dataIndex: 'TEN_TB', width: 250 },
+        { title: 'Tên Bệnh viện', dataIndex: 'TEN_BV', width: 250 },
+        { 
+            title: 'Phân loại (Loại máy)', 
+            dataIndex: 'loai_may_code', 
+            width: 200,
+            render: (code: string) => {
+                const type = machineTypes.find(t => t.code === code);
+                return type ? type.name : code;
+            }
+        },
         { title: 'Model (Ký hiệu)', dataIndex: 'KY_HIEU', width: 150 },
         { title: 'Công ty SX', dataIndex: 'CONGTY_SX', width: 200 },
         { title: 'Nước SX', dataIndex: 'NUOC_SX', width: 120 },
@@ -238,12 +310,13 @@ export default function Mau06CatalogPage() {
         {
             title: 'Hành động',
             key: 'action',
-            width: 100,
+            width: 150,
             align: 'center' as const,
             fixed: 'right' as const,
             render: (_: any, record: any) => (
                 <Space size="middle">
                     <Tooltip title="Sửa"><Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => handleEdit(record)} /></Tooltip>
+                    <Tooltip title="Phân bổ Khoa"><Button type="text" icon={<SwapOutlined className="text-teal-600" />} onClick={() => handleOpenLocation(record)} /></Tooltip>
                     <Popconfirm title="Xác nhận xóa?" onConfirm={() => handleDelete(record.id)} okText="Có" cancelText="Không">
                         <Tooltip title="Xóa"><Button type="text" icon={<DeleteOutlined className="text-red-500" />} /></Tooltip>
                     </Popconfirm>
@@ -278,7 +351,7 @@ export default function Mau06CatalogPage() {
                     </Space>
                     <Space>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
-                        {user?.role === 'ADMIN' && (
+                        {isMounted && user?.role === 'ADMIN' && (
                             <Popconfirm 
                                 title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
                                 description="Hành động này sẽ xóa sạch danh mục và không thể hoàn tác. Bạn có chắc chắn không?"
@@ -334,14 +407,25 @@ export default function Mau06CatalogPage() {
                                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-teal-500 rounded-l-xl"></div>
                                 <h3 className="text-sm font-bold text-teal-800 uppercase mb-4 flex items-center gap-2"><DesktopOutlined /> 1. Thông tin Máy / Thiết bị Y tế</h3>
                                 <Row gutter={16}>
-                                    <Col span={10}><Form.Item name="TEN_TB" label="Tên Thiết bị"><Input size="large" /></Form.Item></Col>
-                                    <Col span={7}><Form.Item name="KY_HIEU" label="Ký hiệu (Model)"><Input size="large" /></Form.Item></Col>
-                                    <Col span={7}><Form.Item name="MA_MAY" label="Mã máy"><Input size="large" className="font-mono text-teal-600 font-bold" /></Form.Item></Col>
+                                    <Col span={8}><Form.Item name="TEN_TB" label="Tên Thiết bị"><Input size="large" /></Form.Item></Col>
+                                    <Col span={8}>
+                                        <Form.Item name="loai_may_code" label="Phân loại (Loại máy)">
+                                            <Select size="large" allowClear placeholder="Chọn loại máy..." showSearch optionFilterProp="children">
+                                                {machineTypes.map(t => (
+                                                    <Select.Option key={t.code} value={t.code}>{t.name}</Select.Option>
+                                                ))}
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={8}><Form.Item name="TEN_BV" label="Tên Bệnh viện"><Input size="large" /></Form.Item></Col>
 
-                                    <Col span={10}><Form.Item name="CONGTY_SX" label="Công ty Sản xuất"><Input size="large" /></Form.Item></Col>
-                                    <Col span={6}><Form.Item name="NUOC_SX" label="Nước sản xuất"><Input size="large" /></Form.Item></Col>
-                                    <Col span={4}><Form.Item name="NAM_SX" label="Năm SX"><InputNumber className="w-full" size="large" /></Form.Item></Col>
-                                    <Col span={4}><Form.Item name="NAM_SD" label="Năm Sử dụng"><InputNumber className="w-full" size="large" /></Form.Item></Col>
+                                    <Col span={6}><Form.Item name="KY_HIEU" label="Ký hiệu (Model)"><Input size="large" /></Form.Item></Col>
+                                    <Col span={6}><Form.Item name="MA_MAY" label="Mã máy"><Input size="large" className="font-mono text-teal-600 font-bold" /></Form.Item></Col>
+                                    <Col span={12}><Form.Item name="CONGTY_SX" label="Công ty Sản xuất"><Input size="large" /></Form.Item></Col>
+
+                                    <Col span={8}><Form.Item name="NUOC_SX" label="Nước sản xuất"><Input size="large" /></Form.Item></Col>
+                                    <Col span={8}><Form.Item name="NAM_SX" label="Năm SX"><InputNumber className="w-full" size="large" /></Form.Item></Col>
+                                    <Col span={8}><Form.Item name="NAM_SD" label="Năm Sử dụng"><InputNumber className="w-full" size="large" /></Form.Item></Col>
                                 </Row>
                             </div>
 
@@ -363,6 +447,34 @@ export default function Mau06CatalogPage() {
                             </div>
 
                         </div>
+                    </Form>
+                </Modal>
+                <Modal
+                    title={<span className="text-lg font-bold text-teal-700">Điều chuyển Thiết bị Y tế</span>}
+                    open={isLocationModalOpen}
+                    onCancel={() => setIsLocationModalOpen(false)}
+                    onOk={() => locationForm.submit()}
+                    width={500}
+                >
+                    {selectedMachineForLocation && (
+                        <div className="mb-4 p-3 bg-teal-50 rounded border border-teal-100">
+                            <div><strong>Tên máy:</strong> {selectedMachineForLocation.TEN_TB}</div>
+                            <div><strong>Mã máy:</strong> {selectedMachineForLocation.MA_MAY}</div>
+                            <div><strong>Model:</strong> {selectedMachineForLocation.KY_HIEU}</div>
+                        </div>
+                    )}
+                    <Form form={locationForm} layout="vertical" onFinish={handleSaveLocation}>
+                        <Form.Item 
+                            name="ma_khoa" 
+                            label="Khoa đang sử dụng" 
+                            rules={[{ required: true, message: 'Vui lòng chọn khoa' }]}
+                        >
+                            <Select size="large" showSearch optionFilterProp="children" placeholder="-- Chọn khoa phân bổ --">
+                                {departments.filter(d => d.ma_khoa).map((d, index) => (
+                                    <Select.Option key={d.ma_khoa || index} value={d.ma_khoa}>{d.ten_khoa}</Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
                     </Form>
                 </Modal>
             </Card>

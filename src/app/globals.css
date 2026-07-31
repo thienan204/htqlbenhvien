@@ -110,3 +110,26 @@ body {
 .ant-table-wrapper .ant-table-cell {
   padding: 8px 6px !important;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-patient, #print-patient *,
+  #print-report, #print-report * {
+    visibility: visible;
+  }
+  #print-patient, #print-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .print-header {
+    display: block !important;
+  }
+  /* Optional: Force landscape */
+  @page {
+    size: landscape;
+  }
+}
