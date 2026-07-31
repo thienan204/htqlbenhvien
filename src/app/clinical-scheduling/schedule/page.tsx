@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import { useAuth } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useReactToPrint } from 'react-to-print';
 import ClinicalSchedulingConfigPage from '../config/page';
 import ClinicalSchedulingAttendancePage from '../attendance/page';
 
@@ -418,53 +419,39 @@ export default function ClinicalSchedulingPage() {
         }
     };
 
+    const pageStyleForPrint = `
+        @page { margin: 10mm; }
+        body { padding: 0; font-size: 11px; background: #fff !important; color: #000 !important; }
+        .ant-table { width: 100% !important; }
+        table { width: 100% !important; border-collapse: collapse; }
+        th, td { padding: 6px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
+        .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; color: #000 !important; }
+        .ant-table-row-expand-icon { display: none !important; }
+        .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container, .ant-table-tbody { display: block !important; overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; }
+        tr { display: table-row !important; page-break-inside: avoid; }
+        .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
+        .print-truncate { display: -webkit-box !important; -webkit-line-clamp: 1 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; white-space: normal !important; word-break: break-word !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    `;
+
+    const handlePrintPatient = useReactToPrint({
+        content: () => patientRef.current,
+        documentTitle: 'Danh Sách Bệnh Nhân',
+        pageStyle: pageStyleForPrint,
+    });
+
+    const handlePrintReport = useReactToPrint({
+        content: () => reportRef.current,
+        documentTitle: 'Tổng Hợp Y Lệnh Thủ Thuật',
+        pageStyle: pageStyleForPrint,
+    });
+
     const handlePrint = (elementId: string) => {
-        const element = document.getElementById(elementId);
-        if (!element) return;
-        
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            message.warning("Vui lòng cho phép trình duyệt mở pop-up để in.");
-            return;
+        if (elementId === 'print-patient') {
+            handlePrintPatient();
+        } else if (elementId === 'print-report') {
+            handlePrintReport();
         }
-
-        printWindow.document.write('<html><head><title>In Báo Cáo</title>');
-        printWindow.document.write(`<base href="${window.location.origin}">`);
-        const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
-        styleNodes.forEach(node => printWindow.document.write(node.outerHTML));
-        printWindow.document.write(`
-            <style>
-                body { padding: 20px; background: #fff !important; color: #000 !important; }
-                .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
-                @media print {
-                    @page { margin: 10mm; }
-                    body { padding: 0; font-size: 11px; }
-                    /* Tự động thu gọn bảng cho vừa trang */
-                    .ant-table { width: 100% !important; }
-                    table { width: 100% !important; border-collapse: collapse; }
-                    th, td { padding: 6px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
-                    .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; color: #000 !important; }
-                    /* Ẩn dấu cộng/trừ của Ant Design Table */
-                    .ant-table-row-expand-icon { display: none !important; }
-                    /* Fix lỗi Antd bị trắng trang khi in */
-                    .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container, .ant-table-tbody { display: block !important; overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; }
-                    tr { display: table-row !important; page-break-inside: avoid; }
-                    /* Class cắt chữ thành ... khi in */
-                    .print-truncate { display: -webkit-box !important; -webkit-line-clamp: 1 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; white-space: normal !important; word-break: break-word !important; }
-                    /* Ép trình duyệt in màu nền và màu chữ chính xác */
-                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                }
-            </style>
-        </head><body>`);
-        printWindow.document.write(element.innerHTML);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
-        }, 1000); // Tăng thời gian chờ load CSS
     };
 
     const handleExportPDF = async (elementId: string, title: string) => {
