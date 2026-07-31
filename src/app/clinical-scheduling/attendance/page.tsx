@@ -210,7 +210,7 @@ export default function ClinicalSchedulingAttendancePage() {
 
     return (
         <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-            <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Quản lý Nhân sự Điểm danh (Khoa/Phòng)</h1>
+            <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Quản lý người thực hiện DVKT (KP)</h1>
             
             <Card style={{ marginBottom: 24 }}>
                 <Row gutter={24} align="middle">
