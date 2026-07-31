@@ -569,7 +569,7 @@ export default function ClinicalSchedulingPage() {
 
     return (
         <div style={{ padding: 24, width: '100%', maxWidth: 1800, margin: '0 auto' }}>
-            <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống Xếp lịch Dịch vụ Tự động (Lõi)</h1>
+            <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống tự động chia thời gian thực hiện DVKT</h1>
             <Tabs type="card" defaultActiveKey="1" items={[
                 {
                     key: '1',
