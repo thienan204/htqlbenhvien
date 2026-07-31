@@ -573,7 +573,7 @@ export default function ClinicalSchedulingPage() {
             <Tabs type="card" defaultActiveKey="1" items={[
                 {
                     key: '1',
-                    label: <strong style={{fontSize: 16}}>Công cụ Xếp lịch</strong>,
+                    label: <strong style={{fontSize: 16}}>Công cụ xếp thời gian</strong>,
                     children: (
                         <div style={{ marginTop: 16 }}>
             <Card style={{ marginBottom: 24 }}>
