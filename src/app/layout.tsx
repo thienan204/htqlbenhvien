@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AntdRegistry from "@/lib/AntdRegistry";
+import { App } from 'antd';
 
 
 const geistSans = Geist({
@@ -100,13 +101,15 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <AntdRegistry>
-          <AuthProvider user={user} guestPermissions={guestPermissions}>
-            <FetchInterceptor />
-            {/* Main Layout Wrapper */}
-            <MainLayout rules={rules} menus={menus} adminOnlyPaths={adminOnlyPaths}>
-              {children}
-            </MainLayout>
-          </AuthProvider>
+          <App>
+            <AuthProvider user={user} guestPermissions={guestPermissions}>
+              <FetchInterceptor />
+              {/* Main Layout Wrapper */}
+              <MainLayout rules={rules} menus={menus} adminOnlyPaths={adminOnlyPaths}>
+                {children}
+              </MainLayout>
+            </AuthProvider>
+          </App>
         </AntdRegistry>
       </body>
     </html>
