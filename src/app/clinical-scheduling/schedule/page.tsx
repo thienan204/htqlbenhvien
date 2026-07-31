@@ -655,7 +655,7 @@ export default function ClinicalSchedulingPage() {
                         items={[
                             {
                                 key: '1',
-                                label: 'Group theo Tên Bệnh nhân',
+                                label: 'Tên Bệnh nhân',
                                 children: (
                                     <>
                                         <Space style={{ marginBottom: 16 }}>
@@ -687,7 +687,7 @@ export default function ClinicalSchedulingPage() {
                             },
                             {
                                 key: '2',
-                                label: 'Group theo Bác sĩ / Điều dưỡng',
+                                label: 'Bác sĩ / Điều dưỡng',
                                 children: (
                                     <>
                                         <Table 
