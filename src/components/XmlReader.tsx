@@ -1898,7 +1898,6 @@ export default function XmlReader() {
                         setDetailFilters({});
                     }}
                     items={items}
-                    type="line"
                     className="custom-tabs px-8 py-4 bg-white border-b border-slate-100"
                     tabBarStyle={{ margin: 0, border: 'none', paddingLeft: '32px' }}
                     tabBarGutter={12}
