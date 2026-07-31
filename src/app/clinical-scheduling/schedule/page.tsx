@@ -423,9 +423,9 @@ export default function ClinicalSchedulingPage() {
         @page { margin: 10mm; }
         body { padding: 0; font-size: 11px; background: #fff !important; color: #000 !important; }
         .ant-table { width: 100% !important; }
-        table { width: 100% !important; border-collapse: collapse; }
-        th, td { padding: 6px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
-        .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; color: #000 !important; }
+        table { width: 100% !important; border-collapse: collapse; table-layout: fixed !important; }
+        th, td { padding: 4px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
+        .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; color: #000 !important; text-align: center !important; }
         .ant-table-row-expand-icon { display: none !important; }
         .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container, .ant-table-tbody { display: block !important; overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; }
         tr { display: table-row !important; page-break-inside: avoid; }
@@ -531,24 +531,24 @@ export default function ClinicalSchedulingPage() {
     };
 
     const resultColumns = [
-        { title: 'Người thực hiện (Bác sĩ/Điều dưỡng)', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r.children ? '#237804' : '#16a34a'}}>{t}</strong></div> : null },
-        { title: 'Mã BA (Hồ sơ)', dataIndex: 'ma_ba', key: 'ma_ba' },
-        { title: 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn' },
-        { title: 'Thời gian chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
-        { title: 'Máy thực hiện', key: 'may_thuc_hien', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
-        { title: 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
-        { title: 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r.children ? '#237804' : '#16a34a'}}>{t}</strong></div> : null },
+        { title: 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '10%' },
+        { title: 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%' },
+        { title: 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
+        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
+        { title: 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
+        { title: 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
     ];
 
     const patientColumns = [
-        { title: 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', render: (t: string, r: any) => t ? <strong style={{color: r.children ? '#0958d9' : '#000'}}>{t}</strong> : null },
-        { title: 'Người thực hiện (Bác sĩ/Điều dưỡng)', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
-        { title: 'Thời gian chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
-        { title: 'Máy thực hiện', key: 'may_thuc_hien', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
-        { title: 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
-        { title: 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r.children ? '#0958d9' : '#000'}}>{t}</strong> : null },
+        { title: 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
+        { title: 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
+        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '30%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
+        { title: 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
+        { title: 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
     ];
 
     const failedColumns = [
