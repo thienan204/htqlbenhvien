@@ -190,7 +190,7 @@ export default function ClinicalSchedulingAttendancePage() {
             dataIndex: 'is_thuc_hien_dvkt',
             key: 'is_thuc_hien_dvkt',
             width: 150,
-            align: 'center',
+            align: 'center' as const,
             render: (val: boolean, record: any) => {
                 const isChecked = val !== false; // Mặc định true
                 return (
