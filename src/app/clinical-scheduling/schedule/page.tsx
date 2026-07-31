@@ -536,10 +536,26 @@ export default function ClinicalSchedulingPage() {
 
         const ws = XLSX.utils.json_to_sheet(exportData);
         
-        if (columns && columns.length > 0) {
-            let colCount = 0;
-            columns.forEach((c: any) => { if(c.children) { colCount += c.children.length; } else { colCount++; } });
-            const wscols = Array(colCount).fill({ wch: 25 });
+        // Tính toán độ rộng tự động cho các cột (Auto Width)
+        if (exportData.length > 0) {
+            const colWidths: Record<string, number> = {};
+            // Khởi tạo width bằng độ dài của header
+            Object.keys(exportData[0]).forEach(key => {
+                colWidths[key] = key.length; 
+            });
+            // Duyệt qua dữ liệu để tìm nội dung dài nhất
+            exportData.forEach(row => {
+                Object.keys(row).forEach(key => {
+                    const val = row[key] ? String(row[key]) : '';
+                    if (val.length > colWidths[key]) {
+                        colWidths[key] = val.length;
+                    }
+                });
+            });
+            // Áp dụng vào sheet, giới hạn max 100, min 10
+            const wscols = Object.keys(exportData[0]).map(key => ({
+                wch: Math.min(Math.max(colWidths[key] + 3, 10), 100)
+            }));
             ws['!cols'] = wscols;
         }
 
