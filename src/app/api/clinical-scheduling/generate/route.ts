@@ -72,13 +72,15 @@ export async function POST(request: Request) {
             // @ts-ignore
             const itemReqMachine = item.yeu_cau_may_moc;
             
-            catalogMap[item.MA_DICH_VU] = {
-                time: item.thoigian_thuc_hien || 10, // Default 10 mins if not set
-                qualification: item.yeu_cau_trinh_do, // Tên hoặc mã chức danh/trình độ
-                bufferTime: itemBufferTime !== null && itemBufferTime !== undefined ? itemBufferTime : deptBufferTime,
-                isConcurrent: itemIsConcurrent || false,
-                reqMachineCode: itemReqMachine || null
-            };
+            if (item.MA_DICH_VU) {
+                catalogMap[item.MA_DICH_VU] = {
+                    time: item.thoigian_thuc_hien || 10, // Default 10 mins if not set
+                    qualification: item.yeu_cau_trinh_do, // Tên hoặc mã chức danh/trình độ
+                    bufferTime: itemBufferTime !== null && itemBufferTime !== undefined ? itemBufferTime : deptBufferTime,
+                    isConcurrent: itemIsConcurrent || false,
+                    reqMachineCode: itemReqMachine || null
+                };
+            }
         });
 
         // 2b. Lấy danh sách máy móc khả dụng của Khoa trong ngày

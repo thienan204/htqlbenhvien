@@ -241,6 +241,9 @@ export default function ClinicalSchedulingPage() {
         ma_dich_vu: string;
         ten_dich_vu: string;
         thoi_gian_chi_dinh: string;
+        ten_khoa?: string;
+        ma_khoa?: string;
+        phong_thuc_hien?: string;
     }>({
         ma_ba: '',
         ten_bn: '',
@@ -248,6 +251,15 @@ export default function ClinicalSchedulingPage() {
         ten_dich_vu: '',
         thoi_gian_chi_dinh: ''
     });
+
+    useEffect(() => {
+        const savedMapping = localStorage.getItem('clinical_schedule_column_mapping');
+        if (savedMapping) {
+            try {
+                setColumnMapping(JSON.parse(savedMapping));
+            } catch (e) {}
+        }
+    }, []);
 
     useEffect(() => {
         if (user === undefined) return;
@@ -319,6 +331,8 @@ export default function ClinicalSchedulingPage() {
             message.error('Bắt buộc phải chọn cột Mã Dịch Vụ!');
             return;
         }
+
+        localStorage.setItem('clinical_schedule_column_mapping', JSON.stringify(columnMapping));
 
         const mappedData = rawExcelData.map(row => ({
             ma_ba: row[columnMapping.ma_ba] || '',
