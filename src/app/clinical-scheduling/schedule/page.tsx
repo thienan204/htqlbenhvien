@@ -441,10 +441,13 @@ export default function ClinicalSchedulingPage() {
                     /* Tự động thu gọn bảng cho vừa trang */
                     .ant-table { width: 100% !important; }
                     table { width: 100% !important; border-collapse: collapse; }
-                    th, td { padding: 6px !important; word-wrap: break-word; font-size: 11px !important; }
-                    .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; }
+                    th, td { padding: 6px !important; word-wrap: break-word; font-size: 11px !important; color: #000 !important; }
+                    .ant-table-thead > tr > th { font-weight: bold; background-color: #fafafa !important; color: #000 !important; }
                     /* Ẩn dấu cộng/trừ của Ant Design Table */
                     .ant-table-row-expand-icon { display: none !important; }
+                    /* Fix lỗi Antd bị trắng trang khi in */
+                    .ant-table-wrapper, .ant-table-container, .ant-table-body, .ant-table-content, .ant-spin-nested-loading, .ant-spin-container { overflow: visible !important; height: auto !important; max-height: none !important; }
+                    body { color: #000 !important; }
                     /* Class cắt chữ thành ... khi in */
                     .print-truncate { display: -webkit-box !important; -webkit-line-clamp: 1 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; white-space: normal !important; word-break: break-word !important; }
                     /* Ép trình duyệt in màu nền và màu chữ chính xác */
