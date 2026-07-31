@@ -534,7 +534,25 @@ export default function ClinicalSchedulingPage() {
 
         dataSource.forEach(row => processRow(row));
 
-        const ws = XLSX.utils.json_to_sheet(exportData);
+        const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' });
+        
+        // Thêm Header
+        const deptName = departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa || '';
+        const dateStr = dayjs(selectedDate || new Date()).format('DD/MM/YYYY');
+        const headerTitle = `CHIA THỜI GIAN THỰC HIỆN DVKT NGÀY ${dateStr} CỦA KHOA ${deptName}`.toUpperCase();
+
+        XLSX.utils.sheet_add_aoa(ws, [
+            ['SỞ Y TẾ TỈNH LẠNG SƠN'],
+            ['BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN'],
+            [headerTitle]
+        ], { origin: 'A1' });
+
+        if(!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push(
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }
+        );
         
         // Tính toán độ rộng tự động cho các cột (Auto Width)
         if (exportData.length > 0) {
@@ -708,7 +726,7 @@ export default function ClinicalSchedulingPage() {
                                         <div id="print-patient" ref={patientRef} style={{ background: '#fff', padding: '20px' }}>
                                             <div className="print-header" style={{ display: 'none', marginBottom: 20 }}>
                                                 <h2 style={{ textAlign: 'center' }}>SỞ Y TẾ TỈNH LẠNG SƠN<br/>BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN</h2>
-                                                <h1 style={{ textAlign: 'center', marginTop: 20 }}>DANH SÁCH BỆNH NHÂN - Ngày {dayjs(selectedDate).format('DD/MM/YYYY')}</h1>
+                                                <h1 style={{ textAlign: 'center', marginTop: 20 }}>CHIA THỜI GIAN THỰC HIỆN DVKT NGÀY {dayjs(selectedDate).format('DD/MM/YYYY')} CỦA KHOA {departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa?.toUpperCase()}</h1>
                                             </div>
                                             <Table 
                                                 dataSource={groupedByPatientData} 
