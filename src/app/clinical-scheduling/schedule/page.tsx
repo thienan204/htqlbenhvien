@@ -783,6 +783,21 @@ export default function ClinicalSchedulingPage() {
                     )
                 },
                 {
+                    key: '3',
+                    label: <strong style={{fontSize: 16, color: '#16a34a'}}>Lịch sử lưu báo cáo</strong>,
+                    children: <SavedPdfReportsTab />
+                },
+                {
+                    key: '4',
+                    label: <strong style={{fontSize: 16}}>Điểm danh</strong>,
+                    children: <ClinicalSchedulingAttendancePage />
+                },
+                {
+                    key: '5',
+                    label: <strong style={{fontSize: 16}}>Cấu hình</strong>,
+                    children: <ClinicalSchedulingConfigPage />
+                },
+                {
                     key: '2',
                     label: <strong style={{fontSize: 16}}>Hướng dẫn & Nguyên tắc</strong>,
                     children: (
@@ -827,21 +842,6 @@ export default function ClinicalSchedulingPage() {
                         </Card>
                     )
                 },
-                {
-                    key: '3',
-                    label: <strong style={{fontSize: 16, color: '#16a34a'}}>Lịch sử lưu báo cáo</strong>,
-                    children: <SavedPdfReportsTab />
-                },
-                {
-                    key: '4',
-                    label: <strong style={{fontSize: 16}}>Điểm danh</strong>,
-                    children: <ClinicalSchedulingAttendancePage />
-                },
-                {
-                    key: '5',
-                    label: <strong style={{fontSize: 16}}>Cấu hình</strong>,
-                    children: <ClinicalSchedulingConfigPage />
-                }
             ]} />
 
             <Modal
