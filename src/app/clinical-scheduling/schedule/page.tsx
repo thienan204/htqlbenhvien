@@ -601,7 +601,14 @@ export default function ClinicalSchedulingPage() {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Report');
-        XLSX.writeFile(wb, `${title}_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`);
+        
+        const safeDeptName = deptName.replace(/[/\\?%*:|"<>]/g, '-');
+        const dateFileStr = dayjs(selectedDate || new Date()).format('DD-MM-YYYY');
+        const fileName = title === 'DanhSachBenhNhan' 
+            ? `Chia_thoi_gian_thuc_hien_dvkt_ngay_${dateFileStr}_cua_khoa_${safeDeptName}.xlsx`
+            : `${title}_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`;
+
+        XLSX.writeFile(wb, fileName);
     };
 
     const handleExportExcel = () => {
