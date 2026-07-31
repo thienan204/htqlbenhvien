@@ -110,7 +110,7 @@ export default function ClinicalSchedulingConfigPage() {
         }
     };
 
-    const handleDeptHoursChange = (maKhoa: string, field: string, timeString: string | string[]) => {
+    const handleDeptHoursChange = (maKhoa: string, field: string, timeString: string) => {
         setDeptHours(prev => ({
             ...prev,
             [maKhoa]: {
@@ -129,7 +129,7 @@ export default function ClinicalSchedulingConfigPage() {
                 <TimePicker 
                     format="HH:mm" 
                     value={deptHours[record.MA_KHOA]?.morningStart ? dayjs(deptHours[record.MA_KHOA].morningStart, 'HH:mm') : dayjs('07:30', 'HH:mm')}
-                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'morningStart', timeString)}
+                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'morningStart', timeString as string)}
                     allowClear={false}
                 />
             )
@@ -140,7 +140,7 @@ export default function ClinicalSchedulingConfigPage() {
                 <TimePicker 
                     format="HH:mm" 
                     value={deptHours[record.MA_KHOA]?.morningEnd ? dayjs(deptHours[record.MA_KHOA].morningEnd, 'HH:mm') : dayjs('11:30', 'HH:mm')}
-                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'morningEnd', timeString)}
+                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'morningEnd', timeString as string)}
                     allowClear={false}
                 />
             )
@@ -151,7 +151,7 @@ export default function ClinicalSchedulingConfigPage() {
                 <TimePicker 
                     format="HH:mm" 
                     value={deptHours[record.MA_KHOA]?.afternoonStart ? dayjs(deptHours[record.MA_KHOA].afternoonStart, 'HH:mm') : dayjs('13:30', 'HH:mm')}
-                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'afternoonStart', timeString)}
+                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'afternoonStart', timeString as string)}
                     allowClear={false}
                 />
             )
@@ -162,7 +162,7 @@ export default function ClinicalSchedulingConfigPage() {
                 <TimePicker 
                     format="HH:mm" 
                     value={deptHours[record.MA_KHOA]?.afternoonEnd ? dayjs(deptHours[record.MA_KHOA].afternoonEnd, 'HH:mm') : dayjs('17:30', 'HH:mm')}
-                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'afternoonEnd', timeString)}
+                    onChange={(time, timeString) => handleDeptHoursChange(record.MA_KHOA, 'afternoonEnd', timeString as string)}
                     allowClear={false}
                 />
             )
