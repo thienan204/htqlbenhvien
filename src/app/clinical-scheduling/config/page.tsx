@@ -5,6 +5,7 @@ import { SaveOutlined, SearchOutlined, UploadOutlined, CloseCircleOutlined } fro
 import dayjs from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
 import * as XLSX from 'xlsx';
+import ExcelTemplateConfig from './ExcelTemplateConfig';
 
 const { Option } = Select;
 
@@ -41,7 +42,6 @@ export default function ClinicalSchedulingConfigPage() {
                 if (user?.role !== 'ADMIN' && user?.ma_khoa) {
                     depts = depts.filter((d: any) => d.MA_KHOA === user.ma_khoa);
                 }
-                
                 setDepartments(depts);
                 setDeptHours(data.deptHours || {});
                 
@@ -210,28 +210,6 @@ export default function ClinicalSchedulingConfigPage() {
             )
         },
         {
-            title: 'Yêu cầu trình độ',
-            dataIndex: 'yeu_cau_trinh_do',
-            key: 'yeu_cau_trinh_do',
-            width: 250,
-            render: (text: string, record: any) => (
-                <Select
-                    mode="multiple"
-                    value={text ? text.split(', ') : []}
-                    onChange={(val) => handleRowChange(record, 'yeu_cau_trinh_do', val.join(', '))}
-                    placeholder="Chọn chuyên môn"
-                    style={{ width: '100%' }}
-                    allowClear
-                    showSearch
-                    optionFilterProp="children"
-                >
-                    {qualifications.filter(q => q.type !== 'LOAI_MAY').map((q, idx) => (
-                        <Option key={idx} value={q.name}>{q.name}</Option>
-                    ))}
-                </Select>
-            )
-        },
-        {
             title: 'Khoảng nghỉ (Buffer)',
             dataIndex: 'buffer_time',
             key: 'buffer_time',
@@ -359,6 +337,8 @@ export default function ClinicalSchedulingConfigPage() {
         <div style={{ padding: 24, maxWidth: '100%', margin: '0 auto' }}>
             <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Cấu hình Xếp lịch Cận Lâm Sàng</h1>
             
+            <ExcelTemplateConfig />
+
             <Card title="Cấu hình chung" style={{ marginBottom: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <span><strong>Khoảng cách nghỉ (Buffer Time) giữa 2 ca:</strong></span>

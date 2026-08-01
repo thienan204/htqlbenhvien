@@ -34,6 +34,7 @@ export async function createDuplicateRule(data: {
     ignoreIfSameField?: string;
     minGapMinutes?: number;
     departmentExclusions?: any;
+    allowedOverlapGroups?: any;
 }) {
     try {
         const newRule = await prisma.duplicateRule.create({
@@ -51,6 +52,7 @@ export async function createDuplicateRule(data: {
                 excludedServiceValues: data.excludedServiceValues || [],
                 minGapMinutes: data.minGapMinutes || 0,
                 departmentExclusions: data.departmentExclusions || null,
+                allowedOverlapGroups: data.allowedOverlapGroups || null,
             }
         });
         if ('ignoreIfSameField' in data) {
@@ -79,6 +81,7 @@ export async function updateDuplicateRule(id: string, data: {
     ignoreIfSameField?: string;
     minGapMinutes?: number;
     departmentExclusions?: any;
+    allowedOverlapGroups?: any;
 }) {
     try {
         const updatedRule = await prisma.duplicateRule.update({
@@ -97,6 +100,7 @@ export async function updateDuplicateRule(id: string, data: {
                 excludedServiceValues: data.excludedServiceValues || [],
                 minGapMinutes: data.minGapMinutes || 0,
                 departmentExclusions: data.departmentExclusions || null,
+                allowedOverlapGroups: data.allowedOverlapGroups || null,
             }
         });
         if ('ignoreIfSameField' in data) {

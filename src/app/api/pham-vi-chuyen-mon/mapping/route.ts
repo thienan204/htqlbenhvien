@@ -63,3 +63,39 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+// DELETE all mappings (either for multiple ma_pham_vi or globally)
+export async function DELETE(request: Request) {
+    try {
+        let ma_pham_vi_list: string[] = [];
+        try {
+            const body = await request.json();
+            if (body && Array.isArray(body.ma_pham_vi_list)) {
+                ma_pham_vi_list = body.ma_pham_vi_list;
+            }
+        } catch (e) {
+            // Ignore JSON parse errors if body is empty
+        }
+
+        // Also fallback to searchParams if provided (for backwards compatibility)
+        const { searchParams } = new URL(request.url);
+        const single_ma_pham_vi = searchParams.get('ma_pham_vi');
+        if (single_ma_pham_vi && ma_pham_vi_list.length === 0) {
+            ma_pham_vi_list = [single_ma_pham_vi];
+        }
+
+        if (ma_pham_vi_list.length > 0) {
+            await prisma.scopeServiceMapping.deleteMany({
+                where: { ma_pham_vi: { in: ma_pham_vi_list } }
+            });
+        } else {
+            // Global reset
+            await prisma.scopeServiceMapping.deleteMany({});
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting mappings:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

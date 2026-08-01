@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Space, message, Select, Tag } from 'antd';
-import { SyncOutlined, CheckCircleOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Space, message, Select, Tag, Tooltip, Modal } from 'antd';
+import { SyncOutlined, CheckCircleOutlined, SafetyCertificateOutlined, PlusOutlined, SettingOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { getXmlDataList } from '@/lib/xml';
+import dynamic from 'next/dynamic';
+
+const CertificatesModal = dynamic(() => import('@/app/staff/components/CertificatesModal'), { ssr: false });
 
 export default function KiemTraCCHNPage() {
     const { hasPermission } = useAuth();
@@ -18,10 +21,18 @@ export default function KiemTraCCHNPage() {
     const [colMaDichVu, setColMaDichVu] = useState('MA_DICH_VU');
     const [colTenDichVu, setColTenDichVu] = useState('TEN_DICH_VU');
     
+    // Filters
+    const [excludedNhom, setExcludedNhom] = useState<string[]>([]);
+    
     // Validation Data
     const [validationResults, setValidationResults] = useState<any[]>([]);
 
     const [isMounted, setIsMounted] = useState(false);
+
+    // Certificates Modal State
+    const [openCertModal, setOpenCertModal] = useState(false);
+    const [certStaffId, setCertStaffId] = useState<string | null>(null);
+    const [certStaffName, setCertStaffName] = useState<string | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
@@ -34,7 +45,7 @@ export default function KiemTraCCHNPage() {
             const { openDB } = await import('idb');
             
             try {
-                const xmlDb = await openDB('xml-reader-db', 2);
+                const xmlDb = await openDB('xml-reader-db', 3);
                 if (xmlDb.objectStoreNames.contains('records')) {
                     const records = await xmlDb.getAll('records');
                     if (records && records.length > 0) {
@@ -99,8 +110,12 @@ export default function KiemTraCCHNPage() {
             fileData.forEach((row, idx) => {
                 const maDichVu = String(row[colMaDichVu] || '').trim();
                 const tenDichVu = String(row[colTenDichVu] || '').trim();
+                const maNhom = String(row.MA_NHOM || '').trim();
                 
                 if (!maDichVu) return;
+                
+                // Bỏ qua nếu thuộc nhóm BHYT cần loại trừ
+                if (maNhom && excludedNhom.includes(maNhom)) return;
 
                 // NGUOI CHI DINH
                 if (colMaBacSi) {
@@ -242,6 +257,109 @@ export default function KiemTraCCHNPage() {
         }
     };
 
+    const handleQuickAssign = async (ma_pham_vi: string, record: any) => {
+        try {
+            const res = await fetch('/api/pham-vi-chuyen-mon/quick-assign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ma_pham_vi, ma_dich_vu: record.ma_dich_vu })
+            });
+            if (res.ok) {
+                message.success(`Đã gán dịch vụ ${record.ma_dich_vu} vào PVHN ${ma_pham_vi}`);
+                setValidationResults(prev => prev.filter(r => r !== record));
+            } else {
+                const data = await res.json();
+                message.error(data.error || 'Lỗi khi gán dịch vụ');
+            }
+        } catch (e) {
+            message.error('Lỗi kết nối');
+        }
+    };
+
+    const handleBulkAssign = async () => {
+        const mappableRecords = validationResults.filter(r => r.scopes && r.scopes.length > 0);
+        if (mappableRecords.length === 0) {
+            message.warning('Không có dòng vi phạm nào đủ điều kiện để gán tự động (cần có sẵn Phạm vi chuyên môn).');
+            return;
+        }
+
+        // Lọc trùng lặp ở client trước khi gửi để tối ưu payload
+        const uniqueMappings = new Map<string, { ma_pham_vi: string, ma_dich_vu: string }>();
+        mappableRecords.forEach(r => {
+            if (r.scopes && r.scopes.length > 0 && r.ma_dich_vu) {
+                const ma_pham_vi = r.scopes[0]; // Chọn phạm vi đầu tiên
+                uniqueMappings.set(`${ma_pham_vi}_${r.ma_dich_vu}`, { ma_pham_vi, ma_dich_vu: r.ma_dich_vu });
+            }
+        });
+        
+        const allMappings = Array.from(uniqueMappings.values());
+        if (allMappings.length === 0) return;
+
+        setLoading(true);
+        try {
+            // Chia nhỏ thành các chunk 500 phần tử để tránh lỗi 413 Payload Too Large của Next.js
+            const chunkSize = 500;
+            let totalSuccess = 0;
+            let totalErrorCount = 0;
+            let allErrors: string[] = [];
+
+            for (let i = 0; i < allMappings.length; i += chunkSize) {
+                const chunk = allMappings.slice(i, i + chunkSize);
+                
+                const res = await fetch('/api/pham-vi-chuyen-mon/bulk-quick-assign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mappings: chunk })
+                });
+
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+
+                const data = await res.json();
+                if (data.success) {
+                    totalSuccess += data.successCount || 0;
+                    totalErrorCount += data.errorCount || 0;
+                    if (data.errors) {
+                        allErrors = [...allErrors, ...data.errors];
+                    }
+                } else {
+                    throw new Error(data.error || 'Lỗi khi gán hàng loạt');
+                }
+            }
+
+            // Tổng hợp kết quả
+            if (totalErrorCount > 0) {
+                // Lọc trùng lỗi
+                const uniqueErrors = Array.from(new Set(allErrors)).slice(0, 50);
+                Modal.warning({
+                    title: `Gán tự động hoàn tất: Thành công ${totalSuccess}, Lỗi ${totalErrorCount}`,
+                    content: (
+                        <div className="max-h-60 overflow-y-auto mt-4">
+                            <p className="mb-2 text-slate-600">Một số dịch vụ không thể gán tự động, thường do chưa có trong danh mục Mẫu 05:</p>
+                            <ul className="list-disc pl-4 text-red-500 text-sm space-y-1">
+                                {uniqueErrors.map((err: string, i: number) => <li key={i}>{err}</li>)}
+                                {allErrors.length > 50 && <li className="italic text-slate-500">...và {allErrors.length - 50} lỗi khác</li>}
+                            </ul>
+                        </div>
+                    ),
+                    width: 600
+                });
+            } else {
+                message.success(`Tuyệt vời! Đã gán tự động thành công ${totalSuccess} dịch vụ (đã lọc trùng).`);
+            }
+            
+            // Tự động kiểm tra lại để dọn dẹp bảng
+            handleValidate();
+
+        } catch (e: any) {
+            console.error('Bulk assign error:', e);
+            message.error(`Lỗi kết nối khi gán tự động: ${e.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!isMounted) return null;
 
     if (!hasPermission('MENU_CHUYEN_DE')) {
@@ -249,7 +367,7 @@ export default function KiemTraCCHNPage() {
     }
 
     return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <div className="p-4 space-y-6 max-w-[98%] mx-auto">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl">
@@ -264,9 +382,17 @@ export default function KiemTraCCHNPage() {
                     <Button icon={<SyncOutlined />} onClick={loadCachedFile} loading={loading}>
                         Nạp lại XML Cache
                     </Button>
-                    <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleSyncServices} loading={loading} className="bg-emerald-600 hover:bg-emerald-500">
-                        Đồng bộ Dịch vụ vào Hồ sơ Nhân sự
-                    </Button>
+                    <Tooltip title="Tự động trích xuất toàn bộ Mã Dịch Vụ từ file XML và lưu vào Hồ sơ Nhân sự (dựa theo Cột CCHN). Giúp hệ thống ghi nhận lịch sử thực hiện dịch vụ thực tế của từng Bác sĩ/Điều dưỡng để quản lý Phạm vi chuyên môn.">
+                        <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleSyncServices} loading={loading} className="bg-emerald-600 hover:bg-emerald-500">
+                            Đồng bộ Dịch vụ vào Hồ sơ Nhân sự
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Xem lịch sử các mã dịch vụ đã được đồng bộ">
+                        <Button 
+                            icon={<HistoryOutlined />} 
+                            onClick={() => window.open('/htqlbenhvien/staff/quan-ly-lich-su-dich-vu', '_blank')}
+                        />
+                    </Tooltip>
                 </Space>
             </div>
 
@@ -311,12 +437,36 @@ export default function KiemTraCCHNPage() {
                             {headers.map(h => <Select.Option key={h} value={h}>{h}</Select.Option>)}
                         </Select>
                     </div>
+                    <div>
+                        <div className="text-xs font-semibold text-slate-500 mb-1">Loại trừ Nhóm BHYT</div>
+                        <Select 
+                            mode="multiple" 
+                            allowClear 
+                            className="w-48" 
+                            placeholder="VD: 14, 15..."
+                            value={excludedNhom} 
+                            onChange={setExcludedNhom}
+                        >
+                            {Array.from(new Set(fileData.map(r => String(r.MA_NHOM || '').trim()).filter(Boolean))).map(n => (
+                                <Select.Option key={n} value={n}>{n}</Select.Option>
+                            ))}
+                        </Select>
+                    </div>
                 </Space>
             </Card>
 
             {validationResults.length > 0 && (
-                <Card title={<span className="text-red-600 font-bold">Chi tiết các trường hợp Vi phạm</span>} className="shadow-sm border-red-200">
+                <Card 
+                    title={<span className="text-red-600 font-bold">Chi tiết các trường hợp Vi phạm</span>} 
+                    className="shadow-sm border-red-200"
+                    extra={
+                        <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleBulkAssign} loading={loading} className="bg-blue-600 hover:bg-blue-500">
+                            Gán tự động toàn bộ lỗi
+                        </Button>
+                    }
+                >
                     <Table
+                        scroll={{ x: 1400 }}
                         dataSource={validationResults}
                         columns={[
                             { title: 'STT', key: 'stt', width: 60, render: (_: any, record: any) => validationResults.indexOf(record) + 1 },
@@ -351,14 +501,67 @@ export default function KiemTraCCHNPage() {
                                 render: text => <Tag color="orange">{text}</Tag> 
                             },
                             { title: 'Mã Dịch Vụ', dataIndex: 'ma_dich_vu', width: 120 },
-                            { title: 'Tên Dịch Vụ', dataIndex: 'ten_dich_vu' },
-                            { title: 'Lý do vi phạm', dataIndex: 'reason', render: text => <span className="text-red-500">{text}</span> }
+                            { title: 'Tên Dịch Vụ', dataIndex: 'ten_dich_vu', width: 250 },
+                            { title: 'Lý do vi phạm', dataIndex: 'reason', width: 250, render: text => <span className="text-red-500">{text}</span> },
+                            {
+                                title: 'Thao tác',
+                                key: 'action',
+                                width: 180,
+                                render: (_: any, record: any) => {
+                                    if (!record.staff_id) return <span className="text-slate-400 italic text-xs">Cần khai báo nhân sự</span>;
+                                    
+                                    if (record.scopes && record.scopes.length > 0) {
+                                        return (
+                                            <div className="flex flex-col gap-2">
+                                                {record.scopes.map((scope: string) => (
+                                                    <Button 
+                                                        key={scope} 
+                                                        size="small" 
+                                                        type="primary" 
+                                                        ghost 
+                                                        icon={<PlusOutlined />}
+                                                        onClick={() => handleQuickAssign(scope, record)}
+                                                    >
+                                                        Gán PV: {scope}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    return (
+                                        <Button 
+                                            size="small" 
+                                            icon={<SettingOutlined />}
+                                            onClick={() => {
+                                                setCertStaffId(record.staff_id);
+                                                setCertStaffName(record.ten_bac_si);
+                                                setOpenCertModal(true);
+                                            }}
+                                        >
+                                            Cập nhật PVHN
+                                        </Button>
+                                    );
+                                }
+                            }
                         ]}
                         pagination={{ pageSize: 20 }}
                         size="small"
                         rowKey={(r) => `${r.rowIdx}_${r.cchn}_${r.ma_dich_vu}_${r.type}`}
                     />
                 </Card>
+            )}
+
+            {openCertModal && (
+                <CertificatesModal
+                    open={openCertModal}
+                    onClose={() => setOpenCertModal(false)}
+                    staffId={certStaffId}
+                    staffName={certStaffName}
+                    onSuccess={() => {
+                        handleValidate(); // Re-validate after adding CCHN
+                    }}
+                />
             )}
         </div>
     );

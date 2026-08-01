@@ -218,6 +218,7 @@ model DuplicateRule {
   ignoreIfSameField     String?
   minGapMinutes         Int      @default(0)
   departmentExclusions  Json?
+  allowedOverlapGroups  Json?
 }
 
 model SpecializedRule {
@@ -1560,4 +1561,23 @@ model PdfReport {
   nguoi_tao     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model ExcelTemplate {
+  id          String                 @id @default(cuid())
+  name        String                 
+  isDefault   Boolean                @default(false)
+  mappings    ExcelTemplateMapping[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+}
+
+model ExcelTemplateMapping {
+  id              String        @id @default(cuid())
+  templateId      String
+  template        ExcelTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  system_field    String        
+  excel_column    String        
+  
+  @@unique([templateId, system_field])
 }

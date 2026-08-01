@@ -15,23 +15,30 @@ export async function POST(request: Request) {
         // Extract unique CCHNs to fetch data efficiently
         const uniqueCchns = Array.from(new Set(checks.map(c => c.cchn).filter(Boolean)));
 
-        const certs = await prisma.practicingCertificate.findMany({
+        const staffs = await prisma.staff.findMany({
             where: {
-                so_cchn: { in: uniqueCchns as string[] },
-                isActive: true
+                OR: [
+                    { ma_nv: { in: uniqueCchns as string[] } },
+                    { certificates: { some: { so_cchn: { in: uniqueCchns as string[] }, isActive: true } } }
+                ]
             },
             include: {
-                staff: {
-                    select: { 
-                        ho_ten: true,
-                        department: { select: { ten_khoa: true } }
-                    }
+                department: { select: { ten_khoa: true } },
+                certificates: { 
+                    where: { isActive: true },
+                    include: { scopes: { include: { scope: true } } }
                 }
             }
         });
 
-        const certMap = new Map();
-        certs.forEach(cert => certMap.set(cert.so_cchn, cert));
+        // Create a map to quickly find staff by any of the 3 identifiers
+        const staffMap = new Map();
+        staffs.forEach(staff => {
+            if (staff.ma_nv) staffMap.set(staff.ma_nv, staff);
+            staff.certificates.forEach(cert => {
+                if (cert.so_cchn) staffMap.set(cert.so_cchn, staff);
+            });
+        });
 
         // 2. Fetch all Scope mappings
         const scopeMappings = await prisma.scopeServiceMapping.findMany();
@@ -51,31 +58,52 @@ export async function POST(request: Request) {
             const { cchn, ma_dich_vu } = check;
             if (!cchn || !ma_dich_vu) continue;
 
-            const cert = certMap.get(cchn);
-            if (!cert) {
-                errors.push({ ...check, ten_bac_si: 'Không có dữ liệu nhân sự', ten_khoa: '', reason: 'CCHN không tồn tại hoặc chưa được kích hoạt trong hệ thống' });
+            const staff = staffMap.get(cchn);
+            if (!staff) {
+                errors.push({ ...check, ten_bac_si: 'Không có dữ liệu nhân sự', ten_khoa: '', reason: 'Không tìm thấy nhân viên hoặc CCHN trong hệ thống' });
                 continue;
             }
 
-            const tenBacSi = cert.staff?.ho_ten || 'Không xác định';
-            const tenKhoa = cert.staff?.department?.ten_khoa || '';
+            const tenBacSi = staff.ho_ten || 'Không xác định';
+            const tenKhoa = staff.department?.ten_khoa || '';
+            const staffId = staff.id;
+            
+            if (!staff.certificates || staff.certificates.length === 0) {
+                 errors.push({ ...check, ten_bac_si: tenBacSi, ten_khoa: tenKhoa, staff_id: staffId, reason: 'Nhân viên chưa có CCHN nào được kích hoạt' });
+                 continue;
+            }
 
             let isValid = false;
+            let allScopes: string[] = [];
 
-            // Check Exceptions (dich_vu_ky_thuat in PracticingCertificate)
-            if (cert.dich_vu_ky_thuat) {
-                const exceptions = cert.dich_vu_ky_thuat.split(';').map((s: string) => s.trim()).filter(Boolean);
-                if (exceptions.includes(ma_dich_vu)) {
-                    isValid = true;
+            for (const cert of staff.certificates) {
+                // Collect scopes for frontend Quick Assign button
+                if (cert.scopes) {
+                    cert.scopes.forEach((s: any) => {
+                        if (s.scope?.ma_pham_vi) allScopes.push(s.scope.ma_pham_vi);
+                    });
+                }
+                if (cert.pham_vi_hanh_nghe) {
+                    const scopeScopes = cert.pham_vi_hanh_nghe.split(';').map((s: string) => s.trim()).filter(Boolean);
+                    scopeScopes.forEach((s: string) => {
+                        const scopeCode = s.split(' - ')[0].trim();
+                        if (scopeCode && !allScopes.includes(scopeCode)) allScopes.push(scopeCode);
+                    });
+                }
+
+                // Check exceptions
+                if (cert.dich_vu_ky_thuat) {
+                    const exceptions = cert.dich_vu_ky_thuat.split(';').map((s: string) => s.trim()).filter(Boolean);
+                    if (exceptions.includes(ma_dich_vu)) {
+                        isValid = true;
+                        break;
+                    }
                 }
             }
 
-            // Check Scope (pham_vi_hanh_nghe)
-            if (!isValid && cert.pham_vi_hanh_nghe) {
-                const scopeScopes = cert.pham_vi_hanh_nghe.split(';').map((s: string) => s.trim()).filter(Boolean);
-                for (const s of scopeScopes) {
-                    // Cấu trúc chuỗi có thể là "123 - Bác sỹ chuyên khoa Hóa sinh" -> Lấy "123"
-                    const scopeCode = s.split(' - ')[0].trim();
+            // Check Scopes if not yet valid
+            if (!isValid) {
+                for (const scopeCode of allScopes) {
                     const services = scopeServicesMap.get(scopeCode);
                     if (services && services.has(ma_dich_vu)) {
                         isValid = true;
@@ -85,7 +113,14 @@ export async function POST(request: Request) {
             }
 
             if (!isValid) {
-                errors.push({ ...check, ten_bac_si: tenBacSi, ten_khoa: tenKhoa, reason: 'Dịch vụ Vượt phạm vi chuyên môn hoặc chưa được phân quyền ngoại lệ' });
+                errors.push({ 
+                    ...check, 
+                    ten_bac_si: tenBacSi, 
+                    ten_khoa: tenKhoa, 
+                    staff_id: staffId, 
+                    scopes: Array.from(new Set(allScopes)), 
+                    reason: 'Dịch vụ Vượt phạm vi chuyên môn hoặc chưa được phân quyền ngoại lệ' 
+                });
             }
         }
 

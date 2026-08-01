@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm } from 'antd';
+import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete } from 'antd';
 import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useReactToPrint } from 'react-to-print';
+import { getBasePath } from '@/utils/config';
 import ClinicalSchedulingConfigPage from '../config/page';
 import ClinicalSchedulingAttendancePage from '../attendance/page';
 
@@ -153,6 +154,48 @@ export default function ClinicalSchedulingPage() {
         }));
     }, [scheduledData]);
 
+    // States for Excel column mapping
+    const [mappingModalVisible, setMappingModalVisible] = useState(false);
+    const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+    const [rawExcelData, setRawExcelData] = useState<any[]>([]);
+    const [outputMapping, setOutputMapping] = useState<{
+        out_ma_ba?: string;
+        out_ten_bn?: string;
+        out_thoi_gian_chi_dinh?: string;
+        out_ten_dich_vu?: string;
+        out_nguoi_thuc_hien?: string;
+        out_ma_may?: string;
+        out_ten_may?: string;
+        out_bat_dau?: string;
+        out_ket_thuc?: string;
+    }>({});
+    const [columnMapping, setColumnMapping] = useState<{
+        ma_ba: string;
+        ten_bn: string;
+        ma_dich_vu: string;
+        ten_dich_vu: string;
+        thoi_gian_chi_dinh: string;
+        ten_khoa?: string;
+        ma_khoa?: string;
+        phong_thuc_hien?: string;
+    }>({
+        ma_ba: '',
+        ten_bn: '',
+        ma_dich_vu: '',
+        ten_dich_vu: '',
+        thoi_gian_chi_dinh: ''
+    });
+
+    const [externalLink, setExternalLink] = useState('');
+    const [activeExternalLink, setActiveExternalLink] = useState('');
+
+    const handleAccessLink = () => {
+        setActiveExternalLink(externalLink);
+        localStorage.setItem('clinical_schedule_external_link', externalLink);
+    };
+
     const groupedByPatientData = React.useMemo(() => {
         if (!scheduledData.length) return [];
         const groups: Record<string, any[]> = {};
@@ -216,7 +259,7 @@ export default function ClinicalSchedulingPage() {
 
         const columns = [
             { title: 'stt', dataIndex: 'stt', key: 'stt', width: 60, align: 'center' as const },
-            { title: 'họ và tên BN', dataIndex: 'ten_bn', key: 'ten_bn', width: 200 },
+            { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'họ và tên BN', dataIndex: 'ten_bn', key: 'ten_bn', width: 200 },
             {
                 title: 'Dịch vụ kỹ thuật',
                 children: serviceNames.map(srv => ({
@@ -230,28 +273,7 @@ export default function ClinicalSchedulingPage() {
         ];
 
         return { dataSource, columns };
-    }, [scheduledData]);
-    
-    // States for Excel column mapping
-    const [mappingModalVisible, setMappingModalVisible] = useState(false);
-    const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
-    const [rawExcelData, setRawExcelData] = useState<any[]>([]);
-    const [columnMapping, setColumnMapping] = useState<{
-        ma_ba: string;
-        ten_bn: string;
-        ma_dich_vu: string;
-        ten_dich_vu: string;
-        thoi_gian_chi_dinh: string;
-        ten_khoa?: string;
-        ma_khoa?: string;
-        phong_thuc_hien?: string;
-    }>({
-        ma_ba: '',
-        ten_bn: '',
-        ma_dich_vu: '',
-        ten_dich_vu: '',
-        thoi_gian_chi_dinh: ''
-    });
+    }, [scheduledData, columnMapping]);
 
     useEffect(() => {
         const savedMapping = localStorage.getItem('clinical_schedule_column_mapping');
@@ -260,6 +282,22 @@ export default function ClinicalSchedulingPage() {
                 setColumnMapping(JSON.parse(savedMapping));
             } catch (e) {}
         }
+        
+        const savedLink = localStorage.getItem('clinical_schedule_external_link');
+        if (savedLink) {
+            setExternalLink(savedLink);
+            setActiveExternalLink(savedLink);
+        }
+        
+        // Fetch templates for auto-recognition
+        fetch('/api/clinical-scheduling/excel-templates')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setTemplates(data.data);
+                }
+            })
+            .catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -304,7 +342,56 @@ export default function ClinicalSchedulingPage() {
                 setExcelHeaders(headers);
                 setRawExcelData(json);
 
-                // Thử đoán mapping tự động
+                // Tự động nhận diện Template
+                let matchedTemplate = null;
+                
+                if (selectedTemplateId) {
+                    matchedTemplate = templates.find(t => t.id === selectedTemplateId);
+                } else {
+                    for (const tmpl of templates) {
+                        let isMatch = true;
+                        const tmplMappings = tmpl.mappings || [];
+                        if (tmplMappings.length === 0) continue;
+                        
+                        const headerLower = headers.map(h => h.toLowerCase().trim());
+                        
+                        for (const m of tmplMappings) {
+                            if (m.excel_column && !headerLower.includes(m.excel_column.toLowerCase().trim())) {
+                                isMatch = false;
+                                break;
+                            }
+                        }
+                        if (isMatch) {
+                            matchedTemplate = tmpl;
+                            break;
+                        }
+                    }
+                }
+
+                if (matchedTemplate) {
+                    const autoMap: any = { ...columnMapping };
+                    const outMap: any = {};
+                    matchedTemplate.mappings.forEach((m: any) => {
+                        if (m.system_field.startsWith('out_')) {
+                            outMap[m.system_field] = m.excel_column;
+                        } else {
+                            // Nếu user chọn cứng Template, cứ nhét tên cột vào.
+                            // Nếu tự nhận diện thì tìm chính xác chữ hoa chữ thường.
+                            const originalHeader = headers.find(h => h.toLowerCase().trim() === m.excel_column.toLowerCase().trim());
+                            autoMap[m.system_field] = originalHeader || m.excel_column;
+                        }
+                    });
+                    
+                    setColumnMapping(autoMap);
+                    setOutputMapping(outMap);
+                    
+                    if (processMappedData(autoMap, json)) {
+                        message.success(selectedTemplateId ? `Đã áp dụng mẫu: ${matchedTemplate.name}` : `Đã tự động nhận diện mẫu: ${matchedTemplate.name}`);
+                    }
+                    return;
+                }
+
+                // Thử đoán mapping tự động (Fallback)
                 const autoMap = { ...columnMapping };
                 headers.forEach(h => {
                     const upper = h.toUpperCase();
@@ -327,23 +414,25 @@ export default function ClinicalSchedulingPage() {
         return false;
     };
 
-    const handleConfirmMapping = () => {
-        if (!columnMapping.ma_dich_vu) {
+    const processMappedData = (mapping: any, rawData: any[]) => {
+        if (!mapping.ma_dich_vu) {
             message.error('Bắt buộc phải chọn cột Mã Dịch Vụ!');
-            return;
+            return false;
         }
 
-        localStorage.setItem('clinical_schedule_column_mapping', JSON.stringify(columnMapping));
+        localStorage.setItem('clinical_schedule_column_mapping', JSON.stringify(mapping));
 
-        const mappedData = rawExcelData.map(row => ({
-            ma_ba: row[columnMapping.ma_ba] || '',
-            ten_bn: row[columnMapping.ten_bn] || '',
-            thoi_gian_chi_dinh: row[columnMapping.thoi_gian_chi_dinh] || '',
-            ma_dich_vu: row[columnMapping.ma_dich_vu] || '',
-            ten_dich_vu: row[columnMapping.ten_dich_vu] || '',
-            ten_khoa: row[columnMapping.ten_khoa as string] || '',
-            ma_khoa: row[columnMapping.ma_khoa as string] || '',
-            phong_thuc_hien: row[columnMapping.phong_thuc_hien as string] || '',
+        const mappedData = rawData.map(row => ({
+            ma_ba: row[mapping.ma_ba] || '',
+            ten_bn: row[mapping.ten_bn] || '',
+            thoi_gian_chi_dinh: row[mapping.thoi_gian_chi_dinh] || '',
+            ma_dich_vu: row[mapping.ma_dich_vu] || '',
+            ten_dich_vu: row[mapping.ten_dich_vu] || '',
+            ten_khoa: row[mapping.ten_khoa] || '',
+            ma_khoa: row[mapping.ma_khoa] || '',
+            phong_thuc_hien: row[mapping.phong_thuc_hien] || '',
+            ma_may: row[mapping.ma_may] || '',
+            ten_may: row[mapping.ten_may] || '',
             _originalRow: row
         }));
 
@@ -354,7 +443,13 @@ export default function ClinicalSchedulingPage() {
         setSelectedServices(services as string[]);
         
         setMappingModalVisible(false);
-        message.success('Đã map dữ liệu thành công!');
+        return true;
+    };
+
+    const handleConfirmMapping = () => {
+        if (processMappedData(columnMapping, rawExcelData)) {
+            message.success('Đã map dữ liệu thành công!');
+        }
     };
 
     const handleGenerateSchedule = async () => {
@@ -615,11 +710,11 @@ export default function ClinicalSchedulingPage() {
         if (scheduledData.length === 0) return;
         const exportJson = scheduledData.map(item => ({
             ...item._originalRow,
-            'Thời gian chỉ định': item.thoi_gian_chi_dinh,
-            'Người thực hiện (Bác sĩ/Điều dưỡng)': item.nguoi_thuc_hien,
-            'Máy thực hiện': item.ten_may ? `${item.ten_may} (${item.ma_may})` : '',
-            'Bắt đầu': item.bat_dau,
-            'Kết thúc': item.ket_thuc
+            [outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'Thời gian chỉ định']: item.thoi_gian_chi_dinh,
+            [outputMapping.out_nguoi_thuc_hien || 'Người thực hiện (Bác sĩ/Điều dưỡng)']: item.nguoi_thuc_hien,
+            [outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy thực hiện']: item.ten_may ? `${item.ten_may} (${item.ma_may})` : '',
+            [outputMapping.out_bat_dau || 'Bắt đầu']: item.bat_dau,
+            [outputMapping.out_ket_thuc || 'Kết thúc']: item.ket_thuc
         }));
         const ws = XLSX.utils.json_to_sheet(exportJson);
         const wb = XLSX.utils.book_new();
@@ -628,24 +723,24 @@ export default function ClinicalSchedulingPage() {
     };
 
     const resultColumns = [
-        { title: 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r.children ? '#237804' : '#16a34a'}}>{t}</strong></div> : null },
-        { title: 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '10%' },
-        { title: 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%' },
-        { title: 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
-        { title: 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
-        { title: 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
-        { title: 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r.children ? '#237804' : '#16a34a'}}>{t}</strong></div> : null },
+        { title: outputMapping.out_ma_ba || columnMapping.ma_ba || 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '10%' },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%' },
+        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
+        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
+        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
+        { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
     ];
 
     const patientColumns = [
-        { title: 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r.children ? '#0958d9' : '#000'}}>{t}</strong> : null },
-        { title: 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
-        { title: 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '30%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
-        { title: 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
-        { title: 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
-        { title: 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r.children ? '#0958d9' : '#000'}}>{t}</strong> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
+        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
+        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '30%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
+        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
+        { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
     ];
 
     const failedColumns = [
@@ -695,18 +790,34 @@ export default function ClinicalSchedulingPage() {
                         </Select>
                     </Col>
                     <Col span={10}>
-                        <div style={{ marginBottom: 8 }}><strong>3. Upload File Excel (Danh sách chỉ định):</strong></div>
-                        <Upload beforeUpload={handleFileUpload} showUploadList={false} accept=".xlsx, .xls">
-                            <Button icon={<UploadOutlined />} type="dashed" style={{ width: '100%' }}>
-                                Bấm vào đây để tải file thô lên
-                            </Button>
-                        </Upload>
+                        <div style={{ marginBottom: 8 }}><strong>3. Chọn Mẫu & Upload Excel:</strong></div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <Select
+                                allowClear
+                                placeholder="Tự động nhận diện mẫu..."
+                                style={{ flex: 1 }}
+                                value={selectedTemplateId}
+                                onChange={(val) => setSelectedTemplateId(val)}
+                                options={templates.map(t => ({ label: t.name, value: t.id }))}
+                            />
+                            <Upload beforeUpload={handleFileUpload} showUploadList={false} accept=".xlsx, .xls">
+                                <Button icon={<UploadOutlined />} type="primary">
+                                    Tải File Lên
+                                </Button>
+                            </Upload>
+                        </div>
                     </Col>
                 </Row>
                 
                 {uploadedData.length > 0 && (
                     <div style={{ marginTop: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8 }}>
-                        <h3 style={{ margin: 0, marginBottom: 12, color: '#1890ff' }}>Lọc Dịch vụ cần xếp lịch:</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <h3 style={{ margin: 0, color: '#1890ff' }}>Lọc Dịch vụ cần xếp lịch:</h3>
+                            <Space>
+                                <Button size="small" onClick={() => setSelectedServices(uniqueServices)}>Chọn tất cả</Button>
+                                <Button size="small" onClick={() => setSelectedServices([])}>Bỏ chọn tất cả</Button>
+                            </Space>
+                        </div>
                         <Checkbox.Group 
                             options={uniqueServices} 
                             value={selectedServices} 
@@ -929,7 +1040,7 @@ export default function ClinicalSchedulingPage() {
                             />
                         </Card>
                     )
-                },
+                }
             ]} />
 
             <Modal
@@ -943,6 +1054,28 @@ export default function ClinicalSchedulingPage() {
                 width={600}
             >
                 <Alert title="Hướng dẫn" description="Hệ thống đã phát hiện các cột trong file Excel của bạn. Vui lòng nối đúng cột tương ứng (Hệ thống đã cố gắng tự động nhận diện các cột quen thuộc):" type="info" showIcon style={{ marginBottom: 20 }} />
+                
+                <div style={{ marginBottom: 16, padding: '12px 16px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
+                    <div style={{ marginBottom: 4, color: '#389e0d' }}><strong>Hoặc chọn áp dụng nhanh một Mẫu Excel đã lưu:</strong></div>
+                    <Select
+                        style={{ width: '100%' }}
+                        allowClear
+                        placeholder="--- Chọn Mẫu Excel ---"
+                        options={templates.map(t => ({ label: t.name, value: t.id }))}
+                        onChange={(val) => {
+                            if (val) {
+                                const tmpl = templates.find(t => t.id === val);
+                                if (tmpl) {
+                                    const autoMap: any = { ...columnMapping };
+                                    tmpl.mappings.forEach((m: any) => {
+                                        autoMap[m.system_field] = m.excel_column;
+                                    });
+                                    setColumnMapping(autoMap);
+                                }
+                            }
+                        }}
+                    />
+                </div>
                 
                 <Row gutter={16}>
                     <Col span={12} style={{ marginBottom: 16 }}>

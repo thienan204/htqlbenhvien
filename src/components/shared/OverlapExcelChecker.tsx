@@ -34,6 +34,7 @@ interface DuplicateRule {
     ignoreIfSameField?: string; // e.g. MA_BN
     minGapMinutes?: number; // Minimum gap in minutes to NOT be considered overlapping
     departmentExclusions?: any;
+    allowedOverlapGroups?: string[][];
 }
 
 
@@ -542,6 +543,8 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
 
         let globalGroupCounter = 0;
         let totalDuplicates = 0;
+        let totalIgnoredMinusOne = 0;
+        let totalIgnoredNull = 0;
         const allDuplicates: any[] = [];
 
         activeRules.forEach(rule => {
@@ -560,7 +563,7 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
 
             items.forEach((item, originalIdx) => {
                 if (serviceIndex !== -1) {
-                    const rowVal = String(item[serviceIndex] || '');
+                    const rowVal = String(item[serviceIndex] || '').trim();
                     const deptConfig = (currentUser?.ma_khoa && rule.departmentExclusions && Array.isArray(rule.departmentExclusions)) 
                         ? rule.departmentExclusions.find((d: any) => d.department === currentUser.ma_khoa) 
                         : null;
@@ -584,8 +587,14 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                 const machineValues = machineIndices.map(col => item[col]);
                 const valMachineKey = machineValues.join('|');
 
-                if (rule.ignoreMaMayMinusOne && machineValues.some((v: any) => String(v) === '-1')) return;
-                if (rule.ignoreNullValues && machineValues.some((v: any) => v === null || v === undefined || String(v).trim() === '' || String(v).toLowerCase() === 'null')) return;
+                if (rule.ignoreMaMayMinusOne && machineValues.some((v: any) => String(v) === '-1')) {
+                    totalIgnoredMinusOne++;
+                    return;
+                }
+                if (rule.ignoreNullValues && machineValues.some((v: any) => v === null || v === undefined || String(v).trim() === '' || String(v).toLowerCase() === 'null')) {
+                    totalIgnoredNull++;
+                    return;
+                }
 
                 const key = String(valMachineKey || '');
                 if (!key) return;
@@ -642,6 +651,32 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                             } else if (overlapEnd === overlapStart) {
                                 if (lenA === 0 || lenB === 0) {
                                     isOverlap = true;
+                                }
+                            }
+                        }
+
+                        if (isOverlap && serviceIndex !== -1) {
+                            const svcA = String(itemA[serviceIndex]).trim();
+                            const svcB = String(itemB[serviceIndex]).trim();
+                            
+                            const deptConfig = (currentUser?.ma_khoa && rule.departmentExclusions && Array.isArray(rule.departmentExclusions)) 
+                                ? rule.departmentExclusions.find((d: any) => d.department === currentUser.ma_khoa) 
+                                : null;
+                                
+                            const groupsToCheck: any[] = [];
+                            if (deptConfig?.allowedOverlapGroups && Array.isArray(deptConfig.allowedOverlapGroups)) {
+                                groupsToCheck.push(...deptConfig.allowedOverlapGroups);
+                            }
+                            if (rule.allowedOverlapGroups && Array.isArray(rule.allowedOverlapGroups)) {
+                                groupsToCheck.push(...rule.allowedOverlapGroups);
+                            }
+                            
+                            for (const group of groupsToCheck) {
+                                if (group && Array.isArray(group)) {
+                                    if (group.includes(svcA) && group.includes(svcB)) {
+                                        isOverlap = false;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -725,7 +760,11 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             message.warning(`Tìm thấy bản ghi vi phạm ${activeRules.length} quy tắc trùng lặp!`);
             setShowOnlyDuplicates(true);
         } else {
-            message.success("Không tìm thấy dữ liệu trùng theo các tiêu chí đã chọn.");
+            let msg = "Không tìm thấy dữ liệu trùng theo các tiêu chí đã chọn.";
+            if (totalIgnoredMinusOne > 0 || totalIgnoredNull > 0) {
+                msg += ` (Đã bỏ qua ${totalIgnoredMinusOne > 0 ? totalIgnoredMinusOne + ' dòng có mã máy -1' : ''}${totalIgnoredMinusOne > 0 && totalIgnoredNull > 0 ? ', ' : ''}${totalIgnoredNull > 0 ? totalIgnoredNull + ' dòng có giá trị trống' : ''} theo cài đặt quy tắc)`;
+            }
+            message.success(msg);
             setShowOnlyDuplicates(false);
         }
 
@@ -1095,14 +1134,20 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                         align: 'center',
                                         render: (violations: string[]) => (
                                             violations && violations.length > 0 ? (
-                                                <Tooltip title={
-                                                    <div className="flex flex-col gap-1 p-1 max-w-sm">
-                                                        <strong className="text-white mb-1">Các quy tắc vi phạm:</strong>
-                                                        {violations.map((v, i) => (
-                                                            <Tag color="error" key={i} className="whitespace-normal mb-1">{v}</Tag>
-                                                        ))}
-                                                    </div>
-                                                } color="#1e293b" placement="right">
+                                                <Tooltip 
+                                                    title={
+                                                        <div className="flex flex-col gap-1 p-1" style={{ maxWidth: 400 }}>
+                                                            <strong className="text-slate-200 border-b border-slate-600 pb-1 mb-1 block">Các quy tắc vi phạm:</strong>
+                                                            <ul className="list-disc pl-4 text-red-400 space-y-1 m-0">
+                                                                {violations.map((v, i) => (
+                                                                    <li key={i} className="text-[13px] leading-relaxed">{v}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    } 
+                                                    color="#1e293b" 
+                                                    placement="right"
+                                                >
                                                     <Tag color="red" className="m-0 cursor-help font-medium">
                                                         <AuditOutlined className="mr-1" /> {violations.length} Quy tắc
                                                     </Tag>
@@ -1116,13 +1161,35 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                         key: '_overlapTimes',
                                         width: maxTimeWidth,
                                         fixed: 'left',
-                                        render: (times: string[]) => (
-                                            times && times.length > 0 ? (
-                                                <div className="flex flex-col gap-1">
-                                                    {times.map((t, i) => <Tag color="orange" key={i} className="whitespace-normal mb-1 font-medium">{t}</Tag>)}
+                                        render: (times: string[]) => {
+                                            if (!times || times.length === 0) return null;
+                                            if (times.length === 1) {
+                                                return <Tag color="orange" className="whitespace-normal m-0 font-medium">{times[0]}</Tag>;
+                                            }
+                                            return (
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <Tag color="orange" className="whitespace-normal m-0 font-medium">{times[0]}</Tag>
+                                                    <Tooltip
+                                                        title={
+                                                            <div className="flex flex-col gap-1 p-1" style={{ maxWidth: 400 }}>
+                                                                <strong className="text-slate-200 border-b border-slate-600 pb-1 mb-1 block">Các mốc thời gian trùng lặp:</strong>
+                                                                <ul className="list-disc pl-4 text-orange-400 space-y-1 m-0 max-h-60 overflow-y-auto">
+                                                                    {times.map((t, i) => (
+                                                                        <li key={i} className="text-[13px] leading-relaxed">{t}</li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        }
+                                                        color="#1e293b"
+                                                        placement="right"
+                                                    >
+                                                        <Tag color="orange" className="m-0 cursor-help font-medium border-dashed">
+                                                            + {times.length - 1} mốc thời gian khác
+                                                        </Tag>
+                                                    </Tooltip>
                                                 </div>
-                                            ) : null
-                                        )
+                                            );
+                                        }
                                     },
                                     ...tableColumns
                                 ].map((col: any) => {
@@ -1304,8 +1371,9 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
 
                         <Col span={12}>
                             <Form.Item
-                                label="Cột Dịch vụ (Tùy chọn)"
+                                label="Cột Dịch vụ (Bắt buộc nếu có lọc Dịch vụ)"
                                 name="serviceCol"
+                                help="Hệ thống cần biết Cột Dịch vụ để áp dụng các luật Bỏ qua / Cho phép ở bên dưới."
                             >
                                 <AutoComplete
                                     placeholder="VD: TEN_DICH_VU"

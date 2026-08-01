@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, Popconfirm, message, Card, Tooltip, Switch } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, AppstoreAddOutlined, ClearOutlined } from '@ant-design/icons';
 import ServiceMappingModal from './components/ServiceMappingModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ScopeOfPracticeCatalogPage() {
+    const { user } = useAuth();
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +16,7 @@ export default function ScopeOfPracticeCatalogPage() {
     const [searchText, setSearchText] = useState('');
     const [mappingModalOpen, setMappingModalOpen] = useState(false);
     const [mappingRecord, setMappingRecord] = useState<any>(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -109,6 +112,30 @@ export default function ScopeOfPracticeCatalogPage() {
         }
     };
 
+    const handleClearAllMappings = async () => {
+        try {
+            const selectedScopes = data.filter(d => selectedRowKeys.includes(d.id)).map(d => d.ma_pham_vi);
+            
+            const res = await fetch(`/api/pham-vi-chuyen-mon/mapping`, { 
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ma_pham_vi_list: selectedScopes })
+            });
+            if (res.ok) {
+                if (selectedScopes.length > 0) {
+                    message.success(`Đã xóa dữ liệu gán Dịch vụ của ${selectedScopes.length} Phạm vi`);
+                    setSelectedRowKeys([]);
+                } else {
+                    message.success('Đã xóa toàn bộ dữ liệu gán Dịch vụ vào Phạm vi');
+                }
+            } else {
+                message.error('Xóa thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối khi xóa');
+        }
+    };
+
     const columns = [
         {
             title: 'STT',
@@ -175,6 +202,22 @@ export default function ScopeOfPracticeCatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
+                        {user?.role === 'ADMIN' && (
+                            <Popconfirm
+                                title={selectedRowKeys.length > 0 ? "Xóa Dịch vụ của Phạm vi đã chọn?" : "Xóa toàn bộ Dịch vụ đã gán?"}
+                                description={selectedRowKeys.length > 0 
+                                    ? `Hành động này sẽ xóa các mã Dịch vụ đã gán của ${selectedRowKeys.length} Phạm vi hành nghề được chọn. Bạn có chắc chắn không?` 
+                                    : "Bạn chưa chọn Phạm vi nào. Hành động này sẽ XÓA TẤT CẢ các mã Dịch vụ đã được gán vào TẤT CẢ Phạm vi hành nghề. Bạn có chắc chắn không?"}
+                                onConfirm={handleClearAllMappings}
+                                okText="Có, xóa"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button danger icon={<ClearOutlined />}>
+                                    {selectedRowKeys.length > 0 ? `Làm sạch (${selectedRowKeys.length}) Phạm vi` : 'Làm sạch Dữ liệu Gán (Tất cả)'}
+                                </Button>
+                            </Popconfirm>
+                        )}
                         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                             Thêm mới
                         </Button>
@@ -182,6 +225,7 @@ export default function ScopeOfPracticeCatalogPage() {
                 </div>
 
                 <Table
+                    rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
                     columns={columns}
                     dataSource={filteredData}
                     rowKey="id"

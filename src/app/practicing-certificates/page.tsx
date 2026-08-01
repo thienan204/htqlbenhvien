@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Space, Tag, Input, Button, Select } from 'antd';
-import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CertificatesModal from '@/app/staff/components/CertificatesModal';
 import BulkUpdateCchnModal from './components/BulkUpdateCchnModal';
@@ -78,7 +78,11 @@ export default function PracticingCertificatesPage() {
             render: (text: string, record: any) => (
                 <Space>
                     <span className="font-medium text-purple-600">{text}</span>
-                    {record.isActive && <Tag color="green" icon={<CheckCircleOutlined />}>Đang sử dụng</Tag>}
+                    {record.isActive ? (
+                        <CheckCircleOutlined className="text-green-500" title="Đang sử dụng" />
+                    ) : (
+                        <CloseCircleOutlined className="text-red-500" title="Không sử dụng" />
+                    )}
                 </Space>
             )
         },

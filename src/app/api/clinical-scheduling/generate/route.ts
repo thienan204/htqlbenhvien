@@ -63,6 +63,17 @@ export async function POST(request: Request) {
         const catalogItems = await prisma.mau05Catalog.findMany({
             where: { MA_DICH_VU: { in: uniqueServiceCodes } }
         });
+
+        // Lấy thông tin Phạm vi hành nghề yêu cầu của các dịch vụ
+        const scopeMappings = await prisma.scopeServiceMapping.findMany({
+            where: { ma_dich_vu: { in: uniqueServiceCodes } }
+        });
+        const serviceScopes: Record<string, string[]> = {};
+        scopeMappings.forEach(mapping => {
+            if (!serviceScopes[mapping.ma_dich_vu]) serviceScopes[mapping.ma_dich_vu] = [];
+            serviceScopes[mapping.ma_dich_vu].push(mapping.ma_pham_vi);
+        });
+
         const catalogMap: Record<string, any> = {};
         catalogItems.forEach(item => {
             // @ts-ignore: buffer_time có thể chưa được định nghĩa trong type sinh ra
@@ -119,6 +130,10 @@ export async function POST(request: Request) {
                 attendances: {
                     where: { workDate: date },
                     include: { status_ref: true }
+                },
+                certificates: {
+                    where: { isActive: true },
+                    include: { scopes: true }
                 }
             }
         });
@@ -166,22 +181,33 @@ export async function POST(request: Request) {
             // Lấy chính xác theo cấu hình Buffer của Dịch vụ -> Khoa (tối thiểu 1 phút để không bị trùng hoàn toàn)
             const staffOccupiedTime = config.isConcurrent ? Math.max(1, currentServiceBufferTime) : requiredTime;
 
-            // Tìm nhân viên phù hợp
-            let capableStaff = availableStaff;
-            if (requiredQual) {
-                const requiredQualList = requiredQual.split(',').map((q: string) => q.trim()).filter(Boolean);
+            // Tìm nhân viên phù hợp dựa trên CCHN
+            const requiredScopes = serviceScopes[ma_dich_vu] || [];
+            
+            const capableStaff = availableStaff.filter(s => {
+                // Kiểm tra các CCHN đang hoạt động của nhân viên
+                if (!s.certificates || s.certificates.length === 0) return false;
+
+                for (const cert of s.certificates) {
+                    // 1. Kiểm tra Dịch vụ kỹ thuật khác (Mẫu 05)
+                    if (cert.dich_vu_ky_thuat) {
+                        const extraServices = cert.dich_vu_ky_thuat.split(',').map((code: string) => code.trim()).filter(Boolean);
+                        if (extraServices.includes(ma_dich_vu)) return true;
+                    }
+
+                    // 2. Kiểm tra Phạm vi hành nghề (Mapping)
+                    if (cert.scopes && cert.scopes.length > 0) {
+                        const certScopes = cert.scopes.map((sc: any) => sc.ma_pham_vi);
+                        const hasMatchingScope = requiredScopes.some(reqScope => certScopes.includes(reqScope));
+                        if (hasMatchingScope) return true;
+                    }
+                }
                 
-                capableStaff = availableStaff.filter(s => {
-                    const chucDanh = (s.chuc_danh_ref?.name || s.chuc_danh_ref?.code || '').toLowerCase();
-                    const trinhDo = (s.trinh_do_ref?.name || s.trinh_do_ref?.code || '').toLowerCase();
-                    
-                    // Khớp với BẤT KỲ trình độ nào trong danh sách
-                    return requiredQualList.some((qual: string) => chucDanh.includes(qual) || trinhDo.includes(qual));
-                });
-            }
+                return false;
+            });
 
             if (capableStaff.length === 0) {
-                failedResults.push({ ...task, error: 'Không tìm thấy nhân viên có trình độ phù hợp' });
+                failedResults.push({ ...task, error: 'Không tìm thấy nhân viên có chứng chỉ hành nghề phù hợp' });
                 continue;
             }
 

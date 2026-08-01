@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Button, Space, message, Tag, Popconfirm, Form } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, CheckCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, EditOutlined, CheckCircleOutlined, SettingOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import DynamicForm, { FieldConfig } from '@/components/shared/DynamicForm';
 import ServiceSelectorModal from '@/components/shared/ServiceSelectorModal';
 import dayjs from 'dayjs';
@@ -114,7 +114,11 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
             render: (text: string, record: any) => (
                 <Space>
                     <span className="font-medium text-slate-800">{text}</span>
-                    {record.isActive && <Tag color="green" icon={<CheckCircleOutlined />}>Đang sử dụng</Tag>}
+                    {record.isActive ? (
+                        <CheckCircleOutlined className="text-green-500" title="Đang sử dụng" />
+                    ) : (
+                        <CloseCircleOutlined className="text-red-500" title="Không sử dụng" />
+                    )}
                 </Space>
             )
         },
@@ -239,8 +243,8 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
                 open={open}
                 onCancel={onClose}
                 footer={null}
-                width={800}
-                centered
+                width={1400}
+                style={{ top: 20 }}
             >
                 <div className="mb-4 flex justify-between items-center">
                     <p className="text-slate-500 m-0">Quản lý các chứng chỉ hành nghề của nhân sự này.</p>

@@ -16,12 +16,9 @@ const DB_NAME = 'xml-reader-db';
 const STORE_NAME = 'records';
 
 export async function initDB() {
-    return openDB<XmlReaderDB>(DB_NAME, 2, {
+    return openDB<XmlReaderDB>(DB_NAME, 3, {
         upgrade(db, oldVersion, newVersion, transaction) {
-            if (oldVersion < 2) {
-                if (db.objectStoreNames.contains(STORE_NAME)) {
-                    db.deleteObjectStore(STORE_NAME);
-                }
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'uuid' });
             }
         },

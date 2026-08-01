@@ -348,14 +348,20 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
             render: (violations: any) => {
                 const arr = Array.isArray(violations) ? violations : (violations ? [violations] : []);
                 return arr.length > 0 ? (
-                    <Tooltip title={
-                        <div className="flex flex-col gap-1 p-1 max-w-sm">
-                            <strong className="text-white mb-1">Các quy tắc vi phạm:</strong>
-                            {arr.map((v: string, i: number) => (
-                                <Tag color="error" key={i} className="whitespace-normal mb-1">{v}</Tag>
-                            ))}
-                        </div>
-                    } color="#1e293b" placement="right">
+                    <Tooltip 
+                        title={
+                            <div className="flex flex-col gap-1 p-1" style={{ maxWidth: 400 }}>
+                                <strong className="text-slate-200 border-b border-slate-600 pb-1 mb-1 block">Các quy tắc vi phạm:</strong>
+                                <ul className="list-disc pl-4 text-red-400 space-y-1 m-0">
+                                    {arr.map((v: string, i: number) => (
+                                        <li key={i} className="text-[13px] leading-relaxed">{v}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        } 
+                        color="#1e293b" 
+                        placement="right"
+                    >
                         <Tag color="red" className="m-0 cursor-help font-medium">
                             <AuditOutlined className="mr-1" /> {arr.length} Quy tắc
                         </Tag>
@@ -371,11 +377,33 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
             fixed: 'left' as const,
             render: (times: string[]) => {
                 const arr = Array.isArray(times) ? times : (times ? [times] : []);
-                return arr.length > 0 ? (
-                    <div className="flex flex-col gap-1">
-                        {arr.map((t: string, i: number) => <Tag color="orange" key={i} className="whitespace-normal mb-1 font-medium">{t}</Tag>)}
+                if (arr.length === 0) return null;
+                if (arr.length === 1) {
+                    return <Tag color="orange" className="whitespace-normal m-0 font-medium">{arr[0]}</Tag>;
+                }
+                return (
+                    <div className="flex flex-col gap-1 items-start">
+                        <Tag color="orange" className="whitespace-normal m-0 font-medium">{arr[0]}</Tag>
+                        <Tooltip
+                            title={
+                                <div className="flex flex-col gap-1 p-1" style={{ maxWidth: 400 }}>
+                                    <strong className="text-slate-200 border-b border-slate-600 pb-1 mb-1 block">Các mốc thời gian trùng lặp:</strong>
+                                    <ul className="list-disc pl-4 text-orange-400 space-y-1 m-0 max-h-60 overflow-y-auto">
+                                        {arr.map((t: string, i: number) => (
+                                            <li key={i} className="text-[13px] leading-relaxed">{t}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            }
+                            color="#1e293b"
+                            placement="right"
+                        >
+                            <Tag color="orange" className="m-0 cursor-help font-medium border-dashed">
+                                + {arr.length - 1} mốc thời gian khác
+                            </Tag>
+                        </Tooltip>
                     </div>
-                ) : null;
+                );
             }
         },
         ...orderedOriginalIndices.map((originalIndex) => {

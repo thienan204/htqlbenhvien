@@ -6,19 +6,37 @@ const prisma = new PrismaClient();
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const cchn = searchParams.get('cchn');
-        const status = searchParams.get('status');
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '50');
+        const search = searchParams.get('search') || '';
+        
+        const skip = (page - 1) * limit;
 
         const where: any = {};
-        if (cchn) where.cchn = cchn;
-        if (status) where.status = status;
+        if (search) {
+            where.OR = [
+                { cchn: { contains: search } },
+                { ma_dich_vu: { contains: search } },
+                { ten_dich_vu: { contains: search } }
+            ];
+        }
 
-        const data = await prisma.doctorServiceMapping.findMany({
-            where,
-            orderBy: { ten_dich_vu: 'asc' }
+        const [total, data] = await Promise.all([
+            prisma.doctorServiceMapping.count({ where }),
+            prisma.doctorServiceMapping.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' }
+            })
+        ]);
+
+        return NextResponse.json({
+            data,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
         });
-
-        return NextResponse.json(data);
     } catch (error) {
         console.error('Error fetching mappings:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -110,6 +128,11 @@ export async function DELETE(request: Request) {
 
         if (!ids) {
             return NextResponse.json({ error: 'IDs required' }, { status: 400 });
+        }
+
+        if (ids === 'all') {
+            const deleted = await prisma.doctorServiceMapping.deleteMany({});
+            return NextResponse.json({ success: true, count: deleted.count, message: `Đã xóa toàn bộ ${deleted.count} bản ghi` });
         }
 
         const idArray = ids.split(',');

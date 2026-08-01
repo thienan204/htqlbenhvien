@@ -24,6 +24,7 @@ interface DuplicateRule {
     ignoreIfSameField?: string;
     minGapMinutes?: number;
     departmentExclusions?: any[];
+    allowedOverlapGroups?: string[][];
 }
 
 export default function ExcelRulesPage() {
@@ -83,7 +84,8 @@ export default function ExcelRulesPage() {
             ignoreMaMayMinusOne: values.ignoreMaMayMinusOne || false,
             active: values.active !== undefined ? values.active : true,
             ignoreIfSameField: values.ignoreIfSameField || '',
-            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
+            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0,
+            allowedOverlapGroups: values.allowedOverlapGroups || []
         });
 
         if (res.success) {
@@ -104,7 +106,8 @@ export default function ExcelRulesPage() {
             ...values,
             ignoreMaMayMinusOne: values.ignoreMaMayMinusOne || false,
             ignoreIfSameField: values.ignoreIfSameField || '',
-            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
+            minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0,
+            allowedOverlapGroups: values.allowedOverlapGroups || []
         });
 
         if (res.success) {
@@ -172,7 +175,7 @@ export default function ExcelRulesPage() {
         }
         setEditingRule(null);
         form.resetFields();
-        form.setFieldsValue({ ignoreMaMayMinusOne: false, active: true, ruleType: defaultRuleType });
+        form.setFieldsValue({ ignoreMaMayMinusOne: false, active: true, ruleType: defaultRuleType, allowedOverlapGroups: [] });
         setIsModalOpen(true);
     };
 
@@ -191,7 +194,8 @@ export default function ExcelRulesPage() {
             const deptConfig = rule.departmentExclusions?.find((d: any) => d.department === currentUser.ma_khoa) || {
                 department: currentUser.ma_khoa,
                 includedServices: [],
-                excludedServices: []
+                excludedServices: [],
+                allowedOverlapGroups: []
             };
             deptForm.setFieldsValue(deptConfig);
             setIsDeptModalOpen(true);
@@ -206,7 +210,8 @@ export default function ExcelRulesPage() {
         newDeptExclusions.push({
             department: currentUser.ma_khoa,
             includedServices: values.includedServices || [],
-            excludedServices: values.excludedServices || []
+            excludedServices: values.excludedServices || [],
+            allowedOverlapGroups: values.allowedOverlapGroups || []
         });
 
         const res = await updateDuplicateRule(editingRule.id, {
@@ -449,7 +454,7 @@ export default function ExcelRulesPage() {
                                                         <Select
                                                             placeholder="Chọn Khoa/Phòng"
                                                             showSearch
-                                                            optionFilterProp="children"
+                                                            optionFilterProp="label"
                                                             options={departments.map(d => ({ value: d.ma_khoa, label: d.ten_khoa }))}
                                                         />
                                                     </Form.Item>
@@ -524,6 +529,39 @@ export default function ExcelRulesPage() {
                         </Col>
                     </Row>
 
+                    <Form.Item label="Danh sách Nhóm dịch vụ ĐƯỢC PHÉP chồng thời gian chung" className="mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <Form.List name="allowedOverlapGroups">
+                            {(fields, { add, remove }) => (
+                                <>
+                                    {fields.map(({ key, name, ...restField }, index) => (
+                                        <div key={key} className="flex gap-2 items-start mb-3">
+                                            <div className="flex-1">
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={name}
+                                                    noStyle
+                                                >
+                                                    <Select
+                                                        mode="tags"
+                                                        placeholder="Chọn nhiều mã dịch vụ..."
+                                                        showSearch
+                                                        optionFilterProp="label"
+                                                        options={mau05Services.map(s => ({ value: s.MA_DICH_VU, label: s.MA_DICH_VU + ' - ' + s.TEN_DICH_VU }))}
+                                                        style={{ width: '100%' }}
+                                                    />
+                                                </Form.Item>
+                                            </div>
+                                            <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
+                                        </div>
+                                    ))}
+                                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                                        Thêm Nhóm (Các dịch vụ trong cùng 1 nhóm sẽ được phép trùng nhau)
+                                    </Button>
+                                </>
+                            )}
+                        </Form.List>
+                    </Form.Item>
+
                     <div className="flex justify-end gap-2 mt-4">
                         <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
                         <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
@@ -596,6 +634,39 @@ export default function ExcelRulesPage() {
                             options={mau05Services.map(s => ({ value: s.MA_DICH_VU, label: s.MA_DICH_VU + ' - ' + s.TEN_DICH_VU }))}
                             style={{ width: '100%' }}
                         />
+                    </Form.Item>
+
+                    <Form.Item label="Danh sách Nhóm dịch vụ ĐƯỢC PHÉP chồng thời gian (Áp dụng riêng Khoa)" className="mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <Form.List name="allowedOverlapGroups">
+                            {(fields, { add, remove }) => (
+                                <>
+                                    {fields.map(({ key, name, ...restField }, index) => (
+                                        <div key={key} className="flex gap-2 items-start mb-3">
+                                            <div className="flex-1">
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={name}
+                                                    noStyle
+                                                >
+                                                    <Select
+                                                        mode="tags"
+                                                        placeholder="Chọn nhiều mã dịch vụ..."
+                                                        showSearch
+                                                        optionFilterProp="label"
+                                                        options={mau05Services.map(s => ({ value: s.MA_DICH_VU, label: s.MA_DICH_VU + ' - ' + s.TEN_DICH_VU }))}
+                                                        style={{ width: '100%' }}
+                                                    />
+                                                </Form.Item>
+                                            </div>
+                                            <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
+                                        </div>
+                                    ))}
+                                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                                        Thêm Nhóm (Các dịch vụ trong cùng 1 nhóm sẽ được phép trùng nhau)
+                                    </Button>
+                                </>
+                            )}
+                        </Form.List>
                     </Form.Item>
 
                     <div className="flex justify-end gap-2 mt-6">
