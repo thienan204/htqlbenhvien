@@ -146,27 +146,66 @@ export default function ClinicalSchedulingPage() {
 
     const groupedScheduledData = React.useMemo(() => {
         if (!scheduledData.length) return [];
-        const groups: Record<string, any[]> = {};
+        
+        const getShift = (timeStr: string) => {
+            if (!timeStr) return 'Không xác định';
+            const hour = parseInt(timeStr.split(':')[0]);
+            return hour < 12 ? 'Buổi Sáng' : 'Buổi Chiều';
+        };
+
+        const shiftGroups: Record<string, Record<string, any[]>> = {
+            'Buổi Sáng': {},
+            'Buổi Chiều': {}
+        };
+        
         scheduledData.forEach(item => {
-            if (!groups[item.nguoi_thuc_hien]) groups[item.nguoi_thuc_hien] = [];
-            groups[item.nguoi_thuc_hien].push(item);
+            const shift = getShift(item.bat_dau);
+            if (!shiftGroups[shift]) shiftGroups[shift] = {};
+            
+            const staff = item.nguoi_thuc_hien;
+            if (!shiftGroups[shift][staff]) shiftGroups[shift][staff] = [];
+            shiftGroups[shift][staff].push(item);
         });
 
-        return Object.keys(groups).sort().map((staff, idx) => ({
-            key: `group_${idx}`,
-            nguoi_thuc_hien: `${staff} (${groups[staff].length} ca)`,
-            ma_ba: '',
-            ten_bn: '',
-            ten_dich_vu: '',
-            bat_dau: '',
-            ket_thuc: '',
-            thoi_gian_chi_dinh: '',
-            children: groups[staff].map((child, cIdx) => ({
-                ...child,
-                key: `child_${idx}_${cIdx}`,
-                nguoi_thuc_hien: ''
-            }))
-        }));
+        const result: any[] = [];
+        let shiftIdx = 0;
+        for (const shift of ['Buổi Sáng', 'Buổi Chiều']) {
+            const staffs = shiftGroups[shift];
+            const staffKeys = Object.keys(staffs).sort();
+            
+            if (staffKeys.length === 0) continue;
+            
+            let totalItems = 0;
+            const shiftChildren = staffKeys.map((staff, sIdx) => {
+                const items = staffs[staff];
+                totalItems += items.length;
+                return {
+                    key: `staff_group_${shiftIdx}_${sIdx}`,
+                    nguoi_thuc_hien: `${staff} (${items.length} ca)`,
+                    ma_ba: '',
+                    ten_bn: '',
+                    ten_dich_vu: '',
+                    bat_dau: '',
+                    ket_thuc: '',
+                    thoi_gian_chi_dinh: '',
+                    children: items.map((child, cIdx) => ({
+                        ...child,
+                        key: `staff_child_${shiftIdx}_${sIdx}_${cIdx}`,
+                        nguoi_thuc_hien: ''
+                    }))
+                };
+            });
+            
+            result.push({
+                key: `shift_staff_group_${shiftIdx}`,
+                nguoi_thuc_hien: `--- ${shift.toUpperCase()} (${totalItems} ca) ---`,
+                _isShiftHeader: true,
+                children: shiftChildren
+            });
+            shiftIdx++;
+        }
+        
+        return result;
     }, [scheduledData]);
 
     // States for Excel column mapping
@@ -213,29 +252,67 @@ export default function ClinicalSchedulingPage() {
 
     const groupedByPatientData = React.useMemo(() => {
         if (!scheduledData.length) return [];
-        const groups: Record<string, any[]> = {};
+        
+        const getShift = (timeStr: string) => {
+            if (!timeStr) return 'Không xác định';
+            const hour = parseInt(timeStr.split(':')[0]);
+            return hour < 12 ? 'Buổi Sáng' : 'Buổi Chiều';
+        };
+
+        const shiftGroups: Record<string, Record<string, any[]>> = {
+            'Buổi Sáng': {},
+            'Buổi Chiều': {}
+        };
+        
         scheduledData.forEach(item => {
+            const shift = getShift(item.bat_dau);
+            if (!shiftGroups[shift]) shiftGroups[shift] = {};
+            
             const patientKey = `${item.ma_ba} - ${item.ten_bn}`;
-            if (!groups[patientKey]) groups[patientKey] = [];
-            groups[patientKey].push(item);
+            if (!shiftGroups[shift][patientKey]) shiftGroups[shift][patientKey] = [];
+            shiftGroups[shift][patientKey].push(item);
         });
 
-        return Object.keys(groups).sort().map((patient, idx) => ({
-            key: `patient_group_${idx}`,
-            ten_bn: `${patient} (${groups[patient].length} dịch vụ)`,
-            nguoi_thuc_hien: '',
-            ma_ba: '',
-            ten_dich_vu: '',
-            bat_dau: '',
-            ket_thuc: '',
-            thoi_gian_chi_dinh: '',
-            children: groups[patient].map((child, cIdx) => ({
-                ...child,
-                key: `patient_child_${idx}_${cIdx}`,
-                ten_bn: '',
-                ma_ba: ''
-            }))
-        }));
+        const result: any[] = [];
+        let shiftIdx = 0;
+        for (const shift of ['Buổi Sáng', 'Buổi Chiều']) {
+            const patients = shiftGroups[shift];
+            const patientKeys = Object.keys(patients).sort();
+            
+            if (patientKeys.length === 0) continue;
+            
+            let totalItems = 0;
+            const shiftChildren = patientKeys.map((patient, pIdx) => {
+                const items = patients[patient];
+                totalItems += items.length;
+                return {
+                    key: `patient_group_${shiftIdx}_${pIdx}`,
+                    ten_bn: `${patient} (${items.length} dịch vụ)`,
+                    nguoi_thuc_hien: '',
+                    ma_ba: '',
+                    ten_dich_vu: '',
+                    bat_dau: '',
+                    ket_thuc: '',
+                    thoi_gian_chi_dinh: '',
+                    children: items.map((child, cIdx) => ({
+                        ...child,
+                        key: `patient_child_${shiftIdx}_${pIdx}_${cIdx}`,
+                        ten_bn: '',
+                        ma_ba: ''
+                    }))
+                };
+            });
+            
+            result.push({
+                key: `shift_group_${shiftIdx}`,
+                ten_bn: `--- ${shift.toUpperCase()} (${totalItems} dịch vụ) ---`,
+                _isShiftHeader: true,
+                children: shiftChildren
+            });
+            shiftIdx++;
+        }
+        
+        return result;
     }, [scheduledData]);
 
     const reportData = React.useMemo(() => {
@@ -743,7 +820,7 @@ export default function ClinicalSchedulingPage() {
     };
 
     const resultColumns = [
-        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r.children ? '#237804' : '#16a34a'}}>{t}</strong></div> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#237804' : '#16a34a')}}>{t}</strong></div> : null },
         { title: outputMapping.out_ma_ba || columnMapping.ma_ba || 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '10%' },
         { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%' },
         { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
@@ -754,7 +831,7 @@ export default function ClinicalSchedulingPage() {
     ];
 
     const patientColumns = [
-        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r.children ? '#0958d9' : '#000'}}>{t}</strong> : null },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#0958d9' : '#000')}}>{t}</strong> : null },
         { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
         { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
         { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '30%', render: (t: string, r: any) => t ? <div className="print-truncate">{r.ma_dich_vu ? `[${r.ma_dich_vu}] ${t}` : t}</div> : null },
