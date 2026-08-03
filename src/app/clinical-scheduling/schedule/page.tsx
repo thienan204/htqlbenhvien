@@ -114,6 +114,21 @@ export default function ClinicalSchedulingPage() {
     
     const [loading, setLoading] = useState(false);
 
+    const [morningPatients, setMorningPatients] = useState<string[]>([]);
+    const [afternoonPatients, setAfternoonPatients] = useState<string[]>([]);
+    const uniquePatients = React.useMemo(() => {
+        const map = new Map();
+        uploadedData.forEach(item => {
+            if (item.ma_ba) {
+                map.set(item.ma_ba, item.ten_bn);
+            }
+        });
+        return Array.from(map.entries()).map(([ma_ba, ten_bn]) => ({
+            label: `${ma_ba} - ${ten_bn}`,
+            value: ma_ba
+        }));
+    }, [uploadedData]);
+
     useEffect(() => {
         setSelectedDate(dayjs().format('YYYY-MM-DD'));
     }, []);
@@ -465,6 +480,10 @@ export default function ClinicalSchedulingPage() {
             return;
         }
 
+        const patientShifts: Record<string, string> = {};
+        morningPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'MORNING'; });
+        afternoonPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'AFTERNOON'; });
+
         setLoading(true);
         try {
             const res = await fetch('/api/clinical-scheduling/generate', {
@@ -473,7 +492,8 @@ export default function ClinicalSchedulingPage() {
                 body: JSON.stringify({
                     date: selectedDate,
                     maKhoa: selectedDept,
-                    services: filteredData
+                    services: filteredData,
+                    patientShifts
                 })
             });
             
@@ -823,6 +843,43 @@ export default function ClinicalSchedulingPage() {
                             value={selectedServices} 
                             onChange={(checkedValues) => setSelectedServices(checkedValues as string[])}
                         />
+                    </div>
+                )}
+
+                {uploadedData.length > 0 && (
+                    <div style={{ marginTop: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8 }}>
+                        <h3 style={{ margin: 0, color: '#fa8c16', marginBottom: 16 }}>Tùy chọn Bệnh nhân ưu tiên xếp lịch theo buổi:</h3>
+                        <Row gutter={24}>
+                            <Col span={12}>
+                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Sáng (07:30 - 11:30):</strong></div>
+                                <Select
+                                    mode="multiple"
+                                    allowClear
+                                    style={{ width: '100%' }}
+                                    placeholder="Chọn bệnh nhân (Để trống = Tự động xếp)"
+                                    value={morningPatients}
+                                    onChange={(vals) => setMorningPatients(vals)}
+                                    options={uniquePatients.filter(p => !afternoonPatients.includes(p.value))}
+                                    filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                />
+                            </Col>
+                            <Col span={12}>
+                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Chiều (13:30 - 17:30):</strong></div>
+                                <Select
+                                    mode="multiple"
+                                    allowClear
+                                    style={{ width: '100%' }}
+                                    placeholder="Chọn bệnh nhân (Để trống = Tự động xếp)"
+                                    value={afternoonPatients}
+                                    onChange={(vals) => setAfternoonPatients(vals)}
+                                    options={uniquePatients.filter(p => !morningPatients.includes(p.value))}
+                                    filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                />
+                            </Col>
+                        </Row>
+                        <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
+                            * Lưu ý: Các bệnh nhân không được chọn sẽ được thuật toán tự động xếp vào bất kỳ thời gian rảnh nào trong ngày. Nếu buổi đã chọn kín lịch, sẽ báo lỗi thiếu thời gian.
+                        </div>
                     </div>
                 )}
 

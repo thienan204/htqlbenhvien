@@ -32,7 +32,7 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services } = body;
+        const { date, maKhoa, services, patientShifts = {} } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -207,7 +207,11 @@ export async function POST(request: Request) {
             });
 
             if (capableStaff.length === 0) {
-                failedResults.push({ ...task, error: 'Không tìm thấy nhân viên có chứng chỉ hành nghề phù hợp' });
+                if (requiredScopes.length > 0) {
+                    failedResults.push({ ...task, error: `Không có NV nào trong Khoa đi làm có CCHN phù hợp (Yêu cầu PVHN: ${requiredScopes.join(', ')})` });
+                } else {
+                    failedResults.push({ ...task, error: 'Dịch vụ chưa cấu hình Phạm vi hành nghề yêu cầu (Và không có NV nào được gán đích danh).' });
+                }
                 continue;
             }
 
@@ -246,6 +250,16 @@ export async function POST(request: Request) {
                     // Nếu nhảy qua aEnd thì dừng
                     if (currentTime + requiredTime > aEnd) {
                         break;
+                    }
+
+                    // Ưu tiên Sáng/Chiều theo cấu hình
+                    const shiftPref = patientShifts[ma_ba];
+                    if (shiftPref === 'MORNING' && currentTime >= mEnd) {
+                        break; // Hết giờ sáng thì dừng tìm cho nhân viên này
+                    }
+                    if (shiftPref === 'AFTERNOON' && currentTime < aStart) {
+                        currentTime = aStart; // Nhảy thẳng đến giờ chiều
+                        continue;
                     }
 
                     // Điều kiện 1 & 2: Nhân viên rảnh và Bệnh nhân rảnh
@@ -308,7 +322,14 @@ export async function POST(request: Request) {
                     _startMinutes: earliestGlobalTime // used for sorting later
                 });
             } else {
-                failedResults.push({ ...task, error: 'Hết khung giờ trống trong ngày' });
+                const shiftPref = patientShifts[ma_ba];
+                if (shiftPref === 'MORNING') {
+                    failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
+                } else if (shiftPref === 'AFTERNOON') {
+                    failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
+                } else {
+                    failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
+                }
             }
         }
 
