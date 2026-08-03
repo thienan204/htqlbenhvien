@@ -20,9 +20,18 @@ export async function POST(request: Request) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const successCount = await processExcelImport(buffer);
+        const result = await processExcelImport(buffer);
 
-        return NextResponse.json({ success: true, message: `Import thành công ${successCount} nhân viên.` });
+        // Trả về file Excel chứa kết quả báo cáo
+        return new NextResponse(result.outBuffer, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition': 'attachment; filename="KetQua_Import.xlsx"',
+                'X-Success-Count': result.successCount.toString(),
+                'X-Failed-Count': result.failedCount.toString()
+            }
+        });
 
     } catch (error: any) {
         console.error('Import Excel Error:', error);

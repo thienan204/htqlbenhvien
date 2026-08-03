@@ -26,11 +26,13 @@ export async function POST(request: Request) {
             }
 
             try {
+                const { ma_nv, ...actualFields } = fieldsToUpdate;
+                
                 const validUpdateData: any = {};
-                for (const key in fieldsToUpdate) {
-                    if (fieldsToUpdate[key] !== undefined && fieldsToUpdate[key] !== null) {
+                for (const key in actualFields) {
+                    if (actualFields[key] !== undefined && actualFields[key] !== null) {
                         if (key === 'noi_cap_cchn') {
-                            const nameStr = fieldsToUpdate[key].toString().trim();
+                            const nameStr = actualFields[key].toString().trim();
                             if (nameStr) {
                                 let cat = await prisma.systemCategory.findFirst({
                                     where: { type: 'NOI_CAP_CCHN', name: nameStr }
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
                                 validUpdateData.noi_cap_cchn_id = cat.id;
                             }
                         } else {
-                            validUpdateData[key] = fieldsToUpdate[key];
+                            validUpdateData[key] = actualFields[key];
                         }
                     }
                 }
@@ -58,9 +60,66 @@ export async function POST(request: Request) {
                 });
 
                 if (cchns.length === 0) {
-                    failedCount++;
-                    failedRows.push({ so_cchn, reason: 'Không tìm thấy Số CCHN này trong hệ thống' });
-                    continue;
+                    if (ma_nv) {
+                        // Logic thêm mới
+                        const staff = await prisma.staff.findFirst({
+                            where: { ma_nv: ma_nv.toString().trim() }
+                        });
+                        
+                        if (!staff) {
+                            failedCount++;
+                            failedRows.push({ so_cchn, reason: `Không tìm thấy Mã NV: ${ma_nv} để thêm mới` });
+                            continue;
+                        }
+
+                        // Validate scopes trước khi tạo
+                        if (pham_vi_hanh_nghe_ids && Array.isArray(pham_vi_hanh_nghe_ids) && pham_vi_hanh_nghe_ids.length > 0) {
+                            const existingScopes = await prisma.scopeOfPracticeCatalog.findMany({
+                                where: { ma_pham_vi: { in: pham_vi_hanh_nghe_ids } },
+                                select: { ma_pham_vi: true }
+                            });
+                            const existingScopeIds = existingScopes.map(s => s.ma_pham_vi);
+                            const missingScopes = pham_vi_hanh_nghe_ids.filter(ma => !existingScopeIds.includes(ma));
+                            
+                            if (missingScopes.length > 0) {
+                                throw new Error(`Mã phạm vi hành nghề không tồn tại: ${missingScopes.join(', ')}`);
+                            }
+                            
+                            const uniqueScopeIds = Array.from(new Set(pham_vi_hanh_nghe_ids));
+                            validUpdateData.scopes = {
+                                create: uniqueScopeIds.map((ma: string) => ({ scope: { connect: { ma_pham_vi: ma } } }))
+                            };
+                        }
+
+                        await prisma.practicingCertificate.create({
+                            data: {
+                                ...validUpdateData,
+                                so_cchn,
+                                staffId: staff.id
+                            }
+                        });
+                        
+                        successCount++;
+                        continue; // Bỏ qua phần update ở dưới
+                    } else {
+                        failedCount++;
+                        failedRows.push({ so_cchn, reason: 'Không tìm thấy Số CCHN và không có Mã NV để Thêm mới' });
+                        continue;
+                    }
+                }
+
+                // Kiểm tra xem các mã phạm vi hành nghề có hợp lệ không
+                if (pham_vi_hanh_nghe_ids && Array.isArray(pham_vi_hanh_nghe_ids) && pham_vi_hanh_nghe_ids.length > 0) {
+                    const existingScopes = await prisma.scopeOfPracticeCatalog.findMany({
+                        where: { ma_pham_vi: { in: pham_vi_hanh_nghe_ids } },
+                        select: { ma_pham_vi: true }
+                    });
+                    const existingScopeIds = existingScopes.map(s => s.ma_pham_vi);
+                    const missingScopes = pham_vi_hanh_nghe_ids.filter(ma => !existingScopeIds.includes(ma));
+                    
+                    if (missingScopes.length > 0) {
+                        throw new Error(`Mã phạm vi hành nghề không tồn tại trong hệ thống: ${missingScopes.join(', ')}`);
+                    }
                 }
 
                 // Lặp qua từng CCHN tìm được và update
@@ -70,8 +129,11 @@ export async function POST(request: Request) {
                         await prisma.cCHNScopeMapping.deleteMany({
                             where: { cchn_id: cert.id }
                         });
+                        
+                        const uniqueScopeIds = Array.from(new Set(pham_vi_hanh_nghe_ids));
+                        
                         validUpdateData.scopes = {
-                            create: pham_vi_hanh_nghe_ids.map((ma: string) => ({ scope: { connect: { ma_pham_vi: ma } } }))
+                            create: uniqueScopeIds.map((ma: string) => ({ scope: { connect: { ma_pham_vi: ma } } }))
                         };
                     }
 

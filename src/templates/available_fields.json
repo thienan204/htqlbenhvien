@@ -1,0 +1,98 @@
+[
+  {
+    "value": "stt",
+    "label": "Số thứ tự"
+  },
+  {
+    "value": "ma_nv",
+    "label": "Mã nhân viên"
+  },
+  {
+    "value": "ho_ten",
+    "label": "Họ và tên"
+  },
+  {
+    "value": "phong_ban",
+    "label": "Khoa / Phòng"
+  },
+  {
+    "value": "ngay_sinh",
+    "label": "Ngày sinh (Đầy đủ)"
+  },
+  {
+    "value": "nam_sinh",
+    "label": "Năm sinh (Chỉ lấy năm)"
+  },
+  {
+    "value": "gioi_tinh",
+    "label": "Giới tính"
+  },
+  {
+    "value": "cccd",
+    "label": "Số CCCD/CMND"
+  },
+  {
+    "value": "dan_toc",
+    "label": "Dân tộc"
+  },
+  {
+    "value": "dien_thoai",
+    "label": "Số điện thoại"
+  },
+  {
+    "value": "email",
+    "label": "Email"
+  },
+  {
+    "value": "que_quan",
+    "label": "Quê quán"
+  },
+  {
+    "value": "noi_o",
+    "label": "Nơi ở hiện tại"
+  },
+  {
+    "value": "chuc_danh",
+    "label": "Chức vụ, chức danh"
+  },
+  {
+    "value": "vi_tri",
+    "label": "Vị trí việc làm"
+  },
+  {
+    "value": "loai_hd",
+    "label": "Loại hợp đồng"
+  },
+  {
+    "value": "trinh_do_cm",
+    "label": "Trình độ chuyên môn"
+  },
+  {
+    "value": "thoi_gian",
+    "label": "Thời gian làm việc"
+  },
+  {
+    "value": "cchn_so",
+    "label": "Số CCHN"
+  },
+  {
+    "value": "cchn_pham_vi",
+    "label": "Phạm vi CCHN"
+  },
+  {
+    "value": "cchn_ngay_cap",
+    "label": "Ngày cấp CCHN"
+  },
+  {
+    "value": "cchn_noi_cap",
+    "label": "Nơi cấp CCHN"
+  },
+  {
+    "value": "ghi_chu",
+    "label": "Ghi chú"
+  },
+  {
+    "value": "ngay_cap_cccd",
+    "label": "Ngày cấp CCCD"
+  }
+]

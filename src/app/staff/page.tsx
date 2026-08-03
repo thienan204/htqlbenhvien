@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select } from 'antd';
-import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons';
+import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select, Dropdown } from 'antd';
+import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined, DownloadOutlined } from '@ant-design/icons';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
 import CertificatesModal from './components/CertificatesModal';
+import TrainingModal from './components/TrainingModal';
 import BulkUpdateStaffModal from './components/BulkUpdateStaffModal';
 import StaffDetailsModal from './components/StaffDetailsModal';
+import TemplateConfigModal from './components/TemplateConfigModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { SettingOutlined } from '@ant-design/icons';
 
 export default function StaffPage() {
     const [staffList, setStaffList] = useState<any[]>([]);
@@ -18,15 +21,34 @@ export default function StaffPage() {
     const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+    const [isTemplateConfigOpen, setIsTemplateConfigOpen] = useState(false);
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     const [isStaffDetailsModalOpen, setIsStaffDetailsModalOpen] = useState(false);
     const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+    const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 20 });
     const [isSyncing, setIsSyncing] = useState(false);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [reports, setReports] = useState<any[]>([]);
     const { user } = useAuth();
+
+    useEffect(() => {
+        const fetchReports = async () => {
+            try {
+                const basePath = window.location.pathname.split('/staff')[0];
+                const res = await fetch(`${basePath}/api/staff/reports`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setReports(data);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        fetchReports();
+    }, []);
 
     const handleSyncMau02 = async () => {
         try {
@@ -170,6 +192,10 @@ export default function StaffPage() {
                         setSelectedStaff(record);
                         setIsCertModalOpen(true);
                     }}>🪪 Quản lý CCHN</Button>
+                    <Button size="small" className="text-amber-600 border-amber-600 hover:bg-amber-50" onClick={() => {
+                        setSelectedStaff(record);
+                        setIsTrainingModalOpen(true);
+                    }}>🎓 Đào tạo</Button>
                 </Space>
             )
         }
@@ -269,10 +295,46 @@ export default function StaffPage() {
                             Tạo User tự động
                         </Button>
                     </Popconfirm>
+                    <Space.Compact>
+                        <Dropdown
+                            menu={{
+                                items: reports.length > 0 ? reports.map(r => ({
+                                    key: r.id,
+                                    label: r.name,
+                                    onClick: () => {
+                                        const basePath = window.location.pathname.split('/staff')[0];
+                                        const url = new URL(`${basePath}/api/staff/reports/${r.id}/export`, window.location.origin);
+                                        if (searchText) url.searchParams.append('search', searchText);
+                                        window.open(url.toString(), '_blank');
+                                    }
+                                })) : [{ key: 'empty', label: 'Chưa có mẫu báo cáo nào', disabled: true }]
+                            }}
+                            placement="bottomRight"
+                        >
+                            <Button 
+                                type="default" 
+                                size="large" 
+                                icon={<DownloadOutlined />} 
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                            >
+                                Xuất Báo Cáo
+                            </Button>
+                        </Dropdown>
+                        {user?.role === 'ADMIN' && (
+                            <Button
+                                type="default"
+                                size="large"
+                                className="text-slate-500 border-green-600 hover:text-green-600"
+                                icon={<SettingOutlined />}
+                                onClick={() => window.location.href = window.location.pathname.split('/staff')[0] + '/staff/reports'}
+                                title="Quản lý Mẫu Báo cáo"
+                            />
+                        )}
+                    </Space.Compact>
                     <Button type="default" size="large" icon={<UploadOutlined />} onClick={() => setIsImportOpen(true)}>
                         Import Nhân sự mới
                     </Button>
-                    <Button type="default" size="large" icon={<UploadOutlined />} onClick={() => setIsBulkUpdateOpen(true)}>
+                    <Button type="default" size="large" icon={<SyncOutlined />} onClick={() => setIsBulkUpdateOpen(true)}>
                         Cập nhật hàng loạt
                     </Button>
                     <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => {
@@ -368,10 +430,12 @@ export default function StaffPage() {
             <BulkUpdateStaffModal
                 open={isBulkUpdateOpen}
                 onClose={() => setIsBulkUpdateOpen(false)}
-                onSuccess={() => {
-                    setIsBulkUpdateOpen(false);
-                    fetchStaff();
-                }}
+                onSuccess={fetchStaff}
+            />
+
+            <TemplateConfigModal
+                open={isTemplateConfigOpen}
+                onClose={() => setIsTemplateConfigOpen(false)}
             />
 
             <StaffModal
@@ -398,6 +462,13 @@ export default function StaffPage() {
                 onSuccess={() => {
                     fetchStaff();
                 }}
+            />
+
+            <TrainingModal
+                open={isTrainingModalOpen}
+                staffId={selectedStaff?.id}
+                staffName={selectedStaff?.ho_ten}
+                onClose={() => setIsTrainingModalOpen(false)}
             />
         </div>
     );

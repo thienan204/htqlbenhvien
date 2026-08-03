@@ -112,6 +112,7 @@ model Staff {
   ngay_sinh              DateTime?
   trinh_do_id            String?
   vi_tri_viec_lam_id     String?
+  trang_thai_id          String?
   dia_chi                String?
   ma_nv                  String                  @unique
   cccd                   String?
@@ -129,10 +130,58 @@ model Staff {
   department             Department              @relation(fields: [ma_khoa], references: [ma_khoa])
   trinh_do_ref           SystemCategory?         @relation("StaffQualification", fields: [trinh_do_id], references: [id])
   vi_tri_ref             SystemCategory?         @relation("StaffJobPosition", fields: [vi_tri_viec_lam_id], references: [id])
+  trang_thai_ref         SystemCategory?         @relation("StaffWorkingStatus", fields: [trang_thai_id], references: [id])
   vi_tri_bhyt_ref        SystemCategory?         @relation("StaffBhytPosition", fields: [vi_tri_bhyt_id], references: [id])
   user                   User?
   storekeeper_warehouses Warehouse[]
   attendances            StaffAttendance[]
+
+  ma_ho_gia_dinh       String?
+  ngay_cap_cccd        DateTime?
+  noi_cap_cccd         String?
+  
+  noi_sinh_ward_id     String?
+  noi_sinh_thon        String?
+  noi_sinh_ward        SystemCategory?         @relation("StaffNoiSinh", fields: [noi_sinh_ward_id], references: [id])
+
+  que_quan_ward_id     String?
+  que_quan_thon        String?
+  que_quan_ward        SystemCategory?         @relation("StaffQueQuan", fields: [que_quan_ward_id], references: [id])
+
+  noi_o_ward_id        String?
+  noi_o_thon           String?
+  noi_o_ward           SystemCategory?         @relation("StaffNoiO", fields: [noi_o_ward_id], references: [id])
+
+  so_qd_tuyen_dung     String?
+  ngay_tuyen_dung      DateTime?
+  thoi_diem_nang_luong DateTime?
+
+  ma_ngach_id          String?
+  ma_ngach_ref         SystemCategory?         @relation("StaffNgach", fields: [ma_ngach_id], references: [id])
+
+  he_so_luong_id       String?
+  he_so_luong_ref      SystemCategory?         @relation("StaffHeSo", fields: [he_so_luong_id], references: [id])
+
+  bac_luong_id         String?
+  bac_luong_ref        SystemCategory?         @relation("StaffBacLuong", fields: [bac_luong_id], references: [id])
+
+  phu_cap_tnvk_id      String?
+  phu_cap_tnvk_ref     SystemCategory?         @relation("StaffTNVK", fields: [phu_cap_tnvk_id], references: [id])
+
+  trainings            StaffTraining[]
+}
+
+model StaffTraining {
+  id              String         @id @default(cuid())
+  staffId         String
+  staff           Staff          @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  trainingType_id String
+  trainingType    SystemCategory @relation("TrainingType", fields: [trainingType_id], references: [id])
+  name            String
+  institution     String?
+  graduationYear  Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model SystemCategory {
@@ -153,9 +202,23 @@ model SystemCategory {
   staff_trinh_do    Staff[]                 @relation("StaffQualification")
   staff_vi_tri      Staff[]                 @relation("StaffJobPosition")
   staff_dan_toc     Staff[]                 @relation("StaffEthnicity")
+  staff_trang_thai  Staff[]                 @relation("StaffWorkingStatus")
   staff_vi_tri_bhyt Staff[]                 @relation("StaffBhytPosition")
   cchn_noi_cap      PracticingCertificate[] @relation("CertIssuePlace")
   staff_attendances StaffAttendance[]       @relation("AttendanceStatus")
+
+  parentId          String?
+  parent            SystemCategory?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children          SystemCategory[]        @relation("CategoryHierarchy")
+
+  staff_noi_sinh_ward Staff[]                 @relation("StaffNoiSinh")
+  staff_que_quan_ward Staff[]                 @relation("StaffQueQuan")
+  staff_noi_o_ward    Staff[]                 @relation("StaffNoiO")
+  staff_ma_ngach      Staff[]                 @relation("StaffNgach")
+  staff_he_so_luong   Staff[]                 @relation("StaffHeSo")
+  staff_bac_luong     Staff[]                 @relation("StaffBacLuong")
+  staff_phu_cap_tnvk  Staff[]                 @relation("StaffTNVK")
+  staff_trainings     StaffTraining[]         @relation("TrainingType")
 
   @@unique([type, code])
 }
@@ -1581,3 +1644,19 @@ model ExcelTemplateMapping {
   
   @@unique([templateId, system_field])
 }
+
+model ReportTemplate {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  description   String?
+  reportType    String   @default("LISTING") // "LISTING" or "STATISTIC"
+  excelFilePath String?
+  startRow      Int      @default(8)
+  groupBy       String   @default("none")
+  columnMapping String?
+  filters       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+

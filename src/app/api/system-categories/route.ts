@@ -15,6 +15,9 @@ export async function GET(request: Request) {
         
         const categories = await prisma.systemCategory.findMany({
             where: whereClause,
+            include: {
+                parent: true
+            },
             orderBy: [
                 { type: 'asc' },
                 { order: 'asc' },
@@ -43,6 +46,7 @@ export async function POST(request: Request) {
                 name: item.name,
                 description: item.description || null,
                 bhyt_code: item.bhyt_code || null,
+                parentId: item.parentId || null,
                 order: item.order || 0,
                 isActive: item.isActive !== undefined ? item.isActive : true
             }));
@@ -57,14 +61,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, count: result.count }, { status: 201 });
         } else {
             // Single insert
-            const { type, code, name, description, bhyt_code, order } = body;
+            const { type, code, name, description, bhyt_code, order, parentId } = body;
 
             if (!type || !code || !name) {
                 return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
             }
 
             const category = await prisma.systemCategory.create({
-                data: { type, code, name, description, bhyt_code, order: order || 0 }
+                data: { type, code, name, description, bhyt_code, parentId, order: order || 0 }
             });
 
             return NextResponse.json(category, { status: 201 });
@@ -81,13 +85,13 @@ export async function PUT(request: Request) {
         if (!user || user.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
         const body = await request.json();
-        const { id, code, name, description, bhyt_code, order, isActive } = body;
+        const { id, code, name, description, bhyt_code, order, isActive, parentId } = body;
 
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
         const category = await prisma.systemCategory.update({
             where: { id },
-            data: { code, name, description, bhyt_code, order, isActive }
+            data: { code, name, description, bhyt_code, parentId, order, isActive }
         });
 
         return NextResponse.json(category);

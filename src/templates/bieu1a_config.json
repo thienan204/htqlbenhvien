@@ -1,0 +1,21 @@
+{
+  "startRow": 6,
+  "groupBy": "department",
+  "columnMapping": {
+    "1": "stt",
+    "2": "ma_nv",
+    "3": "ho_ten",
+    "4": "nam_sinh",
+    "5": "gioi_tinh",
+    "6": "cccd",
+    "7": "chuc_danh",
+    "8": "vi_tri",
+    "9": "loai_hd",
+    "10": "thoi_gian",
+    "11": "cchn_pham_vi",
+    "12": "cchn_so",
+    "13": "cchn_ngay_cap",
+    "14": "cchn_noi_cap",
+    "15": "ghi_chu"
+  }
+}

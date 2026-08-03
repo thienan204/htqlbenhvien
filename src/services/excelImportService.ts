@@ -122,7 +122,18 @@ export async function processExcelImport(buffer: Buffer) {
         cskcb_cgkt: headers.indexOf('CSKCB_CGKT'),
         qd_cgkt: headers.indexOf('QD_CGKT'),
         tu_ngay: headers.indexOf('TU_NGAY'),
-        den_ngay: headers.indexOf('DEN_NGAY')
+        den_ngay: headers.indexOf('DEN_NGAY'),
+        noi_sinh: -1,
+        que_quan: -1,
+        noi_o: -1,
+        ma_ngach: -1,
+        he_so_luong: -1,
+        bac_luong: -1,
+        phu_cap_tnvk: -1,
+        so_qd_tuyen_dung: -1,
+        ngay_tuyen_dung: -1,
+        thoi_diem_nang_luong: -1,
+        ton_giao: -1
     } : {
         ma_nv: headers.indexOf('Mã NV'),
         ho_ten: headers.indexOf('Họ và tên'),
@@ -130,28 +141,50 @@ export async function processExcelImport(buffer: Buffer) {
         nu: headers.indexOf('Nữ'),
         gioi_tinh: -1,
         ngay_sinh: -1,
-        trinh_do: headers.indexOf('Trình độ\r\nchuyên môn'),
-        chuc_danh: headers.indexOf('Chức danh\r\nnghề nghiệp'),
+        trinh_do: headers.indexOf('Trình độ chuyên môn'),
+        chuc_danh: headers.indexOf('Chức danh nghề nghiệp'),
         vi_tri: headers.indexOf('Vị trí việc làm'),
         ma_khoa: headers.indexOf('Mã khoa phòng'),
         ten_khoa: headers.indexOf('Khoa phòng '),
         chuc_vu: headers.indexOf('Chức vụ'),
         loai_hop_dong: headers.indexOf('Loại hợp đồng'),
         so_cchn: headers.indexOf('Số chứng chỉ hành nghề đăng ký với BHYT'),
-        ngay_cap_cchn: headers.indexOf('Ngày cấp\r\n(Năm-Tháng-Ngày)'),
+        ngay_cap_cchn: headers.indexOf('Ngày cấp (Năm-Tháng-Ngày)'),
         chuc_danh_cchn: headers.indexOf('CDNN trong CCHN'),
         pham_vi: headers.indexOf('Phạm vi hành nghề'),
         pham_vi_bo_sung: headers.indexOf('Phạm vi chuyên môn bổ sung'),
         dich_vu_ky_thuat: headers.indexOf('Dịch vụ kỹ thuật khác'),
         cccd: headers.indexOf('Căn cước công dân'),
-        sdt: headers.indexOf('Số\r\nđiện thoại'),
-        ma_bhxh: -1, ma_dan_toc: -1, noi_cap_cchn: -1, vb_phan_cong: -1, thoi_gian_dang_ky: -1,
-        thoi_gian_ngay: -1, thoi_gian_tuan: -1, cskcb_khac: -1, cskcb_cgkt: -1, qd_cgkt: -1, tu_ngay: -1, den_ngay: -1
+        sdt: headers.indexOf('Số điện thoại'),
+        ma_bhxh: headers.indexOf('Mã BHXH'), 
+        ma_dan_toc: headers.indexOf('Dân tộc'), 
+        noi_cap_cchn: headers.indexOf('Nơi cấp CCHN'), 
+        vb_phan_cong: -1, thoi_gian_dang_ky: -1,
+        thoi_gian_ngay: -1, thoi_gian_tuan: -1, cskcb_khac: -1, cskcb_cgkt: -1, qd_cgkt: -1, tu_ngay: -1, den_ngay: -1,
+        noi_sinh: headers.indexOf('Nơi sinh'),
+        que_quan: headers.indexOf('Quê quán'),
+        noi_o: headers.indexOf('Nơi ở hiện nay'),
+        ma_ngach: headers.indexOf('Mã ngạch'),
+        he_so_luong: headers.indexOf('Hệ số lương'),
+        bac_luong: headers.indexOf('Bậc lương'),
+        phu_cap_tnvk: headers.indexOf('Phụ cấp TNVK'),
+        so_qd_tuyen_dung: headers.indexOf('Số QĐ Tuyển dụng'),
+        ngay_tuyen_dung: headers.indexOf('Ngày Tuyển dụng'),
+        thoi_diem_nang_luong: headers.indexOf('Thời điểm nâng lương'),
+        ton_giao: headers.indexOf('Tôn giáo')
     };
 
     let successCount = 0;
+    let failedCount = 0;
+    const resultRows: any[][] = [];
+    
+    // Header dòng báo cáo
+    const headerRow = [...headers, 'Trạng thái', 'Ghi chú Lỗi'];
+    resultRows.push(headerRow);
 
     for (const row of rows) {
+        // Đảm bảo độ dài mảng bằng với headers
+        const paddedRow = Array.from({ length: headers.length }, (_, i) => row[i] ?? '');
         try {
             const ma_nv = row[colIdx.ma_nv]?.toString().trim();
             const ho_ten = row[colIdx.ho_ten]?.toString().trim();
@@ -159,7 +192,11 @@ export async function processExcelImport(buffer: Buffer) {
             const ten_khoa = row[colIdx.ten_khoa]?.toString().trim() || 'Khoa chưa xác định';
             const cccd = row[colIdx.cccd]?.toString().trim();
             
-            if (!ma_nv || !ho_ten || !ma_khoa) continue; // Bỏ qua dòng thiếu thông tin cơ bản
+            if (!ma_nv || !ho_ten || !ma_khoa) {
+                resultRows.push([...paddedRow, 'Thất bại', 'Thiếu Mã NV, Họ Tên hoặc Mã Khoa']);
+                failedCount++;
+                continue; 
+            }
 
             // Xử lý Ngày sinh & Giới tính
             let ngay_sinh: Date | null = null;
@@ -203,41 +240,60 @@ export async function processExcelImport(buffer: Buffer) {
             const chuc_vu_id = colIdx.chuc_vu >= 0 && row[colIdx.chuc_vu] ? await getOrCreateCategory('CHUC_VU', row[colIdx.chuc_vu]) : null;
             const loai_hop_dong_id = colIdx.loai_hop_dong >= 0 && row[colIdx.loai_hop_dong] ? await getOrCreateCategory('LOAI_HOP_DONG', row[colIdx.loai_hop_dong]) : null;
             const dan_toc_id = colIdx.ma_dan_toc >= 0 && row[colIdx.ma_dan_toc] ? await getOrCreateCategory('DAN_TOC', row[colIdx.ma_dan_toc].toString()) : null;
+            const ton_giao_id = colIdx.ton_giao >= 0 && row[colIdx.ton_giao] ? await getOrCreateCategory('TON_GIAO', row[colIdx.ton_giao].toString()) : null;
+            
+            // Tuyển dụng & Lương
+            const ma_ngach_id = colIdx.ma_ngach >= 0 && row[colIdx.ma_ngach] ? await getOrCreateCategory('NGACH_LUONG', row[colIdx.ma_ngach].toString()) : null;
+            const he_so_luong_id = colIdx.he_so_luong >= 0 && row[colIdx.he_so_luong] ? await getOrCreateCategory('HE_SO_LUONG', row[colIdx.he_so_luong].toString()) : null;
+            const bac_luong_id = colIdx.bac_luong >= 0 && row[colIdx.bac_luong] ? await getOrCreateCategory('BAC_LUONG', row[colIdx.bac_luong].toString()) : null;
+            const phu_cap_tnvk_id = colIdx.phu_cap_tnvk >= 0 && row[colIdx.phu_cap_tnvk] ? await getOrCreateCategory('PHU_CAP', row[colIdx.phu_cap_tnvk].toString()) : null;
+            
+            // Địa chỉ (chỉ tạo WARD tạm thời để giữ data)
+            const noi_sinh_ward_id = colIdx.noi_sinh >= 0 && row[colIdx.noi_sinh] ? await getOrCreateCategory('WARD', row[colIdx.noi_sinh].toString()) : null;
+            const que_quan_ward_id = colIdx.que_quan >= 0 && row[colIdx.que_quan] ? await getOrCreateCategory('WARD', row[colIdx.que_quan].toString()) : null;
+            const noi_o_ward_id = colIdx.noi_o >= 0 && row[colIdx.noi_o] ? await getOrCreateCategory('WARD', row[colIdx.noi_o].toString()) : null;
+            
             const ma_bhxh = colIdx.ma_bhxh >= 0 ? row[colIdx.ma_bhxh]?.toString().trim() : null;
+            const so_qd_tuyen_dung = colIdx.so_qd_tuyen_dung >= 0 ? row[colIdx.so_qd_tuyen_dung]?.toString().trim() : null;
+            const ngay_tuyen_dung = colIdx.ngay_tuyen_dung >= 0 && row[colIdx.ngay_tuyen_dung] ? parseExcelDate(row[colIdx.ngay_tuyen_dung]) : null;
+            const thoi_diem_nang_luong = colIdx.thoi_diem_nang_luong >= 0 && row[colIdx.thoi_diem_nang_luong] ? parseExcelDate(row[colIdx.thoi_diem_nang_luong]) : null;
 
             // Upsert Nhân sự
+            const staffData: any = {
+                ho_ten,
+                ma_khoa,
+                cccd
+            };
+            if (row[colIdx.sdt]) staffData.so_dien_thoai = row[colIdx.sdt].toString();
+            if (gioi_tinh_id) staffData.gioi_tinh_id = gioi_tinh_id;
+            if (trinh_do_id) staffData.trinh_do_id = trinh_do_id;
+            if (chuc_danh_id) staffData.chuc_danh_id = chuc_danh_id;
+            if (vi_tri_viec_lam_id) staffData.vi_tri_viec_lam_id = vi_tri_viec_lam_id;
+            if (chuc_vu_id) staffData.chuc_vu_id = chuc_vu_id;
+            if (loai_hop_dong_id) staffData.loai_hop_dong_id = loai_hop_dong_id;
+            if (ngay_sinh) staffData.ngay_sinh = ngay_sinh;
+            if (ma_bhxh) staffData.ma_bhxh = ma_bhxh;
+            if (dan_toc_id) staffData.dan_toc_id = dan_toc_id;
+            if (ton_giao_id) staffData.ton_giao_id = ton_giao_id;
+            
+            if (ma_ngach_id) staffData.ma_ngach_id = ma_ngach_id;
+            if (he_so_luong_id) staffData.he_so_luong_id = he_so_luong_id;
+            if (bac_luong_id) staffData.bac_luong_id = bac_luong_id;
+            if (phu_cap_tnvk_id) staffData.phu_cap_tnvk_id = phu_cap_tnvk_id;
+            if (so_qd_tuyen_dung) staffData.so_qd_tuyen_dung = so_qd_tuyen_dung;
+            if (ngay_tuyen_dung) staffData.ngay_tuyen_dung = ngay_tuyen_dung;
+            if (thoi_diem_nang_luong) staffData.thoi_diem_nang_luong = thoi_diem_nang_luong;
+            
+            if (noi_sinh_ward_id) staffData.noi_sinh_ward_id = noi_sinh_ward_id;
+            if (que_quan_ward_id) staffData.que_quan_ward_id = que_quan_ward_id;
+            if (noi_o_ward_id) staffData.noi_o_ward_id = noi_o_ward_id;
+
             const staff = await prisma.staff.upsert({
                 where: { ma_nv },
-                update: {
-                    ho_ten,
-                    so_dien_thoai: row[colIdx.sdt]?.toString(),
-                    cccd,
-                    ma_khoa,
-                    gioi_tinh_id,
-                    trinh_do_id,
-                    chuc_danh_id,
-                    vi_tri_viec_lam_id,
-                    chuc_vu_id,
-                    loai_hop_dong_id,
-                    ngay_sinh,
-                    ma_bhxh,
-                    dan_toc_id
-                },
+                update: staffData,
                 create: {
                     ma_nv,
-                    ho_ten,
-                    so_dien_thoai: row[colIdx.sdt]?.toString(),
-                    cccd,
-                    ma_khoa,
-                    gioi_tinh_id,
-                    trinh_do_id,
-                    chuc_danh_id,
-                    vi_tri_viec_lam_id,
-                    chuc_vu_id,
-                    loai_hop_dong_id,
-                    ngay_sinh,
-                    ma_bhxh,
-                    dan_toc_id
+                    ...staffData
                 }
             });
 
@@ -338,10 +394,23 @@ export async function processExcelImport(buffer: Buffer) {
             }
 
             successCount++;
-        } catch (err) {
+            resultRows.push([...paddedRow, 'Thành công', '']);
+        } catch (err: any) {
+            failedCount++;
+            resultRows.push([...paddedRow, 'Thất bại', err.message || 'Lỗi không xác định']);
             console.error('Lỗi khi import dòng:', row, err);
         }
     }
 
-    return successCount;
+    // Generate output Excel buffer
+    const ws = xlsx.utils.aoa_to_sheet(resultRows);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'ImportResult');
+    const outBuffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    return {
+        successCount,
+        failedCount,
+        outBuffer
+    };
 }

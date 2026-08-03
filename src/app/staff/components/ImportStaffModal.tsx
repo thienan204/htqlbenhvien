@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Upload, Button, message, Typography, Space } from 'antd';
+import { Modal, Upload, Button, message, Typography, Space, Alert } from 'antd';
 import { InboxOutlined, FileExcelOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import * as XLSX from 'xlsx';
@@ -35,9 +35,27 @@ export default function ImportStaffModal({ open, onClose, onSuccess }: ImportSta
                 body: formData,
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                message.success(data.message || 'Import thành công!');
+            const contentType = res.headers.get('content-type');
+            if (res.ok && contentType && contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+                // Download file
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `KetQua_Import_${new Date().getTime()}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                
+                const success = res.headers.get('X-Success-Count') || '0';
+                const failed = res.headers.get('X-Failed-Count') || '0';
+                
+                if (parseInt(failed) > 0) {
+                    message.warning(`Import xong! Thành công: ${success}, Thất bại: ${failed}. Vui lòng mở file vừa tải về để xem chi tiết lỗi!`, 5);
+                } else {
+                    message.success(`Import thành công toàn bộ ${success} dòng!`, 5);
+                }
+                
                 setFileList([]);
                 onSuccess();
             } else {
@@ -71,40 +89,32 @@ export default function ImportStaffModal({ open, onClose, onSuccess }: ImportSta
     const downloadSampleFile = () => {
         const wsData = [
             [
-                'Mã NV', 'Họ và tên', 'Nam', 'Nữ', 
-                'Trình độ\r\nchuyên môn', 'Chức danh\r\nnghề nghiệp', 
-                'Vị trí việc làm', 'Mã khoa phòng', 'Chức vụ', 'Loại hợp đồng', 
-                'Số chứng chỉ hành nghề đăng ký với BHYT', 'Ngày cấp\r\n(Năm-Tháng-Ngày)', 
-                'CDNN trong CCHN', 'Phạm vi hành nghề', 'Phạm vi chuyên môn bổ sung', 
-                'Dịch vụ kỹ thuật khác', 'Số\r\nđiện thoại'
+                'Mã NV', 'Họ và tên', 'Mã khoa phòng', 'Nam', 'Nữ', 'Căn cước công dân', 'Dân tộc', 'Số điện thoại', 'Mã BHXH',
+                'Nơi sinh', 'Quê quán', 'Nơi ở hiện nay', 'Tôn giáo',
+                'Trình độ chuyên môn', 'Chức danh nghề nghiệp', 'Chức vụ', 'Vị trí việc làm', 'Loại hợp đồng',
+                'Số QĐ Tuyển dụng', 'Ngày Tuyển dụng', 'Mã ngạch', 'Hệ số lương', 'Bậc lương', 'Phụ cấp TNVK', 'Thời điểm nâng lương',
+                'Số chứng chỉ hành nghề đăng ký với BHYT', 'Ngày cấp (Năm-Tháng-Ngày)', 'Nơi cấp CCHN', 
+                'CDNN trong CCHN', 'Phạm vi hành nghề', 'Phạm vi chuyên môn bổ sung', 'Dịch vụ kỹ thuật khác'
             ],
             [
-                'BS01', 'Nguyễn Văn A', '1990-01-01', '', 
-                'Đại học', 'Bác sĩ', 
-                'Bác sĩ điều trị', 'K01', 'Trưởng khoa', 'Biên chế', 
-                'CCHN-12345', '20150520', 
-                'Bác sĩ đa khoa', 'Khám bệnh, chữa bệnh chuyên khoa nội', '', 
-                '', '0901234567'
-            ],
-            [
-                'DD01', 'Trần Thị B', '', '1995-10-15', 
-                'Cao đẳng', 'Điều dưỡng', 
-                'Điều dưỡng viên', 'K02', '', 'Hợp đồng LĐ', 
-                '', '', 
-                '', '', '', 
-                '', '0987654321'
+                'BS01', 'Nguyễn Văn A', 'K01', '1990-01-01', '', '012345678901', 'Kinh', '0901234567', 'BHXH12345',
+                'Phường Chi Lăng', 'Phường Tam Thanh', 'Phường Đông Kinh', 'Không',
+                'Đại học', 'Bác sĩ', 'Trưởng khoa', 'Bác sĩ điều trị', 'Biên chế',
+                '123/QĐ-SYT', '2015-05-01', 'V.08.01.03', '3.33', '2', '0.2', '2023-01-01',
+                'CCHN-12345', '20150520', 'Sở Y Tế Lạng Sơn',
+                'Bác sĩ đa khoa', '301 - Khám bệnh, chữa bệnh chuyên khoa nội', '', ''
             ]
         ];
         
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         // Chỉnh độ rộng cột
         ws['!cols'] = [
-            { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, 
-            { wch: 15 }, { wch: 15 }, 
-            { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
-            { wch: 35 }, { wch: 20 }, 
-            { wch: 20 }, { wch: 30 }, { wch: 30 }, 
-            { wch: 30 }, { wch: 15 }
+            { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+            { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 15 },
+            { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+            { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
+            { wch: 35 }, { wch: 20 }, { wch: 20 },
+            { wch: 20 }, { wch: 30 }, { wch: 30 }, { wch: 30 }
         ];
         
         const wb = XLSX.utils.book_new();
@@ -119,7 +129,7 @@ export default function ImportStaffModal({ open, onClose, onSuccess }: ImportSta
             onCancel={onClose}
             footer={[
                 <Button key="sample" icon={<DownloadOutlined />} onClick={downloadSampleFile} className="float-left">
-                    Tải file mẫu
+                    Tải File Mẫu (Cập nhật 2026)
                 </Button>,
                 <Button key="back" onClick={onClose} disabled={uploading}>
                     Hủy
@@ -135,6 +145,24 @@ export default function ImportStaffModal({ open, onClose, onSuccess }: ImportSta
                     <br/>- Các <strong>Danh mục</strong> (Giới tính, Hợp đồng, Chức danh...) sẽ được tự động khởi tạo nếu chưa có.
                     <br/>- Các <strong>Chứng chỉ hành nghề mới</strong> sẽ được tự động liên kết vào hồ sơ nhân sự (1-Nhiều).
                 </Paragraph>
+
+                <Alert 
+                    title="Hướng dẫn Import" 
+                    description={
+                        <ul className="list-disc pl-5 mt-2 mb-0 text-sm text-slate-600">
+                            <li><b>Mã NV, Họ Tên, Mã Khoa</b> là các trường bắt buộc.</li>
+                            <li>Nếu Mã NV <b>chưa có</b> trên phần mềm: Tạo mới nhân sự.</li>
+                            <li>Nếu Mã NV <b>đã tồn tại</b>: Hệ thống sẽ <b>Cập nhật (Ghi đè)</b>. Các ô Excel bỏ trống sẽ được bỏ qua.</li>
+                            <li>Ngày tháng điền chuẩn định dạng (YYYY-MM-DD hoặc YYYYMMDD).</li>
+                            <li>Các trường Danh mục (Trình độ, Dân tộc, Lương...) chỉ cần điền đúng Tên, phần mềm sẽ tự tạo danh mục nếu chưa có.</li>
+                            <li className="text-purple-600 font-medium">Sau khi Import xong, hệ thống sẽ tự sinh ra file Excel Báo Cáo ghi rõ dòng nào thành công, dòng nào lỗi ở cột cuối cùng!</li>
+                        </ul>
+                    }
+                    type="info" 
+                    showIcon 
+                    className="mb-4"
+                />
+
                 <Dragger {...uploadProps}>
                     <p className="ant-upload-drag-icon">
                         <InboxOutlined className="text-blue-500" />

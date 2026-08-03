@@ -55,9 +55,9 @@ export default function ServiceSelectorModal({ open, onCancel, onOk, initialKeys
 
     const filterOption = (inputValue: string, option: any) => {
         if (/^[\d.]+$/.test(inputValue)) {
-            return option.key.startsWith(inputValue);
+            return option.key ? String(option.key).startsWith(inputValue) : false;
         }
-        return option.title.toLowerCase().indexOf(inputValue.toLowerCase()) > -1;
+        return option.title ? option.title.toLowerCase().indexOf(inputValue.toLowerCase()) > -1 : false;
     };
 
     return (

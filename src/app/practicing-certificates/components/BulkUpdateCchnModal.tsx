@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 const { Text } = Typography;
 
 const CCHN_FIELDS = [
+    { value: 'ma_nv', label: 'Mã Nhân viên (Bắt buộc nếu Thêm mới)' },
     { value: 'ngay_cap', label: 'Ngày cấp (YYYY-MM-DD)' },
     { value: 'chuc_danh_cchn', label: 'Chức danh CCHN' },
     { value: 'pham_vi_hanh_nghe', label: 'Phạm vi hành nghề' },
@@ -57,6 +58,8 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
                 sampleRow.push('2T3T4T5T6');
             } else if (field === 'pham_vi_hanh_nghe') {
                 sampleRow.push('1234;5678');
+            } else if (field === 'ma_nv') {
+                sampleRow.push('NV001');
             } else if (['ngay_cap', 'tu_ngay', 'den_ngay'].includes(field)) {
                 sampleRow.push('20100115');
             } else {
@@ -175,8 +178,18 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
 
                 if (res.ok) {
                     if (result.failedCount > 0) {
-                        message.warning(`Đã cập nhật ${result.successCount} CCHN. Lỗi ${result.failedCount} CCHN (xem console).`);
-                        console.warn('Các CCHN bị lỗi:', result.failedRows);
+                        message.warning(`Đã cập nhật ${result.successCount} CCHN. Lỗi ${result.failedCount} CCHN (đang tải file báo lỗi).`);
+                        
+                        // Xuất file Excel báo lỗi
+                        const errorData = result.failedRows.map((row: any) => ({
+                            'Số CCHN': row.so_cchn,
+                            'Lý do lỗi': row.reason
+                        }));
+                        const ws = XLSX.utils.json_to_sheet(errorData);
+                        ws['!cols'] = [{ wch: 20 }, { wch: 50 }];
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, 'Danh sách lỗi');
+                        XLSX.writeFile(wb, `DS_Loi_CapNhat_CCHN.xlsx`);
                     } else {
                         message.success(`Cập nhật thành công toàn bộ ${result.successCount} CCHN!`);
                     }

@@ -9,6 +9,8 @@ import * as XLSX from 'xlsx';
 const { Sider, Content } = Layout;
 
 const HARDCODED_TYPES = [
+    { key: 'PROVINCE', label: 'Danh mục Tỉnh/Thành phố', icon: <PartitionOutlined /> },
+    { key: 'WARD', label: 'Danh mục Xã/Phường', icon: <PartitionOutlined /> },
     { key: 'LOAI_HOP_DONG', label: 'Loại Hợp đồng', icon: <BookOutlined /> },
     { key: 'VI_TRI_VIEC_LAM', label: 'Vị trí Việc làm', icon: <PartitionOutlined /> },
     { key: 'TRINH_DO', label: 'Trình độ Chuyên môn', icon: <BookOutlined /> },
@@ -32,8 +34,9 @@ const HARDCODED_TYPES = [
 
 export default function SystemCategoriesPage() {
     const [categories, setCategories] = useState<any[]>([]);
+    const [provinces, setProvinces] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [selectedType, setSelectedType] = useState('LOAI_HOP_DONG');
+    const [selectedType, setSelectedType] = useState('PROVINCE');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [customTypes, setCustomTypes] = useState<any[]>([]);
@@ -116,6 +119,13 @@ export default function SystemCategoriesPage() {
 
     useEffect(() => {
         fetchCategories(selectedType);
+        
+        if (selectedType === 'WARD') {
+            fetch('/api/system-categories?type=PROVINCE')
+                .then(res => res.json())
+                .then(data => setProvinces(data))
+                .catch(() => message.error('Lỗi tải danh sách Tỉnh/Thành'));
+        }
     }, [selectedType]);
 
     const openModal = (item: any = null) => {
@@ -305,7 +315,16 @@ export default function SystemCategoriesPage() {
             title: 'Tên hiển thị',
             dataIndex: 'name',
             key: 'name',
-            render: (text: string) => <span className="font-bold text-blue-600">{text}</span>
+            render: (text: string, record: any) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-blue-600">{text}</span>
+                    {record.parent && (
+                        <span className="text-xs text-slate-500 mt-1">
+                            Thuộc: {record.parent.name}
+                        </span>
+                    )}
+                </div>
+            )
         },
         {
             title: 'Mô tả',
@@ -422,6 +441,14 @@ export default function SystemCategoriesPage() {
                         span: 24
                     },
                     { id: 'name', label: 'Tên hiển thị', type: 'input', required: true, span: 24 },
+                    ...(selectedType === 'WARD' ? [{
+                        id: 'parentId',
+                        label: 'Thuộc Tỉnh / Thành phố',
+                        type: 'select' as const,
+                        options: provinces.map(p => ({ value: p.id, label: p.name })),
+                        required: true,
+                        span: 24
+                    }] : []),
                     { id: 'bhyt_code', label: 'Mã BHYT chuẩn (Tùy chọn, điền số 1, 2, 3...)', type: 'input', span: 24 },
                     { id: 'description', label: 'Ghi chú (Tùy chọn)', type: 'textarea', span: 24 },
                     { id: 'order', label: 'Thứ tự sắp xếp', type: 'number', span: 12 },

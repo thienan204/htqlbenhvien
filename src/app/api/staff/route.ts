@@ -13,7 +13,9 @@ export async function GET(request: Request) {
                 chuc_vu_ref: true,
                 dan_toc_ref: true,
                 vi_tri_bhyt_ref: true,
-                certificates: { select: { so_cchn: true, isActive: true } }
+                trang_thai_ref: true,
+                certificates: { select: { so_cchn: true, isActive: true } },
+                trainings: true
             },
             orderBy: {
                 ma_nv: 'asc'
@@ -60,7 +62,14 @@ export async function POST(request: Request) {
             id, ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
             trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
             vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-            ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id
+            ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
+            ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
+            noi_sinh_ward_id, noi_sinh_thon,
+            que_quan_ward_id, que_quan_thon,
+            noi_o_ward_id, noi_o_thon,
+            so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
+            ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+            trainings
         } = body;
 
         if (!ho_ten || !ma_nv || !ma_khoa) {
@@ -75,7 +84,17 @@ export async function POST(request: Request) {
                     ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
                     trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
                     vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id
+                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
+                    ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
+                    noi_sinh_ward_id, noi_sinh_thon,
+                    que_quan_ward_id, que_quan_thon,
+                    noi_o_ward_id, noi_o_thon,
+                    so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
+                    ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+                    trainings: {
+                        deleteMany: {},
+                        create: trainings || []
+                    }
                 }
             });
             return NextResponse.json(updated);
@@ -86,7 +105,16 @@ export async function POST(request: Request) {
                     ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
                     trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
                     vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id
+                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
+                    ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
+                    noi_sinh_ward_id, noi_sinh_thon,
+                    que_quan_ward_id, que_quan_thon,
+                    noi_o_ward_id, noi_o_thon,
+                    so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
+                    ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+                    trainings: {
+                        create: trainings || []
+                    }
                 }
             });
             return NextResponse.json(created);

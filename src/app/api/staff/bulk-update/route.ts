@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import * as xlsx from 'xlsx';
 
 const prisma = new PrismaClient();
 
@@ -11,28 +12,58 @@ const CATEGORY_MAP: Record<string, { type: string, idField: string }> = {
     'trinh_do': { type: 'TRINH_DO', idField: 'trinh_do_id' },
     'vi_tri_viec_lam': { type: 'VI_TRI_VIEC_LAM', idField: 'vi_tri_viec_lam_id' },
     'dan_toc': { type: 'DAN_TOC', idField: 'dan_toc_id' },
-    'vi_tri_bhyt': { type: 'VI_TRI_BHYT', idField: 'vi_tri_bhyt_id' }
+    'vi_tri_bhyt': { type: 'VI_TRI_BHYT', idField: 'vi_tri_bhyt_id' },
+    'ton_giao': { type: 'TON_GIAO', idField: 'ton_giao_id' },
+    'noi_sinh_ward': { type: 'WARD', idField: 'noi_sinh_ward_id' },
+    'que_quan_ward': { type: 'WARD', idField: 'que_quan_ward_id' },
+    'noi_o_ward': { type: 'WARD', idField: 'noi_o_ward_id' },
+    'ma_ngach': { type: 'NGACH_LUONG', idField: 'ma_ngach_id' },
+    'he_so_luong': { type: 'HE_SO_LUONG', idField: 'he_so_luong_id' },
+    'bac_luong': { type: 'BAC_LUONG', idField: 'bac_luong_id' },
+    'phu_cap_tnvk': { type: 'PHU_CAP', idField: 'phu_cap_tnvk_id' }
 };
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { updates } = body;
+        const { updates, headers, originalData } = body;
 
-        if (!updates || !Array.isArray(updates)) {
-            return NextResponse.json({ error: 'Dữ liệu không hợp lệ, yêu cầu mảng updates' }, { status: 400 });
+        if (!updates || !Array.isArray(updates) || !originalData) {
+            return NextResponse.json({ error: 'Dữ liệu không hợp lệ' }, { status: 400 });
         }
 
         let successCount = 0;
         let failedCount = 0;
-        const failedRows = [];
-
+        const resultRows: any[][] = [];
+        
+        // Add header
+        const headerRow = [...originalData[0], 'Trạng thái', 'Ghi chú Lỗi'];
+        resultRows.push(headerRow);
+        
+        // Tạo map updates để tra cứu nhanh bằng ma_nv
+        const updatesMap = new Map();
         for (const item of updates) {
-            const { ma_nv, ...fieldsToUpdate } = item;
+            updatesMap.set(item.ma_nv, item);
+        }
+        
+        const maNvIndex = originalData[0].findIndex((h: string) => h.toLowerCase() === 'ma_nv');
+
+        for (let i = 1; i < originalData.length; i++) {
+            const row = originalData[i];
+            const paddedRow = Array.from({ length: originalData[0].length }, (_, idx) => row[idx] ?? '');
             
+            const ma_nv = row[maNvIndex]?.toString().trim();
             if (!ma_nv) {
+                // Dòng trống
+                continue;
+            }
+
+            const fieldsToUpdate = updatesMap.get(ma_nv);
+            
+            if (!fieldsToUpdate) {
+                // Không có gì để update
+                resultRows.push([...paddedRow, 'Thất bại', 'Không có dữ liệu hợp lệ để cập nhật']);
                 failedCount++;
-                failedRows.push({ ma_nv: 'Không xác định', reason: 'Thiếu Mã NV' });
                 continue;
             }
 
@@ -44,7 +75,7 @@ export async function POST(request: Request) {
 
                 if (!existingStaff) {
                     failedCount++;
-                    failedRows.push({ ma_nv, reason: 'Không tìm thấy Mã NV này trong hệ thống' });
+                    resultRows.push([...paddedRow, 'Thất bại', 'Không tìm thấy Mã NV này trong hệ thống']);
                     continue;
                 }
 
@@ -52,6 +83,8 @@ export async function POST(request: Request) {
                 
                 // Xử lý từng trường cần update
                 for (const key in fieldsToUpdate) {
+                    if (key === 'ma_nv') continue;
+                    
                     const value = fieldsToUpdate[key];
                     if (value === undefined || value === null || value === '') continue;
 
@@ -104,22 +137,30 @@ export async function POST(request: Request) {
                         data: validUpdateData
                     });
                     successCount++;
+                    resultRows.push([...paddedRow, 'Thành công', '']);
                 } else {
-                    // Không có gì để update
-                    continue; 
+                    resultRows.push([...paddedRow, 'Thành công', 'Không có dữ liệu thay đổi']);
                 }
 
             } catch (err: any) {
                 failedCount++;
-                failedRows.push({ ma_nv, reason: err.message || 'Lỗi hệ thống khi cập nhật' });
+                resultRows.push([...paddedRow, 'Thất bại', err.message || 'Lỗi hệ thống khi cập nhật']);
             }
         }
 
-        return NextResponse.json({
-            message: `Đã cập nhật thành công ${successCount} nhân sự.`,
-            successCount,
-            failedCount,
-            failedRows
+        const ws = xlsx.utils.aoa_to_sheet(resultRows);
+        const wb = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(wb, ws, 'BulkUpdateResult');
+        const outBuffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        return new NextResponse(outBuffer, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition': 'attachment; filename="KetQua_BulkUpdate.xlsx"',
+                'X-Success-Count': successCount.toString(),
+                'X-Failed-Count': failedCount.toString()
+            }
         });
     } catch (error: any) {
         console.error('Lỗi Bulk Update Staff:', error);

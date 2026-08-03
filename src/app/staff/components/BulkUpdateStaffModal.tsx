@@ -20,7 +20,18 @@ const STAFF_FIELDS = [
     { value: 'vi_tri_bhyt', label: 'Vị trí CM BHYT (Danh mục)' },
     { value: 'trinh_do', label: 'Trình độ (Danh mục)' },
     { value: 'vi_tri_viec_lam', label: 'Vị trí việc làm (Danh mục)' },
-    { value: 'loai_hop_dong', label: 'Loại hợp đồng (Danh mục)' }
+    { value: 'loai_hop_dong', label: 'Loại hợp đồng (Danh mục)' },
+    { value: 'ton_giao', label: 'Tôn giáo (Danh mục)' },
+    { value: 'noi_sinh_ward', label: 'Nơi sinh (Danh mục Xã)' },
+    { value: 'que_quan_ward', label: 'Quê quán (Danh mục Xã)' },
+    { value: 'noi_o_ward', label: 'Nơi ở (Danh mục Xã)' },
+    { value: 'so_qd_tuyen_dung', label: 'Số QĐ Tuyển dụng' },
+    { value: 'ngay_tuyen_dung', label: 'Ngày Tuyển dụng (YYYY-MM-DD)' },
+    { value: 'ma_ngach', label: 'Mã ngạch (Danh mục)' },
+    { value: 'he_so_luong', label: 'Hệ số lương (Danh mục)' },
+    { value: 'bac_luong', label: 'Bậc lương (Danh mục)' },
+    { value: 'phu_cap_tnvk', label: 'Phụ cấp TNVK (Danh mục)' },
+    { value: 'thoi_diem_nang_luong', label: 'Ngày nâng lương (YYYY-MM-DD)' }
 ];
 
 interface BulkUpdateStaffModalProps {
@@ -142,20 +153,32 @@ export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkU
                 const res = await fetch('/api/staff/bulk-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ updates })
+                    body: JSON.stringify({ updates, headers, originalData: jsonData })
                 });
 
-                const result = await res.json();
-
-                if (res.ok) {
-                    if (result.failedCount > 0) {
-                        message.warning(`Đã cập nhật ${result.successCount} nhân sự. Lỗi ${result.failedCount} dòng (xem console).`);
-                        console.warn('Các dòng bị lỗi:', result.failedRows);
+                const contentType = res.headers.get('content-type');
+                if (res.ok && contentType && contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+                    // Tải file Báo cáo lỗi
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `KetQua_BulkUpdate_${new Date().getTime()}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    
+                    const successCount = res.headers.get('X-Success-Count') || '0';
+                    const failedCount = res.headers.get('X-Failed-Count') || '0';
+                    
+                    if (parseInt(failedCount) > 0) {
+                        message.warning(`Đã cập nhật ${successCount} nhân sự. Lỗi ${failedCount} dòng. Vui lòng xem file tải về!`, 6);
                     } else {
-                        message.success(`Cập nhật thành công toàn bộ ${result.successCount} nhân sự!`);
+                        message.success(`Cập nhật thành công toàn bộ ${successCount} nhân sự!`, 5);
                     }
                     onSuccess();
                 } else {
+                    const result = await res.json();
                     message.error(result.error || 'Lỗi cập nhật dữ liệu');
                 }
             } catch (error) {
@@ -184,8 +207,8 @@ export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkU
                     <ul className="list-disc pl-5 mt-2 mb-0">
                         <li>Bước 1: Chọn các trường dữ liệu bạn muốn cập nhật bổ sung ở bên dưới.</li>
                         <li>Bước 2: Bấm nút "Tải File Mẫu" để sinh ra file Excel với đúng các cột đã chọn.</li>
-                        <li>Bước 3: Điền dữ liệu vào file (Bắt buộc phải điền chuẩn cột <b>ma_nv</b>). Các trường Danh mục (Giới tính, Dân tộc, Trình độ...) chỉ cần gõ Tên.</li>
-                        <li>Bước 4: Tải file đó lên ở phần Import bên dưới. Hệ thống sẽ tự động đối chiếu và cập nhật!</li>
+                        <li>Bước 3: Điền dữ liệu vào file (Bắt buộc phải điền chuẩn cột <b>ma_nv</b>). Các trường Danh mục chỉ cần gõ Tên, hệ thống tự mapping.</li>
+                        <li>Bước 4: Tải file đó lên. Hệ thống sẽ tự động cập nhật và <b>trả về 1 file Báo cáo Lỗi/Thành công</b> chi tiết từng dòng ở cột cuối!</li>
                     </ul>
                 }
                 type="info" 
