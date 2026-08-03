@@ -33,8 +33,13 @@ export default function Mau06CatalogPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            let url = `${getBasePath()}/api/mau06-catalog`;
+            if (user && user.role !== 'ADMIN' && user.ma_khoa) {
+                url += `?ma_khoa=${user.ma_khoa}`;
+            }
+
             const [res, typeRes, deptRes] = await Promise.all([
-                fetch(`${getBasePath()}/api/mau06-catalog`),
+                fetch(url),
                 fetch(`${getBasePath()}/api/system-categories?type=LOAI_MAY`),
                 fetch(`${getBasePath()}/api/departments`)
             ]);
@@ -328,7 +333,8 @@ export default function Mau06CatalogPage() {
     const filteredData = data.filter(item =>
         (item.TEN_TB?.toLowerCase().includes(searchText.toLowerCase())) ||
         (item.MA_MAY?.toLowerCase().includes(searchText.toLowerCase())) ||
-        (item.KY_HIEU?.toLowerCase().includes(searchText.toLowerCase()))
+        (item.KY_HIEU?.toLowerCase().includes(searchText.toLowerCase())) ||
+        (item.TEN_BV?.toLowerCase().includes(searchText.toLowerCase()))
     );
 
     return (
@@ -336,7 +342,7 @@ export default function Mau06CatalogPage() {
             <Card title={<span className="text-xl font-bold text-slate-700">Danh mục Thiết bị Y tế thực hiện DVKT (Mẫu 06/DM)</span>} className="flex-1 drop-shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <Space>
-                        <Input.Search placeholder="Tìm Tên TB, Mã máy, Model..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
+                        <Input.Search placeholder="Tìm Tên TB, Mã máy, Model, Tên BV..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                         {selectedRowKeys.length > 0 && (
                             <>

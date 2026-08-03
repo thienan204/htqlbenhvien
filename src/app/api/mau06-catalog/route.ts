@@ -5,9 +5,25 @@ const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const ma_khoa = searchParams.get('ma_khoa');
+        let whereClause = {};
+
+        if (ma_khoa) {
+            const locations = await prisma.machineLocationHistory.findMany({
+                where: { ma_khoa },
+                select: { ma_may: true }
+            });
+            const maMayList = locations.map(l => l.ma_may);
+            whereClause = {
+                MA_MAY: { in: maMayList }
+            };
+        }
+
         const records = await prisma.mau06Catalog.findMany({
+            where: whereClause,
             orderBy: { createdAt: 'desc' }
         });
         return NextResponse.json(records);
