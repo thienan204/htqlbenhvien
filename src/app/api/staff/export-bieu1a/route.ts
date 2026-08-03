@@ -32,6 +32,22 @@ export async function GET(request: Request) {
                 chuc_vu_ref: true,
                 vi_tri_ref: true,
                 loai_hop_dong_ref: true,
+                dan_toc_ref: true,
+                trinh_do_ref: true,
+                que_quan_ward: {
+                    include: {
+                        parent: {
+                            include: { parent: true }
+                        }
+                    }
+                },
+                noi_o_ward: {
+                    include: {
+                        parent: {
+                            include: { parent: true }
+                        }
+                    }
+                },
                 certificates: {
                     include: {
                         noi_cap_cchn_ref: true,
@@ -135,26 +151,33 @@ export async function GET(request: Request) {
                 ngayCap = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()}`;
             }
 
-            const queQuanArr = [staff.que_quan_ward?.name, staff.que_quan_district?.name, staff.que_quan_province?.name].filter(Boolean);
-            const noiOArr = [staff.noi_o_thon, staff.noi_o_ward?.name, staff.noi_o_district?.name, staff.noi_o_province?.name].filter(Boolean);
+            const queQuanWard = (staff as any).que_quan_ward;
+            const queQuanDistrict = queQuanWard?.parent;
+            const queQuanProvince = queQuanDistrict?.parent;
+            const queQuanArr = [queQuanWard?.name, queQuanDistrict?.name, queQuanProvince?.name].filter(Boolean);
+
+            const noiOWard = (staff as any).noi_o_ward;
+            const noiODistrict = noiOWard?.parent;
+            const noiOProvince = noiODistrict?.parent;
+            const noiOArr = [staff.noi_o_thon, noiOWard?.name, noiODistrict?.name, noiOProvince?.name].filter(Boolean);
 
             const exportData: any = {
                 ma_nv: staff.ma_nv || '',
                 ho_ten: staff.ho_ten || '',
-                phong_ban: staff.department_ref?.name || '',
+                phong_ban: staff.department?.ten_khoa || '',
                 ngay_sinh: ngaySinhDayDu,
                 nam_sinh: namSinh,
                 gioi_tinh: staff.gioi_tinh_ref?.name || '',
                 cccd: staff.cccd || '',
                 dan_toc: staff.dan_toc_ref?.name || '',
-                dien_thoai: staff.dien_thoai || '',
-                email: staff.email || '',
+                dien_thoai: staff.so_dien_thoai || '',
+                email: '',
                 que_quan: queQuanArr.join(', '),
                 noi_o: noiOArr.join(', '),
                 chuc_danh: strChucDanh,
                 vi_tri: (staff as any).vi_tri_ref?.name || '',
                 loai_hd: staff.loai_hop_dong_ref?.name || '',
-                trinh_do_cm: staff.trinh_do_chuyen_mon_ref?.name || '',
+                trinh_do_cm: staff.trinh_do_ref?.name || '',
                 thoi_gian: 'Toàn thời gian',
                 cchn_so: cchn?.so_cchn || '',
                 cchn_pham_vi: phamVi,
