@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Spin, Tag, Empty, Input, Modal, Checkbox, Select, Tooltip } from 'antd';
+import { Table, Button, Spin, Tag, Empty, Input, Modal, Checkbox, Select, Tooltip, Tabs } from 'antd';
 import { DownloadOutlined, AuditOutlined, SearchOutlined, SettingOutlined, MenuOutlined, SaveOutlined } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -84,7 +84,7 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
     const [dups, setDups] = useState<any[]>([]);
     const [colWidths, setColWidths] = useState<Record<number, number>>({});
     const [searchText, setSearchText] = useState('');
-    const [selectedRules, setSelectedRules] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<string>('all');
     
     // Config states
     const [colConfigs, setColConfigs] = useState<ColConfig[]>([]);
@@ -107,7 +107,7 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
     }, [dups]);
 
     const filteredDups = React.useMemo(() => {
-        if (!searchText && selectedRules.length === 0) return dups;
+        if (!searchText && activeTab === 'all') return dups;
         
         const lowercasedFilter = searchText.toLowerCase();
         const matchingGroupIndices = new Set<number>();
@@ -133,9 +133,9 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
             }
 
             let ruleMatch = true;
-            if (selectedRules.length > 0) {
+            if (activeTab !== 'all') {
                 const itemRules = Array.isArray(item._violations) ? item._violations : (item._violations ? [item._violations] : []);
-                ruleMatch = selectedRules.some(r => itemRules.includes(r));
+                ruleMatch = itemRules.includes(activeTab);
             }
             
             const isMatch = textMatch && ruleMatch;
@@ -149,7 +149,19 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
             if (item.__groupIndex !== undefined) return matchingGroupIndices.has(item.__groupIndex);
             return matchingIndividualKeys.has(item.key !== undefined ? item.key : index);
         });
-    }, [dups, searchText, selectedRules]);
+    }, [dups, searchText, activeTab]);
+
+    const tabItems = React.useMemo(() => {
+        const items = [{ label: `Tất cả quy tắc (${dups.length})`, key: 'all' }];
+        uniqueRules.forEach(rule => {
+            const count = dups.filter(item => {
+                const itemRules = Array.isArray(item._violations) ? item._violations : (item._violations ? [item._violations] : []);
+                return itemRules.includes(rule);
+            }).length;
+            items.push({ label: `${rule} (${count})`, key: rule });
+        });
+        return items;
+    }, [dups, uniqueRules]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -245,53 +257,71 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
         if (filteredDups.length === 0) return;
 
         const wb = new ExcelJS.Workbook();
-        const ws = wb.addWorksheet("Du Lieu Trung");
-
         const visibleCols = colConfigs.filter(c => c.visible);
         const orderedOriginalIndices = visibleCols.map(c => headers.indexOf(c.name));
-
         const exportHeaders = ['STT', violationColName, 'Khoảng thời gian trùng', ...visibleCols.map(c => c.alias || c.name)];
-        const headerRow = ws.addRow(exportHeaders);
-        headerRow.font = { bold: true };
 
-        filteredDups.forEach((item, index) => {
-            const rowVals: any[] = [
-                index + 1,
-                (item._violations || []).join('\n'),
-                (item._overlapTimes || []).join('\n')
-            ];
-            orderedOriginalIndices.forEach((originalIndex) => {
-                let val = item[originalIndex];
-                if (typeof val === 'number' && val > 999999999) {
-                    val = String(val);
+        const sanitizeSheetName = (name: string) => {
+            return name.replace(/[\\/?*[\]:]/g, '').substring(0, 31);
+        };
+
+        const rulesToExport = activeTab === 'all' ? uniqueRules : [activeTab];
+
+        for (const rule of rulesToExport) {
+            const ruleDups = filteredDups.filter(item => {
+                const itemRules = Array.isArray(item._violations) ? item._violations : (item._violations ? [item._violations] : []);
+                return itemRules.includes(rule);
+            });
+
+            if (ruleDups.length === 0) continue;
+
+            const ws = wb.addWorksheet(sanitizeSheetName(rule));
+            const headerRow = ws.addRow(exportHeaders);
+            headerRow.font = { bold: true };
+
+            ruleDups.forEach((item, index) => {
+                const rowVals: any[] = [
+                    index + 1,
+                    (item._violations || []).join('\n'),
+                    (item._overlapTimes || []).join('\n')
+                ];
+                orderedOriginalIndices.forEach((originalIndex) => {
+                    let val = item[originalIndex];
+                    if (typeof val === 'number' && val > 999999999) {
+                        val = String(val);
+                    }
+                    rowVals.push(val);
+                });
+                const r = ws.addRow(rowVals);
+
+                if (item.__groupIndex !== undefined) {
+                    const colorObj = COLOR_PALETTE[item.__groupIndex % COLOR_PALETTE.length];
+                    r.eachCell({ includeEmpty: true }, (cell) => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorObj.argb } };
+                        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                    });
                 }
-                rowVals.push(val);
             });
-            const r = ws.addRow(rowVals);
 
-            if (item.__groupIndex !== undefined) {
-                const colorObj = COLOR_PALETTE[item.__groupIndex % COLOR_PALETTE.length];
-                r.eachCell({ includeEmpty: true }, (cell) => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorObj.argb } };
-                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            // Auto-fit columns
+            const colCount = exportHeaders.length;
+            for (let i = 1; i <= colCount; i++) {
+                const col = ws.getColumn(i);
+                let maxLength = 0;
+                col.eachCell({ includeEmpty: true }, (cell) => {
+                    cell.alignment = { vertical: 'middle', wrapText: true };
+                    const text = cell.value ? cell.value.toString() : '';
+                    const lines = text.split('\n');
+                    lines.forEach(line => {
+                        if (line.length > maxLength) maxLength = line.length;
+                    });
                 });
+                col.width = Math.min(Math.max(maxLength + 2, 12), 80);
             }
-        });
+        }
 
-        // Auto-fit columns
-        const colCount = exportHeaders.length;
-        for (let i = 1; i <= colCount; i++) {
-            const col = ws.getColumn(i);
-            let maxLength = 0;
-            col.eachCell({ includeEmpty: true }, (cell) => {
-                cell.alignment = { vertical: 'middle', wrapText: true };
-                const text = cell.value ? cell.value.toString() : '';
-                const lines = text.split('\n');
-                lines.forEach(line => {
-                    if (line.length > maxLength) maxLength = line.length;
-                });
-            });
-            col.width = Math.min(Math.max(maxLength + 2, 12), 80);
+        if (wb.worksheets.length === 0) {
+            wb.addWorksheet("Trống");
         }
 
         const buf = await wb.xlsx.writeBuffer();
@@ -458,23 +488,11 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
                 </div>
                 
                 <div className="flex-1 max-w-2xl flex gap-2">
-                    {uniqueRules.length > 0 && (
-                        <Select
-                            mode="multiple"
-                            allowClear
-                            placeholder="Lọc quy tắc..."
-                            value={selectedRules}
-                            onChange={setSelectedRules}
-                            style={{ minWidth: 250 }}
-                            maxTagCount="responsive"
-                            options={uniqueRules.map(r => ({ label: r, value: r }))}
-                            size="large"
-                        />
-                    )}
+                    {/* Tabs are now placed below */}
                     <Input
                         placeholder="Tìm kiếm trong dữ liệu..."
                         prefix={<SearchOutlined className="text-slate-400" />}
-                        suffix={(searchText || selectedRules.length > 0) ? <span className="text-slate-400 text-sm">{filteredDups.length} kết quả</span> : null}
+                        suffix={(searchText || activeTab !== 'all') ? <span className="text-slate-400 text-sm">{filteredDups.length} kết quả</span> : null}
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
                         allowClear
@@ -493,8 +511,15 @@ export default function OverlapExcelDuplicates({ ruleType, pageTitle = 'Danh sá
                 </div>
             </div>
             
-            <div className="flex-1 overflow-hidden p-4">
-                <div className="h-full bg-white rounded-lg shadow-sm border overflow-hidden custom-scrollbar-table">
+            <div className="flex-1 overflow-hidden p-4 flex flex-col">
+                <Tabs 
+                    type="card"
+                    activeKey={activeTab}
+                    onChange={setActiveTab}
+                    items={tabItems}
+                    className="shrink-0 mb-0"
+                />
+                <div className="flex-1 bg-white rounded-b-lg rounded-tr-lg shadow-sm border overflow-hidden custom-scrollbar-table -mt-[1px]">
                     <style>{`
                         .ant-table-cell-fix-left,
                         .ant-table-cell-fix-right {
