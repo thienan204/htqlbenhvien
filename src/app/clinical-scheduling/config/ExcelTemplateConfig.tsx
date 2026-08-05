@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Space, message, Tag, Popconfirm, Upload, AutoComplete } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Space, message, Tag, Popconfirm, Upload, AutoComplete, Checkbox } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 
@@ -60,6 +60,13 @@ export default function ExcelTemplateConfig() {
             excel_column: values[field.code] || ''
         })).filter(m => m.excel_column);
 
+        OUTPUT_FIELDS.forEach(field => {
+            mappings.push({
+                system_field: `enable_${field.code}`,
+                excel_column: values[`enable_${field.code}`] === false ? 'false' : 'true'
+            });
+        });
+
         const payload = {
             id: editingTemplate?.id,
             name: values.name,
@@ -107,11 +114,26 @@ export default function ExcelTemplateConfig() {
         if (template) {
             const formData: any = { name: template.name, isDefault: template.isDefault };
             template.mappings?.forEach((m: any) => {
-                formData[m.system_field] = m.excel_column;
+                if (m.system_field.startsWith('enable_')) {
+                    formData[m.system_field] = m.excel_column === 'true';
+                } else {
+                    formData[m.system_field] = m.excel_column;
+                }
+            });
+            // Ensure any missing enable_ states default to true
+            OUTPUT_FIELDS.forEach(f => {
+                if (formData[`enable_${f.code}`] === undefined) {
+                    formData[`enable_${f.code}`] = true;
+                }
             });
             form.setFieldsValue(formData);
         } else {
             form.resetFields();
+            const defaultFormData: any = {};
+            OUTPUT_FIELDS.forEach(f => {
+                defaultFormData[`enable_${f.code}`] = true;
+            });
+            form.setFieldsValue(defaultFormData);
         }
         setModalVisible(true);
     };
@@ -275,18 +297,28 @@ export default function ExcelTemplateConfig() {
                     <div style={{ padding: '16px', background: '#e6f4ff', borderRadius: '8px', marginBottom: '16px' }}>
                         <p style={{ margin: '0 0 16px 0', color: '#0958d9' }}>
                             <strong>Cấu hình Cột Kết quả Xuất (Output)</strong><br/>
-                            <i>Nhập tên cột bạn muốn hiển thị khi tải File Excel kết quả xếp lịch. Nếu để trống sẽ dùng tên mặc định.</i>
+                            <i>Check vào cột bạn muốn hiển thị khi tải File Excel kết quả xếp lịch. Nhập tên cột nếu muốn đổi tên mặc định.</i>
                         </p>
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
                             {OUTPUT_FIELDS.map(field => (
-                                <Form.Item 
-                                    key={field.code} 
-                                    name={field.code} 
-                                    label={<>{field.name} (Gốc)</>}
-                                >
-                                    <Input placeholder={`Nhập tên cột mới cho ${field.name}...`} allowClear />
-                                </Form.Item>
+                                <div key={field.code} style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+                                    <Form.Item 
+                                        name={`enable_${field.code}`} 
+                                        valuePropName="checked"
+                                        initialValue={true}
+                                        style={{ margin: 0, marginRight: 8 }}
+                                    >
+                                        <Checkbox />
+                                    </Form.Item>
+                                    <Form.Item 
+                                        name={field.code} 
+                                        label={<>{field.name} (Gốc)</>}
+                                        style={{ margin: 0, flex: 1 }}
+                                    >
+                                        <Input placeholder={`Nhập tên cột mới cho ${field.name}...`} allowClear />
+                                    </Form.Item>
+                                </div>
                             ))}
                         </div>
                     </div>

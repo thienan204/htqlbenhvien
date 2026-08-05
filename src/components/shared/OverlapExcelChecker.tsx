@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Resizable } from 'react-resizable';
 import type { ResizeCallbackData } from 'react-resizable';
+import PageInstruction from '@/components/shared/PageInstruction';
+import { Tabs } from 'antd';
 
 const { Dragger } = Upload;
 const { Option } = Select;
@@ -177,6 +179,8 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
     const [hide50Percent, setHide50Percent] = useState(false);
     const { user: currentUser, hasPermission } = useAuth();
     const router = useRouter();
+    
+    const [activeTab, setActiveTab] = useState('MAIN');
 
     const [form] = Form.useForm(); // For execution (hidden or manual)
     const [ruleForm] = Form.useForm(); // For rule editing
@@ -906,42 +910,52 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
 
     return (
         <div className="space-y-6 p-6 max-w-[1600px] mx-auto">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-4">
                 <div>
                     <h1 className="text-3xl font-black text-slate-800 tracking-tight">{pageTitle}</h1>
                     <p className="text-slate-500 font-medium">Tải lên và kiểm tra trùng lặp thời gian</p>
                 </div>
-                {workbook && (
+                {activeTab === 'MAIN' && workbook && (
                     <Button onClick={reset} icon={<ReloadOutlined />}>Tải file khác</Button>
                 )}
             </div>
 
-            {!workbook ? (
-                <Card className="border-2 border-dashed border-slate-300 shadow-none hover:border-blue-400 transition-colors">
-                    <div className="p-12">
-                        {loading && uploadProgress > 0 && uploadProgress < 100 ? (
-                            <div className="flex flex-col items-center justify-center p-8">
-                                <Progress type="circle" percent={uploadProgress} />
-                                <p className="mt-4 text-slate-500">Đang đọc file...</p>
-                            </div>
-                        ) : (
-                            <Dragger {...uploadProps} style={{ border: 'none', background: 'transparent' }} disabled={loading}>
-                                <p className="ant-upload-drag-icon text-6xl text-blue-500 mb-4">
-                                    <InboxOutlined />
-                                </p>
-                                <p className="ant-upload-text text-xl font-bold text-slate-700">
-                                    Nhấp hoặc kéo thả file Excel vào đây
-                                </p>
-                                <p className="ant-upload-hint text-slate-500 mt-2">
-                                    Hỗ trợ các định dạng .xlsx, .xls
-                                </p>
-                            </Dragger>
-                        )}
-                    </div>
-                </Card>
-            ) : (
-                <div className="space-y-4">
-                    <Card className="shadow-sm border-slate-200">
+            <Tabs
+                type="card"
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                items={[
+                    {
+                        key: 'MAIN',
+                        label: 'Kiểm tra',
+                        children: (
+                            <div className="mt-4">
+                                {!workbook ? (
+                                    <Card className="border-2 border-dashed border-slate-300 shadow-none hover:border-blue-400 transition-colors">
+                                        <div className="p-12">
+                                            {loading && uploadProgress > 0 && uploadProgress < 100 ? (
+                                                <div className="flex flex-col items-center justify-center p-8">
+                                                    <Progress type="circle" percent={uploadProgress} />
+                                                    <p className="mt-4 text-slate-500">Đang đọc file...</p>
+                                                </div>
+                                            ) : (
+                                                <Dragger {...uploadProps} style={{ border: 'none', background: 'transparent' }} disabled={loading}>
+                                                    <p className="ant-upload-drag-icon text-6xl text-blue-500 mb-4">
+                                                        <InboxOutlined />
+                                                    </p>
+                                                    <p className="ant-upload-text text-xl font-bold text-slate-700">
+                                                        Nhấp hoặc kéo thả file Excel vào đây
+                                                    </p>
+                                                    <p className="ant-upload-hint text-slate-500 mt-2">
+                                                        Hỗ trợ các định dạng .xlsx, .xls
+                                                    </p>
+                                                </Dragger>
+                                            )}
+                                        </div>
+                                    </Card>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <Card className="shadow-sm border-slate-200">
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="bg-green-100 p-2 rounded-lg text-green-600">
@@ -1443,14 +1457,28 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                         </Col>
                     </Row>
 
-                    <div className="flex justify-end gap-2 mt-6">
-                        <Button onClick={() => setIsRuleManagerOpen(false)}>Đóng</Button>
-                        <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={ruleLoading}>
-                            {editingRule ? "Cập nhật" : "Lưu Quy tắc"}
-                        </Button>
-                    </div>
-                </Form>
-            </Modal>
+                                    <div className="flex justify-end gap-2 mt-6">
+                                        <Button onClick={() => setIsRuleManagerOpen(false)}>Đóng</Button>
+                                        <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={ruleLoading}>
+                                            {editingRule ? "Cập nhật" : "Lưu Quy tắc"}
+                                        </Button>
+                                    </div>
+                                </Form>
+                            </Modal>
+                            </div>
+                        )
+                    },
+                    {
+                        key: 'INSTRUCTION',
+                        label: 'Hướng dẫn sử dụng',
+                        children: (
+                            <div className="mt-4">
+                                <PageInstruction pageId={`excel-check-${ruleType.toLowerCase()}`} />
+                            </div>
+                        )
+                    }
+                ]}
+            />
         </div>
     );
 }

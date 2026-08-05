@@ -11,6 +11,7 @@ import { useReactToPrint } from 'react-to-print';
 import { getBasePath } from '@/utils/config';
 import ClinicalSchedulingConfigPage from '../config/page';
 import ClinicalSchedulingAttendancePage from '../attendance/page';
+import PageInstruction from '@/components/shared/PageInstruction';
 
 const { Option } = Select;
 
@@ -62,12 +63,19 @@ function SavedPdfReportsTab() {
             title: 'Tên Báo Cáo',
             dataIndex: 'ten_bao_cao',
             key: 'ten_bao_cao',
-            render: (text: string, record: any) => (
-                <a href={record.url} target="_blank" rel="noopener noreferrer" style={{color: '#1890ff', fontWeight: 500}}>
-                    <FilePdfOutlined style={{color: '#ff4d4f', marginRight: 8}} />
-                    {text}
-                </a>
-            ),
+            render: (text: string, record: any) => {
+                const isExcel = record.url && record.url.toLowerCase().endsWith('.xlsx');
+                return (
+                    <a href={record.url} target="_blank" rel="noopener noreferrer" style={{color: '#1890ff', fontWeight: 500}}>
+                        {isExcel ? (
+                            <FileExcelOutlined style={{color: '#16a34a', marginRight: 8}} />
+                        ) : (
+                            <FilePdfOutlined style={{color: '#ff4d4f', marginRight: 8}} />
+                        )}
+                        {text}
+                    </a>
+                );
+            },
         },
         { title: 'Loại', dataIndex: 'loai_bao_cao', key: 'loai_bao_cao', render: (val: string) => val ? <Tag color="blue">{val}</Tag> : '-' },
         { title: 'Khoa / Phòng', dataIndex: 'ma_khoa', key: 'ma_khoa', render: (val: string) => val ? <Tag color="green">{val}</Tag> : '-' },
@@ -721,8 +729,8 @@ export default function ClinicalSchedulingPage() {
         setSavingReport(false);
     };
 
-    const handleExportExcelTab = (dataSource: any[], columns: any[], title: string) => {
-        if (!dataSource || dataSource.length === 0) return;
+    const generateExcelWorkbook = (dataSource: any[], columns: any[], title: string) => {
+        if (!dataSource || dataSource.length === 0) return null;
         
         const deptName = departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa || '';
         const dateStr = dayjs(selectedDate || new Date()).format('DD/MM/YYYY');
@@ -846,7 +854,6 @@ export default function ClinicalSchedulingPage() {
             });
         }
 
-        
         const safeDeptName = deptName.replace(/[/\\?%*:|"<>]/g, '-');
         const dateFileStr = dayjs(selectedDate || new Date()).format('DD-MM-YYYY');
         let fileName = `${title}_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`;
@@ -856,7 +863,52 @@ export default function ClinicalSchedulingPage() {
             fileName = `Danh_sach_chia_thoi_gian_theo_bac_si_${safeDeptName}_ngay_${dateFileStr}.xlsx`;
         }
 
-        XLSX.writeFile(wb, fileName);
+        return { wb, fileName };
+    };
+
+    const handleExportExcelTab = (dataSource: any[], columns: any[], title: string) => {
+        const result = generateExcelWorkbook(dataSource, columns, title);
+        if (result) {
+            XLSX.writeFile(result.wb, result.fileName);
+        }
+    };
+
+    const handleSaveExcelToServer = async (dataSource: any[], columns: any[], title: string) => {
+        if (!selectedDept) {
+            return message.warning('Vui lòng chọn Khoa/Phòng');
+        }
+        setSavingReport(true);
+        try {
+            const result = generateExcelWorkbook(dataSource, columns, title);
+            if (!result) {
+                setSavingReport(false);
+                return;
+            }
+            
+            const excelBuffer = XLSX.write(result.wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const formData = new FormData();
+            formData.append('file', blob, result.fileName);
+            formData.append('ten_bao_cao', `${title} - Ngày ${dayjs(selectedDate || new Date()).format('DD/MM/YYYY')}`);
+            formData.append('loai_bao_cao', title);
+            formData.append('ma_khoa', selectedDept);
+            formData.append('nguoi_tao', (user as any)?.ho_ten || 'Unknown');
+
+            const res = await fetch('/api/clinical-scheduling/save-report', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                message.success('Đã lưu file Excel lên máy chủ thành công!');
+            } else {
+                message.error('Lỗi: ' + data.message);
+            }
+        } catch (e) {
+            message.error('Lỗi kết nối máy chủ');
+        }
+        setSavingReport(false);
     };
 
     const handleExportExcel = () => {
@@ -875,6 +927,13 @@ export default function ClinicalSchedulingPage() {
         XLSX.writeFile(wb, `KetQuaXepLich_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`);
     };
 
+    const isColumnEnabled = (key: string) => {
+        if (key === 'may_thuc_hien') {
+            return outputMapping['enable_out_ma_may'] !== 'false' || outputMapping['enable_out_ten_may'] !== 'false';
+        }
+        return outputMapping[`enable_out_${key}`] !== 'false';
+    };
+
     const resultColumns = [
         { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#237804' : '#16a34a')}}>{t}</strong></div> : null },
         { title: outputMapping.out_ma_ba || columnMapping.ma_ba || 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '10%' },
@@ -884,7 +943,7 @@ export default function ClinicalSchedulingPage() {
         { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
         { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
         { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
-    ];
+    ].filter(col => isColumnEnabled(col.key as string));
 
     const patientColumns = [
         { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#0958d9' : '#000')}}>{t}</strong> : null },
@@ -894,7 +953,8 @@ export default function ClinicalSchedulingPage() {
         { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
         { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
         { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
-    ];
+    ].filter(col => isColumnEnabled(col.key as string));
+
 
     const failedColumns = [
         { title: 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba' },
@@ -908,7 +968,7 @@ export default function ClinicalSchedulingPage() {
     return (
         <div style={{ padding: 24, width: '100%', maxWidth: 1800, margin: '0 auto' }}>
             <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống tự động chia thời gian thực hiện DVKT</h1>
-            <Tabs type="card" defaultActiveKey="1" items={[
+            <Tabs type="card" defaultActiveKey="1" onChange={(key) => { if (key === '1' && selectedDept) { fetchSettings(); } }} items={[
                 {
                     key: '1',
                     label: <strong style={{fontSize: 16}}>Công cụ xếp thời gian</strong>,
@@ -965,118 +1025,133 @@ export default function ClinicalSchedulingPage() {
                 </Row>
                 
                 {uploadedData.length > 0 && (
-                    <div style={{ marginTop: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                            <h3 style={{ margin: 0, color: '#1890ff' }}>Lọc Dịch vụ cần xếp lịch:</h3>
-                            <Space>
-                                <Button size="small" onClick={() => setSelectedServices(uniqueServices)}>Chọn tất cả</Button>
-                                <Button size="small" onClick={() => setSelectedServices([])}>Bỏ chọn tất cả</Button>
-                            </Space>
-                        </div>
-                        <Checkbox.Group 
-                            options={uniqueServices} 
-                            value={selectedServices} 
-                            onChange={(checkedValues) => setSelectedServices(checkedValues as string[])}
-                        />
-                    </div>
-                )}
+                    <Tabs
+                        type="card"
+                        style={{ marginTop: 24 }}
+                        items={[
+                            {
+                                key: 'basic',
+                                label: 'Cơ bản',
+                                children: (
+                                    <>
+                                        <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                                <h3 style={{ margin: 0, color: '#1890ff' }}>Lọc Dịch vụ cần xếp lịch:</h3>
+                                                <Space>
+                                                    <Button size="small" onClick={() => setSelectedServices(uniqueServices)}>Chọn tất cả</Button>
+                                                    <Button size="small" onClick={() => setSelectedServices([])}>Bỏ chọn tất cả</Button>
+                                                </Space>
+                                            </div>
+                                            <Checkbox.Group 
+                                                options={uniqueServices} 
+                                                value={selectedServices} 
+                                                onChange={(checkedValues) => setSelectedServices(checkedValues as string[])}
+                                            />
+                                        </div>
 
-                {uploadedData.length > 0 && (
-                    <div style={{ marginTop: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8 }}>
-                        <h3 style={{ margin: 0, color: '#fa8c16', marginBottom: 16 }}>Tùy chọn Bệnh nhân ưu tiên xếp lịch theo buổi:</h3>
-                        <Row gutter={24}>
-                            <Col span={12}>
-                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Sáng ({currentDeptHours.morningStart} - {currentDeptHours.morningEnd}):</strong></div>
-                                <Select
-                                    mode="multiple"
-                                    allowClear
-                                    style={{ width: '100%' }}
-                                    placeholder="Chọn bệnh nhân (Để trống = Tự động xếp)"
-                                    value={morningPatients}
-                                    onChange={(vals) => setMorningPatients(vals)}
-                                    options={uniquePatients.filter(p => !afternoonPatients.includes(p.value))}
-                                    filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
-                                />
-                            </Col>
-                            <Col span={12}>
-                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Chiều ({currentDeptHours.afternoonStart} - {currentDeptHours.afternoonEnd}):</strong></div>
-                                <Select
-                                    mode="multiple"
-                                    allowClear
-                                    style={{ width: '100%' }}
-                                    placeholder="Chọn bệnh nhân (Để trống = Tự động xếp)"
-                                    value={afternoonPatients}
-                                    onChange={(vals) => setAfternoonPatients(vals)}
-                                    options={uniquePatients.filter(p => !morningPatients.includes(p.value))}
-                                    filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
-                                />
-                            </Col>
-                        </Row>
-                        <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
-                            * Lưu ý: Các bệnh nhân không được chọn sẽ được thuật toán tự động xếp vào bất kỳ thời gian rảnh nào trong ngày. Nếu buổi đã chọn kín lịch, sẽ báo lỗi thiếu thời gian.
-                        </div>
-                    </div>
-                )}
-
-                {uploadedData.length > 0 && (
-                    <div style={{ marginTop: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8 }}>
-                        <div style={{ marginBottom: 12 }}>
-                            <Checkbox 
-                                checked={enableStaffMapping} 
-                                onChange={e => setEnableStaffMapping(e.target.checked)}
-                            >
-                                <strong style={{ color: '#0958d9' }}>Bật tuỳ chọn: Gán Dịch vụ cho đích danh người thực hiện</strong>
-                            </Checkbox>
-                        </div>
-                        
-                        {enableStaffMapping && (
-                            <div style={{ marginTop: 16 }}>
-                                <Row gutter={[16, 16]}>
-                                    {selectedServices.map(serviceName => (
-                                        <Col span={12} key={serviceName}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <div style={{ flex: 1, paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={serviceName}>
-                                                    - {serviceName}
-                                                </div>
-                                                <div style={{ width: 250 }}>
+                                        <div style={{ marginTop: 24, textAlign: 'center', background: '#f6ffed', padding: 16, border: '1px solid #b7eb8f', borderRadius: 8 }}>
+                                            <h3 style={{ margin: 0, color: '#389e0d' }}>✅ Đã tải thành công {uploadedData.length} chỉ định dịch vụ</h3>
+                                            <p style={{ color: '#595959', marginBottom: 16 }}>Hệ thống đã sẵn sàng tính toán lịch cho <strong>{selectedServices.length}</strong> loại dịch vụ đã chọn.</p>
+                                            <Button 
+                                                type="primary" 
+                                                size="large" 
+                                                icon={<PlayCircleOutlined />} 
+                                                onClick={handleGenerateSchedule}
+                                                loading={loading}
+                                            >
+                                                CHẠY THUẬT TOÁN XẾP LỊCH
+                                            </Button>
+                                        </div>
+                                    </>
+                                )
+                            },
+                            {
+                                key: 'advanced',
+                                label: 'Tùy chọn nâng cao',
+                                children: (
+                                    <>
+                                        <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff', marginBottom: 24 }}>
+                                            <h3 style={{ margin: 0, color: '#fa8c16', marginBottom: 16 }}>Tùy chọn Bệnh nhân ưu tiên xếp lịch theo buổi:</h3>
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Sáng ({currentDeptHours.morningStart} - {currentDeptHours.morningEnd}):</strong></div>
                                                     <Select
-                                                        allowClear
-                                                        showSearch
                                                         mode="multiple"
-                                                        placeholder="Chọn người thực hiện"
+                                                        allowClear
                                                         style={{ width: '100%' }}
-                                                        value={serviceStaffMappings[serviceName] || []}
-                                                        onChange={(val) => setServiceStaffMappings(prev => ({ ...prev, [serviceName]: val }))}
-                                                        options={staffList.filter(s => s.is_thuc_hien_dvkt !== false).map(s => ({ label: s.ho_ten, value: s.id }))}
+                                                        placeholder="Chọn bệnh nhân (Để trống = Tự động xếp)"
+                                                        value={morningPatients}
+                                                        onChange={(vals) => setMorningPatients(vals)}
+                                                        options={uniquePatients.filter(p => !afternoonPatients.includes(p.value))}
                                                         filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
                                                     />
-                                                </div>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Chiều ({currentDeptHours.afternoonStart} - {currentDeptHours.afternoonEnd}):</strong></div>
+                                                    <Select
+                                                        mode="multiple"
+                                                        allowClear
+                                                        style={{ width: '100%' }}
+                                                        placeholder="Chọn bệnh nhân (Để trống = Tự động xếp)"
+                                                        value={afternoonPatients}
+                                                        onChange={(vals) => setAfternoonPatients(vals)}
+                                                        options={uniquePatients.filter(p => !morningPatients.includes(p.value))}
+                                                        filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                            <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
+                                                * Lưu ý: Các bệnh nhân không được chọn sẽ được thuật toán tự động xếp vào bất kỳ thời gian rảnh nào trong ngày. Nếu buổi đã chọn kín lịch, sẽ báo lỗi thiếu thời gian.
                                             </div>
-                                        </Col>
-                                    ))}
-                                </Row>
-                                <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
-                                    * Lưu ý: Nếu không chọn ai, hệ thống sẽ tự động xếp lịch dựa trên chứng chỉ hành nghề và thời gian rảnh như bình thường.
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                                        </div>
 
-                {uploadedData.length > 0 && (
-                    <div style={{ marginTop: 24, textAlign: 'center', background: '#f6ffed', padding: 16, border: '1px solid #b7eb8f', borderRadius: 8 }}>
-                        <h3 style={{ margin: 0, color: '#389e0d' }}>✅ Đã tải thành công {uploadedData.length} chỉ định dịch vụ</h3>
-                        <p style={{ color: '#595959', marginBottom: 16 }}>Hệ thống đã sẵn sàng tính toán lịch cho <strong>{selectedServices.length}</strong> loại dịch vụ đã chọn.</p>
-                        <Button 
-                            type="primary" 
-                            size="large" 
-                            icon={<PlayCircleOutlined />} 
-                            onClick={handleGenerateSchedule}
-                            loading={loading}
-                        >
-                            CHẠY THUẬT TOÁN XẾP LỊCH
-                        </Button>
-                    </div>
+                                        <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
+                                            <div style={{ marginBottom: 12 }}>
+                                                <Checkbox 
+                                                    checked={enableStaffMapping} 
+                                                    onChange={e => setEnableStaffMapping(e.target.checked)}
+                                                >
+                                                    <strong style={{ color: '#0958d9' }}>Bật tuỳ chọn: Gán Dịch vụ cho đích danh người thực hiện</strong>
+                                                </Checkbox>
+                                            </div>
+                                            
+                                            {enableStaffMapping && (
+                                                <div style={{ marginTop: 16 }}>
+                                                    <Row gutter={[16, 16]}>
+                                                        {selectedServices.map(serviceName => (
+                                                            <Col span={12} key={serviceName}>
+                                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                    <div style={{ flex: 1, paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={serviceName}>
+                                                                        - {serviceName}
+                                                                    </div>
+                                                                    <div style={{ width: 250 }}>
+                                                                        <Select
+                                                                            allowClear
+                                                                            showSearch
+                                                                            mode="multiple"
+                                                                            placeholder="Chọn người thực hiện"
+                                                                            style={{ width: '100%' }}
+                                                                            value={serviceStaffMappings[serviceName] || []}
+                                                                            onChange={(val) => setServiceStaffMappings(prev => ({ ...prev, [serviceName]: val }))}
+                                                                            options={staffList.filter(s => s.is_thuc_hien_dvkt !== false).map(s => ({ label: s.ho_ten, value: s.id }))}
+                                                                            filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </Col>
+                                                        ))}
+                                                    </Row>
+                                                    <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
+                                                        * Lưu ý: Nếu không chọn ai, hệ thống sẽ tự động xếp lịch dựa trên chứng chỉ hành nghề và thời gian rảnh như bình thường.
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )
+                            }
+                        ]}
+                    />
                 )}
             </Card>
 
@@ -1087,8 +1162,41 @@ export default function ClinicalSchedulingPage() {
                     style={{ marginBottom: 24, border: '1px solid #16a34a' }}
                 >
                     <Tabs type="card" 
-                        defaultActiveKey="1"
+                        defaultActiveKey="2"
                         items={[
+                            {
+                                key: '2',
+                                label: 'Bác sĩ / Điều dưỡng',
+                                children: (
+                                    <>
+                                        <Space style={{ marginBottom: 16 }}>
+                                            <Button icon={<PrinterOutlined />} onClick={() => handlePrint('print-doctor')}>In Báo Cáo</Button>
+                                            <Button icon={<FilePdfOutlined />} onClick={() => handleExportPDF('print-doctor', 'DanhSachTheoBacSi')}>Tải PDF</Button>
+                                            <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Tải Excel</Button>
+                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveExcelToServer(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Lưu Excel</Button>
+                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveReport('print-doctor', 'Danh Sách Theo Bác Sĩ')}>Lưu Báo Cáo (PDF)</Button>
+                                        </Space>
+                                        <div id="print-doctor" style={{ background: '#fff', padding: '20px' }}>
+                                            <div className="print-header" style={{ display: 'none', marginBottom: 20 }}>
+                                                <h2 style={{ textAlign: 'center' }}>SỞ Y TẾ TỈNH LẠNG SƠN<br/>BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN</h2>
+                                                <h1 style={{ textAlign: 'center', marginTop: 20 }}>DANH SÁCH CHIA THỜI GIAN THEO BÁC SĨ NGÀY {dayjs(selectedDate).format('DD/MM/YYYY')} CỦA KHOA {departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa?.toUpperCase()}</h1>
+                                            </div>
+                                            <Table 
+                                                dataSource={groupedScheduledData} 
+                                                columns={resultColumns} 
+                                                rowKey="key"
+                                                pagination={{ pageSize: 50 }}
+                                                defaultExpandAllRows
+                                                size="small"
+                                                bordered
+                                            />
+                                        </div>
+                                        <div style={{ marginTop: 12, color: '#595959', fontStyle: 'italic' }}>
+                                            File Excel xuất ra sẽ giữ nguyên toàn bộ các cột gốc của hệ thống (bao gồm MAHOSOBENHAN, SOPHIEU, v.v.) và <strong>tự động thêm các cột Bắt đầu, Kết thúc, Người thực hiện vào cuối.</strong>
+                                        </div>
+                                    </>
+                                )
+                            },
                             {
                                 key: '1',
                                 label: 'Tên Bệnh nhân',
@@ -1115,29 +1223,6 @@ export default function ClinicalSchedulingPage() {
                                                 bordered
                                             />
                                         </div>
-                                        <div style={{ marginTop: 12, color: '#595959', fontStyle: 'italic' }}>
-                                            File Excel xuất ra sẽ giữ nguyên toàn bộ các cột gốc của hệ thống (bao gồm MAHOSOBENHAN, SOPHIEU, v.v.) và <strong>tự động thêm các cột Bắt đầu, Kết thúc, Người thực hiện vào cuối.</strong>
-                                        </div>
-                                    </>
-                                )
-                            },
-                            {
-                                key: '2',
-                                label: 'Bác sĩ / Điều dưỡng',
-                                children: (
-                                    <>
-                                        <Space style={{ marginBottom: 16 }}>
-                                            <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Tải Excel</Button>
-                                        </Space>
-                                        <Table 
-                                            dataSource={groupedScheduledData} 
-                                            columns={resultColumns} 
-                                            rowKey="key"
-                                            pagination={{ pageSize: 50 }}
-                                            defaultExpandAllRows
-                                            size="small"
-                                            bordered
-                                        />
                                         <div style={{ marginTop: 12, color: '#595959', fontStyle: 'italic' }}>
                                             File Excel xuất ra sẽ giữ nguyên toàn bộ các cột gốc của hệ thống (bao gồm MAHOSOBENHAN, SOPHIEU, v.v.) và <strong>tự động thêm các cột Bắt đầu, Kết thúc, Người thực hiện vào cuối.</strong>
                                         </div>
@@ -1279,6 +1364,15 @@ export default function ClinicalSchedulingPage() {
                                 style={{ marginTop: 24 }}
                             />
                         </Card>
+                    )
+                },
+                {
+                    key: 'INSTRUCTION',
+                    label: <strong style={{fontSize: 16}}>Hướng dẫn sử dụng</strong>,
+                    children: (
+                        <div style={{ marginTop: 16 }}>
+                            <PageInstruction pageId="clinical-scheduling-schedule" />
+                        </div>
                     )
                 }
             ]} />

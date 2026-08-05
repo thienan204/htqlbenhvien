@@ -529,6 +529,14 @@ model RequestMessage {
   itRequest   ITRequest @relation(fields: [itRequestId], references: [id], onDelete: Cascade)
 }
 
+model PageInstruction {
+  id        String   @id @default(cuid())
+  pageId    String   @unique
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model XmlErrorRecord {
   id                 String    @id @default(cuid())
   ma_lk              String?
