@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getCurrentUserFromRequest } from '@/actions/auth';
 
 const prisma = new PrismaClient();
 
@@ -7,24 +8,28 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const staffId = searchParams.get('staffId');
+        
+        const user = await getCurrentUserFromRequest(request);
+        const whereClause: any = {};
+        
+        if (user && user.role !== 'ADMIN') {
+            if (user.role === 'KHOA_PHONG' && user.staffId) {
+                whereClause.staffId = user.staffId;
+            } else if (user.ma_khoa) {
+                whereClause.staff = {
+                    ma_khoa: user.ma_khoa
+                };
+            }
+        }
 
-        if (!staffId) {
-            // Lấy toàn bộ CCHN
-            const allCerts = await prisma.practicingCertificate.findMany({
-                include: { 
-                    staff: { include: { department: true } },
-                    TT32Category: true,
-                    noi_cap_cchn_ref: true,
-                    scopes: { include: { scope: true } }
-                },
-                orderBy: { createdAt: 'desc' }
-            });
-            return NextResponse.json(allCerts);
+        if (staffId) {
+            whereClause.staffId = staffId;
         }
 
         const certs = await prisma.practicingCertificate.findMany({
-            where: { staffId },
+            where: whereClause,
             include: { 
+                staff: { include: { department: true } },
                 TT32Category: true,
                 noi_cap_cchn_ref: true,
                 scopes: { include: { scope: true } }

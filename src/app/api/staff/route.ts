@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getCurrentUserFromRequest } from '@/actions/auth';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
     try {
+        const user = await getCurrentUserFromRequest(request);
+        const whereClause: any = {};
+        
+        if (user && user.role !== 'ADMIN') {
+            if (user.role === 'KHOA_PHONG' && user.staffId) {
+                whereClause.id = user.staffId;
+            } else if (user.ma_khoa) {
+                whereClause.ma_khoa = user.ma_khoa;
+            }
+        }
+
         const staff = await prisma.staff.findMany({
+            where: whereClause,
             include: {
                 department: true,
                 chuc_danh_ref: true,

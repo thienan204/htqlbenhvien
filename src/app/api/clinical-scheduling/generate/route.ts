@@ -207,13 +207,15 @@ export async function POST(request: Request) {
             });
 
             // Xử lý tùy chọn gán đích danh Bác sĩ (key là Tên Dịch Vụ)
-            const assignedStaffId = serviceStaffMappings[task.ten_dich_vu];
-            if (assignedStaffId) {
-                const assignedStaff = availableStaff.find(s => s.id === assignedStaffId);
+            const assignedStaffIds = serviceStaffMappings[task.ten_dich_vu];
+            if (assignedStaffIds && Array.isArray(assignedStaffIds) && assignedStaffIds.length > 0) {
+                capableStaff = availableStaff.filter(s => assignedStaffIds.includes(s.id)); // Bỏ qua kiểm tra chứng chỉ, ép buộc xếp lịch cho những người này
+            } else if (assignedStaffIds && typeof assignedStaffIds === 'string') {
+                const assignedStaff = availableStaff.find(s => s.id === assignedStaffIds);
                 if (assignedStaff) {
-                    capableStaff = [assignedStaff]; // Bỏ qua kiểm tra chứng chỉ, ép buộc xếp lịch cho người này
+                    capableStaff = [assignedStaff];
                 } else {
-                    capableStaff = []; // Người được gán không đi làm hôm nay
+                    capableStaff = [];
                 }
             }
 

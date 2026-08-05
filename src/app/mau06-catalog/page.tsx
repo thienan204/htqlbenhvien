@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
@@ -21,6 +21,8 @@ export default function Mau06CatalogPage() {
     const [form] = Form.useForm();
     const [locationForm] = Form.useForm();
     const [searchText, setSearchText] = useState('');
+    const [filterDept, setFilterDept] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState('ACTIVE');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [isMounted, setIsMounted] = useState(false);
@@ -291,6 +293,17 @@ export default function Mau06CatalogPage() {
         { title: 'Tên Thiết Bị', dataIndex: 'TEN_TB', width: 250 },
         { title: 'Tên Bệnh viện', dataIndex: 'TEN_BV', width: 250 },
         { 
+            title: 'Khoa phòng sử dụng', 
+            key: 'ten_khoa_su_dung',
+            width: 200,
+            render: (_: any, record: any) => {
+                if (record.ten_khoa_su_dung) {
+                    return <span className="text-teal-700 font-medium">{record.ten_khoa_su_dung}</span>;
+                }
+                return <span className="text-slate-400 italic">Chưa phân bổ</span>;
+            }
+        },
+        { 
             title: 'Phân loại (Loại máy)', 
             dataIndex: 'loai_may_code', 
             width: 200,
@@ -330,19 +343,51 @@ export default function Mau06CatalogPage() {
         }
     ];
 
-    const filteredData = data.filter(item =>
-        (item.TEN_TB?.toLowerCase().includes(searchText.toLowerCase())) ||
-        (item.MA_MAY?.toLowerCase().includes(searchText.toLowerCase())) ||
-        (item.KY_HIEU?.toLowerCase().includes(searchText.toLowerCase())) ||
-        (item.TEN_BV?.toLowerCase().includes(searchText.toLowerCase()))
-    );
+    const uniqueDepartments = Array.from(new Set(data.map(item => item.ten_khoa_su_dung))).filter(Boolean);
+
+    const filteredData = data.filter(item => {
+        const matchText = (item.TEN_TB?.toLowerCase().includes(searchText.toLowerCase())) ||
+                          (item.MA_MAY?.toLowerCase().includes(searchText.toLowerCase())) ||
+                          (item.KY_HIEU?.toLowerCase().includes(searchText.toLowerCase())) ||
+                          (item.TEN_BV?.toLowerCase().includes(searchText.toLowerCase()));
+        
+        const matchDept = filterDept ? item.ten_khoa_su_dung === filterDept : true;
+        
+        const matchStatus = activeTab === 'ACTIVE' ? item.isActive === true : item.isActive === false;
+        
+        return matchText && matchDept && matchStatus;
+    });
 
     return (
-        <div className="p-6 h-full flex flex-col bg-slate-50">
-            <Card title={<span className="text-xl font-bold text-slate-700">Danh mục Thiết bị Y tế thực hiện DVKT (Mẫu 06/DM)</span>} className="flex-1 drop-shadow-sm flex flex-col">
+        <div className="p-6 h-full flex flex-col bg-slate-50 space-y-4">
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-slate-800 m-0">Danh mục Thiết bị Y tế (Mẫu 06/DM)</h1>
+            </div>
+
+            <Tabs 
+                type="card"
+                activeKey={activeTab}
+                onChange={(key) => { setActiveTab(key); setCurrentPage(1); }}
+                items={[
+                    { key: 'ACTIVE', label: 'Đang sử dụng' },
+                    { key: 'INACTIVE', label: 'Lịch sử (Không sử dụng)' }
+                ]}
+                className="mb-[-16px]"
+            />
+
+            <Card className="flex-1 drop-shadow-sm flex flex-col border-slate-200">
                 <div className="flex justify-between items-center mb-4">
                     <Space>
                         <Input.Search placeholder="Tìm Tên TB, Mã máy, Model, Tên BV..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
+                        <Select
+                            placeholder="Lọc Khoa/Phòng"
+                            allowClear
+                            showSearch
+                            className="min-w-[200px]"
+                            value={filterDept}
+                            onChange={(value) => { setFilterDept(value); setCurrentPage(1); }}
+                            options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
+                        />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                         {selectedRowKeys.length > 0 && (
                             <>

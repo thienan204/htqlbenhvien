@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete } from 'antd';
+import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App } from 'antd';
 import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
@@ -15,6 +15,7 @@ import ClinicalSchedulingAttendancePage from '../attendance/page';
 const { Option } = Select;
 
 function SavedPdfReportsTab() {
+    const { message } = App.useApp();
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -97,6 +98,7 @@ function SavedPdfReportsTab() {
 }
 
 export default function ClinicalSchedulingPage() {
+    const { message } = App.useApp();
     const { user } = useAuth();
     const [departments, setDepartments] = useState<any[]>([]);
     const [selectedDate, setSelectedDate] = useState<string>('');
@@ -116,7 +118,7 @@ export default function ClinicalSchedulingPage() {
     const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
     const [staffList, setStaffList] = useState<any[]>([]);
     const [enableStaffMapping, setEnableStaffMapping] = useState(false);
-    const [serviceStaffMappings, setServiceStaffMappings] = useState<{ [key: string]: string }>({});
+    const [serviceStaffMappings, setServiceStaffMappings] = useState<{ [key: string]: string[] }>({});
 
     const [morningPatients, setMorningPatients] = useState<string[]>([]);
     const [afternoonPatients, setAfternoonPatients] = useState<string[]>([]);
@@ -1040,11 +1042,12 @@ export default function ClinicalSchedulingPage() {
                                                     <Select
                                                         allowClear
                                                         showSearch
+                                                        mode="multiple"
                                                         placeholder="Chọn người thực hiện"
                                                         style={{ width: '100%' }}
-                                                        value={serviceStaffMappings[serviceName] || undefined}
+                                                        value={serviceStaffMappings[serviceName] || []}
                                                         onChange={(val) => setServiceStaffMappings(prev => ({ ...prev, [serviceName]: val }))}
-                                                        options={staffList.map(s => ({ label: s.ho_ten, value: s.id }))}
+                                                        options={staffList.filter(s => s.is_thuc_hien_dvkt !== false).map(s => ({ label: s.ho_ten, value: s.id }))}
                                                         filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
                                                     />
                                                 </div>

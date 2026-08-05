@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Space, Tag, Input, Button, Select } from 'antd';
+import { Table, Card, Space, Tag, Input, Button, Select, Modal, Tabs } from 'antd';
 import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CertificatesModal from '@/app/staff/components/CertificatesModal';
 import BulkUpdateCchnModal from './components/BulkUpdateCchnModal';
+import ExpandedStaffServices from './components/ExpandedStaffServices';
 
 export default function PracticingCertificatesPage() {
     const [certificates, setCertificates] = useState<any[]>([]);
@@ -18,6 +19,38 @@ export default function PracticingCertificatesPage() {
     const [selectedStaff, setSelectedStaff] = useState<{ id: string, ho_ten: string } | null>(null);
     const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 15 });
+
+    // Manage Scope Modal
+    const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+    const [selectedScope, setSelectedScope] = useState<any>(null);
+    const [scopeServices, setScopeServices] = useState<any[]>([]);
+    const [loadingServices, setLoadingServices] = useState(false);
+
+    const handleViewScope = async (scope: any) => {
+        setSelectedScope(scope);
+        setIsScopeModalOpen(true);
+        setLoadingServices(true);
+        try {
+            const res = await fetch(`/api/pham-vi-chuyen-mon/mapped-services?ma_pham_vi=${scope.ma_pham_vi}`);
+            if (res.ok) {
+                const data = await res.json();
+                setScopeServices(data);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải dịch vụ thuộc phạm vi', error);
+        } finally {
+            setLoadingServices(false);
+        }
+    };
+
+    // Manage Page Tabs
+    const [activeTab, setActiveTab] = useState('list');
+    const [selectedStaffCert, setSelectedStaffCert] = useState<any>(null);
+
+    const handleViewStaffServices = (record: any) => {
+        setSelectedStaffCert(record);
+        setActiveTab('services');
+    };
 
     const fetchCertificates = async () => {
         setLoading(true);
@@ -69,7 +102,14 @@ export default function PracticingCertificatesPage() {
             title: 'Họ và tên',
             dataIndex: ['staff', 'ho_ten'],
             key: 'ho_ten',
-            render: (text: string) => <span className="font-semibold text-slate-800">{text}</span>
+            render: (text: string, record: any) => (
+                <span 
+                    className="font-semibold text-blue-600 cursor-pointer hover:underline"
+                    onClick={() => handleViewStaffServices(record)}
+                >
+                    {text}
+                </span>
+            )
         },
         {
             title: 'Số CCHN',
@@ -97,9 +137,21 @@ export default function PracticingCertificatesPage() {
             key: 'scopes',
             render: (_: any, record: any) => {
                 if (!record.scopes || record.scopes.length === 0) return '-';
-                return record.scopes.map((s: any) => `${s.scope.ma_pham_vi} - ${s.scope.ten_chuc_danh}`).join('; ');
-            },
-            ellipsis: true
+                return (
+                    <Space size={[0, 4]} wrap>
+                        {record.scopes.map((s: any, idx: number) => (
+                            <Tag 
+                                color="purple" 
+                                key={s?.scope?.ma_pham_vi || idx}
+                                className="cursor-pointer hover:bg-purple-100"
+                                onClick={() => s?.scope && handleViewScope(s.scope)}
+                            >
+                                {s?.scope?.ma_pham_vi} - {s?.scope?.ten_chuc_danh}
+                            </Tag>
+                        ))}
+                    </Space>
+                );
+            }
         },
         {
             title: 'Nhóm phân quyền (TT32)',
@@ -148,49 +200,71 @@ export default function PracticingCertificatesPage() {
                 </Button>
             </div>
 
-            <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
-                <div className="p-4 border-b border-slate-100 flex gap-4">
-                    <Input 
-                        placeholder="Tìm kiếm theo Tên NV, Mã NV hoặc Số CCHN..." 
-                        prefix={<SearchOutlined className="text-slate-400" />}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        className="max-w-md rounded-lg"
-                        size="large"
-                    />
-                    <Select
-                        placeholder="Lọc Khoa/Phòng"
-                        allowClear
-                        showSearch
-                        size="large"
-                        className="min-w-[250px]"
-                        value={filterDept}
-                        onChange={setFilterDept}
-                        options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
-                    />
-                </div>
-                <Table 
-                    dataSource={filteredData} 
-                    columns={columns} 
-                    rowKey="id"
-                    loading={loading}
-                    pagination={{ 
-                        current: tableParams.current,
-                        pageSize: tableParams.pageSize,
-                        showSizeChanger: true, 
-                        showTotal: (total) => `Tổng số ${total} chứng chỉ`,
-                        locale: { items_per_page: '/ Trang' }
-                    }}
-                    onChange={(pagination) => {
-                        setTableParams({
-                            current: pagination.current || 1,
-                            pageSize: pagination.pageSize || 15,
-                        });
-                    }}
-                    rowClassName="hover:bg-slate-50/50"
-                    size="middle"
-                />
-            </Card>
+            <Tabs
+                type="card"
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                items={[
+                    {
+                        key: 'list',
+                        label: 'Danh sách CCHN',
+                        children: (
+                            <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
+                                <div className="p-4 border-b border-slate-100 flex gap-4">
+                                    <Input 
+                                        placeholder="Tìm kiếm theo Tên NV, Mã NV hoặc Số CCHN..." 
+                                        prefix={<SearchOutlined className="text-slate-400" />}
+                                        value={searchText}
+                                        onChange={(e) => setSearchText(e.target.value)}
+                                        className="max-w-md rounded-lg"
+                                        size="large"
+                                    />
+                                    <Select
+                                        placeholder="Lọc Khoa/Phòng"
+                                        allowClear
+                                        showSearch
+                                        size="large"
+                                        className="min-w-[250px]"
+                                        value={filterDept}
+                                        onChange={setFilterDept}
+                                        options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
+                                    />
+                                </div>
+                                <Table 
+                                    dataSource={filteredData} 
+                                    columns={columns} 
+                                    rowKey="id"
+                                    loading={loading}
+                                    pagination={{ 
+                                        current: tableParams.current,
+                                        pageSize: tableParams.pageSize,
+                                        showSizeChanger: true, 
+                                        showTotal: (total) => `Tổng số ${total} chứng chỉ`,
+                                        locale: { items_per_page: '/ Trang' }
+                                    }}
+                                    onChange={(pagination) => {
+                                        setTableParams({
+                                            current: pagination.current || 1,
+                                            pageSize: pagination.pageSize || 15,
+                                        });
+                                    }}
+                                    rowClassName="hover:bg-slate-50/50"
+                                    size="middle"
+                                />
+                            </Card>
+                        )
+                    },
+                    selectedStaffCert ? {
+                        key: 'services',
+                        label: `Chi tiết dịch vụ: ${selectedStaffCert.staff?.ho_ten}`,
+                        children: (
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                <ExpandedStaffServices certId={selectedStaffCert.id} />
+                            </div>
+                        )
+                    } : null
+                ].filter(Boolean) as any[]}
+            />
 
             <CertificatesModal
                 open={isCertModalOpen}
@@ -210,6 +284,33 @@ export default function PracticingCertificatesPage() {
                     fetchCertificates();
                 }}
             />
+
+            <Modal
+                title={`Dịch vụ kỹ thuật thuộc phạm vi: ${selectedScope?.ma_pham_vi} - ${selectedScope?.ten_chuc_danh}`}
+                open={isScopeModalOpen}
+                onCancel={() => setIsScopeModalOpen(false)}
+                footer={null}
+                width={800}
+            >
+                <Table
+                    dataSource={scopeServices}
+                    rowKey="id"
+                    loading={loadingServices}
+                    pagination={{ pageSize: 10 }}
+                    size="small"
+                    columns={[
+                        { title: 'Mã Dịch Vụ', dataIndex: 'MA_DICH_VU', width: 120 },
+                        { title: 'Tên Dịch Vụ', dataIndex: 'TEN_DICH_VU' },
+                        { 
+                            title: 'Đơn Giá', 
+                            dataIndex: 'DON_GIA', 
+                            width: 120, 
+                            render: (val) => val ? val.toLocaleString() + ' đ' : '-' 
+                        }
+                    ]}
+                />
+            </Modal>
+
         </div>
     );
 }

@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
                 console.error("Middleware fetch admin-paths error:", e);
             }
             
-            const tccbPaths = ['/staff', '/departments'];
+            const tccbPaths = ['/staff', '/departments', '/practicing-certificates'];
             
             const isAdminRoute = adminOnlyPaths.some((p: string) => path.startsWith(p));
             const isTccbRoute = tccbPaths.some((p: string) => path.startsWith(p));
@@ -71,7 +71,7 @@ export async function middleware(request: NextRequest) {
                 return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
             }
 
-            if (isTccbRoute && !['ADMIN', 'TCCB', 'KHOA_PHONG'].includes(payload.role as string)) {
+            if (isTccbRoute && !['ADMIN', 'TCCB', 'KHOA_PHONG', 'KHOA'].includes(payload.role as string)) {
                 return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
             }
 
