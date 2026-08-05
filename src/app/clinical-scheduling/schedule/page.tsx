@@ -722,111 +722,137 @@ export default function ClinicalSchedulingPage() {
     const handleExportExcelTab = (dataSource: any[], columns: any[], title: string) => {
         if (!dataSource || dataSource.length === 0) return;
         
-        const exportData: any[] = [];
-        
-        const processRow = (row: any) => {
-            const newRow: any = {};
-            columns.forEach((col: any) => {
-                if (col.children) {
-                    col.children.forEach((c: any) => {
-                        newRow[c.title] = row[c.dataIndex] || '';
-                    });
-                } else {
-                    let dataKey = col.dataIndex || col.key;
-                    if (dataKey) {
-                        let val = row[dataKey] !== undefined && row[dataKey] !== null ? row[dataKey] : '';
-                        if (col.key === 'ten_dich_vu' && row.ma_dich_vu) {
-                            val = `[${row.ma_dich_vu}] ${val}`;
-                        }
-                        if (col.key === 'may_thuc_hien' && row.ten_may) {
-                            val = `${row.ten_may} (${row.ma_may})`;
-                        }
-                        newRow[col.title] = val;
-                    }
-                }
-            });
-            exportData.push(newRow);
-            
-            if (row.children && row.children.length > 0) {
-                row.children.forEach((child: any) => processRow(child));
-            }
-        };
-
-        dataSource.forEach(row => processRow(row));
-
-        const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' } as any);
-        
-        // Thêm Header
         const deptName = departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa || '';
         const dateStr = dayjs(selectedDate || new Date()).format('DD/MM/YYYY');
         const headerTitle = `CHIA THỜI GIAN THỰC HIỆN DVKT NGÀY ${dateStr} CỦA KHOA ${deptName}`.toUpperCase();
 
-        XLSX.utils.sheet_add_aoa(ws, [
-            ['SỞ Y TẾ TỈNH LẠNG SƠN'],
-            ['BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN'],
-            [headerTitle]
-        ], { origin: 'A1' });
-
-        if(!ws['!merges']) ws['!merges'] = [];
-        ws['!merges'].push(
-            { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
-            { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
-            { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }
-        );
-
-        // Styling for headers and page setup
-        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
-        
-        // Căn giữa 3 dòng tiêu đề đầu
-        for (let R = 0; R <= 2; R++) {
-            const cell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
-            if (cell) {
-                cell.s = { font: { bold: true, sz: R === 2 ? 14 : 11 }, alignment: { horizontal: 'center', vertical: 'center' } };
-            }
-        }
-
-        // In đậm dòng tiêu đề các cột (dòng số 3, do data bắt đầu từ A4)
-        for (let C = range.s.c; C <= range.e.c; C++) {
-            const cell = ws[XLSX.utils.encode_cell({ r: 3, c: C })];
-            if (cell && typeof cell === 'object') {
-                cell.s = { font: { bold: true }, alignment: { horizontal: 'center', vertical: 'center' } };
-            }
-        }
-        
-        // Mặc định xuất Excel ngang khổ A4
-        ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9 };
-        
-        // Tính toán độ rộng tự động cho các cột (Auto Width)
-        if (exportData.length > 0) {
-            const colWidths: Record<string, number> = {};
-            // Khởi tạo width bằng độ dài của header
-            Object.keys(exportData[0]).forEach(key => {
-                colWidths[key] = key.length; 
-            });
-            // Duyệt qua dữ liệu để tìm nội dung dài nhất
-            exportData.forEach(row => {
-                Object.keys(row).forEach(key => {
-                    const val = row[key] ? String(row[key]) : '';
-                    if (val.length > colWidths[key]) {
-                        colWidths[key] = val.length;
+        const generateSheet = (data: any[], subTitle: string = '') => {
+            const exportData: any[] = [];
+            
+            const processRow = (row: any) => {
+                const newRow: any = {};
+                columns.forEach((col: any) => {
+                    if (col.children) {
+                        col.children.forEach((c: any) => {
+                            newRow[c.title] = row[c.dataIndex] || '';
+                        });
+                    } else {
+                        let dataKey = col.dataIndex || col.key;
+                        if (dataKey) {
+                            let val = row[dataKey] !== undefined && row[dataKey] !== null ? row[dataKey] : '';
+                            if (col.key === 'ten_dich_vu' && row.ma_dich_vu) {
+                                val = `[${row.ma_dich_vu}] ${val}`;
+                            }
+                            if (col.key === 'may_thuc_hien' && row.ten_may) {
+                                val = `${row.ten_may} (${row.ma_may})`;
+                            }
+                            newRow[col.title] = val;
+                        }
                     }
                 });
-            });
-            // Áp dụng vào sheet, giới hạn max 100, min 10
-            const wscols = Object.keys(exportData[0]).map(key => ({
-                wch: Math.min(Math.max(colWidths[key] + 3, 10), 100)
-            }));
-            ws['!cols'] = wscols;
-        }
+                exportData.push(newRow);
+                
+                if (row.children && row.children.length > 0) {
+                    row.children.forEach((child: any) => processRow(child));
+                }
+            };
+
+            data.forEach(row => processRow(row));
+
+            const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' } as any);
+            
+            const finalHeader = subTitle ? `${headerTitle} - ${subTitle}` : headerTitle;
+            XLSX.utils.sheet_add_aoa(ws, [
+                ['SỞ Y TẾ TỈNH LẠNG SƠN'],
+                ['BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN'],
+                [finalHeader]
+            ], { origin: 'A1' });
+
+            if(!ws['!merges']) ws['!merges'] = [];
+            ws['!merges'].push(
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }
+            );
+
+            const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+            
+            for (let R = 0; R <= 2; R++) {
+                const cell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+                if (cell) {
+                    cell.s = { font: { bold: true, sz: R === 2 ? 14 : 11 }, alignment: { horizontal: 'center', vertical: 'center' } };
+                }
+            }
+
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const cell = ws[XLSX.utils.encode_cell({ r: 3, c: C })];
+                if (cell && typeof cell === 'object') {
+                    cell.s = { font: { bold: true }, alignment: { horizontal: 'center', vertical: 'center' } };
+                }
+            }
+            
+            ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9 };
+            
+            if (exportData.length > 0) {
+                const colWidths: Record<string, number> = {};
+                Object.keys(exportData[0]).forEach(key => { colWidths[key] = key.length; });
+                exportData.forEach(row => {
+                    Object.keys(row).forEach(key => {
+                        const val = row[key] ? String(row[key]) : '';
+                        if (val.length > colWidths[key]) colWidths[key] = val.length;
+                    });
+                });
+                const wscols = Object.keys(exportData[0]).map(key => ({
+                    wch: Math.min(Math.max(colWidths[key] + 3, 10), 100)
+                }));
+                ws['!cols'] = wscols;
+            }
+            return ws;
+        };
 
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Report');
+        
+        // 1. Tạo sheet Tổng hợp
+        const wsReport = generateSheet(dataSource);
+        XLSX.utils.book_append_sheet(wb, wsReport, 'Tổng hợp');
+
+        // 2. Tạo sheet cho từng nhân viên nếu là DanhSachBenhNhan
+        if (title === 'DanhSachBenhNhan') {
+            const uniqueStaffs = Array.from(new Set(scheduledData.map(item => item.nguoi_thuc_hien).filter(Boolean)));
+            
+            const filterByStaff = (dataToFilter: any[], staffName: string) => {
+                return dataToFilter.map(group => {
+                    if (!group.children) return group;
+                    const filteredGroup = { ...group };
+                    filteredGroup.children = group.children.map((patient: any) => {
+                        if (!patient.children) return patient;
+                        const filteredPatient = { ...patient };
+                        filteredPatient.children = patient.children.filter((service: any) => service.nguoi_thuc_hien === staffName);
+                        return filteredPatient;
+                    }).filter((patient: any) => patient.children && patient.children.length > 0);
+                    return filteredGroup;
+                }).filter(group => group.children && group.children.length > 0);
+            };
+
+            uniqueStaffs.forEach(staff => {
+                const staffData = filterByStaff(dataSource, staff as string);
+                if (staffData.length > 0) {
+                    const wsStaff = generateSheet(staffData, `BS. ${staff}`);
+                    const safeSheetName = String(staff).replace(/[/\\?%*:|"<>]/g, '').substring(0, 31);
+                    XLSX.utils.book_append_sheet(wb, wsStaff, safeSheetName);
+                }
+            });
+        }
+
         
         const safeDeptName = deptName.replace(/[/\\?%*:|"<>]/g, '-');
         const dateFileStr = dayjs(selectedDate || new Date()).format('DD-MM-YYYY');
-        const fileName = title === 'DanhSachBenhNhan' 
-            ? `Chia_thoi_gian_thuc_hien_dvkt_ngay_${dateFileStr}_cua_khoa_${safeDeptName}.xlsx`
-            : `${title}_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`;
+        let fileName = `${title}_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`;
+        if (title === 'DanhSachBenhNhan') {
+            fileName = `Chia_thoi_gian_thuc_hien_dvkt_ngay_${dateFileStr}_cua_khoa_${safeDeptName}.xlsx`;
+        } else if (title === 'DanhSachTheoBacSi') {
+            fileName = `Danh_sach_chia_thoi_gian_theo_bac_si_${safeDeptName}_ngay_${dateFileStr}.xlsx`;
+        }
 
         XLSX.writeFile(wb, fileName);
     };
@@ -1097,6 +1123,9 @@ export default function ClinicalSchedulingPage() {
                                 label: 'Bác sĩ / Điều dưỡng',
                                 children: (
                                     <>
+                                        <Space style={{ marginBottom: 16 }}>
+                                            <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Tải Excel</Button>
+                                        </Space>
                                         <Table 
                                             dataSource={groupedScheduledData} 
                                             columns={resultColumns} 
