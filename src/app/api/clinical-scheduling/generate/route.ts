@@ -32,7 +32,7 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {} } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {} } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
             // Tìm nhân viên phù hợp dựa trên CCHN
             const requiredScopes = serviceScopes[ma_dich_vu] || [];
             
-            const capableStaff = availableStaff.filter(s => {
+            let capableStaff = availableStaff.filter(s => {
                 // Kiểm tra các CCHN đang hoạt động của nhân viên
                 if (!s.certificates || s.certificates.length === 0) return false;
 
@@ -205,6 +205,17 @@ export async function POST(request: Request) {
                 
                 return false;
             });
+
+            // Xử lý tùy chọn gán đích danh Bác sĩ (key là Tên Dịch Vụ)
+            const assignedStaffId = serviceStaffMappings[task.ten_dich_vu];
+            if (assignedStaffId) {
+                const assignedStaff = availableStaff.find(s => s.id === assignedStaffId);
+                if (assignedStaff) {
+                    capableStaff = [assignedStaff]; // Bỏ qua kiểm tra chứng chỉ, ép buộc xếp lịch cho người này
+                } else {
+                    capableStaff = []; // Người được gán không đi làm hôm nay
+                }
+            }
 
             if (capableStaff.length === 0) {
                 if (requiredScopes.length > 0) {

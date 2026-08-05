@@ -113,6 +113,10 @@ export default function ClinicalSchedulingPage() {
     const [failedData, setFailedData] = useState<any[]>([]);
     
     const [loading, setLoading] = useState(false);
+    const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
+    const [staffList, setStaffList] = useState<any[]>([]);
+    const [enableStaffMapping, setEnableStaffMapping] = useState(false);
+    const [serviceStaffMappings, setServiceStaffMappings] = useState<{ [key: string]: string }>({});
 
     const [morningPatients, setMorningPatients] = useState<string[]>([]);
     const [afternoonPatients, setAfternoonPatients] = useState<string[]>([]);
@@ -381,6 +385,16 @@ export default function ClinicalSchedulingPage() {
             setActiveExternalLink(savedLink);
         }
         
+        // Fetch config to get deptHours
+        fetch('/api/clinical-scheduling/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.deptHours) {
+                    setDeptHours(data.deptHours);
+                }
+            })
+            .catch(console.error);
+
         // Fetch templates for auto-recognition
         fetch('/api/clinical-scheduling/excel-templates')
             .then(res => res.json())
@@ -391,6 +405,19 @@ export default function ClinicalSchedulingPage() {
             })
             .catch(console.error);
     }, []);
+
+    useEffect(() => {
+        if (selectedDate && selectedDept) {
+            fetch(`/api/clinical-scheduling/attendance?date=${selectedDate}&maKhoa=${selectedDept}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.staffList) {
+                        setStaffList(data.staffList);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [selectedDate, selectedDept]);
 
     useEffect(() => {
         if (user === undefined) return;
@@ -570,7 +597,8 @@ export default function ClinicalSchedulingPage() {
                     date: selectedDate,
                     maKhoa: selectedDept,
                     services: filteredData,
-                    patientShifts
+                    patientShifts,
+                    serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {}
                 })
             });
             
@@ -847,6 +875,8 @@ export default function ClinicalSchedulingPage() {
         { title: 'Lý do lỗi', dataIndex: 'error', key: 'error', render: (t: string) => <strong style={{color: 'red'}}>{t}</strong> },
     ];
 
+    const currentDeptHours = (selectedDept && deptHours[selectedDept]) || { morningStart: '07:30', morningEnd: '11:30', afternoonStart: '13:30', afternoonEnd: '17:30' };
+
     return (
         <div style={{ padding: 24, width: '100%', maxWidth: 1800, margin: '0 auto' }}>
             <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống tự động chia thời gian thực hiện DVKT</h1>
@@ -928,7 +958,7 @@ export default function ClinicalSchedulingPage() {
                         <h3 style={{ margin: 0, color: '#fa8c16', marginBottom: 16 }}>Tùy chọn Bệnh nhân ưu tiên xếp lịch theo buổi:</h3>
                         <Row gutter={24}>
                             <Col span={12}>
-                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Sáng (07:30 - 11:30):</strong></div>
+                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Sáng ({currentDeptHours.morningStart} - {currentDeptHours.morningEnd}):</strong></div>
                                 <Select
                                     mode="multiple"
                                     allowClear
@@ -941,7 +971,7 @@ export default function ClinicalSchedulingPage() {
                                 />
                             </Col>
                             <Col span={12}>
-                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Chiều (13:30 - 17:30):</strong></div>
+                                <div style={{ marginBottom: 8 }}><strong>Ưu tiên buổi Chiều ({currentDeptHours.afternoonStart} - {currentDeptHours.afternoonEnd}):</strong></div>
                                 <Select
                                     mode="multiple"
                                     allowClear
@@ -957,6 +987,50 @@ export default function ClinicalSchedulingPage() {
                         <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
                             * Lưu ý: Các bệnh nhân không được chọn sẽ được thuật toán tự động xếp vào bất kỳ thời gian rảnh nào trong ngày. Nếu buổi đã chọn kín lịch, sẽ báo lỗi thiếu thời gian.
                         </div>
+                    </div>
+                )}
+
+                {uploadedData.length > 0 && (
+                    <div style={{ marginTop: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8 }}>
+                        <div style={{ marginBottom: 12 }}>
+                            <Checkbox 
+                                checked={enableStaffMapping} 
+                                onChange={e => setEnableStaffMapping(e.target.checked)}
+                            >
+                                <strong style={{ color: '#0958d9' }}>Bật tuỳ chọn: Gán Dịch vụ cho đích danh người thực hiện</strong>
+                            </Checkbox>
+                        </div>
+                        
+                        {enableStaffMapping && (
+                            <div style={{ marginTop: 16 }}>
+                                <Row gutter={[16, 16]}>
+                                    {selectedServices.map(serviceName => (
+                                        <Col span={12} key={serviceName}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <div style={{ flex: 1, paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={serviceName}>
+                                                    - {serviceName}
+                                                </div>
+                                                <div style={{ width: 250 }}>
+                                                    <Select
+                                                        allowClear
+                                                        showSearch
+                                                        placeholder="Chọn người thực hiện"
+                                                        style={{ width: '100%' }}
+                                                        value={serviceStaffMappings[serviceName] || undefined}
+                                                        onChange={(val) => setServiceStaffMappings(prev => ({ ...prev, [serviceName]: val }))}
+                                                        options={staffList.map(s => ({ label: s.ho_ten, value: s.id }))}
+                                                        filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </Col>
+                                    ))}
+                                </Row>
+                                <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
+                                    * Lưu ý: Nếu không chọn ai, hệ thống sẽ tự động xếp lịch dựa trên chứng chỉ hành nghề và thời gian rảnh như bình thường.
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
