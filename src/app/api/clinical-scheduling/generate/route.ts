@@ -242,6 +242,25 @@ export async function POST(request: Request) {
                 continue;
             }
 
+            let minStartMinutes = mStart;
+            if (task.thoi_gian_chi_dinh) {
+                const timeStr = String(task.thoi_gian_chi_dinh).trim();
+                let hm = '';
+                if (timeStr.includes(' ')) {
+                    const parts = timeStr.split(' ');
+                    hm = parts.find(p => p.includes(':')) || '';
+                } else {
+                    hm = timeStr;
+                }
+                
+                if (hm) {
+                    const prescriptionMinutes = parseTime(hm.substring(0, 5));
+                    if (prescriptionMinutes > minStartMinutes) {
+                        minStartMinutes = prescriptionMinutes;
+                    }
+                }
+            }
+
             // Tìm khung giờ sớm nhất thỏa mãn cả 3 yếu tố: Nhân viên, Bệnh nhân, và Máy móc (nếu cần)
             let earliestGlobalTime = 24 * 60; // Max time
             let chosenStaffForEarliest = null;
@@ -251,7 +270,7 @@ export async function POST(request: Request) {
                 const sTracker = staffTracker[staff.id];
                 const pTracker = patientTracker[ma_ba];
                 
-                let currentTime = mStart;
+                let currentTime = minStartMinutes;
                 while (currentTime < aEnd) { 
                     // Bỏ qua giờ nghỉ trưa
                     if (currentTime + requiredTime > mEnd && currentTime < aStart) {
