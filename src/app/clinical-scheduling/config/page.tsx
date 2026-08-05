@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Input, Button, InputNumber, Select, message, Spin, Space, TimePicker, Upload, Tag, Checkbox } from 'antd';
+import { Card, Table, Input, Button, InputNumber, Select, message, Spin, Space, TimePicker, Upload, Tag, Checkbox, Tabs } from 'antd';
 import { SaveOutlined, SearchOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -302,6 +302,9 @@ export default function ClinicalSchedulingConfigPage() {
                initials.includes(searchLower); // Tìm theo chữ cái đầu (VD: tcdtd)
     });
 
+    const unconfiguredServices = filteredServices.filter(s => !s.thoigian_thuc_hien || s.thoigian_thuc_hien <= 0);
+    const configuredServices = filteredServices.filter(s => s.thoigian_thuc_hien && s.thoigian_thuc_hien > 0);
+
     const handleUploadExcel = (file: File) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -418,13 +421,53 @@ export default function ClinicalSchedulingConfigPage() {
                         <Spin size="large" />
                     </div>
                 ) : (
-                    <Table 
-                        dataSource={filteredServices} 
-                        columns={columns} 
-                        rowKey="id"
-                        pagination={{ pageSize: 20 }}
-                        bordered
-                        size="middle"
+                    <Tabs
+                        type="card"
+                        defaultActiveKey="1"
+                        items={[
+                            {
+                                key: '1',
+                                label: `Tất cả (${filteredServices.length})`,
+                                children: (
+                                    <Table 
+                                        dataSource={filteredServices} 
+                                        columns={columns} 
+                                        rowKey="id"
+                                        pagination={{ pageSize: 20 }}
+                                        bordered
+                                        size="middle"
+                                    />
+                                )
+                            },
+                            {
+                                key: '2',
+                                label: <span style={{ color: unconfiguredServices.length > 0 ? '#ff4d4f' : 'inherit' }}>Chưa cấu hình ({unconfiguredServices.length})</span>,
+                                children: (
+                                    <Table 
+                                        dataSource={unconfiguredServices} 
+                                        columns={columns} 
+                                        rowKey="id"
+                                        pagination={{ pageSize: 20 }}
+                                        bordered
+                                        size="middle"
+                                    />
+                                )
+                            },
+                            {
+                                key: '3',
+                                label: <span style={{ color: '#52c41a' }}>Đã cấu hình ({configuredServices.length})</span>,
+                                children: (
+                                    <Table 
+                                        dataSource={configuredServices} 
+                                        columns={columns} 
+                                        rowKey="id"
+                                        pagination={{ pageSize: 20 }}
+                                        bordered
+                                        size="middle"
+                                    />
+                                )
+                            }
+                        ]}
                     />
                 )}
             </Card>
