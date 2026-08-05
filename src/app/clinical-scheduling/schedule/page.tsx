@@ -229,6 +229,7 @@ export default function ClinicalSchedulingPage() {
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
     const [rawExcelData, setRawExcelData] = useState<any[]>([]);
     const [outputMapping, setOutputMapping] = useState<{
+        [key: string]: string | undefined;
         out_ma_ba?: string;
         out_ten_bn?: string;
         out_thoi_gian_chi_dinh?: string;
@@ -406,15 +407,31 @@ export default function ClinicalSchedulingPage() {
             .catch(console.error);
 
         // Fetch templates for auto-recognition
+        fetchTemplatesAndMapping();
+    }, []);
+
+    const fetchTemplatesAndMapping = () => {
         fetch('/api/clinical-scheduling/excel-templates')
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     setTemplates(data.data);
+                    if (selectedTemplateId) {
+                        const matched = data.data.find((t: any) => t.id === selectedTemplateId);
+                        if (matched) {
+                            const outMap: any = {};
+                            matched.mappings.forEach((m: any) => {
+                                if (m.system_field.startsWith('out_') || m.system_field.startsWith('enable_')) {
+                                    outMap[m.system_field] = m.excel_column;
+                                }
+                            });
+                            setOutputMapping(prev => ({ ...prev, ...outMap }));
+                        }
+                    }
                 }
             })
             .catch(console.error);
-    }, []);
+    };
 
     useEffect(() => {
         if (selectedDate && selectedDept) {
@@ -968,7 +985,7 @@ export default function ClinicalSchedulingPage() {
     return (
         <div style={{ padding: 24, width: '100%', maxWidth: 1800, margin: '0 auto' }}>
             <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống tự động chia thời gian thực hiện DVKT</h1>
-            <Tabs type="card" defaultActiveKey="1" onChange={(key) => { if (key === '1' && selectedDept) { fetchSettings(); } }} items={[
+            <Tabs type="card" defaultActiveKey="1" onChange={(key) => { if (key === '1') { fetchTemplatesAndMapping(); } }} items={[
                 {
                     key: '1',
                     label: <strong style={{fontSize: 16}}>Công cụ xếp thời gian</strong>,
