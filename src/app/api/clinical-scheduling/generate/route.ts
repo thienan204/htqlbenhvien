@@ -32,7 +32,7 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {} } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {} } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -169,9 +169,24 @@ export async function POST(request: Request) {
 
         const scheduledResults = [];
         const failedResults = [];
+        const patientAssignedStaff: Record<string, Set<string>> = {};
 
-        // 5. Chạy thuật toán cho từng dòng dữ liệu
+        // Nhóm các dịch vụ theo Bệnh nhân (ma_ba) để đảm bảo các dịch vụ của cùng 1 người được xếp liên tiếp nhau
+        const groupedServices: Record<string, any[]> = {};
         for (const task of services) {
+            if (!groupedServices[task.ma_ba]) {
+                groupedServices[task.ma_ba] = [];
+            }
+            groupedServices[task.ma_ba].push(task);
+        }
+        
+        const sortedServices = [];
+        for (const ma_ba of Object.keys(groupedServices)) {
+            sortedServices.push(...groupedServices[ma_ba]);
+        }
+
+        // 5. Chạy thuật toán cho từng dòng dữ liệu đã được nhóm
+        for (const task of sortedServices) {
             const { ma_dich_vu, ma_ba } = task;
             const config = catalogMap[ma_dich_vu] || { time: 10, qualification: null, bufferTime: deptBufferTime, isConcurrent: false };
             const requiredTime = config.time;
@@ -265,8 +280,13 @@ export async function POST(request: Request) {
 
             // Tìm khung giờ sớm nhất thỏa mãn cả 3 yếu tố: Nhân viên, Bệnh nhân, và Máy móc (nếu cần)
             let earliestGlobalTime = 24 * 60; // Max time
+            let earliestPriorityTime = 24 * 60;
             let chosenStaffForEarliest = null;
+            let chosenStaffForPriority = null;
             let chosenMachineForEarliest = null;
+            let chosenMachineForPriority = null;
+            
+            const previouslyAssignedStaffIds = patientAssignedStaff[ma_ba] || new Set();
 
             for (const staff of capableStaff) {
                 const sTracker = staffTracker[staff.id];
@@ -294,6 +314,16 @@ export async function POST(request: Request) {
                         continue;
                     }
 
+                    // Ưu tiên Sáng/Chiều theo cấu hình Nhân viên
+                    const staffShiftPref = staffShifts[staff.id];
+                    if (staffShiftPref === 'MORNING' && currentTime >= mEnd) {
+                        break; // Nhân viên này chỉ làm buổi sáng
+                    }
+                    if (staffShiftPref === 'AFTERNOON' && currentTime < aStart) {
+                        currentTime = aStart; // Nhảy đến buổi chiều cho nhân viên này
+                        continue;
+                    }
+
                     // Điều kiện 1 & 2: Nhân viên rảnh và Bệnh nhân rảnh
                     if (isSlotFree(sTracker, currentTime, staffOccupiedTime) && isSlotFree(pTracker, currentTime, requiredTime)) {
                         
@@ -316,10 +346,18 @@ export async function POST(request: Request) {
                         }
 
                         if (machineFree) {
-                            if (currentTime < earliestGlobalTime) {
-                                earliestGlobalTime = currentTime;
-                                chosenStaffForEarliest = staff;
-                                chosenMachineForEarliest = selectedMachine;
+                            if (previouslyAssignedStaffIds.has(staff.id)) {
+                                if (currentTime < earliestPriorityTime) {
+                                    earliestPriorityTime = currentTime;
+                                    chosenStaffForPriority = staff;
+                                    chosenMachineForPriority = selectedMachine;
+                                }
+                            } else {
+                                if (currentTime < earliestGlobalTime) {
+                                    earliestGlobalTime = currentTime;
+                                    chosenStaffForEarliest = staff;
+                                    chosenMachineForEarliest = selectedMachine;
+                                }
                             }
                             break; // Tìm được giờ sớm nhất cho nhân viên này thì dừng vòng lặp while
                         }
@@ -328,30 +366,51 @@ export async function POST(request: Request) {
                     currentTime += 1;
                 }
             }
+            
+            let finalStaff = null;
+            let finalTime = 24 * 60;
+            let finalMachine = null;
 
-            if (chosenStaffForEarliest && earliestGlobalTime < 24 * 60) {
+            // Ưu tiên tuyệt đối Nhân viên đã từng thực hiện dịch vụ cho Bệnh nhân này trong ngày
+            if (chosenStaffForPriority && earliestPriorityTime < 24 * 60) {
+                finalStaff = chosenStaffForPriority;
+                finalTime = earliestPriorityTime;
+                finalMachine = chosenMachineForPriority;
+            } else if (chosenStaffForEarliest && earliestGlobalTime < 24 * 60) {
+                finalStaff = chosenStaffForEarliest;
+                finalTime = earliestGlobalTime;
+                finalMachine = chosenMachineForEarliest;
+            }
+
+            if (finalStaff && finalTime < 24 * 60) {
+                // Đánh dấu nhân viên này đã thực hiện cho bệnh nhân
+                if (!patientAssignedStaff[ma_ba]) {
+                    patientAssignedStaff[ma_ba] = new Set();
+                }
+                patientAssignedStaff[ma_ba].add(finalStaff.id);
+
                 // Book the slot
-                const endTime = earliestGlobalTime + requiredTime;
+                const endTime = finalTime + requiredTime;
                 
                 // Bác sĩ chỉ bị giam khoảng staffOccupiedTime, cộng thêm bufferTime nếu không phải làm song song
-                staffTracker[chosenStaffForEarliest.id].push({ start: earliestGlobalTime, end: earliestGlobalTime + staffOccupiedTime + (config.isConcurrent ? 0 : currentServiceBufferTime) });
+                staffTracker[finalStaff.id].push({ start: finalTime, end: finalTime + staffOccupiedTime + (config.isConcurrent ? 0 : currentServiceBufferTime) });
                 
                 // Bệnh nhân vẫn tính đủ buffer time
-                patientTracker[ma_ba].push({ start: earliestGlobalTime, end: endTime + currentServiceBufferTime }); 
+                patientTracker[ma_ba].push({ start: finalTime, end: endTime + currentServiceBufferTime }); 
                 
                 // Máy móc bị giam 100% thời gian (kể cả làm song song), cộng thêm buffer time để máy được vệ sinh/nghỉ ngơi
-                if (chosenMachineForEarliest && chosenMachineForEarliest.MA_MAY) {
-                    machineTracker[chosenMachineForEarliest.MA_MAY as string].push({ start: earliestGlobalTime, end: endTime + currentServiceBufferTime });
+                if (finalMachine && finalMachine.MA_MAY) {
+                    machineTracker[finalMachine.MA_MAY as string].push({ start: finalTime, end: endTime + currentServiceBufferTime });
                 }
 
                 scheduledResults.push({
                     ...task,
-                    nguoi_thuc_hien: chosenStaffForEarliest.ho_ten,
-                    ma_may: chosenMachineForEarliest ? chosenMachineForEarliest.MA_MAY : '',
-                    ten_may: chosenMachineForEarliest ? (chosenMachineForEarliest.TEN_BV || chosenMachineForEarliest.TEN_TB) : '',
-                    bat_dau: formatTime(earliestGlobalTime),
+                    nguoi_thuc_hien: finalStaff.ho_ten,
+                    ma_may: finalMachine ? finalMachine.MA_MAY : '',
+                    ten_may: finalMachine ? (finalMachine.TEN_BV || finalMachine.TEN_TB) : '',
+                    bat_dau: formatTime(finalTime),
                     ket_thuc: formatTime(endTime),
-                    _startMinutes: earliestGlobalTime // used for sorting later
+                    _startMinutes: finalTime // used for sorting later
                 });
             } else {
                 const shiftPref = patientShifts[ma_ba];

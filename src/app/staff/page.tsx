@@ -246,8 +246,10 @@ export default function StaffPage() {
                     </div>
                 </div>
                 <Space>
-                    {user?.role === 'ADMIN' && (
-                        <Popconfirm 
+                    {(user?.role === 'ADMIN' || user?.role === 'PTCCB') && (
+                        <>
+                            {user?.role === 'ADMIN' && (
+                                <Popconfirm 
                             title="Xóa toàn bộ nhân sự?" 
                             description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
                             onConfirm={handleDeleteAll} 
@@ -343,6 +345,8 @@ export default function StaffPage() {
                     }}>
                         Thêm mới
                     </Button>
+                        </>
+                    )}
                 </Space>
             </div>
 

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Space, message, Tag, Popconfirm, Upload, AutoComplete, Checkbox } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Space, Tag, Popconfirm, Upload, AutoComplete, Checkbox, App } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 
@@ -19,6 +19,7 @@ const OUTPUT_FIELDS = [
     { code: 'out_ma_ba', name: 'Mã Bệnh Án' },
     { code: 'out_ten_bn', name: 'Tên Bệnh Nhân' },
     { code: 'out_thoi_gian_chi_dinh', name: 'TG Chỉ định' },
+    { code: 'out_ma_dich_vu', name: 'Mã Dịch Vụ' },
     { code: 'out_ten_dich_vu', name: 'Tên Dịch Vụ' },
     { code: 'out_nguoi_thuc_hien', name: 'Người thực hiện' },
     { code: 'out_ma_may', name: 'Mã Máy' },
@@ -28,6 +29,7 @@ const OUTPUT_FIELDS = [
 ];
 
 export default function ExcelTemplateConfig() {
+    const { message } = App.useApp();
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
