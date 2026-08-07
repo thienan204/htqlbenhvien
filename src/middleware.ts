@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
 
             const isRoleManagedPublic = roleManagedPublicPaths.some(p => path.startsWith(p));
             if (isRoleManagedPublic) {
-                if (targetPathForRewrite) return NextResponse.rewrite(new URL(targetPathForRewrite, request.url));
+                if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
                 return NextResponse.next();
             }
             return NextResponse.redirect(new URL(`${bp}/login`, request.url));
@@ -87,14 +87,14 @@ export async function middleware(request: NextRequest) {
                 return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
             }
 
-            if (targetPathForRewrite) return NextResponse.rewrite(new URL(targetPathForRewrite, request.url));
+            if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
             return NextResponse.next();
         } catch (error) {
             return NextResponse.redirect(new URL(`${bp}/login`, request.url));
         }
     }
 
-    if (targetPathForRewrite) return NextResponse.rewrite(new URL(targetPathForRewrite, request.url));
+    if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
     return NextResponse.next();
 }
 

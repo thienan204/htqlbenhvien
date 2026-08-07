@@ -105,14 +105,14 @@
     "name": "GUEST ",
     "description": "Role này không cần login vẫn vào được",
     "createdAt": "2026-06-11T02:02:08.571Z",
-    "updatedAt": "2026-08-07T01:43:13.019Z",
+    "updatedAt": "2026-08-07T02:16:57.291Z",
     "permissions": {
       "roles": {},
       "users": {},
       "MENU_STAFF": {},
       "menuthuthp": {
         "EDIT": false,
-        "VIEW": false,
+        "VIEW": true,
         "DELETE": false
       },
       "MENU_IT_DUTY": {},
