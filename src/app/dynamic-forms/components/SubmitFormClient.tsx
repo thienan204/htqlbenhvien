@@ -288,7 +288,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                                 key: 'MAIN',
                                 label: 'Thu thập thông tin',
                                 children: (
-                                    <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0 [&>.ant-card-body]:p-3 sm:[&>.ant-card-body]:p-6 [&_.ant-result]:px-2 [&_.ant-result]:py-6">
+                                    <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0 [&>.ant-card-body]:!p-2 sm:[&>.ant-card-body]:!p-6 [&_.ant-result]:!px-2 [&_.ant-result]:!py-4">
                                         <Result
                                             status="success"
                                             title="Cập nhật thông tin thành công!"
@@ -378,7 +378,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                             key: 'MAIN',
                             label: 'Thu thập thông tin',
                             children: (
-                                <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0 [&>.ant-card-body]:p-4 sm:[&>.ant-card-body]:p-8">
+                                <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0 [&>.ant-card-body]:!p-3 sm:[&>.ant-card-body]:!p-8">
                                     <div className="text-center mb-8">
                                         <div className="inline-block p-3 rounded-full bg-blue-100 mb-4">
                                             <CheckCircleOutlined className="text-3xl text-blue-600" />
