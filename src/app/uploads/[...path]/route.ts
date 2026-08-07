@@ -35,7 +35,7 @@ export async function GET(request: Request, context: { params: Promise<{ path: s
                 'Cache-Control': 'public, max-age=31536000, immutable'
             }
         });
-    } catch (e) {
-        return new NextResponse('File not found', { status: 404 });
+    } catch (e: any) {
+        return new NextResponse('File not found: ' + filePath + ' | Error: ' + e.message, { status: 404 });
     }
 }

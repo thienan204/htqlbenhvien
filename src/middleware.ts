@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Define strictly public routes that don't need DB checks
-    const isPublic = ['/login', '/favicon.ico', '/logo.png'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/api/menus/aliases') || path.startsWith('/api/upload-image');
+    const isPublic = ['/login', '/favicon.ico', '/logo.png'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/uploads') || path.startsWith('/api/menus/aliases') || path.startsWith('/api/upload-image');
 
     if (isPublic) {
         if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
