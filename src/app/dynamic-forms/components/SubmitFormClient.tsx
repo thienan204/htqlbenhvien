@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, message, Spin, Upload, Typography, Result } from 'antd';
+import { Card, Form, Input, Button, message, Spin, Upload, Typography, Result, Tabs } from 'antd';
 import { UploadOutlined, LockOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import PageInstruction from '@/components/shared/PageInstruction';
 
 const { Title, Paragraph } = Typography;
 
