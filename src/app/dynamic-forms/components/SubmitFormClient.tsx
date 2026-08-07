@@ -158,6 +158,15 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
     // Handle Ant Design upload event extraction
     const normFile = (e: any) => {
         if (Array.isArray(e)) return e;
+        
+        if (e && e.file) {
+            if (e.file.status === 'done') {
+                message.success(`Tải ảnh thành công!`);
+            } else if (e.file.status === 'error') {
+                message.error(`Tải ảnh thất bại!`);
+            }
+        }
+        
         return e?.fileList;
     };
 
