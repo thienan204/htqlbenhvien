@@ -11,10 +11,11 @@ export async function middleware(request: NextRequest) {
 
     let path = request.nextUrl.pathname;
     let targetPathForRewrite: string | null = null;
+    const bp = request.nextUrl.basePath || '';
 
     // 1. Resolve Alias if any
     try {
-        const aliasUrl = new URL('/api/menus/aliases', request.url);
+        const aliasUrl = new URL(`${bp}/api/menus/aliases`, request.url);
         // Fetch from the API, cached at Edge
         const aliasRes = await fetch(aliasUrl, { next: { revalidate: 60 } });
         if (aliasRes.ok) {
@@ -28,8 +29,6 @@ export async function middleware(request: NextRequest) {
         console.error("Middleware fetch alias error:", e);
     }
 
-    const bp = request.nextUrl.basePath || '';
-    
     // Define all routes that require authentication
     const isPublic = ['/login', '/favicon.ico', '/logo.png'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/api/menus/aliases') || path.startsWith('/api/upload-image');
 
@@ -39,7 +38,7 @@ export async function middleware(request: NextRequest) {
         if (!token) {
             let roleManagedPublicPaths = ['/doc-file-excel', '/pttt-excel', '/chuyen-de', '/icd10'];
             try {
-                const guestPathsUrl = new URL('/api/menus/guest-paths', request.url);
+                const guestPathsUrl = new URL(`${bp}/api/menus/guest-paths`, request.url);
                 const guestPathsRes = await fetch(guestPathsUrl, { next: { revalidate: 60 } });
                 if (guestPathsRes.ok) {
                     const dynamicGuestPaths = await guestPathsRes.json();
@@ -66,7 +65,7 @@ export async function middleware(request: NextRequest) {
             // 1. Admin-Only Routes
             let adminOnlyPaths: string[] = [];
             try {
-                const adminPathsUrl = new URL('/api/admin/paths-config', request.url);
+                const adminPathsUrl = new URL(`${bp}/api/admin/paths-config`, request.url);
                 const adminPathsRes = await fetch(adminPathsUrl, { next: { revalidate: 60 } });
                 if (adminPathsRes.ok) {
                     adminOnlyPaths = await adminPathsRes.json();
