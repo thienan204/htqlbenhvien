@@ -13,22 +13,32 @@ export async function middleware(request: NextRequest) {
     let targetPathForRewrite: string | null = null;
     const bp = request.nextUrl.basePath || '';
 
-    // 1. Resolve Alias if any
-    try {
-        const aliasUrl = new URL(`${bp}/api/menus/aliases`, request.url);
-        // Fetch from the API, cached at Edge
-        const aliasRes = await fetch(aliasUrl, { next: { revalidate: 60 } });
-        if (aliasRes.ok) {
-            const aliases = await aliasRes.json();
-            if (aliases[path]) {
-                if (aliases[path] !== path) {
-                    targetPathForRewrite = aliases[path];
-                }
-                path = aliases[path] as string; // Use target path for Auth checks
+    // Helper function for internal fetches to bypass NAT hairpinning / SSL errors
+    async function fetchInternal(apiPath: string) {
+        try {
+            const url = new URL(`${bp}${apiPath}`, request.url);
+            const res = await fetch(url, { next: { revalidate: 60 } });
+            if (res.ok) return await res.json();
+        } catch (e) {
+            try {
+                const port = process.env.PORT || 3000;
+                const localUrl = new URL(`${bp}${apiPath}`, `http://127.0.0.1:${port}`);
+                const res = await fetch(localUrl, { next: { revalidate: 60 } });
+                if (res.ok) return await res.json();
+            } catch (fallbackError) {
+                console.error(`Internal fetch failed for ${apiPath}:`, fallbackError);
             }
         }
-    } catch (e) {
-        console.error("Middleware fetch alias error:", e);
+        return null;
+    }
+
+    // 1. Resolve Alias if any
+    const aliases = await fetchInternal('/api/menus/aliases');
+    if (aliases && aliases[path]) {
+        if (aliases[path] !== path) {
+            targetPathForRewrite = aliases[path];
+        }
+        path = aliases[path] as string; // Use target path for Auth checks
     }
 
     // Define strictly public routes that don't need DB checks
@@ -41,17 +51,9 @@ export async function middleware(request: NextRequest) {
 
     // Dynamic guest paths
     let roleManagedPublicPaths = ['/doc-file-excel', '/pttt-excel', '/chuyen-de', '/icd10'];
-    try {
-        const guestPathsUrl = new URL(`${bp}/api/menus/guest-paths`, request.url);
-        const guestPathsRes = await fetch(guestPathsUrl, { next: { revalidate: 60 } });
-        if (guestPathsRes.ok) {
-            const dynamicGuestPaths = await guestPathsRes.json();
-            if (Array.isArray(dynamicGuestPaths)) {
-                roleManagedPublicPaths = [...roleManagedPublicPaths, ...dynamicGuestPaths];
-            }
-        }
-    } catch (e) {
-        console.error("Middleware fetch guest-paths error:", e);
+    const dynamicGuestPaths = await fetchInternal('/api/menus/guest-paths');
+    if (Array.isArray(dynamicGuestPaths)) {
+        roleManagedPublicPaths = [...roleManagedPublicPaths, ...dynamicGuestPaths];
     }
 
     const isRoleManagedPublic = roleManagedPublicPaths.some(p => path.startsWith(p));
@@ -72,14 +74,9 @@ export async function middleware(request: NextRequest) {
         
         // 1. Admin-Only Routes
         let adminOnlyPaths: string[] = [];
-        try {
-            const adminPathsUrl = new URL(`${bp}/api/admin/paths-config`, request.url);
-            const adminPathsRes = await fetch(adminPathsUrl, { next: { revalidate: 60 } });
-            if (adminPathsRes.ok) {
-                adminOnlyPaths = await adminPathsRes.json();
-            }
-        } catch (e) {
-            console.error("Middleware fetch admin-paths error:", e);
+        const dynamicAdminPaths = await fetchInternal('/api/admin/paths-config');
+        if (Array.isArray(dynamicAdminPaths)) {
+            adminOnlyPaths = dynamicAdminPaths;
         }
         
         const tccbPaths = ['/staff', '/departments', '/practicing-certificates'];
