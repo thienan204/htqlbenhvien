@@ -273,7 +273,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
 
     if (isSubmitted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center font-sans">
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-8 pb-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
                 <div className="max-w-2xl w-full">
                     <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
                         <Result
@@ -343,7 +343,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center font-sans">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-8 pb-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
             <div className="max-w-2xl w-full">
                 <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
                     <div className="text-center mb-10">
