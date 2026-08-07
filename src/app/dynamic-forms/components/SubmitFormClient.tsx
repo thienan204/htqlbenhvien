@@ -84,11 +84,6 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                 message.success('Xác thực thành công!');
                 setUserData(result.row.data);
                 populateFormData(result.row.data);
-            } else if (res.status === 404 && result.isNew) {
-                message.info('Đây là thông tin mới, vui lòng điền form.');
-                const initialData = { [verificationKeyField.name]: values.verificationValue };
-                setUserData(initialData);
-                populateFormData(initialData);
             } else {
                 message.error(result.error || 'Mã xác thực không đúng, không tìm thấy dữ liệu.');
             }

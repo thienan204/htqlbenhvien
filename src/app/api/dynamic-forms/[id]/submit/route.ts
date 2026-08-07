@@ -71,21 +71,7 @@ export async function POST(
     });
 
     if (matchingRows.length === 0) {
-      // Nếu chỉ là bước xác thực (updatedData rỗng) -> Báo frontend đây là dữ liệu mới
-      if (!updatedData || Object.keys(updatedData).length === 0) {
-        return NextResponse.json({ error: 'Không tìm thấy dữ liệu', isNew: true }, { status: 404 });
-      }
-      
-      // Nếu là bước nộp form cuối cùng -> Tạo mới dòng dữ liệu
-      const newData = { ...updatedData, [verificationKey]: verificationValue };
-      const newRow = await prisma.dynamicFormData.create({
-        data: {
-          formId: id,
-          data: newData,
-          lastUpdatedBy: verificationValue,
-        }
-      });
-      return NextResponse.json({ success: true, row: newRow });
+      return NextResponse.json({ error: 'Mã xác thực không tồn tại trong hệ thống. Vui lòng kiểm tra lại.' }, { status: 404 });
     }
 
     if (matchingRows.length > 1) {
