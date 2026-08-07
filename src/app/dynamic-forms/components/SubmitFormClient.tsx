@@ -279,7 +279,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
 
     if (isSubmitted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-8 pb-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-6 pb-12 px-2 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
                 <div className="max-w-4xl w-full">
                     <Tabs
                         type="card"
@@ -288,7 +288,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                                 key: 'MAIN',
                                 label: 'Thu thập thông tin',
                                 children: (
-                                    <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0">
+                                    <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0 [&>.ant-card-body]:p-3 sm:[&>.ant-card-body]:p-6 [&_.ant-result]:px-2 [&_.ant-result]:py-6">
                                         <Result
                                             status="success"
                                             title="Cập nhật thông tin thành công!"
@@ -321,7 +321,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                                                 </Button>,
                                             ]}
                                         >
-                                            <div className="bg-gray-50/80 backdrop-blur border border-gray-100 p-6 rounded-xl text-left mt-2">
+                                            <div className="bg-gray-50/80 backdrop-blur border border-gray-100 p-4 sm:p-6 rounded-xl text-left mt-2">
                                                 <h3 className="font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">Thông tin vừa cập nhật</h3>
                                                 <div className="space-y-3">
                                                     {formConfig.config?.map((field: any) => {
@@ -369,7 +369,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-8 pb-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-6 pb-12 px-2 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
             <div className="max-w-4xl w-full">
                 <Tabs
                     type="card"
@@ -378,8 +378,8 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                             key: 'MAIN',
                             label: 'Thu thập thông tin',
                             children: (
-                                <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0">
-                                    <div className="text-center mb-10">
+                                <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0 [&>.ant-card-body]:p-4 sm:[&>.ant-card-body]:p-8">
+                                    <div className="text-center mb-8">
                                         <div className="inline-block p-3 rounded-full bg-blue-100 mb-4">
                                             <CheckCircleOutlined className="text-3xl text-blue-600" />
                                         </div>
