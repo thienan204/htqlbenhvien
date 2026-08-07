@@ -11,6 +11,8 @@ services:
       - db-htql
     ports:
       - "3005:3000"
+    volumes:
+      - ./public/uploads:/app/public/uploads
     networks:
       - htql-prod-network
 
