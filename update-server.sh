@@ -21,9 +21,8 @@ if [ -f .env.backup ]; then
 fi
 
 echo ""
-echo "🔧 Fix quyền thư mục Upload..."
+echo "🔧 Đảm bảo thư mục Upload tồn tại..."
 mkdir -p public/uploads
-chmod -R 777 public/uploads
 
 echo ""
 echo "🏗️ Bước 2: Build lại hệ thống với Code mới..."
@@ -31,7 +30,8 @@ docker compose -f docker-compose.prod.yml down
 docker compose -f docker-compose.prod.yml up -d --build
 
 echo ""
-echo "🗄️ Bước 3: Chạy cấu hình Database (Đẩy cấu trúc bảng mới vào DB)..."
+echo "🗄️ Bước 3: Chạy cấu hình Database và Fix phân quyền..."
+docker exec -u root htqlbenhvien-app chown -R 1001:1001 /app/public/uploads
 docker exec htqlbenhvien-app npx -y prisma@5.22.0 db push --skip-generate
 
 echo ""
