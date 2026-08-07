@@ -868,5 +868,20 @@
     "updatedAt": "2026-08-06T05:47:39.006Z",
     "targetPath": null,
     "showInPaths": []
+  },
+  {
+    "id": "cmsi9kbjv0000v2g84pa54jov",
+    "title": "thu-thap-smartca",
+    "path": "/thu-thap-smartca",
+    "icon": "FileExcelOutlined",
+    "parentId": "cmq8v3yr70000qmoc86gwuub3",
+    "order": 0,
+    "permissionCode": "menuthuthp",
+    "isActive": true,
+    "isSpecialGroup": null,
+    "createdAt": "2026-08-07T01:26:11.317Z",
+    "updatedAt": "2026-08-07T01:26:11.317Z",
+    "targetPath": "/thu-thap-smartca",
+    "showInPaths": []
   }
 ]

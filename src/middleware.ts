@@ -37,7 +37,20 @@ export async function middleware(request: NextRequest) {
         const token = request.cookies.get('auth_token')?.value;
 
         if (!token) {
-            const roleManagedPublicPaths = ['/doc-file-excel', '/pttt-excel', '/chuyen-de', '/icd10'];
+            let roleManagedPublicPaths = ['/doc-file-excel', '/pttt-excel', '/chuyen-de', '/icd10'];
+            try {
+                const guestPathsUrl = new URL('/api/menus/guest-paths', request.url);
+                const guestPathsRes = await fetch(guestPathsUrl, { next: { revalidate: 60 } });
+                if (guestPathsRes.ok) {
+                    const dynamicGuestPaths = await guestPathsRes.json();
+                    if (Array.isArray(dynamicGuestPaths)) {
+                        roleManagedPublicPaths = [...roleManagedPublicPaths, ...dynamicGuestPaths];
+                    }
+                }
+            } catch (e) {
+                console.error("Middleware fetch guest-paths error:", e);
+            }
+
             const isRoleManagedPublic = roleManagedPublicPaths.some(p => path.startsWith(p));
             if (isRoleManagedPublic) {
                 if (targetPathForRewrite) return NextResponse.rewrite(new URL(targetPathForRewrite, request.url));

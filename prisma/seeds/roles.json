@@ -105,11 +105,16 @@
     "name": "GUEST ",
     "description": "Role này không cần login vẫn vào được",
     "createdAt": "2026-06-11T02:02:08.571Z",
-    "updatedAt": "2026-07-21T00:04:15.581Z",
+    "updatedAt": "2026-08-07T01:43:13.019Z",
     "permissions": {
       "roles": {},
       "users": {},
       "MENU_STAFF": {},
+      "menuthuthp": {
+        "EDIT": false,
+        "VIEW": false,
+        "DELETE": false
+      },
       "MENU_IT_DUTY": {},
       "tra_cuu_icd10": {
         "VIEW": true
