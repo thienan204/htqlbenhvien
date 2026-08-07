@@ -82,15 +82,15 @@ export default function DataFormClient({ formId }: { formId: string }) {
                     body {
                         margin: 0;
                         padding: 20px;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        gap: 20px;
+                        text-align: center;
                     }
                     img {
                         max-width: 100%;
                         max-height: 45vh;
                         object-fit: contain;
+                        margin-bottom: 20px;
+                        page-break-inside: avoid;
+                        display: inline-block;
                     }
                     @media print {
                         body {
@@ -122,7 +122,7 @@ export default function DataFormClient({ formId }: { formId: string }) {
                             setTimeout(() => {
                                 window.print();
                                 window.close();
-                            }, 300);
+                            }, 500);
                         }
                     }
                 </script>
@@ -131,6 +131,25 @@ export default function DataFormClient({ formId }: { formId: string }) {
         `;
         printWindow.document.write(html);
         printWindow.document.close();
+    };
+
+    const handlePrintAllImages = () => {
+        let allImages: string[] = [];
+        filteredData.forEach((row: any) => {
+            formConfig?.config?.forEach((f: any) => {
+                if (f.type === 'image' && row.data[f.name]) {
+                    const urls = row.data[f.name].split(',').map((u: string) => u.trim()).filter(Boolean);
+                    allImages = [...allImages, ...urls];
+                }
+            });
+        });
+
+        if (allImages.length === 0) {
+            message.warning('Không có ảnh nào trong danh sách hiện tại');
+            return;
+        }
+        
+        handlePrintImages(allImages);
     };
 
 
@@ -309,6 +328,9 @@ export default function DataFormClient({ formId }: { formId: string }) {
                 </Space>
                 <Space>
                     <Button icon={<ReloadOutlined />} onClick={fetchData}>Làm mới</Button>
+                    <Button icon={<PrinterOutlined />} onClick={handlePrintAllImages} className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-none">
+                        In tất cả ảnh
+                    </Button>
                     <Upload 
                         accept=".xlsx, .xls"
                         showUploadList={false}
