@@ -251,7 +251,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
             case 'number':
             case 'phone':
             case 'cccd':
-                return <Input type="number" size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
+                return <Input allowClear type="number" size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
             case 'image':
                 return (
                     <Upload
@@ -268,7 +268,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                     </Upload>
                 );
             default:
-                return <Input size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
+                return <Input allowClear size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
         }
     };
 
