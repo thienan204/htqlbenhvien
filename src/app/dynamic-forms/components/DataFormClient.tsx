@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Space, message, Spin, Typography, Upload } from 'antd';
-import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, PrinterOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { Input, Switch, Tag } from 'antd';
@@ -65,6 +65,74 @@ export default function DataFormClient({ formId }: { formId: string }) {
             message.error('Lỗi kết nối khi cập nhật trạng thái');
         }
     };
+
+    const handlePrintImages = (urls: string[]) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            message.error('Vui lòng cho phép mở popup để in ảnh');
+            return;
+        }
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>In ảnh</title>
+                <style>
+                    body {
+                        margin: 0;
+                        padding: 20px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 20px;
+                    }
+                    img {
+                        max-width: 100%;
+                        max-height: 45vh;
+                        object-fit: contain;
+                    }
+                    @media print {
+                        body {
+                            padding: 0;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                ${urls.map(url => `<img src="${url}" />`).join('')}
+                <script>
+                    let loadedCount = 0;
+                    const totalImages = ${urls.length};
+                    const images = document.querySelectorAll('img');
+                    
+                    if (totalImages === 0) {
+                        window.print();
+                        window.close();
+                    } else {
+                        images.forEach(img => {
+                            img.onload = checkDone;
+                            img.onerror = checkDone;
+                        });
+                    }
+
+                    function checkDone() {
+                        loadedCount++;
+                        if (loadedCount === totalImages) {
+                            setTimeout(() => {
+                                window.print();
+                                window.close();
+                            }, 300);
+                        }
+                    }
+                </script>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(html);
+        printWindow.document.close();
+    };
+
 
     // Hàm lấy chữ cái đầu của mọi từ (VD: "Hà Mạnh Chí" -> "hmc")
     const getInitials = (name: string) => {
@@ -187,23 +255,44 @@ export default function DataFormClient({ formId }: { formId: string }) {
     });
 
     tableColumns.push({
-        title: 'Trạng thái',
+        title: 'Trạng thái / Thao tác',
         dataIndex: 'isDone',
         key: 'isDone',
         fixed: 'right' as any,
         width: 120,
-        render: (isDone: boolean, record: any) => (
-            <div className="flex flex-col gap-2 items-start">
-                <Tag color={isDone ? 'green' : 'orange'} className="mr-0">
-                    {isDone ? 'Đã xong' : 'Chưa xử lý'}
-                </Tag>
-                <Switch 
-                    checked={isDone} 
-                    onChange={(checked) => handleToggleStatus(record.id, checked)} 
-                    size="small"
-                />
-            </div>
-        )
+        render: (isDone: boolean, record: any) => {
+            let allImages: string[] = [];
+            formConfig?.config?.forEach((f: any) => {
+                if (f.type === 'image' && record.data[f.name]) {
+                    const urls = record.data[f.name].split(',').map((u: string) => u.trim()).filter(Boolean);
+                    allImages = [...allImages, ...urls];
+                }
+            });
+            const hasImages = allImages.length > 0;
+
+            return (
+                <div className="flex flex-col gap-2 items-start">
+                    <Tag color={isDone ? 'green' : 'orange'} className="mr-0">
+                        {isDone ? 'Đã xong' : 'Chưa xử lý'}
+                    </Tag>
+                    <Switch 
+                        checked={isDone} 
+                        onChange={(checked) => handleToggleStatus(record.id, checked)} 
+                        size="small"
+                    />
+                    {hasImages && (
+                        <Button 
+                            size="small" 
+                            icon={<PrinterOutlined />} 
+                            onClick={() => handlePrintImages(allImages)}
+                            className="text-xs w-full"
+                        >
+                            In ảnh
+                        </Button>
+                    )}
+                </div>
+            );
+        }
     });
 
     return (
