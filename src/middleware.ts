@@ -21,8 +21,10 @@ export async function middleware(request: NextRequest) {
         if (aliasRes.ok) {
             const aliases = await aliasRes.json();
             if (aliases[path]) {
-                targetPathForRewrite = aliases[path];
-                path = targetPathForRewrite as string; // Use target path for Auth checks
+                if (aliases[path] !== path) {
+                    targetPathForRewrite = aliases[path];
+                }
+                path = aliases[path] as string; // Use target path for Auth checks
             }
         }
     } catch (e) {
