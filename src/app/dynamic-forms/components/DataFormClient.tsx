@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Space, message, Spin, Typography, Upload } from 'antd';
-import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, PrinterOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Space, message, Spin, Typography, Upload, Popconfirm } from 'antd';
+import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, PrinterOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { Input, Switch, Tag } from 'antd';
@@ -63,6 +63,24 @@ export default function DataFormClient({ formId }: { formId: string }) {
             }
         } catch (error) {
             message.error('Lỗi kết nối khi cập nhật trạng thái');
+        }
+    };
+
+    const handleDeleteRow = async (rowId: string) => {
+        try {
+            const basePath = window.location.pathname.split('/dynamic-forms')[0];
+            const res = await fetch(`${basePath}/api/dynamic-forms/${id}/data/${rowId}`, {
+                method: 'DELETE',
+            });
+
+            if (res.ok) {
+                message.success('Đã xóa dữ liệu thành công');
+                setDataRows(prev => prev.filter(row => row.id !== rowId));
+            } else {
+                message.error('Lỗi khi xóa dữ liệu');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối khi xóa dữ liệu');
         }
     };
 
@@ -304,11 +322,28 @@ export default function DataFormClient({ formId }: { formId: string }) {
                             size="small" 
                             icon={<PrinterOutlined />} 
                             onClick={() => handlePrintImages(allImages)}
-                            className="text-xs w-full"
+                            className="text-xs w-full mb-1"
                         >
                             In ảnh
                         </Button>
                     )}
+                    <Popconfirm
+                        title="Bạn có chắc chắn muốn xóa dòng dữ liệu này không?"
+                        onConfirm={() => handleDeleteRow(record.id)}
+                        okText="Có, xóa"
+                        cancelText="Hủy"
+                        okButtonProps={{ danger: true }}
+                        placement="left"
+                    >
+                        <Button 
+                            size="small" 
+                            danger 
+                            icon={<DeleteOutlined />} 
+                            className="text-xs w-full"
+                        >
+                            Xóa
+                        </Button>
+                    </Popconfirm>
                 </div>
             );
         }
