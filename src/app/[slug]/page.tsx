@@ -4,6 +4,22 @@ import SubmitFormClient from '../dynamic-forms/components/SubmitFormClient';
 
 const prisma = new PrismaClient();
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const form = await prisma.dynamicForm.findUnique({
+        where: { slug }
+    });
+    
+    if (form) {
+        return {
+            title: form.name,
+        };
+    }
+    return {
+        title: 'Biểu mẫu',
+    };
+}
+
 export default async function DynamicFormSlugPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     
