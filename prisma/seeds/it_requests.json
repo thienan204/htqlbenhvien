@@ -1,1 +1,178 @@
-[]
+[
+  {
+    "id": "cmr7d9mwh00009qevq4sy906y",
+    "ma_ba": null,
+    "ten_loi": "Huỷ ký số lãnh đạo BA",
+    "ma_khoa": "K01",
+    "assigneeId": "cmr5tcqpr009j3l00hw9t5yg6",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "982626986",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Đặng Huy Đức"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-05T05:44:41.007Z",
+    "updatedAt": "2026-07-05T05:46:16.000Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmr7dahbx00029qevt3o1yr7t",
+    "ma_ba": null,
+    "ten_loi": "Huỷ ký số lãnh đạo BA",
+    "ma_khoa": "K01",
+    "assigneeId": "cmr5tcqqj009p3l00weej9tgr",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "982626986",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Đặng Huy Đức"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-05T05:45:20.446Z",
+    "updatedAt": "2026-07-05T05:45:20.446Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmr8wxhx700008wqr6d9c0lby",
+    "ma_ba": null,
+    "ten_loi": "Huỷ ký số lãnh đạo BA",
+    "ma_khoa": "K16",
+    "assigneeId": "cmr5tcqqb009n3l00o4p17w4q",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0373171227",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Lê Thị Phượng"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-06T07:42:53.178Z",
+    "updatedAt": "2026-07-06T07:42:53.178Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmr8x2hyx00028wqrruqw1xh3",
+    "ma_ba": null,
+    "ten_loi": "Huỷ ký số giấy ra viện",
+    "ma_khoa": "K16",
+    "assigneeId": "cmr5tcqqj009p3l00weej9tgr",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0373171227",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Lê Thị Phượng"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-06T07:46:46.522Z",
+    "updatedAt": "2026-07-06T07:46:46.522Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmr8xhmm300048wqrznxjlzqp",
+    "ma_ba": null,
+    "ten_loi": "Huỷ ký số lãnh đạo BA",
+    "ma_khoa": "K01",
+    "assigneeId": "cmr5tcqq2009l3l00sjx3uh43",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0394663100",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Đàm Thúy Ngân"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-06T07:58:32.380Z",
+    "updatedAt": "2026-07-06T07:58:32.380Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmrf22bsp0000vatrf7jm474t",
+    "ma_ba": null,
+    "ten_loi": "fdsaf",
+    "ma_khoa": "K22",
+    "assigneeId": "cmr5tcqqj009p3l00weej9tgr",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0912115347",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Chu Đức Quang"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-10T14:53:13.656Z",
+    "updatedAt": "2026-07-10T14:53:13.656Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmrf3knt90002vatr15yafb6r",
+    "ma_ba": null,
+    "ten_loi": "Lấy lại BN  fasfsaf",
+    "ma_khoa": "K22",
+    "assigneeId": "cmr5tcqqj009p3l00weej9tgr",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0912115347",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Chu Đức Quang"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-10T15:35:28.653Z",
+    "updatedAt": "2026-07-10T15:35:28.653Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  },
+  {
+    "id": "cmrf3m7r20004vatre5ppssta",
+    "ma_ba": null,
+    "ten_loi": "Huỷ ký số giấy ra việnHuỷ ký số giấy ra viện",
+    "ma_khoa": "K27",
+    "assigneeId": "cmr5tcqqj009p3l00weej9tgr",
+    "status": "PENDING",
+    "dynamicFields": {
+      "SĐT": "0988428144",
+      "Ghi chú": "Tạo tự động từ Chat",
+      "Người báo": "Nguyễn Thúy Vân"
+    },
+    "it_note": null,
+    "createdAt": "2026-07-10T15:36:41.150Z",
+    "updatedAt": "2026-07-10T15:36:41.150Z",
+    "category": "SOFTWARE",
+    "transferFromId": null,
+    "transferToId": null,
+    "resolvedAt": null,
+    "startedAt": null,
+    "targetDepartment": "CNTT"
+  }
+]

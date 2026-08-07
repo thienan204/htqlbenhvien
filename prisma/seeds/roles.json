@@ -105,7 +105,7 @@
     "name": "GUEST ",
     "description": "Role này không cần login vẫn vào được",
     "createdAt": "2026-06-11T02:02:08.571Z",
-    "updatedAt": "2026-07-05T01:57:48.217Z",
+    "updatedAt": "2026-07-21T00:04:15.581Z",
     "permissions": {
       "roles": {},
       "users": {},
@@ -126,13 +126,28 @@
       "MENU_CATALOG_04": {},
       "MENU_CATALOG_05": {},
       "MENU_CATALOG_06": {},
+      "MENU_ERROR_HSDA": {
+        "EDIT": true,
+        "VIEW": true,
+        "DELETE": true
+      },
       "MENU_DEPARTMENTS": {},
-      "MENU_EXCEL_RULES": {},
+      "MENU_EXCEL_RULES": {
+        "EDIT": false,
+        "VIEW": false,
+        "DELETE": false
+      },
       "lOI_XML_CHUYENDE": {},
       "MENU_DOC_FILE_EXCEL": {
-        "VIEW": true
+        "EDIT": false,
+        "VIEW": true,
+        "DELETE": false
       },
-      "MENU_ERROR_REQUESTS": {},
+      "MENU_ERROR_REQUESTS": {
+        "EDIT": true,
+        "VIEW": true,
+        "DELETE": false
+      },
       "MENU_IMAGE_MANAGEMENT": {},
       "MENU_SPECIALIZED_RULES": {}
     }
@@ -183,11 +198,36 @@
   {
     "id": "cmr639squ0000brko5lbklzo3",
     "code": "VTYT",
-    "name": "Phòng Vật tư y tế",
+    "name": "Phòng Vật tư  thiết bị y tế",
     "description": null,
     "createdAt": "2026-07-04T08:17:06.245Z",
-    "updatedAt": "2026-07-04T08:17:06.245Z",
-    "permissions": null
+    "updatedAt": "2026-07-06T01:02:30.809Z",
+    "permissions": {
+      "roles": {},
+      "users": {},
+      "MENU_STAFF": {},
+      "MENU_IT_DUTY": {},
+      "tra_cuu_icd10": {},
+      "MENU_CHUYEN_DE": {},
+      "MENU_IT_REPORT": {},
+      "MENU_XML_RULES": {},
+      "MENU_YEUCAU_HC": {},
+      "menu_bcnhapkho": {},
+      "menu_yeu_VATTU": {},
+      "MENU_CATALOG_01": {},
+      "MENU_CATALOG_02": {},
+      "MENU_CATALOG_03": {},
+      "MENU_CATALOG_04": {},
+      "MENU_CATALOG_05": {},
+      "MENU_CATALOG_06": {},
+      "MENU_DEPARTMENTS": {},
+      "MENU_EXCEL_RULES": {},
+      "lOI_XML_CHUYENDE": {},
+      "MENU_DOC_FILE_EXCEL": {},
+      "MENU_ERROR_REQUESTS": {},
+      "MENU_IMAGE_MANAGEMENT": {},
+      "MENU_SPECIALIZED_RULES": {}
+    }
   },
   {
     "id": "cmr639stx0001brkoq2yr2c4b",

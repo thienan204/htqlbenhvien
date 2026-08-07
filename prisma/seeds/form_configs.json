@@ -13,7 +13,7 @@
     "layout": "[{\"id\":\"code\",\"widthPercent\":100},{\"id\":\"name\",\"widthPercent\":100},{\"id\":\"description\",\"widthPercent\":100},{\"id\":\"order\",\"widthPercent\":50},{\"id\":\"isActive\",\"widthPercent\":50}]",
     "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":50}",
     "createdAt": "2026-06-13T13:10:17.762Z",
-    "updatedAt": "2026-06-13T13:10:25.789Z"
+    "updatedAt": "2026-07-05T13:13:36.098Z"
   },
   {
     "id": "cmqcjnkne0000r7gvfdajmjlv",
@@ -74,9 +74,17 @@
   {
     "id": "cmqyn3ynu000112fpe14mbs0r",
     "formId": "cert_form",
-    "layout": "[{\"id\":\"so_cchn\",\"widthPercent\":50},{\"id\":\"ngay_cap\",\"widthPercent\":50},{\"id\":\"chuc_danh_cchn\",\"widthPercent\":100},{\"id\":\"pham_vi_hanh_nghe\",\"widthPercent\":100},{\"id\":\"pham_vi_bo_sung\",\"widthPercent\":100},{\"id\":\"dich_vu_ky_thuat\",\"widthPercent\":100},{\"id\":\"isActive\",\"widthPercent\":100}]",
+    "layout": "[{\"id\":\"so_cchn\",\"widthPercent\":50},{\"id\":\"ngay_cap\",\"widthPercent\":50},{\"id\":\"chuc_danh_cchn\",\"widthPercent\":100},{\"id\":\"pham_vi_bo_sung\",\"widthPercent\":100},{\"id\":\"dich_vu_ky_thuat\",\"widthPercent\":100},{\"id\":\"isActive\",\"widthPercent\":100},{\"id\":\"noi_cap_cchn_id\",\"widthPercent\":50},{\"id\":\"tt32_category_id\",\"widthPercent\":100},{\"id\":\"pham_vi_hanh_nghe_ids\",\"widthPercent\":100},{\"id\":\"tu_ngay\",\"widthPercent\":50},{\"id\":\"den_ngay\",\"widthPercent\":50},{\"id\":\"thoi_gian_dang_ky\",\"widthPercent\":33},{\"id\":\"thoi_gian_ngay\",\"widthPercent\":33},{\"id\":\"thoi_gian_tuan\",\"widthPercent\":33},{\"id\":\"cskcb_khac\",\"widthPercent\":33},{\"id\":\"cskcb_cgkt\",\"widthPercent\":33},{\"id\":\"qd_cgkt\",\"widthPercent\":33},{\"id\":\"vb_phan_cong\",\"widthPercent\":100}]",
     "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":true,\"formWidth\":100}",
     "createdAt": "2026-06-29T03:10:16.653Z",
-    "updatedAt": "2026-06-29T03:10:16.653Z"
+    "updatedAt": "2026-07-05T13:08:20.022Z"
+  },
+  {
+    "id": "cmsbe4g7n0000lbbwyh2d9yx7",
+    "formId": "staff_management_form",
+    "layout": "[{\"id\":\"ma_nv\",\"widthPercent\":50,\"labelRatio\":15},{\"id\":\"ho_ten\",\"widthPercent\":50},{\"id\":\"ngay_sinh\",\"widthPercent\":33},{\"id\":\"gioi_tinh_id\",\"widthPercent\":33},{\"id\":\"so_dien_thoai\",\"widthPercent\":33},{\"id\":\"cccd\",\"widthPercent\":33},{\"id\":\"ngay_cap_cccd\",\"widthPercent\":33},{\"id\":\"noi_cap_cccd\",\"widthPercent\":33},{\"id\":\"ma_bhxh\",\"widthPercent\":33},{\"id\":\"ma_ho_gia_dinh\",\"widthPercent\":33},{\"id\":\"dan_toc_id\",\"widthPercent\":33},{\"id\":\"dia_chi\",\"widthPercent\":100},{\"id\":\"noi_sinh_ward_id\",\"widthPercent\":50},{\"id\":\"noi_sinh_thon\",\"widthPercent\":50},{\"id\":\"que_quan_ward_id\",\"widthPercent\":50},{\"id\":\"que_quan_thon\",\"widthPercent\":50},{\"id\":\"noi_o_ward_id\",\"widthPercent\":50},{\"id\":\"noi_o_thon\",\"widthPercent\":50},{\"id\":\"ma_khoa\",\"widthPercent\":50},{\"id\":\"loai_hop_dong_id\",\"widthPercent\":50},{\"id\":\"chuc_vu_id\",\"widthPercent\":50},{\"id\":\"vi_tri_viec_lam_id\",\"widthPercent\":50},{\"id\":\"chuc_danh_id\",\"widthPercent\":50},{\"id\":\"trinh_do_id\",\"widthPercent\":50},{\"id\":\"vi_tri_bhyt_id\",\"widthPercent\":100},{\"id\":\"so_qd_tuyen_dung\",\"widthPercent\":33},{\"id\":\"ngay_tuyen_dung\",\"widthPercent\":33},{\"id\":\"thoi_diem_nang_luong\",\"widthPercent\":33},{\"id\":\"ma_ngach_id\",\"widthPercent\":25},{\"id\":\"he_so_luong_id\",\"widthPercent\":25},{\"id\":\"bac_luong_id\",\"widthPercent\":25},{\"id\":\"phu_cap_tnvk_id\",\"widthPercent\":25},{\"id\":\"trang_thai_id\",\"widthPercent\":50}]",
+    "settings": "{\"layout\":\"horizontal\",\"labelAlign\":\"right\",\"isCompact\":false,\"formWidth\":100}",
+    "createdAt": "2026-08-02T05:59:25.695Z",
+    "updatedAt": "2026-08-02T10:16:18.645Z"
   }
 ]

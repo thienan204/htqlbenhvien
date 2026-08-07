@@ -1,0 +1,262 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Button, Space, message, Spin, Typography, Upload } from 'antd';
+import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import * as XLSX from 'xlsx';
+import { Input, Switch, Tag } from 'antd';
+
+const { Title } = Typography;
+
+export default function DataFormClient({ formId }: { formId: string }) {
+    const id = formId;
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [formConfig, setFormConfig] = useState<any>(null);
+    const [dataRows, setDataRows] = useState<any[]>([]);
+    const [searchText, setSearchText] = useState('');
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const basePath = window.location.pathname.split('/dynamic-forms')[0];
+            // Fetch config to know columns
+            const resConfig = await fetch(`${basePath}/api/dynamic-forms/${id}`);
+            if (resConfig.ok) {
+                setFormConfig(await resConfig.json());
+            }
+
+            // Fetch data
+            const resData = await fetch(`${basePath}/api/dynamic-forms/${id}/data`);
+            if (resData.ok) {
+                setDataRows(await resData.json());
+            }
+        } catch (error) {
+            message.error('Lỗi khi tải dữ liệu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [id]);
+
+    const handleToggleStatus = async (rowId: string, isDone: boolean) => {
+        try {
+            const basePath = window.location.pathname.split('/dynamic-forms')[0];
+            const res = await fetch(`${basePath}/api/dynamic-forms/${id}/data/${rowId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isDone })
+            });
+
+            if (res.ok) {
+                message.success('Cập nhật trạng thái thành công');
+                // Cập nhật lại state mà không cần tải lại toàn bộ bảng
+                setDataRows(prev => prev.map(row => 
+                    row.id === rowId ? { ...row, isDone } : row
+                ));
+            } else {
+                message.error('Lỗi khi cập nhật trạng thái');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối khi cập nhật trạng thái');
+        }
+    };
+
+    // Hàm lấy chữ cái đầu của mọi từ (VD: "Hà Mạnh Chí" -> "hmc")
+    const getInitials = (name: string) => {
+        if (!name) return '';
+        return name.trim().split(/\s+/).map(word => word.charAt(0)).join('').toLowerCase();
+    };
+
+    // Lọc dữ liệu theo ô tìm kiếm
+    const filteredData = dataRows.filter((row: any) => {
+        if (!searchText) return true;
+        const searchLower = searchText.toLowerCase().trim();
+        
+        // Tìm trong tất cả các cột dữ liệu
+        return Object.values(row.data).some((val: any) => {
+            if (typeof val !== 'string') return false;
+            // Khớp nguyên văn hoặc khớp chữ cái đầu
+            if (val.toLowerCase().includes(searchLower)) return true;
+            if (getInitials(val).includes(searchLower)) return true;
+            return false;
+        });
+    });
+
+    const handleExportExcel = () => {
+        if (!formConfig || dataRows.length === 0) {
+            message.warning('Không có dữ liệu để xuất');
+            return;
+        }
+
+        const exportData = dataRows.map(row => {
+            const flatRow: any = {};
+            formConfig.config.forEach((field: any) => {
+                flatRow[field.label] = row.data[field.name] || '';
+            });
+            flatRow['Trạng thái'] = row.isDone ? 'Đã xong' : 'Chưa xử lý';
+            flatRow['Cập nhật lần cuối bởi'] = row.lastUpdatedBy || '';
+            flatRow['Thời gian cập nhật'] = new Date(row.updatedAt).toLocaleString('vi-VN');
+            return flatRow;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Data");
+        XLSX.writeFile(wb, `${formConfig.slug}_export.xlsx`);
+    };
+
+    const handleImportExcel = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                setLoading(true);
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                const basePath = window.location.pathname.split('/dynamic-forms')[0];
+                const res = await fetch(`${basePath}/api/dynamic-forms/${id}/data/import`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: jsonData })
+                });
+                
+                const result = await res.json();
+                if (res.ok) {
+                    message.success(result.message || 'Import dữ liệu thành công!');
+                    fetchData(); // reload table
+                } else {
+                    message.error(result.error || 'Lỗi khi import dữ liệu');
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error(error);
+                message.error('Lỗi phân tích file Excel');
+                setLoading(false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        return false; // Prevent default upload behavior
+    };
+
+    if (loading && !formConfig) return <div className="p-10 flex justify-center"><Spin size="large" /></div>;
+
+    // Build columns dynamically based on config
+    const tableColumns: any[] = formConfig?.config?.map((field: any) => ({
+        title: field.label,
+        dataIndex: ['data', field.name],
+        key: field.name,
+        render: (text: any) => {
+            if (field.type === 'image' && text) {
+                const urls = text.split(',');
+                return (
+                    <div className="flex flex-col gap-1">
+                        {urls.map((url: string, idx: number) => (
+                            <a key={idx} href={url.trim()} target="_blank" rel="noreferrer" className="text-blue-500 underline">
+                                Xem ảnh {idx + 1}
+                            </a>
+                        ))}
+                    </div>
+                );
+            }
+            if (field.isVerificationKey) {
+                return <span className="text-gray-400 italic">*** (Bảo mật)</span>;
+            }
+            return text;
+        }
+    })) || [];
+
+    tableColumns.push({
+        title: 'Người cập nhật',
+        dataIndex: 'lastUpdatedBy',
+        key: 'lastUpdatedBy',
+        render: (text: string) => <span className="text-gray-500">{text || '-'}</span>
+    });
+
+    tableColumns.push({
+        title: 'Lần cập nhật cuối',
+        dataIndex: 'updatedAt',
+        key: 'updatedAt',
+        render: (text: string) => new Date(text).toLocaleString('vi-VN')
+    });
+
+    tableColumns.push({
+        title: 'Trạng thái',
+        dataIndex: 'isDone',
+        key: 'isDone',
+        fixed: 'right' as any,
+        width: 120,
+        render: (isDone: boolean, record: any) => (
+            <div className="flex flex-col gap-2 items-start">
+                <Tag color={isDone ? 'green' : 'orange'} className="mr-0">
+                    {isDone ? 'Đã xong' : 'Chưa xử lý'}
+                </Tag>
+                <Switch 
+                    checked={isDone} 
+                    onChange={(checked) => handleToggleStatus(record.id, checked)} 
+                    size="small"
+                />
+            </div>
+        )
+    });
+
+    return (
+        <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+                <Space>
+                    <Button icon={<ArrowLeftOutlined />} onClick={() => router.push('/dynamic-forms')}>
+                        Quay lại
+                    </Button>
+                    <div>
+                        <Title level={4} className="mb-0">Dữ liệu Form: {formConfig?.name}</Title>
+                        <p className="text-gray-500 mb-0">{formConfig?.description}</p>
+                    </div>
+                </Space>
+                <Space>
+                    <Button icon={<ReloadOutlined />} onClick={fetchData}>Làm mới</Button>
+                    <Upload 
+                        accept=".xlsx, .xls"
+                        showUploadList={false}
+                        beforeUpload={handleImportExcel}
+                    >
+                        <Button type="primary" icon={<UploadOutlined />} className="bg-blue-600 hover:bg-blue-700">
+                            Import Excel
+                        </Button>
+                    </Upload>
+                    <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportExcel} className="bg-green-600 hover:bg-green-700">
+                        Xuất Excel
+                    </Button>
+                </Space>
+            </div>
+
+            <Card className="shadow-sm">
+                <div className="mb-4">
+                    <Input 
+                        placeholder="Tìm kiếm theo họ tên, viết tắt (VD: hmc), email, SDT..." 
+                        prefix={<SearchOutlined className="text-gray-400" />}
+                        value={searchText}
+                        onChange={e => setSearchText(e.target.value)}
+                        allowClear
+                        size="large"
+                        className="max-w-md border-blue-200 hover:border-blue-400 focus:border-blue-500"
+                    />
+                </div>
+                <Table
+                    columns={tableColumns}
+                    dataSource={filteredData}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{ pageSize: 20 }}
+                    scroll={{ x: 'max-content' }}
+                    size="small"
+                />
+            </Card>
+        </div>
+    );
+}

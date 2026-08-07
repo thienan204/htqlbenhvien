@@ -49,11 +49,11 @@
         "MA_NHOM": 15
       },
       "toleranceMinutes": 0,
-      "ignoreIfSameField": ""
+      "ignoreIfSameField": "MA_BN"
     },
     "sqlQuery": null,
     "createdAt": "2026-02-04T09:12:33.636Z",
-    "updatedAt": "2026-06-24T08:01:54.040Z"
+    "updatedAt": "2026-07-27T10:00:37.691Z"
   },
   {
     "id": "cml88004h0000ksk5fz4t5o6k",
@@ -112,7 +112,7 @@
     },
     "sqlQuery": null,
     "createdAt": "2026-02-05T15:14:07.432Z",
-    "updatedAt": "2026-02-09T01:28:26.523Z"
+    "updatedAt": "2026-07-28T09:25:18.466Z"
   },
   {
     "id": "cmmskx8fc0000gzldgaugfofm",

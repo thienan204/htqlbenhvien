@@ -136,39 +136,39 @@ model Staff {
   storekeeper_warehouses Warehouse[]
   attendances            StaffAttendance[]
 
-  ma_ho_gia_dinh       String?
-  ngay_cap_cccd        DateTime?
-  noi_cap_cccd         String?
-  
-  noi_sinh_ward_id     String?
-  noi_sinh_thon        String?
-  noi_sinh_ward        SystemCategory?         @relation("StaffNoiSinh", fields: [noi_sinh_ward_id], references: [id])
+  ma_ho_gia_dinh String?
+  ngay_cap_cccd  DateTime?
+  noi_cap_cccd   String?
 
-  que_quan_ward_id     String?
-  que_quan_thon        String?
-  que_quan_ward        SystemCategory?         @relation("StaffQueQuan", fields: [que_quan_ward_id], references: [id])
+  noi_sinh_ward_id String?
+  noi_sinh_thon    String?
+  noi_sinh_ward    SystemCategory? @relation("StaffNoiSinh", fields: [noi_sinh_ward_id], references: [id])
 
-  noi_o_ward_id        String?
-  noi_o_thon           String?
-  noi_o_ward           SystemCategory?         @relation("StaffNoiO", fields: [noi_o_ward_id], references: [id])
+  que_quan_ward_id String?
+  que_quan_thon    String?
+  que_quan_ward    SystemCategory? @relation("StaffQueQuan", fields: [que_quan_ward_id], references: [id])
+
+  noi_o_ward_id String?
+  noi_o_thon    String?
+  noi_o_ward    SystemCategory? @relation("StaffNoiO", fields: [noi_o_ward_id], references: [id])
 
   so_qd_tuyen_dung     String?
   ngay_tuyen_dung      DateTime?
   thoi_diem_nang_luong DateTime?
 
-  ma_ngach_id          String?
-  ma_ngach_ref         SystemCategory?         @relation("StaffNgach", fields: [ma_ngach_id], references: [id])
+  ma_ngach_id  String?
+  ma_ngach_ref SystemCategory? @relation("StaffNgach", fields: [ma_ngach_id], references: [id])
 
-  he_so_luong_id       String?
-  he_so_luong_ref      SystemCategory?         @relation("StaffHeSo", fields: [he_so_luong_id], references: [id])
+  he_so_luong_id  String?
+  he_so_luong_ref SystemCategory? @relation("StaffHeSo", fields: [he_so_luong_id], references: [id])
 
-  bac_luong_id         String?
-  bac_luong_ref        SystemCategory?         @relation("StaffBacLuong", fields: [bac_luong_id], references: [id])
+  bac_luong_id  String?
+  bac_luong_ref SystemCategory? @relation("StaffBacLuong", fields: [bac_luong_id], references: [id])
 
-  phu_cap_tnvk_id      String?
-  phu_cap_tnvk_ref     SystemCategory?         @relation("StaffTNVK", fields: [phu_cap_tnvk_id], references: [id])
+  phu_cap_tnvk_id  String?
+  phu_cap_tnvk_ref SystemCategory? @relation("StaffTNVK", fields: [phu_cap_tnvk_id], references: [id])
 
-  trainings            StaffTraining[]
+  trainings StaffTraining[]
 }
 
 model StaffTraining {
@@ -207,18 +207,18 @@ model SystemCategory {
   cchn_noi_cap      PracticingCertificate[] @relation("CertIssuePlace")
   staff_attendances StaffAttendance[]       @relation("AttendanceStatus")
 
-  parentId          String?
-  parent            SystemCategory?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children          SystemCategory[]        @relation("CategoryHierarchy")
+  parentId String?
+  parent   SystemCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children SystemCategory[] @relation("CategoryHierarchy")
 
-  staff_noi_sinh_ward Staff[]                 @relation("StaffNoiSinh")
-  staff_que_quan_ward Staff[]                 @relation("StaffQueQuan")
-  staff_noi_o_ward    Staff[]                 @relation("StaffNoiO")
-  staff_ma_ngach      Staff[]                 @relation("StaffNgach")
-  staff_he_so_luong   Staff[]                 @relation("StaffHeSo")
-  staff_bac_luong     Staff[]                 @relation("StaffBacLuong")
-  staff_phu_cap_tnvk  Staff[]                 @relation("StaffTNVK")
-  staff_trainings     StaffTraining[]         @relation("TrainingType")
+  staff_noi_sinh_ward Staff[]         @relation("StaffNoiSinh")
+  staff_que_quan_ward Staff[]         @relation("StaffQueQuan")
+  staff_noi_o_ward    Staff[]         @relation("StaffNoiO")
+  staff_ma_ngach      Staff[]         @relation("StaffNgach")
+  staff_he_so_luong   Staff[]         @relation("StaffHeSo")
+  staff_bac_luong     Staff[]         @relation("StaffBacLuong")
+  staff_phu_cap_tnvk  Staff[]         @relation("StaffTNVK")
+  staff_trainings     StaffTraining[] @relation("TrainingType")
 
   @@unique([type, code])
 }
@@ -425,75 +425,75 @@ model Mau04Catalog {
 }
 
 model Mau05Catalog {
-  id               String   @id @default(uuid())
-  STT              Int?
-  MA_DICH_VU       String?  @db.VarChar(20)
-  TEN_DICH_VU      String?
-  TEN_DVKT_GIA     String?
-  DON_GIA          Float?
-  QUY_TRINH        String?  @db.VarChar(50)
-  SO_LUONG_CGKT    Float?
-  CSKCB_CGKT       String?  @db.VarChar(5)
-  CSKCB_CLS        String?  @db.VarChar(5)
-  QD_DVKT          String?  @db.VarChar(50)
-  QD_PD_GIA        String?  @db.VarChar(50)
-  GHI_CHU          String?
-  MA_THUOC         String?  @db.VarChar(15)
-  TEN_THUOC        String?
-  SO_DANG_KY       String?  @db.VarChar(50)
-  DON_VI_TINH      String?
-  TT_THAU          String?
-  DON_GIA_THUOC    Float?
-  DM_NSX_CDD       Float?
-  DM_THUCTE_CDD    Float?
-  LIEU_BQ_PX       Float?
-  TL_THUCTE_BQ_PX  Float?
-  THANH_TIEN_THUOC Float?
-  GIA_THANH_TOAN   Float?
-  TU_NGAY          String?  @db.VarChar(8)
-  DEN_NGAY         String?  @db.VarChar(8)
-  MA_CSKCB         String?  @db.VarChar(5)
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  STT                Int?
+  MA_DICH_VU         String?  @db.VarChar(20)
+  TEN_DICH_VU        String?
+  TEN_DVKT_GIA       String?
+  DON_GIA            Float?
+  QUY_TRINH          String?  @db.VarChar(50)
+  SO_LUONG_CGKT      Float?
+  CSKCB_CGKT         String?  @db.VarChar(5)
+  CSKCB_CLS          String?  @db.VarChar(5)
+  QD_DVKT            String?  @db.VarChar(50)
+  QD_PD_GIA          String?  @db.VarChar(50)
+  GHI_CHU            String?
+  MA_THUOC           String?  @db.VarChar(15)
+  TEN_THUOC          String?
+  SO_DANG_KY         String?  @db.VarChar(50)
+  DON_VI_TINH        String?
+  TT_THAU            String?
+  DON_GIA_THUOC      Float?
+  DM_NSX_CDD         Float?
+  DM_THUCTE_CDD      Float?
+  LIEU_BQ_PX         Float?
+  TL_THUCTE_BQ_PX    Float?
+  THANH_TIEN_THUOC   Float?
+  GIA_THANH_TOAN     Float?
+  TU_NGAY            String?  @db.VarChar(8)
+  DEN_NGAY           String?  @db.VarChar(8)
+  MA_CSKCB           String?  @db.VarChar(5)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   thoigian_thuc_hien Int?
   yeu_cau_trinh_do   String?
-  buffer_time      Int?
-  is_concurrent    Boolean  @default(false)
-  yeu_cau_may_moc  String?
+  buffer_time        Int?
+  is_concurrent      Boolean  @default(false)
+  yeu_cau_may_moc    String?
 }
 
 model Mau06Catalog {
-  id          String   @id @default(uuid())
-  STT         Int?
-  TEN_TB      String?
-  KY_HIEU     String?
-  CONGTY_SX   String?
-  NUOC_SX     String?  @db.VarChar(100)
-  NAM_SX      Int?
-  NAM_SD      Int?
-  MA_MAY      String?
-  TEN_BV      String?
-  SO_LUU_HANH String?  @db.VarChar(20)
-  HD_TU       String?  @db.VarChar(8)
-  HD_DEN      String?  @db.VarChar(8)
-  TU_NGAY     String?  @db.VarChar(8)
-  DEN_NGAY    String?  @db.VarChar(8)
-  MA_CSKCB    String?  @db.VarChar(5)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  STT           Int?
+  TEN_TB        String?
+  KY_HIEU       String?
+  CONGTY_SX     String?
+  NUOC_SX       String?  @db.VarChar(100)
+  NAM_SX        Int?
+  NAM_SD        Int?
+  MA_MAY        String?
+  TEN_BV        String?
+  SO_LUU_HANH   String?  @db.VarChar(20)
+  HD_TU         String?  @db.VarChar(8)
+  HD_DEN        String?  @db.VarChar(8)
+  TU_NGAY       String?  @db.VarChar(8)
+  DEN_NGAY      String?  @db.VarChar(8)
+  MA_CSKCB      String?  @db.VarChar(5)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   loai_may_code String?
 }
 
 model MachineLocationHistory {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   ma_may    String
   ma_khoa   String
   tu_ngay   DateTime?
   den_ngay  DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model ITRequest {
@@ -538,39 +538,39 @@ model PageInstruction {
 }
 
 model XmlErrorRecord {
-  id                 String    @id @default(cuid())
-  ma_lk              String?
-  ma_bn              String?
-  ma_khoa            String?
-  ten_khoa           String?
-  ho_ten             String?
-  ma_the             String?
-  ngay_vao           DateTime?
-  ngay_ra            DateTime?
-  ngay_yl            DateTime?
-  ngay_th_yl         DateTime?
-  ngay_kq            DateTime?
-  ngay_vao_noi_tru   DateTime?
-  ma_dv              String?
-  ten_dv             String?
-  ma_doituong_kcb    String?
-  chi_tiet_loi       String?
+  id                     String    @id @default(cuid())
+  ma_lk                  String?
+  ma_bn                  String?
+  ma_khoa                String?
+  ten_khoa               String?
+  ho_ten                 String?
+  ma_the                 String?
+  ngay_vao               DateTime?
+  ngay_ra                DateTime?
+  ngay_yl                DateTime?
+  ngay_th_yl             DateTime?
+  ngay_kq                DateTime?
+  ngay_vao_noi_tru       DateTime?
+  ma_dv                  String?
+  ten_dv                 String?
+  ma_doituong_kcb        String?
+  chi_tiet_loi           String?
   khoang_thoi_gian_trung String?
-  status             String    @default("PENDING")
-  departmentNote     String?
-  adminNote          String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  sourceType         String    @default("XML")
-  don_gia_bh         String?
-  ma_may             String?
-  ma_bac_si          String?
-  ten_bac_si         String?
-  nguoi_th           String?
-  ten_nguoi_th       String?
-  itRequestId        String?
-  itRequestPingCount Int       @default(0)
-  itResolved         Boolean   @default(false)
+  status                 String    @default("PENDING")
+  departmentNote         String?
+  adminNote              String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  sourceType             String    @default("XML")
+  don_gia_bh             String?
+  ma_may                 String?
+  ma_bac_si              String?
+  ten_bac_si             String?
+  nguoi_th               String?
+  ten_nguoi_th           String?
+  itRequestId            String?
+  itRequestPingCount     Int       @default(0)
+  itResolved             Boolean   @default(false)
 }
 
 model Role {
@@ -1031,37 +1031,37 @@ model Xml1 {
   GIAY_CHUYEN_TUYEN String?
 
   // Error Validation fields
-  hasError          Boolean  @default(false)
-  errorCount        Int      @default(0)
+  hasError   Boolean @default(false)
+  errorCount Int     @default(0)
 
-  SO_NGAY_DTRI      String?
-  PP_DIEU_TRI       String?
-  MA_LOAI_RV        String?
-  GHI_CHU           String?
-  NGAY_TTOAN        String?
-  T_THUOC           String?
-  T_VTYT            String?
-  T_TONGCHI_BV      String?
-  T_TONGCHI_BH      String?
-  T_BNTT            String?
-  T_BNCCT           String?
-  T_BHTT            String?
-  T_NGUONKHAC       String?
-  T_BHTT_GDV        String?
-  NAM_QT            String?
-  THANG_QT          String?
-  MA_LOAI_KCB       String?
-  MA_KHOA           String?
-  MA_CSKCB          String?
-  MA_KHUVUC         String?
-  CAN_NANG          String?
-  CAN_NANG_CON      String?
-  NAM_NAM_LIEN_TUC  String?
-  NGAY_TAI_KHAM     String?
-  MA_HSBA           String?
-  MA_TTDV           String?
-  DU_PHONG          String?
-  XmlStatus         XmlStatus[]
+  SO_NGAY_DTRI     String?
+  PP_DIEU_TRI      String?
+  MA_LOAI_RV       String?
+  GHI_CHU          String?
+  NGAY_TTOAN       String?
+  T_THUOC          String?
+  T_VTYT           String?
+  T_TONGCHI_BV     String?
+  T_TONGCHI_BH     String?
+  T_BNTT           String?
+  T_BNCCT          String?
+  T_BHTT           String?
+  T_NGUONKHAC      String?
+  T_BHTT_GDV       String?
+  NAM_QT           String?
+  THANG_QT         String?
+  MA_LOAI_KCB      String?
+  MA_KHOA          String?
+  MA_CSKCB         String?
+  MA_KHUVUC        String?
+  CAN_NANG         String?
+  CAN_NANG_CON     String?
+  NAM_NAM_LIEN_TUC String?
+  NGAY_TAI_KHAM    String?
+  MA_HSBA          String?
+  MA_TTDV          String?
+  DU_PHONG         String?
+  XmlStatus        XmlStatus[]
 
   @@index([MA_LK])
   @@index([importBatchId])
@@ -1610,46 +1610,46 @@ model SystemConfig {
 }
 
 model StaffAttendance {
-  id            String   @id @default(cuid())
-  staffId       String
-  staff         Staff    @relation(fields: [staffId], references: [id])
-  workDate      String   @db.VarChar(10) // YYYY-MM-DD
-  statusId      String?
-  status_ref    SystemCategory? @relation("AttendanceStatus", fields: [statusId], references: [id])
-  is_thuc_hien_dvkt Boolean @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String          @id @default(cuid())
+  staffId           String
+  staff             Staff           @relation(fields: [staffId], references: [id])
+  workDate          String          @db.VarChar(10) // YYYY-MM-DD
+  statusId          String?
+  status_ref        SystemCategory? @relation("AttendanceStatus", fields: [statusId], references: [id])
+  is_thuc_hien_dvkt Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@unique([staffId, workDate])
 }
 
 model PdfReport {
-  id            String   @id @default(cuid())
-  url           String
-  ten_bao_cao   String
-  loai_bao_cao  String?
-  ma_khoa       String?
-  nguoi_tao     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  url          String
+  ten_bao_cao  String
+  loai_bao_cao String?
+  ma_khoa      String?
+  nguoi_tao    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ExcelTemplate {
-  id          String                 @id @default(cuid())
-  name        String                 
-  isDefault   Boolean                @default(false)
-  mappings    ExcelTemplateMapping[]
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
+  id        String                 @id @default(cuid())
+  name      String
+  isDefault Boolean                @default(false)
+  mappings  ExcelTemplateMapping[]
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
 }
 
 model ExcelTemplateMapping {
-  id              String        @id @default(cuid())
-  templateId      String
-  template        ExcelTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  system_field    String        
-  excel_column    String        
-  
+  id           String        @id @default(cuid())
+  templateId   String
+  template     ExcelTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  system_field String
+  excel_column String
+
   @@unique([templateId, system_field])
 }
 
@@ -1668,3 +1668,24 @@ model ReportTemplate {
   updatedAt     DateTime @updatedAt
 }
 
+model DynamicForm {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  slug        String            @unique
+  config      Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  data        DynamicFormData[]
+}
+
+model DynamicFormData {
+  id            String      @id @default(cuid())
+  formId        String
+  form          DynamicForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  data          Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  lastUpdatedBy String?
+  isDone        Boolean     @default(false)
+}

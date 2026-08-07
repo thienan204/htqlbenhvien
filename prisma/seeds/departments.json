@@ -6,7 +6,8 @@
     "updatedAt": "2026-06-29T01:59:59.362Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP001",
-    "ten_khoa_bv": "Khám bệnh"
+    "ten_khoa_bv": "Khám bệnh",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K02",
@@ -15,7 +16,8 @@
     "updatedAt": "2026-06-29T02:01:57.548Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP002",
-    "ten_khoa_bv": "Cấp cứu"
+    "ten_khoa_bv": "Cấp cứu",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K03",
@@ -24,7 +26,8 @@
     "updatedAt": "2026-06-29T02:05:35.442Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP007",
-    "ten_khoa_bv": "Nội tổng hợp"
+    "ten_khoa_bv": "Nội tổng hợp",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K04",
@@ -33,7 +36,8 @@
     "updatedAt": "2026-06-29T02:07:56.177Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP010",
-    "ten_khoa_bv": "Nội TM"
+    "ten_khoa_bv": "Nội TM",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K05",
@@ -42,7 +46,8 @@
     "updatedAt": "2026-06-29T02:05:58.297Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP008",
-    "ten_khoa_bv": "Nội Tiêu hóa"
+    "ten_khoa_bv": "Nội Tiêu hóa",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K07",
@@ -51,7 +56,8 @@
     "updatedAt": "2026-06-29T02:06:36.597Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP009",
-    "ten_khoa_bv": "Nội Thận-TN-LM"
+    "ten_khoa_bv": "Nội Thận-TN-LM",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K11",
@@ -60,7 +66,8 @@
     "updatedAt": "2026-06-29T02:14:02.417Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP018",
-    "ten_khoa_bv": "Truyền nhiễm"
+    "ten_khoa_bv": "Truyền nhiễm",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K13",
@@ -69,7 +76,8 @@
     "updatedAt": "2026-06-29T02:14:21.043Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP019",
-    "ten_khoa_bv": "Da liễu"
+    "ten_khoa_bv": "Da liễu",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K1415",
@@ -78,7 +86,8 @@
     "updatedAt": "2026-06-29T02:05:11.029Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP006",
-    "ten_khoa_bv": "Tâm thần - Thần kinh"
+    "ten_khoa_bv": "Tâm thần - Thần kinh",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K16",
@@ -87,7 +96,8 @@
     "updatedAt": "2026-06-29T02:14:41.502Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP020",
-    "ten_khoa_bv": "YHCT"
+    "ten_khoa_bv": "YHCT",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K1706",
@@ -96,7 +106,8 @@
     "updatedAt": "2026-06-29T02:04:36.019Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP004",
-    "ten_khoa_bv": "Lão - CXK"
+    "ten_khoa_bv": "Lão - CXK",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K18",
@@ -105,7 +116,8 @@
     "updatedAt": "2026-06-29T02:13:48.170Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP017",
-    "ten_khoa_bv": "Nhi"
+    "ten_khoa_bv": "Nhi",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K2021",
@@ -114,16 +126,18 @@
     "updatedAt": "2026-06-29T02:13:00.480Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP015",
-    "ten_khoa_bv": "Ngoại TK-LN"
+    "ten_khoa_bv": "Ngoại TK-LN",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K22",
     "ten_khoa": "Khoa Ngoại tiêu hoá",
     "createdAt": "2026-06-27T11:46:26.660Z",
-    "updatedAt": "2026-06-29T02:12:12.394Z",
+    "updatedAt": "2026-07-07T00:59:25.771Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP013",
-    "ten_khoa_bv": "Ngoại Tiêu hóa"
+    "ten_khoa_bv": "Ngoại Tiêu hóa",
+    "ma_khoa_bhyt": "K22;K22.31"
   },
   {
     "ma_khoa": "K23",
@@ -132,7 +146,8 @@
     "updatedAt": "2026-06-29T02:11:50.098Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP012",
-    "ten_khoa_bv": "Ngoại Thận - Tiết niệu"
+    "ten_khoa_bv": "Ngoại Thận - Tiết niệu",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K24",
@@ -141,7 +156,8 @@
     "updatedAt": "2026-06-29T02:12:32.710Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP014",
-    "ten_khoa_bv": "Chấn thương - Bỏng"
+    "ten_khoa_bv": "Chấn thương - Bỏng",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K26",
@@ -150,7 +166,8 @@
     "updatedAt": "2026-06-29T02:08:47.067Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP025",
-    "ten_khoa_bv": "GM-HS"
+    "ten_khoa_bv": "GM-HS",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K27",
@@ -159,7 +176,8 @@
     "updatedAt": "2026-06-29T02:13:20.252Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP016",
-    "ten_khoa_bv": "Phụ sản"
+    "ten_khoa_bv": "Phụ sản",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K28",
@@ -168,7 +186,8 @@
     "updatedAt": "2026-06-29T02:09:35.955Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP022",
-    "ten_khoa_bv": "Tai mũi họng"
+    "ten_khoa_bv": "Tai mũi họng",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K29",
@@ -177,7 +196,8 @@
     "updatedAt": "2026-06-29T02:09:06.117Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP024",
-    "ten_khoa_bv": "Răng Hàm Mặt"
+    "ten_khoa_bv": "Răng Hàm Mặt",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K30",
@@ -186,7 +206,8 @@
     "updatedAt": "2026-06-29T02:09:59.654Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP023",
-    "ten_khoa_bv": "Mắt"
+    "ten_khoa_bv": "Mắt",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K31",
@@ -195,7 +216,8 @@
     "updatedAt": "2026-06-29T02:10:25.513Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP021",
-    "ten_khoa_bv": "VLTL-PHCN"
+    "ten_khoa_bv": "VLTL-PHCN",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K33",
@@ -204,7 +226,8 @@
     "updatedAt": "2026-06-29T02:11:25.487Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP011",
-    "ten_khoa_bv": "UB-YHHN"
+    "ten_khoa_bv": "UB-YHHN",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K36",
@@ -213,7 +236,8 @@
     "updatedAt": "2026-06-29T02:11:00.983Z",
     "type": "KHOA_CAN_LAM_SANG",
     "ma_khoa_bv": "KP029",
-    "ten_khoa_bv": "HH-TM"
+    "ten_khoa_bv": "HH-TM",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "K4849",
@@ -222,7 +246,8 @@
     "updatedAt": "2026-06-29T02:03:52.078Z",
     "type": "KHOA_LAM_SANG",
     "ma_khoa_bv": "KP003",
-    "ten_khoa_bv": "HSTC-CĐ"
+    "ten_khoa_bv": "HSTC-CĐ",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP026",
@@ -231,7 +256,8 @@
     "updatedAt": "2026-06-27T12:00:24.024Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP026",
-    "ten_khoa_bv": "Dinh dưỡng"
+    "ten_khoa_bv": "Dinh dưỡng",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP028",
@@ -240,7 +266,8 @@
     "updatedAt": "2026-06-27T12:00:32.154Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP028",
-    "ten_khoa_bv": "Dược"
+    "ten_khoa_bv": "Dược",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP030",
@@ -249,7 +276,8 @@
     "updatedAt": "2026-06-27T12:00:31.763Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP030",
-    "ten_khoa_bv": "HS-VS"
+    "ten_khoa_bv": "HS-VS",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP033",
@@ -258,7 +286,8 @@
     "updatedAt": "2026-06-27T12:00:31.865Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP033",
-    "ten_khoa_bv": "TDCN"
+    "ten_khoa_bv": "TDCN",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP034",
@@ -267,7 +296,8 @@
     "updatedAt": "2026-06-27T12:00:32.529Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP034",
-    "ten_khoa_bv": "CĐHA"
+    "ten_khoa_bv": "CĐHA",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP035",
@@ -276,7 +306,8 @@
     "updatedAt": "2026-06-27T12:00:27.180Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP035",
-    "ten_khoa_bv": "GPB"
+    "ten_khoa_bv": "GPB",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP036",
@@ -285,7 +316,8 @@
     "updatedAt": "2026-06-27T12:00:31.641Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP036",
-    "ten_khoa_bv": "KSNK"
+    "ten_khoa_bv": "KSNK",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP037",
@@ -294,7 +326,8 @@
     "updatedAt": "2026-06-27T12:00:27.860Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP037",
-    "ten_khoa_bv": "Điều dưỡng"
+    "ten_khoa_bv": "Điều dưỡng",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP038",
@@ -303,7 +336,8 @@
     "updatedAt": "2026-06-27T12:00:28.341Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP038",
-    "ten_khoa_bv": "VT-TTBYT"
+    "ten_khoa_bv": "VT-TTBYT",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP039",
@@ -312,7 +346,8 @@
     "updatedAt": "2026-06-27T12:00:28.549Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP039",
-    "ten_khoa_bv": "TCCB"
+    "ten_khoa_bv": "TCCB",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP040",
@@ -321,7 +356,8 @@
     "updatedAt": "2026-06-27T12:00:31.574Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP040",
-    "ten_khoa_bv": "HCQT"
+    "ten_khoa_bv": "HCQT",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP041",
@@ -330,7 +366,8 @@
     "updatedAt": "2026-06-27T12:00:32.048Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP041",
-    "ten_khoa_bv": "TCKT"
+    "ten_khoa_bv": "TCKT",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP042",
@@ -339,7 +376,8 @@
     "updatedAt": "2026-06-27T12:00:30.194Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP042",
-    "ten_khoa_bv": "KHTH"
+    "ten_khoa_bv": "KHTH",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP043",
@@ -348,7 +386,8 @@
     "updatedAt": "2026-06-27T12:00:30.359Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP043",
-    "ten_khoa_bv": "CTXH"
+    "ten_khoa_bv": "CTXH",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP044",
@@ -357,7 +396,8 @@
     "updatedAt": "2026-06-27T12:00:31.594Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP044",
-    "ten_khoa_bv": "QLCL"
+    "ten_khoa_bv": "QLCL",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP045",
@@ -366,7 +406,8 @@
     "updatedAt": "2026-06-27T12:00:30.595Z",
     "type": "CLINICAL",
     "ma_khoa_bv": "KP045",
-    "ten_khoa_bv": "Chỉ đạo tuyến"
+    "ten_khoa_bv": "Chỉ đạo tuyến",
+    "ma_khoa_bhyt": null
   },
   {
     "ma_khoa": "KP046",
@@ -375,6 +416,7 @@
     "updatedAt": "2026-06-29T02:18:27.213Z",
     "type": "PHONG_CHUC_NANG",
     "ma_khoa_bv": "KP046",
-    "ten_khoa_bv": "CNTT"
+    "ten_khoa_bv": "CNTT",
+    "ma_khoa_bhyt": null
   }
 ]

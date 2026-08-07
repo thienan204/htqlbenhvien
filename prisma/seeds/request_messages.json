@@ -1,1 +1,90 @@
-[]
+[
+  {
+    "id": "cmr7d9mwj00019qev0ytyf1bv",
+    "itRequestId": "cmr7d9mwh00009qevq4sy906y",
+    "senderId": "cmqwawbs7021h4z6heywa3b17",
+    "senderName": "Đặng Huy Đức",
+    "content": "Huỷ ký số lãnh đạo BA",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-05T05:44:41.007Z",
+    "updatedAt": "2026-07-05T05:44:41.007Z"
+  },
+  {
+    "id": "cmr7dahbx00039qev0i1kvpb5",
+    "itRequestId": "cmr7dahbx00029qevt3o1yr7t",
+    "senderId": "cmqwawbs7021h4z6heywa3b17",
+    "senderName": "Đặng Huy Đức",
+    "content": "Huỷ ký số lãnh đạo BA",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-05T05:45:20.446Z",
+    "updatedAt": "2026-07-05T05:45:20.446Z"
+  },
+  {
+    "id": "cmr8wxhxa00018wqrt6e1abl0",
+    "itRequestId": "cmr8wxhx700008wqr6d9c0lby",
+    "senderId": "cmqwaw4ca01af4z6hq66i57qo",
+    "senderName": "Lê Thị Phượng",
+    "content": "Huỷ ký số lãnh đạo BA",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-06T07:42:53.178Z",
+    "updatedAt": "2026-07-06T07:42:53.178Z"
+  },
+  {
+    "id": "cmr8x2hyx00038wqrpnwx4w8h",
+    "itRequestId": "cmr8x2hyx00028wqrruqw1xh3",
+    "senderId": "cmqwaw4ca01af4z6hq66i57qo",
+    "senderName": "Lê Thị Phượng",
+    "content": "Huỷ ký số giấy ra viện",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-06T07:46:46.522Z",
+    "updatedAt": "2026-07-06T07:46:46.522Z"
+  },
+  {
+    "id": "cmr8xhmm300058wqrxtp9fysr",
+    "itRequestId": "cmr8xhmm300048wqrznxjlzqp",
+    "senderId": "cmqwavsgq000h4z6hckfq6nsa",
+    "senderName": "Đàm Thúy Ngân",
+    "content": "Huỷ ký số lãnh đạo BA",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-06T07:58:32.380Z",
+    "updatedAt": "2026-07-06T07:58:32.380Z"
+  },
+  {
+    "id": "cmrf22bss0001vatr2ohfd856",
+    "itRequestId": "cmrf22bsp0000vatrf7jm474t",
+    "senderId": "cmqwaptb1003zm8g8c1vebn3k",
+    "senderName": "Chu Đức Quang",
+    "content": "fdsaf",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-10T14:53:13.656Z",
+    "updatedAt": "2026-07-10T14:53:13.656Z"
+  },
+  {
+    "id": "cmrf3knt90003vatr0hvi3i24",
+    "itRequestId": "cmrf3knt90002vatr15yafb6r",
+    "senderId": "cmqwaptb1003zm8g8c1vebn3k",
+    "senderName": "Chu Đức Quang",
+    "content": "Lấy lại BN  fasfsaf",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-10T15:35:28.653Z",
+    "updatedAt": "2026-07-10T15:35:28.653Z"
+  },
+  {
+    "id": "cmrf3m7r20005vatrzwfdsjam",
+    "itRequestId": "cmrf3m7r20004vatre5ppssta",
+    "senderId": "cmqwaw0yv00w74z6hyebx28c6",
+    "senderName": "Nguyễn Thúy Vân",
+    "content": "Huỷ ký số giấy ra việnHuỷ ký số giấy ra viện",
+    "imageUrl": null,
+    "isSystem": false,
+    "createdAt": "2026-07-10T15:36:41.150Z",
+    "updatedAt": "2026-07-10T15:36:41.150Z"
+  }
+]

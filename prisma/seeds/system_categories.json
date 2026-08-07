@@ -5,10 +5,12 @@
     "code": "NAM",
     "name": "Nam",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-13T13:22:36.959Z",
-    "updatedAt": "2026-06-13T13:22:36.959Z"
+    "updatedAt": "2026-06-13T13:22:36.959Z",
+    "parentId": null
   },
   {
     "id": "cmqcdy7kr000711neyxqowj4w",
@@ -16,10 +18,12 @@
     "code": "NU",
     "name": "Nữ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-13T13:22:56.090Z",
-    "updatedAt": "2026-06-13T13:22:56.090Z"
+    "updatedAt": "2026-06-13T13:22:56.090Z",
+    "parentId": null
   },
   {
     "id": "cmqcdyggf000811ne70orfpsk",
@@ -27,10 +31,12 @@
     "code": "BHD",
     "name": "BHD",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-13T13:23:07.600Z",
-    "updatedAt": "2026-06-13T13:23:07.600Z"
+    "updatedAt": "2026-06-13T13:23:07.600Z",
+    "parentId": null
   },
   {
     "id": "cmqce71ft000b11nel9iwomjl",
@@ -38,10 +44,12 @@
     "code": "TRUONG_KHOA",
     "name": "Trưởng khoa",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-13T13:29:48.042Z",
-    "updatedAt": "2026-06-13T13:29:48.042Z"
+    "updatedAt": "2026-06-13T13:29:48.042Z",
+    "parentId": null
   },
   {
     "id": "cmqce79e0000c11nerifise2u",
@@ -49,10 +57,12 @@
     "code": "PHO_TRUONG_KHOA",
     "name": "Phó trưởng khoa",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-13T13:29:58.342Z",
-    "updatedAt": "2026-06-13T13:29:58.342Z"
+    "updatedAt": "2026-06-13T13:29:58.342Z",
+    "parentId": null
   },
   {
     "id": "cmqd9lveh000mr7gvs4idbdvv",
@@ -60,10 +70,12 @@
     "code": "TIN_HOC",
     "name": "Tin học",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T04:09:08.147Z",
-    "updatedAt": "2026-06-14T04:09:08.147Z"
+    "updatedAt": "2026-06-14T04:09:08.147Z",
+    "parentId": null
   },
   {
     "id": "cmqd9ud9d000qr7gvb40s2u1f",
@@ -71,10 +83,12 @@
     "code": "DON_VI_TINH",
     "name": "Đơn vị tính",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T04:15:44.543Z",
-    "updatedAt": "2026-06-14T04:15:44.543Z"
+    "updatedAt": "2026-06-14T04:15:44.543Z",
+    "parentId": null
   },
   {
     "id": "cmqd9y8sx000rr7gv2eh4mbed",
@@ -82,10 +96,12 @@
     "code": "CAI",
     "name": "Cái",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T04:18:45.391Z",
-    "updatedAt": "2026-06-14T04:18:45.391Z"
+    "updatedAt": "2026-06-14T04:18:45.391Z",
+    "parentId": null
   },
   {
     "id": "cmqd9yelb000sr7gvv7mzhl7w",
@@ -93,10 +109,12 @@
     "code": "CHIEC",
     "name": "Chiếc",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T04:18:52.895Z",
-    "updatedAt": "2026-06-14T04:18:52.895Z"
+    "updatedAt": "2026-06-14T04:18:52.895Z",
+    "parentId": null
   },
   {
     "id": "cmqdf2cxr000vr7gv13m9qm9z",
@@ -104,10 +122,12 @@
     "code": "HANG_SAN_XUAT",
     "name": "Hãng sản xuất",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:41:55.452Z",
-    "updatedAt": "2026-06-14T06:41:55.452Z"
+    "updatedAt": "2026-06-14T06:41:55.452Z",
+    "parentId": null
   },
   {
     "id": "cmqdf2xjh000wr7gvdhagfn8h",
@@ -115,10 +135,12 @@
     "code": "NUOC_SAN_XUAT",
     "name": "Nước sản xuất",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:42:22.155Z",
-    "updatedAt": "2026-06-14T06:42:22.155Z"
+    "updatedAt": "2026-06-14T06:42:22.155Z",
+    "parentId": null
   },
   {
     "id": "cmqdf3gvg000xr7gvkazio1d7",
@@ -126,10 +148,12 @@
     "code": "NGUON_KINH_PHI",
     "name": "Nguồn kinh phí",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:42:47.211Z",
-    "updatedAt": "2026-06-14T06:42:47.211Z"
+    "updatedAt": "2026-06-14T06:42:47.211Z",
+    "parentId": null
   },
   {
     "id": "cmqdf3xel000yr7gvinboahe2",
@@ -137,10 +161,12 @@
     "code": "DON_VI_CUNG_UNG",
     "name": "Đơn vị cung ứng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:43:08.636Z",
-    "updatedAt": "2026-06-14T06:43:08.636Z"
+    "updatedAt": "2026-06-14T06:43:08.636Z",
+    "parentId": null
   },
   {
     "id": "cmqdf49pa000zr7gvgykajxv9",
@@ -148,10 +174,12 @@
     "code": "DON_VI_CUGN_CUNG",
     "name": "don vị cugn cung",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:43:24.573Z",
-    "updatedAt": "2026-06-14T06:43:24.573Z"
+    "updatedAt": "2026-06-14T06:43:24.573Z",
+    "parentId": null
   },
   {
     "id": "cmqdf4j040010r7gvp2wpa9ch",
@@ -159,10 +187,12 @@
     "code": "CANON_2900",
     "name": "Canon 2900",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:43:36.628Z",
-    "updatedAt": "2026-06-14T09:46:54.961Z"
+    "updatedAt": "2026-06-14T09:46:54.961Z",
+    "parentId": null
   },
   {
     "id": "cmqdf4tob0011r7gvfluou76r",
@@ -170,10 +200,12 @@
     "code": "LAOI_THIET_BI",
     "name": "laoi thiet bị",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:43:50.459Z",
-    "updatedAt": "2026-06-14T06:43:50.459Z"
+    "updatedAt": "2026-06-14T06:43:50.459Z",
+    "parentId": null
   },
   {
     "id": "cmqdf53lc0012r7gvmcrfg2a1",
@@ -181,10 +213,12 @@
     "code": "HANG_SAN_XUAT",
     "name": "Hang sản xuat",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:44:03.312Z",
-    "updatedAt": "2026-06-14T06:44:03.312Z"
+    "updatedAt": "2026-06-14T06:44:03.312Z",
+    "parentId": null
   },
   {
     "id": "cmqdf5srq0013r7gv42th5ksj",
@@ -192,10 +226,12 @@
     "code": "NGUON_KINH_PHI",
     "name": "Nguôn kinh phí",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:44:35.942Z",
-    "updatedAt": "2026-06-14T06:44:35.942Z"
+    "updatedAt": "2026-06-14T06:44:35.942Z",
+    "parentId": null
   },
   {
     "id": "cmqdf5zyn0014r7gvliyzy7pd",
@@ -203,10 +239,12 @@
     "code": "NUOC_SAN_XUAT",
     "name": "Nươc san xuat",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T06:44:45.261Z",
-    "updatedAt": "2026-06-27T12:00:22.457Z"
+    "updatedAt": "2026-06-27T12:00:22.457Z",
+    "parentId": null
   },
   {
     "id": "cmqdk0khv00036gvupsn7j7fg",
@@ -214,10 +252,12 @@
     "code": "NHA_CUNG_CAP",
     "name": "Nhà cung cấp",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T09:00:30.017Z",
-    "updatedAt": "2026-06-14T09:00:30.017Z"
+    "updatedAt": "2026-06-14T09:00:30.017Z",
+    "parentId": null
   },
   {
     "id": "cmqdk2efa00056gvusweg7c18",
@@ -225,10 +265,12 @@
     "code": "CTY_A",
     "name": "Cty a",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-14T09:01:55.462Z",
-    "updatedAt": "2026-06-14T09:01:55.462Z"
+    "updatedAt": "2026-06-14T09:01:55.462Z",
+    "parentId": null
   },
   {
     "id": "cmqrf38u0001fcgoykto30zrj",
@@ -236,10 +278,12 @@
     "code": "TRUONG_PHONG",
     "name": "Trưởng phòng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-24T01:51:23.254Z",
-    "updatedAt": "2026-06-24T01:51:23.254Z"
+    "updatedAt": "2026-06-24T01:51:23.254Z",
+    "parentId": null
   },
   {
     "id": "cmqrf3hau001gcgoyl71fyfvt",
@@ -247,10 +291,12 @@
     "code": "PHO_TRUONG_PHONG",
     "name": "Phó trưởng phòng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-24T01:51:34.228Z",
-    "updatedAt": "2026-06-24T01:51:34.228Z"
+    "updatedAt": "2026-06-24T01:51:34.228Z",
+    "parentId": null
   },
   {
     "id": "cmqrf3z2p001icgoyfe60kc7y",
@@ -258,10 +304,12 @@
     "code": "IEU_DUONG_TRUONG",
     "name": "Điều dưỡng trưởng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-24T01:51:57.262Z",
-    "updatedAt": "2026-06-24T01:51:57.262Z"
+    "updatedAt": "2026-06-24T01:51:57.262Z",
+    "parentId": null
   },
   {
     "id": "cmqrf4a1f001jcgoy0vf8vaft",
@@ -269,10 +317,12 @@
     "code": "GIAM_OC",
     "name": "Giám đốc",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-24T01:52:11.476Z",
-    "updatedAt": "2026-06-24T01:52:11.476Z"
+    "updatedAt": "2026-06-24T01:52:11.476Z",
+    "parentId": null
   },
   {
     "id": "cmqrf4lps001kcgoy8rnosfvq",
@@ -280,10 +330,12 @@
     "code": "PHO_GIAM_OC",
     "name": "Phó giám đốc",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-24T01:52:26.607Z",
-    "updatedAt": "2026-06-24T01:52:26.607Z"
+    "updatedAt": "2026-06-24T01:52:26.607Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewlf00003xvudasu3gc2",
@@ -291,10 +343,12 @@
     "code": "BSCKII",
     "name": "BSCKII",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.067Z",
-    "updatedAt": "2026-06-27T11:39:20.067Z"
+    "updatedAt": "2026-06-27T11:39:20.067Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewm700013xvuxhmjiczm",
@@ -302,10 +356,12 @@
     "code": "BAC_SI_CHINH_HANG_II",
     "name": "Bác sĩ chính (hạng II)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.095Z",
-    "updatedAt": "2026-06-27T11:39:20.095Z"
+    "updatedAt": "2026-06-27T11:39:20.095Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewme00023xvuml7vh3w8",
@@ -313,10 +369,12 @@
     "code": "BAC_SI_CHINH_HANG_II",
     "name": "Bác sĩ chính (hạng II)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.102Z",
-    "updatedAt": "2026-06-27T11:39:20.102Z"
+    "updatedAt": "2026-06-27T11:39:20.102Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewml00033xvu2qycefh4",
@@ -324,10 +382,12 @@
     "code": "PHO_TRUONG_KHOA_GIAO_PHU_TRACH_KHOA",
     "name": "Phó trưởng khoa/giao phụ trách khoa",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.109Z",
-    "updatedAt": "2026-06-27T11:39:20.109Z"
+    "updatedAt": "2026-06-27T11:39:20.109Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewmr00043xvurwf717a2",
@@ -335,10 +395,12 @@
     "code": "VIEN_CHUC",
     "name": "Viên chức",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.116Z",
-    "updatedAt": "2026-06-27T11:39:20.116Z"
+    "updatedAt": "2026-06-27T11:39:20.116Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewoa00073xvuw9ofpa8v",
@@ -346,10 +408,12 @@
     "code": "IEU_DUONG_H",
     "name": "Điều dưỡng ĐH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.171Z",
-    "updatedAt": "2026-06-27T11:39:20.171Z"
+    "updatedAt": "2026-06-27T11:39:20.171Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewoi00083xvutk567p0r",
@@ -357,10 +421,12 @@
     "code": "IEU_DUONG_HANG_III",
     "name": "Điều dưỡng (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.179Z",
-    "updatedAt": "2026-06-27T11:39:20.179Z"
+    "updatedAt": "2026-06-27T11:39:20.179Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewop00093xvubj31g5k6",
@@ -368,10 +434,12 @@
     "code": "IEU_DUONG_HANG_III",
     "name": "Điều dưỡng (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.186Z",
-    "updatedAt": "2026-06-27T11:39:20.186Z"
+    "updatedAt": "2026-06-27T11:39:20.186Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewpr000a3xvuknvim1r7",
@@ -379,10 +447,12 @@
     "code": "HO_SINH_HANG_III",
     "name": "Hộ sinh (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.223Z",
-    "updatedAt": "2026-06-27T11:39:20.223Z"
+    "updatedAt": "2026-06-27T11:39:20.223Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewpz000b3xvu8i3ebabb",
@@ -390,10 +460,12 @@
     "code": "HO_SINH_HANG_III",
     "name": "Hộ sinh (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.231Z",
-    "updatedAt": "2026-06-27T11:39:20.231Z"
+    "updatedAt": "2026-06-27T11:39:20.231Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewqh000c3xvuzb8kv0q8",
@@ -401,10 +473,12 @@
     "code": "IEU_DUONG_C",
     "name": "Điều dưỡng CĐ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.249Z",
-    "updatedAt": "2026-06-27T11:39:20.249Z"
+    "updatedAt": "2026-06-27T11:39:20.249Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewqq000d3xvupz34d302",
@@ -412,10 +486,12 @@
     "code": "IEU_DUONG_HANG_IV",
     "name": "Điều dưỡng (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.259Z",
-    "updatedAt": "2026-06-27T11:39:20.259Z"
+    "updatedAt": "2026-06-27T11:39:20.259Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewqx000e3xvuwvr0g588",
@@ -423,10 +499,12 @@
     "code": "IEU_DUONG_HANG_IV",
     "name": "Điều dưỡng (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.266Z",
-    "updatedAt": "2026-06-27T11:39:20.266Z"
+    "updatedAt": "2026-06-27T11:39:20.266Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewve000f3xvubb2ll84b",
@@ -434,10 +512,12 @@
     "code": "IEU_DUONG_TC",
     "name": "Điều dưỡng TC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.427Z",
-    "updatedAt": "2026-06-27T11:39:20.427Z"
+    "updatedAt": "2026-06-27T11:39:20.427Z",
+    "parentId": null
   },
   {
     "id": "cmqwaeww1000g3xvutmz3zrgr",
@@ -445,10 +525,12 @@
     "code": "HO_SINH_C",
     "name": "Hộ sinh CĐ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.449Z",
-    "updatedAt": "2026-06-27T11:39:20.449Z"
+    "updatedAt": "2026-06-27T11:39:20.449Z",
+    "parentId": null
   },
   {
     "id": "cmqwaeww8000h3xvu9hfz7vct",
@@ -456,10 +538,12 @@
     "code": "HO_SINH_HANG_IV",
     "name": "Hộ sinh (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.457Z",
-    "updatedAt": "2026-06-27T11:39:20.457Z"
+    "updatedAt": "2026-06-27T11:39:20.457Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewwg000i3xvudvb0kykg",
@@ -467,10 +551,12 @@
     "code": "HO_SINH_HANG_IV",
     "name": "Hộ sinh (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.464Z",
-    "updatedAt": "2026-06-27T11:39:20.464Z"
+    "updatedAt": "2026-06-27T11:39:20.464Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewwv000j3xvukmi9v244",
@@ -478,10 +564,12 @@
     "code": "HO_LY",
     "name": "Hộ lý",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.479Z",
-    "updatedAt": "2026-06-27T11:39:20.479Z"
+    "updatedAt": "2026-06-27T11:39:20.479Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewx2000k3xvupnr1jw2o",
@@ -489,10 +577,12 @@
     "code": "HO_LY",
     "name": "Hộ lý",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.486Z",
-    "updatedAt": "2026-06-27T11:39:20.486Z"
+    "updatedAt": "2026-06-27T11:39:20.486Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewxa000l3xvu7sqg2pd8",
@@ -500,10 +590,12 @@
     "code": "H_THEO_N_161",
     "name": "HĐ theo NĐ161",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.494Z",
-    "updatedAt": "2026-06-27T11:39:20.494Z"
+    "updatedAt": "2026-06-27T11:39:20.494Z",
+    "parentId": null
   },
   {
     "id": "cmqwaewxt000m3xvuxxfohhhy",
@@ -511,10 +603,12 @@
     "code": "H_CO_THOI_HAN",
     "name": "HĐ có thời hạn",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.513Z",
-    "updatedAt": "2026-06-27T11:39:20.513Z"
+    "updatedAt": "2026-06-27T11:39:20.513Z",
+    "parentId": null
   },
   {
     "id": "cmqwaex00000r3xvudx6djdqj",
@@ -522,10 +616,12 @@
     "code": "BSCKI",
     "name": "BSCKI",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.592Z",
-    "updatedAt": "2026-06-27T11:39:20.592Z"
+    "updatedAt": "2026-06-27T11:39:20.592Z",
+    "parentId": null
   },
   {
     "id": "cmqwaex07000s3xvudql4d5pu",
@@ -533,10 +629,12 @@
     "code": "BAC_SI_HANG_III",
     "name": "Bác sĩ (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.599Z",
-    "updatedAt": "2026-06-27T11:39:20.599Z"
+    "updatedAt": "2026-06-27T11:39:20.599Z",
+    "parentId": null
   },
   {
     "id": "cmqwaex0f000t3xvu0gqptwth",
@@ -544,10 +642,12 @@
     "code": "BAC_SI_HANG_III",
     "name": "Bác sĩ (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.608Z",
-    "updatedAt": "2026-06-27T11:39:20.608Z"
+    "updatedAt": "2026-06-27T11:39:20.608Z",
+    "parentId": null
   },
   {
     "id": "cmqwaex1g000w3xvu521ttd1g",
@@ -555,10 +655,12 @@
     "code": "BAC_SI",
     "name": "Bác sĩ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:20.644Z",
-    "updatedAt": "2026-06-27T11:39:20.644Z"
+    "updatedAt": "2026-06-27T11:39:20.644Z",
+    "parentId": null
   },
   {
     "id": "cmqwaextp001n3xvu3pufjd9f",
@@ -566,10 +668,12 @@
     "code": "PHU_TRACH_KHOA_DINH_DUONG",
     "name": "Phụ trách khoa Dinh dưỡng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:21.661Z",
-    "updatedAt": "2026-06-27T11:39:21.661Z"
+    "updatedAt": "2026-06-27T11:39:21.661Z",
+    "parentId": null
   },
   {
     "id": "cmqwaexu8001o3xvuhdltwdw0",
@@ -577,10 +681,12 @@
     "code": "THAC_SY",
     "name": "Thạc sỹ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:21.681Z",
-    "updatedAt": "2026-06-27T11:39:21.681Z"
+    "updatedAt": "2026-06-27T11:39:21.681Z",
+    "parentId": null
   },
   {
     "id": "cmqwaexxg001r3xvuvy4fo7ut",
@@ -588,21 +694,25 @@
     "code": "HO_SINH_TC",
     "name": "Hộ sinh TC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:21.796Z",
-    "updatedAt": "2026-06-27T11:39:21.796Z"
+    "updatedAt": "2026-06-27T11:39:21.796Z",
+    "parentId": null
   },
   {
     "id": "cmqwaexyn001s3xvuz48t8617",
     "type": "CHUC_VU",
     "code": "PHO_GIAM_OC_PHU_TRACH_KHOA_TT_TK",
-    "name": "Phó giám đốc; phụ trách khoa TT-TK",
+    "name": "Phó giám đốc",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:21.839Z",
-    "updatedAt": "2026-06-27T11:39:21.839Z"
+    "updatedAt": "2026-07-07T01:44:54.505Z",
+    "parentId": null
   },
   {
     "id": "cmqwaezhj002x3xvuugzojlon",
@@ -610,10 +720,12 @@
     "code": "PHU_TRACH_IEU_DUONG",
     "name": "Phụ trách điều dưỡng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:23.815Z",
-    "updatedAt": "2026-06-27T11:39:23.815Z"
+    "updatedAt": "2026-06-27T11:39:23.815Z",
+    "parentId": null
   },
   {
     "id": "cmqwaezyu003k3xvuav4a36em",
@@ -621,10 +733,12 @@
     "code": "PHO_GIAM_OC_PHU_TRACH_KHOA",
     "name": "Phó giám đốc/phụ trách khoa",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:24.438Z",
-    "updatedAt": "2026-06-27T11:39:24.438Z"
+    "updatedAt": "2026-06-27T11:39:24.438Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf19i005h3xvu42fpn3cv",
@@ -632,10 +746,12 @@
     "code": "HO_SINH_H",
     "name": "Hộ sinh ĐH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:26.118Z",
-    "updatedAt": "2026-06-27T11:39:26.118Z"
+    "updatedAt": "2026-06-27T11:39:26.118Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf1d2005i3xvuh9wc86up",
@@ -643,10 +759,12 @@
     "code": "HO_SINH_TRUONG",
     "name": "Hộ sinh trưởng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:26.246Z",
-    "updatedAt": "2026-06-27T11:39:26.246Z"
+    "updatedAt": "2026-06-27T11:39:26.246Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf1rv005j3xvupxqyjz5s",
@@ -654,10 +772,12 @@
     "code": "BAC_SI_NOI_TRU",
     "name": "Bác sĩ nội trú",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:26.780Z",
-    "updatedAt": "2026-06-27T11:39:26.780Z"
+    "updatedAt": "2026-06-27T11:39:26.780Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf1sp005m3xvu6a5zayjs",
@@ -665,10 +785,12 @@
     "code": "PHO_TRUONG_KHOA_PHU_TRACH_KHOA",
     "name": "Phó trưởng khoa/Phụ trách khoa",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:26.810Z",
-    "updatedAt": "2026-06-27T11:39:26.810Z"
+    "updatedAt": "2026-06-27T11:39:26.810Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2uj006b3xvugciqgqf1",
@@ -676,10 +798,12 @@
     "code": "PHU_TRACH_KHOA",
     "name": "Phụ trách khoa",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.171Z",
-    "updatedAt": "2026-06-27T11:39:28.171Z"
+    "updatedAt": "2026-06-27T11:39:28.171Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2xe006g3xvut60e2imo",
@@ -687,10 +811,12 @@
     "code": "KTY_H",
     "name": "KTY ĐH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.274Z",
-    "updatedAt": "2026-06-27T11:39:28.274Z"
+    "updatedAt": "2026-06-27T11:39:28.274Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2xm006h3xvut9gs5g9h",
@@ -698,10 +824,12 @@
     "code": "KY_THUAT_Y_HANG_III",
     "name": "Kỹ thuật y (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.283Z",
-    "updatedAt": "2026-06-27T11:39:28.283Z"
+    "updatedAt": "2026-06-27T11:39:28.283Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2xr006i3xvuxrgfjyk0",
@@ -709,10 +837,12 @@
     "code": "KY_THUAT_Y_HANG_III",
     "name": "Kỹ thuật y (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.288Z",
-    "updatedAt": "2026-06-27T11:39:28.288Z"
+    "updatedAt": "2026-06-27T11:39:28.288Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2y3006j3xvust2cfr5d",
@@ -720,10 +850,12 @@
     "code": "KTY_C",
     "name": "KTY CĐ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.299Z",
-    "updatedAt": "2026-06-27T11:39:28.299Z"
+    "updatedAt": "2026-06-27T11:39:28.299Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2y9006k3xvuw0ldlhol",
@@ -731,10 +863,12 @@
     "code": "KY_THUAT_Y_HANG_IV",
     "name": "Kỹ thuật y (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.305Z",
-    "updatedAt": "2026-06-27T11:39:28.305Z"
+    "updatedAt": "2026-06-27T11:39:28.305Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2ye006l3xvuw328ok8m",
@@ -742,10 +876,12 @@
     "code": "KY_THUAT_Y_HANG_IV",
     "name": "Kỹ thuật y (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.310Z",
-    "updatedAt": "2026-06-27T11:39:28.310Z"
+    "updatedAt": "2026-06-27T11:39:28.310Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf2yt006o3xvu6lzlqgy7",
@@ -753,10 +889,12 @@
     "code": "KTY_TC",
     "name": "KTY TC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:28.325Z",
-    "updatedAt": "2026-06-27T11:39:28.325Z"
+    "updatedAt": "2026-06-27T11:39:28.325Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3xg007h3xvu3b8dqzss",
@@ -764,10 +902,12 @@
     "code": "CN_DINH_DUONG",
     "name": "CN Dinh dưỡng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.573Z",
-    "updatedAt": "2026-06-27T11:39:29.573Z"
+    "updatedAt": "2026-06-27T11:39:29.573Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3xn007i3xvukxbthcb0",
@@ -775,10 +915,12 @@
     "code": "DINH_DUONG_HANG_III",
     "name": "Dinh dưỡng hạng III",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.579Z",
-    "updatedAt": "2026-06-27T11:39:29.579Z"
+    "updatedAt": "2026-06-27T11:39:29.579Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3y0007j3xvuwwy7yben",
@@ -786,10 +928,12 @@
     "code": "DSCKI",
     "name": "DSCKI",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.593Z",
-    "updatedAt": "2026-06-27T11:39:29.593Z"
+    "updatedAt": "2026-06-27T11:39:29.593Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3y8007k3xvutsm5rf8s",
@@ -797,10 +941,12 @@
     "code": "DUOC_SI_HANG_III",
     "name": "Dược sĩ (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.600Z",
-    "updatedAt": "2026-06-27T11:39:29.600Z"
+    "updatedAt": "2026-06-27T11:39:29.600Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3ye007l3xvu4yl8gabe",
@@ -808,10 +954,12 @@
     "code": "DUOC_SI_HANG_III",
     "name": "Dược sĩ (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.607Z",
-    "updatedAt": "2026-06-27T11:39:29.607Z"
+    "updatedAt": "2026-06-27T11:39:29.607Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3ze007m3xvuqbwp5oc2",
@@ -819,10 +967,12 @@
     "code": "DUOC_SI_CHINH_HANG_II",
     "name": "Dược sĩ chính (hạng II)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.642Z",
-    "updatedAt": "2026-06-27T11:39:29.642Z"
+    "updatedAt": "2026-06-27T11:39:29.642Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf3zl007n3xvuxyliqnhp",
@@ -830,10 +980,12 @@
     "code": "DUOC_SI_CHINH_HANG_II",
     "name": "Dược sĩ chính (hạng II)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.650Z",
-    "updatedAt": "2026-06-27T11:39:29.650Z"
+    "updatedAt": "2026-06-27T11:39:29.650Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf402007o3xvuuec6xjcq",
@@ -841,10 +993,12 @@
     "code": "DUOC_SY_H",
     "name": "Dược sỹ ĐH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.666Z",
-    "updatedAt": "2026-06-27T11:39:29.666Z"
+    "updatedAt": "2026-06-27T11:39:29.666Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf43k007r3xvu9tkmj3ex",
@@ -852,10 +1006,12 @@
     "code": "DUOC_SY_C",
     "name": "Dược sỹ CĐ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.793Z",
-    "updatedAt": "2026-06-27T11:39:29.793Z"
+    "updatedAt": "2026-06-27T11:39:29.793Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf43s007s3xvu3mdbax0l",
@@ -863,10 +1019,12 @@
     "code": "DUOC_HANG_IV",
     "name": "Dược (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.800Z",
-    "updatedAt": "2026-06-27T11:39:29.800Z"
+    "updatedAt": "2026-06-27T11:39:29.800Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf447007t3xvusej87nra",
@@ -874,10 +1032,12 @@
     "code": "DUOC_HANG_IV",
     "name": "Dược (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.815Z",
-    "updatedAt": "2026-06-27T11:39:29.815Z"
+    "updatedAt": "2026-06-27T11:39:29.815Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf48k007w3xvu0x72icw6",
@@ -885,10 +1045,12 @@
     "code": "DUOC_SY_TC",
     "name": "Dược sỹ TC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:29.973Z",
-    "updatedAt": "2026-06-27T11:39:29.973Z"
+    "updatedAt": "2026-06-27T11:39:29.973Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf4ab007x3xvuobdmsvo3",
@@ -896,10 +1058,12 @@
     "code": "KY_THUAT_Y_TRUONG",
     "name": "Kỹ thuật y trưởng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:30.035Z",
-    "updatedAt": "2026-06-27T11:39:30.035Z"
+    "updatedAt": "2026-06-27T11:39:30.035Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5hi009k3xvug3g1hx55",
@@ -907,10 +1071,12 @@
     "code": "KY_SU",
     "name": "Kỹ sư",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.590Z",
-    "updatedAt": "2026-06-27T11:39:31.590Z"
+    "updatedAt": "2026-06-27T11:39:31.590Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5hq009l3xvuurbgoyvl",
@@ -918,10 +1084,12 @@
     "code": "KY_SU_HANG_III",
     "name": "Kỹ sư (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.599Z",
-    "updatedAt": "2026-06-27T11:39:31.599Z"
+    "updatedAt": "2026-06-27T11:39:31.599Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5i2009m3xvu1fbtanf5",
@@ -929,10 +1097,12 @@
     "code": "YTCC",
     "name": "YTCC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.611Z",
-    "updatedAt": "2026-06-27T11:39:31.611Z"
+    "updatedAt": "2026-06-27T11:39:31.611Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5ia009n3xvuu4nc81d8",
@@ -940,10 +1110,12 @@
     "code": "Y_TE_CONG_CONG_HANG_III",
     "name": "Y tế công cộng (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.618Z",
-    "updatedAt": "2026-06-27T11:39:31.618Z"
+    "updatedAt": "2026-06-27T11:39:31.618Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5jp009o3xvuqx8llszl",
@@ -951,10 +1123,12 @@
     "code": "NVPV",
     "name": "NVPV",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.669Z",
-    "updatedAt": "2026-06-27T11:39:31.669Z"
+    "updatedAt": "2026-06-27T11:39:31.669Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5jw009p3xvungl7poi1",
@@ -962,10 +1136,12 @@
     "code": "NVPV",
     "name": "NVPV",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.676Z",
-    "updatedAt": "2026-06-27T11:39:31.676Z"
+    "updatedAt": "2026-06-27T11:39:31.676Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5mg009u3xvuuoz1iz4c",
@@ -973,10 +1149,12 @@
     "code": "Y_HOC_DU_PHONG",
     "name": "Y học dự phòng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.769Z",
-    "updatedAt": "2026-06-27T11:39:31.769Z"
+    "updatedAt": "2026-06-27T11:39:31.769Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5mn009v3xvuczc3fph6",
@@ -984,10 +1162,12 @@
     "code": "BAC_SI_Y_HOC_DU_PHONG_HANG_III",
     "name": "Bác sĩ Y học dự phòng (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.775Z",
-    "updatedAt": "2026-06-27T11:39:31.775Z"
+    "updatedAt": "2026-06-27T11:39:31.775Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5mz009w3xvu7be547dy",
@@ -995,10 +1175,12 @@
     "code": "DCKI",
     "name": "ĐDCKI",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.788Z",
-    "updatedAt": "2026-06-27T11:39:31.788Z"
+    "updatedAt": "2026-06-27T11:39:31.788Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5n6009x3xvu1ucwfq4o",
@@ -1006,10 +1188,12 @@
     "code": "IEU_DUONG_HANG_II",
     "name": "Điều dưỡng (hạng II)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.794Z",
-    "updatedAt": "2026-06-27T11:39:31.794Z"
+    "updatedAt": "2026-06-27T11:39:31.794Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5nf009y3xvukde9ur95",
@@ -1017,10 +1201,12 @@
     "code": "IEU_DUONG_HANG_II",
     "name": "Điều dưỡng (hạng II)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.803Z",
-    "updatedAt": "2026-06-27T11:39:31.803Z"
+    "updatedAt": "2026-06-27T11:39:31.803Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5pw009z3xvu8xqt6j5d",
@@ -1028,10 +1214,12 @@
     "code": "THS_IEU_DUONG",
     "name": "ThS Điều dưỡng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.892Z",
-    "updatedAt": "2026-06-27T11:39:31.892Z"
+    "updatedAt": "2026-06-27T11:39:31.892Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5q900a03xvutc7t0yso",
@@ -1039,10 +1227,12 @@
     "code": "PHO_TRUONG_PHONG_IEU_DUONG_TRUONG",
     "name": "Phó trưởng phòng/ Điều dưỡng trưởng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:31.906Z",
-    "updatedAt": "2026-06-27T11:39:31.906Z"
+    "updatedAt": "2026-06-27T11:39:31.906Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5ut00a13xvu3lpsxhne",
@@ -1050,10 +1240,12 @@
     "code": "KY_SU_HANG_III",
     "name": "Kỹ sư (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.069Z",
-    "updatedAt": "2026-06-27T11:39:32.069Z"
+    "updatedAt": "2026-06-27T11:39:32.069Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5vk00a43xvupfvap9ax",
@@ -1061,10 +1253,12 @@
     "code": "CAN_SU",
     "name": "Cán sự",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.096Z",
-    "updatedAt": "2026-06-27T11:39:32.096Z"
+    "updatedAt": "2026-06-27T11:39:32.096Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5vq00a53xvuxytwnxzd",
@@ -1072,10 +1266,12 @@
     "code": "CAN_SU",
     "name": "Cán sự",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.103Z",
-    "updatedAt": "2026-06-27T11:39:32.103Z"
+    "updatedAt": "2026-06-27T11:39:32.103Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5xi00ac3xvugriwhnyh",
@@ -1083,10 +1279,12 @@
     "code": "C_Y_SINH",
     "name": "CĐ y sinh",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.166Z",
-    "updatedAt": "2026-06-27T11:39:32.166Z"
+    "updatedAt": "2026-06-27T11:39:32.166Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5xp00ad3xvucrzmw7pk",
@@ -1094,10 +1292,12 @@
     "code": "KY_THUAT_VIEN_HANG_IV",
     "name": "Kỹ thuật viên (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.173Z",
-    "updatedAt": "2026-06-27T11:39:32.173Z"
+    "updatedAt": "2026-06-27T11:39:32.173Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5xx00ae3xvuu6yt5tcs",
@@ -1105,10 +1305,12 @@
     "code": "KY_THUAT_VIEN_HANG_IV",
     "name": "Kỹ thuật viên (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.181Z",
-    "updatedAt": "2026-06-27T11:39:32.181Z"
+    "updatedAt": "2026-06-27T11:39:32.181Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5yh00ah3xvuiosr99p2",
@@ -1116,10 +1318,12 @@
     "code": "CV_CAO_ANG",
     "name": "CV cao đẳng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.201Z",
-    "updatedAt": "2026-06-27T11:39:32.201Z"
+    "updatedAt": "2026-06-27T11:39:32.201Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5z500ak3xvu5f4rc074",
@@ -1127,10 +1331,12 @@
     "code": "NVKT",
     "name": "NVKT",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.225Z",
-    "updatedAt": "2026-06-27T11:39:32.225Z"
+    "updatedAt": "2026-06-27T11:39:32.225Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf5ze00al3xvu2xafxbru",
@@ -1138,10 +1344,12 @@
     "code": "NVKT",
     "name": "NVKT",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.234Z",
-    "updatedAt": "2026-06-27T11:39:32.234Z"
+    "updatedAt": "2026-06-27T11:39:32.234Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf60g00aq3xvure2gkb14",
@@ -1149,10 +1357,12 @@
     "code": "THS_KTYS",
     "name": "ThS KTYS",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.273Z",
-    "updatedAt": "2026-06-27T11:39:32.273Z"
+    "updatedAt": "2026-06-27T11:39:32.273Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf61p00at3xvux5dbiykz",
@@ -1160,10 +1370,12 @@
     "code": "TC_CNTT",
     "name": "TC CNTT",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.317Z",
-    "updatedAt": "2026-06-27T11:39:32.317Z"
+    "updatedAt": "2026-06-27T11:39:32.317Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf63t00au3xvu2acd186f",
@@ -1171,10 +1383,12 @@
     "code": "CONG_NGHE_THONG_TIN_HANG_IV",
     "name": "Công nghệ thông tin (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.393Z",
-    "updatedAt": "2026-06-27T11:39:32.393Z"
+    "updatedAt": "2026-06-27T11:39:32.393Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf64100av3xvuiyd6cja5",
@@ -1182,10 +1396,12 @@
     "code": "CONG_NGHE_THONG_TIN_HANG_IV",
     "name": "Công nghệ thông tin (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.401Z",
-    "updatedAt": "2026-06-27T11:39:32.401Z"
+    "updatedAt": "2026-06-27T11:39:32.401Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf64k00ay3xvuvtz0oknn",
@@ -1193,10 +1409,12 @@
     "code": "H_QTNL",
     "name": "ĐH QTNL",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.420Z",
-    "updatedAt": "2026-06-27T11:39:32.420Z"
+    "updatedAt": "2026-06-27T11:39:32.420Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf65100az3xvu597emv61",
@@ -1204,10 +1422,12 @@
     "code": "CHUYEN_VIEN",
     "name": "Chuyên viên",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.437Z",
-    "updatedAt": "2026-06-27T11:39:32.437Z"
+    "updatedAt": "2026-06-27T11:39:32.437Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf65a00b03xvucm951j3l",
@@ -1215,10 +1435,12 @@
     "code": "CHUYEN_VIEN_VE_TONG_HOP",
     "name": "Chuyên viên về tổng hợp",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.446Z",
-    "updatedAt": "2026-06-27T11:39:32.446Z"
+    "updatedAt": "2026-06-27T11:39:32.446Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf65s00b33xvu78tbz57x",
@@ -1226,10 +1448,12 @@
     "code": "THS_QTNL",
     "name": "ThS QTNL",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.465Z",
-    "updatedAt": "2026-06-27T11:39:32.465Z"
+    "updatedAt": "2026-06-27T11:39:32.465Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf66h00b43xvuyw7shk2g",
@@ -1237,10 +1461,12 @@
     "code": "CU_NHAN_LUAT",
     "name": "Cử nhân Luật",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.489Z",
-    "updatedAt": "2026-06-27T11:39:32.489Z"
+    "updatedAt": "2026-06-27T11:39:32.489Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf66s00b53xvu61bn85s8",
@@ -1248,10 +1474,12 @@
     "code": "CHUYEN_VIEN_VE_PHAP_CHE",
     "name": "Chuyên viên về pháp chế",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.500Z",
-    "updatedAt": "2026-06-27T11:39:32.500Z"
+    "updatedAt": "2026-06-27T11:39:32.500Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf67700b63xvuldtvy1n2",
@@ -1259,10 +1487,12 @@
     "code": "CU_NHAN_BH",
     "name": "Cử nhân BH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.515Z",
-    "updatedAt": "2026-06-27T11:39:32.515Z"
+    "updatedAt": "2026-06-27T11:39:32.515Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf67p00b73xvuzed7jczc",
@@ -1270,10 +1500,12 @@
     "code": "THS_LUAT",
     "name": "ThS Luật",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.533Z",
-    "updatedAt": "2026-06-27T11:39:32.533Z"
+    "updatedAt": "2026-06-27T11:39:32.533Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf68800b83xvuq7o7gmpi",
@@ -1281,10 +1513,12 @@
     "code": "CU_NHAN_CTH",
     "name": "Cử nhân CTH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.553Z",
-    "updatedAt": "2026-06-27T11:39:32.553Z"
+    "updatedAt": "2026-06-27T11:39:32.553Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6a000bb3xvu9if474u1",
@@ -1292,10 +1526,12 @@
     "code": "KTC",
     "name": "KTCĐ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.617Z",
-    "updatedAt": "2026-06-27T11:39:32.617Z"
+    "updatedAt": "2026-06-27T11:39:32.617Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6a700bc3xvu3sfujcme",
@@ -1303,10 +1539,12 @@
     "code": "KE_TOAN_VIEN_TRUNG_CAP_HANG_IV",
     "name": "Kế toán viên trung cấp (hạng IV)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.623Z",
-    "updatedAt": "2026-06-27T11:39:32.623Z"
+    "updatedAt": "2026-06-27T11:39:32.623Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6bn00bh3xvuszy6ksbm",
@@ -1314,10 +1552,12 @@
     "code": "THS_QUAN_LY_CONG",
     "name": "ThS Quản lý công",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.675Z",
-    "updatedAt": "2026-06-27T11:39:32.675Z"
+    "updatedAt": "2026-06-27T11:39:32.675Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6by00bi3xvu4w3eudku",
@@ -1325,10 +1565,12 @@
     "code": "CHUYEN_VIEN_VE_HCVP",
     "name": "Chuyên viên về HCVP",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.686Z",
-    "updatedAt": "2026-06-27T11:39:32.686Z"
+    "updatedAt": "2026-06-27T11:39:32.686Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6cf00bj3xvuwb5xdn5s",
@@ -1336,10 +1578,12 @@
     "code": "CU_NHAN_HC",
     "name": "Cử nhân HC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.704Z",
-    "updatedAt": "2026-06-27T11:39:32.704Z"
+    "updatedAt": "2026-06-27T11:39:32.704Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6dg00bk3xvu55jfprui",
@@ -1347,10 +1591,12 @@
     "code": "VAN_THU",
     "name": "Văn thư",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.740Z",
-    "updatedAt": "2026-06-27T11:39:32.740Z"
+    "updatedAt": "2026-06-27T11:39:32.740Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6do00bl3xvuqbuiax6h",
@@ -1358,10 +1604,12 @@
     "code": "VAN_THU_VIEN_TRUNG_CAP",
     "name": "Văn thư viên trung cấp",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.749Z",
-    "updatedAt": "2026-06-27T11:39:32.749Z"
+    "updatedAt": "2026-06-27T11:39:32.749Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6dw00bm3xvul5o5sl3z",
@@ -1369,10 +1617,12 @@
     "code": "VAN_THU_VIEN_TRUNG_CAP",
     "name": "Văn thư viên trung cấp",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.757Z",
-    "updatedAt": "2026-06-27T11:39:32.757Z"
+    "updatedAt": "2026-06-27T11:39:32.757Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6ec00bn3xvuulsf8vej",
@@ -1380,10 +1630,12 @@
     "code": "LAI_XE",
     "name": "Lái xe",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.772Z",
-    "updatedAt": "2026-06-27T11:39:32.772Z"
+    "updatedAt": "2026-06-27T11:39:32.772Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6ek00bo3xvuecipuanc",
@@ -1391,10 +1643,12 @@
     "code": "NHAN_VIEN",
     "name": "Nhân viên",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.781Z",
-    "updatedAt": "2026-06-27T11:39:32.781Z"
+    "updatedAt": "2026-06-27T11:39:32.781Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6es00bp3xvuv626uici",
@@ -1402,10 +1656,12 @@
     "code": "NVLX",
     "name": "NVLX",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:32.788Z",
-    "updatedAt": "2026-06-27T11:39:32.788Z"
+    "updatedAt": "2026-06-27T11:39:32.788Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6ko00c63xvuadfitdg3",
@@ -1413,10 +1669,12 @@
     "code": "BAO_VE",
     "name": "Bảo vệ",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.000Z",
-    "updatedAt": "2026-06-27T11:39:33.000Z"
+    "updatedAt": "2026-06-27T11:39:33.000Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf6l400c73xvuepd17flu",
@@ -1424,10 +1682,12 @@
     "code": "NVBV",
     "name": "NVBV",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.016Z",
-    "updatedAt": "2026-06-27T11:39:33.016Z"
+    "updatedAt": "2026-06-27T11:39:33.016Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf70300d03xvuutefb3dq",
@@ -1435,10 +1695,12 @@
     "code": "KT_H",
     "name": "KTĐH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.556Z",
-    "updatedAt": "2026-06-27T11:39:33.556Z"
+    "updatedAt": "2026-06-27T11:39:33.556Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf70c00d13xvufpw9bqcn",
@@ -1446,10 +1708,12 @@
     "code": "KE_TOAN_VIEN",
     "name": "Kế toán viên",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.565Z",
-    "updatedAt": "2026-06-27T11:39:33.565Z"
+    "updatedAt": "2026-06-27T11:39:33.565Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf70t00d23xvuibza7zdp",
@@ -1457,10 +1721,12 @@
     "code": "KE_TOAN_VIEN_HANG_III",
     "name": "Kế toán viên (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.582Z",
-    "updatedAt": "2026-06-27T11:39:33.582Z"
+    "updatedAt": "2026-06-27T11:39:33.582Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf76x00d73xvuatqirxqg",
@@ -1468,10 +1734,12 @@
     "code": "KE_TOAN_VIEN_TC",
     "name": "Kế toán viên TC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.801Z",
-    "updatedAt": "2026-06-27T11:39:33.801Z"
+    "updatedAt": "2026-06-27T11:39:33.801Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf77a00d83xvup1gpa9cy",
@@ -1479,10 +1747,12 @@
     "code": "CU_NHAN_QTKD",
     "name": "Cử nhân QTKD",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.815Z",
-    "updatedAt": "2026-06-27T11:39:33.815Z"
+    "updatedAt": "2026-06-27T11:39:33.815Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf77h00d93xvuep7m8i69",
@@ -1490,10 +1760,12 @@
     "code": "CHUYEN_VIEN_VE_TAI_CHINH",
     "name": "Chuyên viên về Tài chính",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.821Z",
-    "updatedAt": "2026-06-27T11:39:33.821Z"
+    "updatedAt": "2026-06-27T11:39:33.821Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf78r00da3xvuin3ptot6",
@@ -1501,10 +1773,12 @@
     "code": "CU_NHAN_TCNH",
     "name": "Cử nhân TCNH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.867Z",
-    "updatedAt": "2026-06-27T11:39:33.867Z"
+    "updatedAt": "2026-06-27T11:39:33.867Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf79900db3xvuggp2vudf",
@@ -1512,10 +1786,12 @@
     "code": "THS_KT",
     "name": "ThS KT",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.886Z",
-    "updatedAt": "2026-06-27T11:39:33.886Z"
+    "updatedAt": "2026-06-27T11:39:33.886Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf79q00dc3xvu0hsn1lho",
@@ -1523,10 +1799,12 @@
     "code": "THS_TCNH",
     "name": "ThS TCNH",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.902Z",
-    "updatedAt": "2026-06-27T11:39:33.902Z"
+    "updatedAt": "2026-06-27T11:39:33.902Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7b500df3xvubrpvrt1m",
@@ -1534,10 +1812,12 @@
     "code": "H_CNTT",
     "name": "ĐH CNTT",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.954Z",
-    "updatedAt": "2026-06-27T11:39:33.954Z"
+    "updatedAt": "2026-06-27T11:39:33.954Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7bb00dg3xvuf7yy9afz",
@@ -1545,10 +1825,12 @@
     "code": "CONG_NGHE_THONG_TIN_HANG_III",
     "name": "Công nghệ thông tin (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.960Z",
-    "updatedAt": "2026-06-27T11:39:33.960Z"
+    "updatedAt": "2026-06-27T11:39:33.960Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7bh00dh3xvu9yp9ry0w",
@@ -1556,10 +1838,12 @@
     "code": "CONG_NGHE_THONG_TIN_HANG_III",
     "name": "Công nghệ thông tin (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:33.965Z",
-    "updatedAt": "2026-06-27T11:39:33.965Z"
+    "updatedAt": "2026-06-27T11:39:33.965Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7cl00dk3xvui2ncuwjy",
@@ -1567,10 +1851,12 @@
     "code": "Y_TE_CONG_CONG_HANG_III",
     "name": "Y tế công cộng (hạng III)",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:34.006Z",
-    "updatedAt": "2026-06-27T11:39:34.006Z"
+    "updatedAt": "2026-06-27T11:39:34.006Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7ex00dn3xvuvcfhiz7s",
@@ -1578,10 +1864,12 @@
     "code": "CU_NHAN_QHCC",
     "name": "Cử nhân QHCC",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:34.089Z",
-    "updatedAt": "2026-06-27T11:39:34.089Z"
+    "updatedAt": "2026-06-27T11:39:34.089Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7f600do3xvukwiw6vc3",
@@ -1589,10 +1877,12 @@
     "code": "CHUYEN_VIEN_VE_TRUYEN_THONG",
     "name": "Chuyên viên về truyền thông",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:34.098Z",
-    "updatedAt": "2026-06-27T11:39:34.098Z"
+    "updatedAt": "2026-06-27T11:39:34.098Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7fg00dp3xvuhxa8f9q6",
@@ -1600,10 +1890,12 @@
     "code": "CU_NHAN_BAO_CHI",
     "name": "Cử nhân Báo chí",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:34.108Z",
-    "updatedAt": "2026-06-27T11:39:34.108Z"
+    "updatedAt": "2026-06-27T11:39:34.108Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf7ix00du3xvuovigiq8k",
@@ -1611,10 +1903,12 @@
     "code": "THS_CNTT",
     "name": "ThS CNTT",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:34.233Z",
-    "updatedAt": "2026-06-27T11:39:34.233Z"
+    "updatedAt": "2026-06-27T11:39:34.233Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf86x00ep3xvubrjf86m7",
@@ -1622,10 +1916,12 @@
     "code": "H_TAI_CHINH",
     "name": "ĐH Tài chính",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:35.098Z",
-    "updatedAt": "2026-06-27T11:39:35.098Z"
+    "updatedAt": "2026-06-27T11:39:35.098Z",
+    "parentId": null
   },
   {
     "id": "cmqwaf87c00eq3xvuo7upvsvc",
@@ -1633,10 +1929,12 @@
     "code": "CHUYEN_VIEN",
     "name": "Chuyên viên",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-27T11:39:35.112Z",
-    "updatedAt": "2026-06-27T11:39:35.112Z"
+    "updatedAt": "2026-06-27T11:39:35.112Z",
+    "parentId": null
   },
   {
     "id": "cmqykglyz0000l7oqsjt3ifiv",
@@ -1644,10 +1942,12 @@
     "code": "KHOA_LAM_SANG",
     "name": "Khoa lâm sàng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-29T01:56:08.115Z",
-    "updatedAt": "2026-06-29T01:58:05.751Z"
+    "updatedAt": "2026-06-29T01:58:05.751Z",
+    "parentId": null
   },
   {
     "id": "cmqykgm050001l7oq71q2gmp4",
@@ -1655,10 +1955,12 @@
     "code": "KHOA_CAN_LAM_SANG",
     "name": "Khoa cận lâm sàng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 2,
     "createdAt": "2026-06-29T01:56:08.115Z",
-    "updatedAt": "2026-06-29T01:58:14.417Z"
+    "updatedAt": "2026-06-29T01:58:14.417Z",
+    "parentId": null
   },
   {
     "id": "cmqykjlpp000012fpc2x0j5c2",
@@ -1666,10 +1968,12 @@
     "code": "PHONG_CHUC_NANG",
     "name": "Phòng chức năng",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-29T01:58:27.755Z",
-    "updatedAt": "2026-06-29T01:58:27.755Z"
+    "updatedAt": "2026-06-29T01:58:27.755Z",
+    "parentId": null
   },
   {
     "id": "cmr03zeaw090o142y0l75tz5i",
@@ -1677,10 +1981,12 @@
     "code": "BED_TYPE",
     "name": "Loại Giường",
     "description": "Phân loại giường",
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-30T03:50:23.525Z",
-    "updatedAt": "2026-06-30T03:50:23.525Z"
+    "updatedAt": "2026-06-30T03:50:23.525Z",
+    "parentId": null
   },
   {
     "id": "cmr03zubt090p142ycytqv0y5",
@@ -1688,10 +1994,12 @@
     "code": "GIUONG_KE_HOACH",
     "name": "Giường kế hoạch",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-06-30T03:50:44.296Z",
-    "updatedAt": "2026-06-30T03:50:44.296Z"
+    "updatedAt": "2026-06-30T03:50:44.296Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300x98pmmo9zze0cl",
@@ -1699,10 +2007,12 @@
     "code": "01",
     "name": "Các thủ thuật và dịch vụ Nội soi HSCC",
     "description": "01",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:40:23.293Z"
+    "updatedAt": "2026-06-30T09:40:23.293Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xa8pmmyly9me9w",
@@ -1710,10 +2020,12 @@
     "code": "02",
     "name": "Các thủ thuật và dịch vụ Nội soi Nội Khoa",
     "description": "02",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:40:51.136Z"
+    "updatedAt": "2026-06-30T09:40:51.136Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xb8pmmh2w9ud9s",
@@ -1721,10 +2033,12 @@
     "code": "03",
     "name": "Dịch vụ liên quan đến nhi khoa",
     "description": "03",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:41:25.432Z"
+    "updatedAt": "2026-06-30T09:41:25.432Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xc8pmm9bgtrmvy",
@@ -1732,10 +2046,12 @@
     "code": "04",
     "name": "Nội soi chẩn đoán can thiệp PTNS",
     "description": "04",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:42:02.506Z"
+    "updatedAt": "2026-06-30T09:42:02.506Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xd8pmmyjncfej8",
@@ -1743,10 +2059,12 @@
     "code": "05",
     "name": "Da Liễu",
     "description": "05",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:42:37.984Z"
+    "updatedAt": "2026-06-30T09:42:37.984Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xe8pmmuo83ky0q",
@@ -1754,10 +2072,12 @@
     "code": "06",
     "name": "06",
     "description": "06",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xf8pmmtvjjbd9s",
@@ -1765,10 +2085,12 @@
     "code": "07",
     "name": "Các thủ thuật và dịch vụ Nội soi Nội Tiết",
     "description": "07",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:43:13.291Z"
+    "updatedAt": "2026-06-30T09:43:13.291Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xg8pmmv4e66l3b",
@@ -1776,10 +2098,12 @@
     "code": "08",
     "name": "Y học dân tộc và Phục hồi chức năng YHCT",
     "description": "08",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:43:29.442Z"
+    "updatedAt": "2026-06-30T09:43:29.442Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xh8pmmfm49wat0",
@@ -1787,10 +2111,12 @@
     "code": "09",
     "name": "Gây Mê Hồi Sức",
     "description": "09",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:45:22.307Z"
+    "updatedAt": "2026-06-30T09:45:22.307Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xi8pmmtkioek7o",
@@ -1798,10 +2124,12 @@
     "code": "10",
     "name": "Ngoại Khoa",
     "description": "10",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:45:43.773Z"
+    "updatedAt": "2026-06-30T09:45:43.773Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xj8pmmtcnb3ww0",
@@ -1809,10 +2137,12 @@
     "code": "11",
     "name": "Các thủ thuật và dịch vụ Nội soi Bỏng",
     "description": "11",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:46:03.575Z"
+    "updatedAt": "2026-06-30T09:46:03.575Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xk8pmmjtgkk9g0",
@@ -1820,10 +2150,12 @@
     "code": "12",
     "name": "12",
     "description": "12",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xl8pmmzuo9zupj",
@@ -1831,10 +2163,12 @@
     "code": "13",
     "name": "13",
     "description": "13",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xm8pmmckykl9bw",
@@ -1842,10 +2176,12 @@
     "code": "14",
     "name": "14",
     "description": "14",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xn8pmmo7ta4akv",
@@ -1853,10 +2189,12 @@
     "code": "15",
     "name": "15",
     "description": "15",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xo8pmmh02ag5wn",
@@ -1864,10 +2202,12 @@
     "code": "16",
     "name": "16",
     "description": "16",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xp8pmmcl7uasco",
@@ -1875,10 +2215,12 @@
     "code": "17",
     "name": "17",
     "description": "17",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xq8pmmrs1lmm0u",
@@ -1886,10 +2228,12 @@
     "code": "18",
     "name": "18",
     "description": "18",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xr8pmmnwl9gswl",
@@ -1897,10 +2241,12 @@
     "code": "19",
     "name": "19",
     "description": "19",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xs8pmm0pmkzvi2",
@@ -1908,10 +2254,12 @@
     "code": "20",
     "name": "20",
     "description": "20",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xt8pmm930wumn8",
@@ -1919,10 +2267,12 @@
     "code": "21",
     "name": "21",
     "description": "21",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xu8pmmsya58usj",
@@ -1930,10 +2280,12 @@
     "code": "22",
     "name": "22",
     "description": "22",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xv8pmmz71t2sgt",
@@ -1941,10 +2293,12 @@
     "code": "23",
     "name": "23",
     "description": "23",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xw8pmm0rz1mzsg",
@@ -1952,10 +2306,12 @@
     "code": "24",
     "name": "24",
     "description": "24",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xx8pmm9fv7dj7i",
@@ -1963,10 +2319,12 @@
     "code": "25",
     "name": "25",
     "description": "25",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xy8pmmjpl91abk",
@@ -1974,10 +2332,12 @@
     "code": "26",
     "name": "26",
     "description": "26",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300xz8pmmg2nztb0x",
@@ -1985,10 +2345,12 @@
     "code": "27",
     "name": "27",
     "description": "27",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300y08pmmy6vh3v5p",
@@ -1996,10 +2358,12 @@
     "code": "28",
     "name": "28",
     "description": "28",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300y18pmmzo3hfqr7",
@@ -2007,10 +2371,12 @@
     "code": "29",
     "name": "29",
     "description": "29",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr0g73s300y28pmmsgw0yadp",
@@ -2018,10 +2384,12 @@
     "code": "30",
     "name": "30",
     "description": "30",
+    "bhyt_code": null,
     "isActive": true,
     "order": 1,
     "createdAt": "2026-06-30T09:32:18.529Z",
-    "updatedAt": "2026-06-30T09:32:18.529Z"
+    "updatedAt": "2026-06-30T09:32:18.529Z",
+    "parentId": null
   },
   {
     "id": "cmr2xsuy5000639yu1vnhx8b8",
@@ -2029,10 +2397,12 @@
     "code": "1",
     "name": "Gây mê",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-07-02T03:20:39.338Z",
-    "updatedAt": "2026-07-02T03:20:39.338Z"
+    "updatedAt": "2026-07-02T03:20:39.338Z",
+    "parentId": null
   },
   {
     "id": "cmr2xtj2l000739yuj6guomit",
@@ -2040,10 +2410,12 @@
     "code": "2",
     "name": "Gây tê",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-07-02T03:21:10.604Z",
-    "updatedAt": "2026-07-02T03:21:10.604Z"
+    "updatedAt": "2026-07-02T03:21:10.604Z",
+    "parentId": null
   },
   {
     "id": "cmr2xtoui000839yu4r01xwgk",
@@ -2051,9 +2423,284 @@
     "code": "3",
     "name": "Châm tê",
     "description": null,
+    "bhyt_code": null,
     "isActive": true,
     "order": 0,
     "createdAt": "2026-07-02T03:21:18.090Z",
-    "updatedAt": "2026-07-02T03:21:18.090Z"
+    "updatedAt": "2026-07-02T03:21:18.090Z",
+    "parentId": null
+  },
+  {
+    "id": "cmr7tkiij000393yy0l74xejs",
+    "type": "NOI_CAP_CCHN",
+    "code": "SO_Y_TE_TINH_LANG_SON",
+    "name": "Sở Y tế tỉnh Lạng Sơn",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-07-05T13:21:02.393Z",
+    "updatedAt": "2026-07-05T13:21:02.393Z",
+    "parentId": null
+  },
+  {
+    "id": "cmr7tkwyb000493yyeftsk9l7",
+    "type": "NOI_CAP_CCHN",
+    "code": "SO_Y_TE_THANH_PHO_HA_NOI",
+    "name": "Sở Y tế thành phố Hà Nội",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-07-05T13:21:21.105Z",
+    "updatedAt": "2026-07-05T13:21:21.105Z",
+    "parentId": null
+  },
+  {
+    "id": "cmra007k90000uzs4kdcgay5d",
+    "type": "VI_TRI_BHYT",
+    "code": "1",
+    "name": "1. Người chịu trách nhiệm chuyên môn",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 1,
+    "createdAt": "2026-07-07T01:56:44.745Z",
+    "updatedAt": "2026-07-07T01:56:44.745Z",
+    "parentId": null
+  },
+  {
+    "id": "cmra007lq0001uzs4bjqxvrrh",
+    "type": "VI_TRI_BHYT",
+    "code": "2",
+    "name": "2. Trưởng khoa/Trưởng đơn nguyên/người phụ trách phòng khám",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 2,
+    "createdAt": "2026-07-07T01:56:44.799Z",
+    "updatedAt": "2026-07-07T01:56:44.799Z",
+    "parentId": null
+  },
+  {
+    "id": "cmra007lx0002uzs4g4ofp3e9",
+    "type": "VI_TRI_BHYT",
+    "code": "3",
+    "name": "3. Người chịu trách nhiệm chuyên môn kiêm trưởng khoa",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 3,
+    "createdAt": "2026-07-07T01:56:44.806Z",
+    "updatedAt": "2026-07-07T01:56:44.806Z",
+    "parentId": null
+  },
+  {
+    "id": "cmra007m40003uzs49bnmpbde",
+    "type": "VI_TRI_BHYT",
+    "code": "4",
+    "name": "4. Người đứng đầu cơ sở KCB hoặc được uỷ quyền",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 4,
+    "createdAt": "2026-07-07T01:56:44.812Z",
+    "updatedAt": "2026-07-07T01:56:44.812Z",
+    "parentId": null
+  },
+  {
+    "id": "cmra007m90004uzs4qjsobs7q",
+    "type": "VI_TRI_BHYT",
+    "code": "5",
+    "name": "5. Người hành nghề được giao phụ trách khoa",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 5,
+    "createdAt": "2026-07-07T01:56:44.817Z",
+    "updatedAt": "2026-07-07T01:56:44.817Z",
+    "parentId": null
+  },
+  {
+    "id": "cmra007mg0005uzs4tlkd8w36",
+    "type": "VI_TRI_BHYT",
+    "code": "6",
+    "name": "6. Người được ủy quyền chịu trách nhiệm CMKT theo khoản 11 Điều 27...",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 6,
+    "createdAt": "2026-07-07T01:56:44.824Z",
+    "updatedAt": "2026-07-07T01:56:44.824Z",
+    "parentId": null
+  },
+  {
+    "id": "cms6ylu4q0002o9kpz4rnbvh2",
+    "type": "CATEGORY_GROUP",
+    "code": "ATTENDANCE_STATUS",
+    "name": "Dánh sách trạng thái đi làm",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-07-30T03:33:58.344Z",
+    "updatedAt": "2026-07-30T03:33:58.344Z",
+    "parentId": null
+  },
+  {
+    "id": "cms6ym6rt0003o9kpr3r0nqc1",
+    "type": "ATTENDANCE_STATUS",
+    "code": "DI_LAM",
+    "name": "Đi làm (Hành chính)",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 1,
+    "createdAt": "2026-07-30T03:34:14.727Z",
+    "updatedAt": "2026-08-05T04:15:31.332Z",
+    "parentId": null
+  },
+  {
+    "id": "cms6ymh9l0004o9kp8ea84faj",
+    "type": "ATTENDANCE_STATUS",
+    "code": "TRUC",
+    "name": "Trực",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 2,
+    "createdAt": "2026-07-30T03:34:28.329Z",
+    "updatedAt": "2026-08-05T04:15:31.415Z",
+    "parentId": null
+  },
+  {
+    "id": "cms6ymntp0005o9kppun5c1pu",
+    "type": "ATTENDANCE_STATUS",
+    "code": "NGHI_PHEP",
+    "name": "Nghỉ phép",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 3,
+    "createdAt": "2026-07-30T03:34:36.827Z",
+    "updatedAt": "2026-08-05T04:15:31.422Z",
+    "parentId": null
+  },
+  {
+    "id": "cms7bnvpp0000abwclr8eb1qm",
+    "type": "CATEGORY_GROUP",
+    "code": "LOAI_MAY",
+    "name": "LOAI_MAY",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-07-30T09:39:28.713Z",
+    "updatedAt": "2026-07-30T09:39:28.713Z",
+    "parentId": null
+  },
+  {
+    "id": "cms7bodb30001abwcqfkjdjip",
+    "type": "LOAI_MAY",
+    "code": "MAY_DIEN_CHAM",
+    "name": "MAY_DIEN_CHAM",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 0,
+    "createdAt": "2026-07-30T09:39:51.518Z",
+    "updatedAt": "2026-07-30T09:39:51.518Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsbn4w6z0000g0iv3a1cs64o",
+    "type": "WORKING_STATUS",
+    "code": "DANG_LAM_VIEC",
+    "name": "Đang làm việc",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 1,
+    "createdAt": "2026-08-02T10:11:42.971Z",
+    "updatedAt": "2026-08-02T10:11:42.971Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsbn4w8g0001g0iv6oyx0uir",
+    "type": "WORKING_STATUS",
+    "code": "DA_NGHI_VIEC",
+    "name": "Đã nghỉ việc",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 2,
+    "createdAt": "2026-08-02T10:11:43.024Z",
+    "updatedAt": "2026-08-02T10:11:43.024Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsbn4w8m0002g0ivajjyg8j7",
+    "type": "WORKING_STATUS",
+    "code": "NGHI_HUU",
+    "name": "Nghỉ hưu",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 3,
+    "createdAt": "2026-08-02T10:11:43.030Z",
+    "updatedAt": "2026-08-02T10:11:43.030Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsbn4w8s0003g0ivlnsfxcc9",
+    "type": "WORKING_STATUS",
+    "code": "NGHI_THAI_SAN",
+    "name": "Nghỉ thai sản",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 4,
+    "createdAt": "2026-08-02T10:11:43.036Z",
+    "updatedAt": "2026-08-02T10:11:43.036Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsbn4w8x0004g0ivubfsb3ba",
+    "type": "WORKING_STATUS",
+    "code": "THUYEN_CHUYEN",
+    "name": "Thuyên chuyển",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 5,
+    "createdAt": "2026-08-02T10:11:43.042Z",
+    "updatedAt": "2026-08-02T10:11:43.042Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsfkqdt10003wj9x1yltnfvy",
+    "type": "ATTENDANCE_STATUS",
+    "code": "NGHI_OM",
+    "name": "Nghỉ ốm",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 4,
+    "createdAt": "2026-08-05T04:15:31.429Z",
+    "updatedAt": "2026-08-05T04:15:31.429Z",
+    "parentId": null
+  },
+  {
+    "id": "cmsfkqdu40004wj9xeyclg3kw",
+    "type": "ATTENDANCE_STATUS",
+    "code": "NGHI_BU",
+    "name": "Nghỉ bù",
+    "description": null,
+    "bhyt_code": null,
+    "isActive": true,
+    "order": 5,
+    "createdAt": "2026-08-05T04:15:31.469Z",
+    "updatedAt": "2026-08-05T04:15:31.469Z",
+    "parentId": null
   }
 ]

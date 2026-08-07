@@ -1,6 +1,7 @@
 [
   {
     "id": "cml06pc000000sck5rhz2buok",
+    "ruleType": "PTTT",
     "name": "Kiểm tra trùng mã máy Phẫu thuật thủ thuật",
     "machineCols": [
       "MAMAY"
@@ -14,11 +15,15 @@
     "serviceValues": [],
     "excludedServiceValues": [],
     "createdAt": "2026-01-30T01:08:18.815Z",
-    "updatedAt": "2026-03-16T15:51:55.612Z",
-    "ignoreIfSameField": null
+    "updatedAt": "2026-08-01T10:31:01.684Z",
+    "ignoreIfSameField": null,
+    "minGapMinutes": 0,
+    "departmentExclusions": [],
+    "allowedOverlapGroups": null
   },
   {
     "id": "cml8w74i10001ksk5ylppsdit",
+    "ruleType": "GIUONG",
     "name": "Kiểm tra trùng mã giường",
     "machineCols": [
       "MAGIUONG",
@@ -33,44 +38,108 @@
     "serviceValues": [],
     "excludedServiceValues": [],
     "createdAt": "2026-02-05T03:24:08.713Z",
-    "updatedAt": "2026-07-01T08:04:53.246Z",
-    "ignoreIfSameField": null
+    "updatedAt": "2026-07-29T03:46:44.779Z",
+    "ignoreIfSameField": null,
+    "minGapMinutes": 0,
+    "departmentExclusions": [],
+    "allowedOverlapGroups": null
   },
   {
     "id": "cmnjssa3s0002d8dt8ha1ul07",
+    "ruleType": "PTTT",
     "name": "Kiểm tra trung Thời gian PTTT của PTTT viên chính",
     "machineCols": [
       "TT_CHINH"
     ],
-    "serviceCol": null,
+    "serviceCol": "MADICHVU",
     "startCol": "NGAYPTTT",
-    "endCol": "NGAYPTTT",
+    "endCol": "NGAYKTTT",
     "ignoreMaMayMinusOne": true,
     "ignoreNullValues": false,
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
     "createdAt": "2026-04-04T03:53:29.894Z",
-    "updatedAt": "2026-04-04T03:54:20.084Z",
-    "ignoreIfSameField": null
+    "updatedAt": "2026-08-01T10:46:44.501Z",
+    "ignoreIfSameField": null,
+    "minGapMinutes": 0,
+    "departmentExclusions": [
+      {
+        "department": "K07",
+        "excludedServices": [
+          "01.0175.0196"
+        ],
+        "includedServices": [
+          "01.0041.0081"
+        ]
+      },
+      {
+        "department": "K11",
+        "excludedServices": [
+          "01.0002.1778",
+          "01.0007.0099",
+          "01.0040.0081",
+          "01.0041.0081"
+        ],
+        "includedServices": []
+      },
+      {
+        "department": "K31",
+        "excludedServices": [
+          "17.0018.0221"
+        ]
+      }
+    ],
+    "allowedOverlapGroups": null
   },
   {
-    "id": "cmqv2u1ad0000t21yd2tb36h9",
-    "name": "Kiêm tra trung giường mẫu 2",
+    "id": "cms8rda4f000014k8f8hdks46",
+    "ruleType": "THOIGIANCD",
+    "name": "Trung thời gian gian chi định theo số phiếu:",
     "machineCols": [
-      "MAGIUONG1",
-      "KHOAKHAM"
+      "TENBACSICD"
     ],
     "serviceCol": null,
     "startCol": "NGAYCHIDINH",
-    "endCol": "NGAYKETTHUC",
-    "ignoreMaMayMinusOne": true,
+    "endCol": "NGAYCHIDINH",
+    "ignoreMaMayMinusOne": false,
     "ignoreNullValues": false,
     "active": true,
     "serviceValues": [],
     "excludedServiceValues": [],
-    "createdAt": "2026-06-26T15:19:22.884Z",
-    "updatedAt": "2026-06-26T15:19:22.884Z",
-    "ignoreIfSameField": null
+    "createdAt": "2026-07-31T09:46:54.206Z",
+    "updatedAt": "2026-08-01T12:12:33.880Z",
+    "ignoreIfSameField": "sophieu",
+    "minGapMinutes": 0,
+    "departmentExclusions": [],
+    "allowedOverlapGroups": [
+      [
+        "01.0019.0004",
+        "01.0032.0299",
+        "01.0041.0081"
+      ]
+    ]
+  },
+  {
+    "id": "cmse3urlf0000ulpu0aez3ptg",
+    "ruleType": "PTTT",
+    "name": "Kiểm tra Trùng thời gian bắt đầu thực hiện PTTT của PTTT viên chính",
+    "machineCols": [
+      "TT_CHINH"
+    ],
+    "serviceCol": null,
+    "startCol": "NGAYPTTT",
+    "endCol": "NGAYKTTT",
+    "ignoreMaMayMinusOne": false,
+    "ignoreNullValues": false,
+    "active": true,
+    "serviceValues": [],
+    "excludedServiceValues": [],
+    "createdAt": "2026-08-04T03:35:16.274Z",
+    "updatedAt": "2026-08-04T03:35:16.274Z",
+    "ignoreIfSameField": null,
+    "minGapMinutes": 0,
+    "departmentExclusions": [],
+    "allowedOverlapGroups": []
   }
 ]
