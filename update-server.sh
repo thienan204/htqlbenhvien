@@ -21,6 +21,11 @@ if [ -f .env.backup ]; then
 fi
 
 echo ""
+echo "🔧 Fix quyền thư mục Upload..."
+mkdir -p public/uploads
+chmod -R 777 public/uploads
+
+echo ""
 echo "🏗️ Bước 2: Build lại hệ thống với Code mới..."
 docker compose -f docker-compose.prod.yml down
 docker compose -f docker-compose.prod.yml up -d --build
