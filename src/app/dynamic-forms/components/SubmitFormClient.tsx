@@ -274,69 +274,89 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
     if (isSubmitted) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-8 pb-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
-                <div className="max-w-2xl w-full">
-                    <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                        <Result
-                            status="success"
-                            title="Cập nhật thông tin thành công!"
-                            subTitle="Cảm ơn bạn đã cung cấp thông tin. Dưới đây là dữ liệu đã được lưu lên hệ thống:"
-                            extra={[
-                                <Button 
-                                    type="primary" 
-                                    key="back" 
-                                    size="large"
-                                    onClick={() => {
-                                        setIsSubmitted(false);
-                                        // We must use populateFormData to convert image strings to file arrays
-                                        const formData = { ...userData };
-                                        formConfig.config.forEach((field: any) => {
-                                            if (field.type === 'image' && typeof formData[field.name] === 'string') {
-                                                const urls = formData[field.name].split(',').map((u: string) => u.trim()).filter(Boolean);
-                                                formData[field.name] = urls.map((url: string, index: number) => ({
-                                                    uid: `-${index}`,
-                                                    name: `image-${index + 1}.png`,
-                                                    status: 'done',
-                                                    url: url,
-                                                }));
-                                            }
-                                        });
-                                        form.setFieldsValue(formData);
-                                    }}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                    Quay lại chỉnh sửa
-                                </Button>,
-                            ]}
-                        >
-                            <div className="bg-gray-50/80 backdrop-blur border border-gray-100 p-6 rounded-xl text-left mt-2">
-                                <h3 className="font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">Thông tin vừa cập nhật</h3>
-                                <div className="space-y-3">
-                                    {formConfig.config?.map((field: any) => {
-                                        if (field.isVerificationKey || field.isHidden) return null;
-                                        const value = userData[field.name];
-                                        const isImage = field.type === 'image' && value && typeof value === 'string' && (value.startsWith('http') || value.startsWith('/'));
-                                        
-                                        return (
-                                            <div key={field.name} className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-gray-100 last:border-0 gap-2">
-                                                <span className="text-gray-500 font-medium sm:w-1/3">{field.label}:</span>
-                                                <span className="text-gray-900 font-semibold sm:w-2/3 text-left sm:text-right break-words">
-                                                    {isImage ? (
-                                                        <div className="flex flex-col gap-1 sm:items-end">
-                                                            {value.split(',').map((url: string, idx: number) => (
-                                                                <a key={idx} href={url.trim()} target="_blank" rel="noreferrer" className="text-blue-600 underline">Xem ảnh {idx + 1}</a>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        value || <span className="text-gray-400 font-normal italic">Chưa có thông tin</span>
-                                                    )}
-                                                </span>
+                <div className="max-w-4xl w-full">
+                    <Tabs
+                        type="card"
+                        items={[
+                            {
+                                key: 'MAIN',
+                                label: 'Thu thập thông tin',
+                                children: (
+                                    <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0">
+                                        <Result
+                                            status="success"
+                                            title="Cập nhật thông tin thành công!"
+                                            subTitle="Cảm ơn bạn đã cung cấp thông tin. Dưới đây là dữ liệu đã được lưu lên hệ thống:"
+                                            extra={[
+                                                <Button 
+                                                    type="primary" 
+                                                    key="back" 
+                                                    size="large"
+                                                    onClick={() => {
+                                                        setIsSubmitted(false);
+                                                        // We must use populateFormData to convert image strings to file arrays
+                                                        const formData = { ...userData };
+                                                        formConfig.config.forEach((field: any) => {
+                                                            if (field.type === 'image' && typeof formData[field.name] === 'string') {
+                                                                const urls = formData[field.name].split(',').map((u: string) => u.trim()).filter(Boolean);
+                                                                formData[field.name] = urls.map((url: string, index: number) => ({
+                                                                    uid: `-${index}`,
+                                                                    name: `image-${index + 1}.png`,
+                                                                    status: 'done',
+                                                                    url: url,
+                                                                }));
+                                                            }
+                                                        });
+                                                        form.setFieldsValue(formData);
+                                                    }}
+                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                >
+                                                    Quay lại chỉnh sửa
+                                                </Button>,
+                                            ]}
+                                        >
+                                            <div className="bg-gray-50/80 backdrop-blur border border-gray-100 p-6 rounded-xl text-left mt-2">
+                                                <h3 className="font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">Thông tin vừa cập nhật</h3>
+                                                <div className="space-y-3">
+                                                    {formConfig.config?.map((field: any) => {
+                                                        if (field.isVerificationKey || field.isHidden) return null;
+                                                        const value = userData[field.name];
+                                                        const isImage = field.type === 'image' && value && typeof value === 'string' && (value.startsWith('http') || value.startsWith('/'));
+                                                        
+                                                        return (
+                                                            <div key={field.name} className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-gray-100 last:border-0 gap-2">
+                                                                <span className="text-gray-500 font-medium sm:w-1/3">{field.label}:</span>
+                                                                <span className="text-gray-900 font-semibold sm:w-2/3 text-left sm:text-right break-words">
+                                                                    {isImage ? (
+                                                                        <div className="flex flex-col gap-1 sm:items-end">
+                                                                            {value.split(',').map((url: string, idx: number) => (
+                                                                                <a key={idx} href={url.trim()} target="_blank" rel="noreferrer" className="text-blue-600 underline">Xem ảnh {idx + 1}</a>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        value || <span className="text-gray-400 font-normal italic">Chưa có thông tin</span>
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </Result>
-                    </Card>
+                                        </Result>
+                                    </Card>
+                                )
+                            },
+                            {
+                                key: 'INSTRUCTION',
+                                label: 'Hướng dẫn sử dụng',
+                                children: (
+                                    <div className="mt-4">
+                                        <PageInstruction pageId={`dynamic-form-${formConfig?.slug || id}`} />
+                                    </div>
+                                )
+                            }
+                        ]}
+                    />
                 </div>
             </div>
         );
@@ -344,106 +364,126 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-8 pb-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
-            <div className="max-w-2xl w-full">
-                <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                    <div className="text-center mb-10">
-                        <div className="inline-block p-3 rounded-full bg-blue-100 mb-4">
-                            <CheckCircleOutlined className="text-3xl text-blue-600" />
-                        </div>
-                        <Title level={2} className="!text-gray-800 !mb-2 !font-bold tracking-tight">{formConfig.name}</Title>
-                        <Paragraph className="text-gray-500 text-lg">{formConfig.description}</Paragraph>
-                    </div>
+            <div className="max-w-4xl w-full">
+                <Tabs
+                    type="card"
+                    items={[
+                        {
+                            key: 'MAIN',
+                            label: 'Thu thập thông tin',
+                            children: (
+                                <Card className="shadow-2xl border-0 rounded-b-2xl rounded-tr-2xl overflow-hidden bg-white/80 backdrop-blur-sm mt-0">
+                                    <div className="text-center mb-10">
+                                        <div className="inline-block p-3 rounded-full bg-blue-100 mb-4">
+                                            <CheckCircleOutlined className="text-3xl text-blue-600" />
+                                        </div>
+                                        <Title level={2} className="!text-gray-800 !mb-2 !font-bold tracking-tight">{formConfig.name}</Title>
+                                        <Paragraph className="text-gray-500 text-lg">{formConfig.description}</Paragraph>
+                                    </div>
 
-                    <div style={{ display: !userData && verificationKeyField ? 'block' : 'none' }}>
-                        <div className="bg-blue-50 p-6 rounded-md border border-blue-100 mb-6">
-                            <div className="flex items-center text-blue-700 mb-4">
-                                <LockOutlined className="text-xl mr-2" />
-                                <span className="font-medium text-lg">Xác thực thông tin</span>
-                            </div>
-                            <p className="text-gray-600 mb-4 text-sm">Vui lòng nhập <b>{verificationKeyField?.label}</b> của bạn để tiếp tục.</p>
-                            
-                            <Form layout="vertical" onFinish={handleVerify}>
-                                <Form.Item
-                                    name="verificationValue"
-                                    rules={[{ required: !userData && !!verificationKeyField, message: `Vui lòng nhập ${verificationKeyField?.label}` }]}
-                                >
-                                    <Input size="large" placeholder={`Nhập ${verificationKeyField?.label}...`} />
-                                </Form.Item>
-                                <Button type="primary" size="large" htmlType="submit" loading={verifying} block>
-                                    Tiếp tục
-                                </Button>
-                            </Form>
-                        </div>
-                    </div>
+                                    <div style={{ display: !userData && verificationKeyField ? 'block' : 'none' }}>
+                                        <div className="bg-blue-50 p-6 rounded-md border border-blue-100 mb-6">
+                                            <div className="flex items-center text-blue-700 mb-4">
+                                                <LockOutlined className="text-xl mr-2" />
+                                                <span className="font-medium text-lg">Xác thực thông tin</span>
+                                            </div>
+                                            <p className="text-gray-600 mb-4 text-sm">Vui lòng nhập <b>{verificationKeyField?.label}</b> của bạn để tiếp tục.</p>
+                                            
+                                            <Form layout="vertical" onFinish={handleVerify}>
+                                                <Form.Item
+                                                    name="verificationValue"
+                                                    rules={[{ required: !userData && !!verificationKeyField, message: `Vui lòng nhập ${verificationKeyField?.label}` }]}
+                                                >
+                                                    <Input size="large" placeholder={`Nhập ${verificationKeyField?.label}...`} />
+                                                </Form.Item>
+                                                <Button type="primary" size="large" htmlType="submit" loading={verifying} block>
+                                                    Tiếp tục
+                                                </Button>
+                                            </Form>
+                                        </div>
+                                    </div>
 
-                    <div style={{ display: !(!userData && verificationKeyField) ? 'block' : 'none' }}>
-                        <Form
-                            form={form}
-                            layout="vertical"
-                            onFinish={handleSubmit}
-                            className="space-y-4"
-                        >
-                            {userData && (
-                                <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm mb-8 flex items-center animate-fade-in">
-                                    <CheckCircleOutlined className="text-xl mr-3" /> 
-                                    <span className="font-medium">Xác thực thành công! Bạn có thể cập nhật thông tin bên dưới.</span>
+                                    <div style={{ display: !(!userData && verificationKeyField) ? 'block' : 'none' }}>
+                                        <Form
+                                            form={form}
+                                            layout="vertical"
+                                            onFinish={handleSubmit}
+                                            className="space-y-4"
+                                        >
+                                            {userData && (
+                                                <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm mb-8 flex items-center animate-fade-in">
+                                                    <CheckCircleOutlined className="text-xl mr-3" /> 
+                                                    <span className="font-medium">Xác thực thành công! Bạn có thể cập nhật thông tin bên dưới.</span>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-6">
+                                            {/* Editable Fields */}
+                                            {formConfig.config?.filter((f: any) => f.isEditable && !f.isVerificationKey && !f.isHidden).map((field: any) => {
+                                                const rules = [];
+                                                if (field.required) rules.push({ required: true, message: `Vui lòng nhập ${field.label}` });
+                                                if (field.type === 'cccd') rules.push({ len: 12, message: 'Số CCCD phải đủ 12 số' });
+                                                if (field.type === 'phone') rules.push({ min: 10, max: 11, message: 'Số điện thoại không hợp lệ' });
+
+                                                return (
+                                                    <Form.Item
+                                                        key={field.name}
+                                                        name={field.name}
+                                                        label={<span className="font-semibold text-blue-700 text-sm uppercase tracking-wide">{field.label}</span>}
+                                                        rules={rules}
+                                                        className="mb-0 bg-blue-50/50 p-4 rounded-lg border border-blue-100"
+                                                        valuePropName={field.type === 'image' ? 'fileList' : 'value'}
+                                                        getValueFromEvent={field.type === 'image' ? normFile : undefined}
+                                                    >
+                                                        {renderInputElement(field)}
+                                                    </Form.Item>
+                                                );
+                                            })}
+                                            
+                                            {/* Read-only Fields */}
+                                            {formConfig.config?.filter((f: any) => !f.isEditable && !f.isVerificationKey && !f.isHidden).map((field: any) => {
+                                                return (
+                                                    <Form.Item
+                                                        key={field.name}
+                                                        name={field.name}
+                                                        label={<span className="font-semibold text-gray-700 text-sm uppercase tracking-wide">{field.label}</span>}
+                                                        tooltip="Trường này chỉ được phép xem, không thể sửa"
+                                                        className="mb-0"
+                                                    >
+                                                        {renderInputElement(field)}
+                                                    </Form.Item>
+                                                );
+                                            })}
+                                            </div>
+
+                                            <div className="pt-8 mt-8 border-t border-gray-100">
+                                                <Button 
+                                                    type="primary" 
+                                                    size="large" 
+                                                    htmlType="submit" 
+                                                    loading={submitting} 
+                                                    block 
+                                                    className="h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 rounded-xl"
+                                                >
+                                                    Cập nhật Thông tin
+                                                </Button>
+                                            </div>
+                                        </Form>
+                                    </div>
+                                </Card>
+                            )
+                        },
+                        {
+                            key: 'INSTRUCTION',
+                            label: 'Hướng dẫn sử dụng',
+                            children: (
+                                <div className="mt-4">
+                                    <PageInstruction pageId={`dynamic-form-${formConfig?.slug || id}`} />
                                 </div>
-                            )}
-
-                            <div className="space-y-6">
-                            {/* Editable Fields */}
-                            {formConfig.config?.filter((f: any) => f.isEditable && !f.isVerificationKey && !f.isHidden).map((field: any) => {
-                                const rules = [];
-                                if (field.required) rules.push({ required: true, message: `Vui lòng nhập ${field.label}` });
-                                if (field.type === 'cccd') rules.push({ len: 12, message: 'Số CCCD phải đủ 12 số' });
-                                if (field.type === 'phone') rules.push({ min: 10, max: 11, message: 'Số điện thoại không hợp lệ' });
-
-                                return (
-                                    <Form.Item
-                                        key={field.name}
-                                        name={field.name}
-                                        label={<span className="font-semibold text-blue-700 text-sm uppercase tracking-wide">{field.label}</span>}
-                                        rules={rules}
-                                        className="mb-0 bg-blue-50/50 p-4 rounded-lg border border-blue-100"
-                                        valuePropName={field.type === 'image' ? 'fileList' : 'value'}
-                                        getValueFromEvent={field.type === 'image' ? normFile : undefined}
-                                    >
-                                        {renderInputElement(field)}
-                                    </Form.Item>
-                                );
-                            })}
-                            
-                            {/* Read-only Fields */}
-                            {formConfig.config?.filter((f: any) => !f.isEditable && !f.isVerificationKey && !f.isHidden).map((field: any) => {
-                                return (
-                                    <Form.Item
-                                        key={field.name}
-                                        name={field.name}
-                                        label={<span className="font-semibold text-gray-700 text-sm uppercase tracking-wide">{field.label}</span>}
-                                        tooltip="Trường này chỉ được phép xem, không thể sửa"
-                                        className="mb-0"
-                                    >
-                                        {renderInputElement(field)}
-                                    </Form.Item>
-                                );
-                            })}
-                            </div>
-
-                            <div className="pt-8 mt-8 border-t border-gray-100">
-                                <Button 
-                                    type="primary" 
-                                    size="large" 
-                                    htmlType="submit" 
-                                    loading={submitting} 
-                                    block 
-                                    className="h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 rounded-xl"
-                                >
-                                    Cập nhật Thông tin
-                                </Button>
-                            </div>
-                        </Form>
-                    </div>
-                </Card>
+                            )
+                        }
+                    ]}
+                />
                 
                 <div className="text-center mt-6 text-gray-400 text-sm">
                     Hệ thống Thu thập thông tin - BVĐK Lạng Sơn
