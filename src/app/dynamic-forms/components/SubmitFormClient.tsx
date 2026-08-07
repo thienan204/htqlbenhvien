@@ -251,7 +251,8 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
             case 'number':
             case 'phone':
             case 'cccd':
-                return <Input allowClear type="number" size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
+                // Add suffix={<span/>} to prevent focus loss warning when allowClear adds the clear icon
+                return <Input allowClear suffix={<span className="w-0" />} type="number" size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
             case 'image':
                 return (
                     <Upload
@@ -268,7 +269,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                     </Upload>
                 );
             default:
-                return <Input allowClear size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
+                return <Input allowClear suffix={<span className="w-0" />} size="large" className="hover:border-blue-400 focus:border-blue-500 transition-colors" />;
         }
     };
 
