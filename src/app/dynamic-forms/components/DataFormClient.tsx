@@ -253,6 +253,41 @@ export default function DataFormClient({ formId }: { formId: string }) {
         return false; // Prevent default upload behavior
     };
 
+    const handleImportStatusExcel = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                setLoading(true);
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                const basePath = window.location.pathname.split('/dynamic-forms')[0];
+                const res = await fetch(`${basePath}/api/dynamic-forms/${id}/data/import-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: jsonData })
+                });
+                
+                const result = await res.json();
+                if (res.ok) {
+                    message.success(result.message || 'Cập nhật trạng thái thành công!');
+                    fetchData(); // reload table
+                } else {
+                    message.error(result.error || 'Lỗi khi cập nhật trạng thái');
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error(error);
+                message.error('Lỗi phân tích file Excel');
+                setLoading(false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        return false; // Prevent default upload behavior
+    };
+
     if (loading && !formConfig) return <div className="p-10 flex justify-center"><Spin size="large" /></div>;
 
     // Build columns dynamically based on config
@@ -371,6 +406,15 @@ export default function DataFormClient({ formId }: { formId: string }) {
                     <Button icon={<PrinterOutlined />} onClick={handlePrintAllImages} className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-none">
                         In tất cả ảnh
                     </Button>
+                    <Upload 
+                        accept=".xlsx, .xls"
+                        showUploadList={false}
+                        beforeUpload={handleImportStatusExcel}
+                    >
+                        <Button type="primary" icon={<UploadOutlined />} className="bg-orange-500 hover:bg-orange-600 border-none">
+                            Cập nhật trạng thái
+                        </Button>
+                    </Upload>
                     <Upload 
                         accept=".xlsx, .xls"
                         showUploadList={false}
