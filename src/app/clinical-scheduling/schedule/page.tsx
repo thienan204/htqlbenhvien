@@ -12,6 +12,7 @@ import { getBasePath } from '@/utils/config';
 import ClinicalSchedulingConfigPage from '../config/page';
 import ClinicalSchedulingAttendancePage from '../attendance/page';
 import PageInstruction from '@/components/shared/PageInstruction';
+import Mau05Config from '../components/Mau05Config';
 
 const { Option } = Select;
 
@@ -117,6 +118,7 @@ export default function ClinicalSchedulingPage() {
     
     const [uploadedData, setUploadedData] = useState<any[]>([]);
     const [uniqueServices, setUniqueServices] = useState<string[]>([]);
+    const [uniqueServiceCodes, setUniqueServiceCodes] = useState<string[]>([]);
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     
     const [scheduledData, setScheduledData] = useState<any[]>([]);
@@ -230,6 +232,8 @@ export default function ClinicalSchedulingPage() {
     const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+    const [activeInnerTab, setActiveInnerTab] = useState('basic');
+    const [unconfiguredCount, setUnconfiguredCount] = useState(0);
     const [rawExcelData, setRawExcelData] = useState<any[]>([]);
     const [outputMapping, setOutputMapping] = useState<{
         [key: string]: string | undefined;
@@ -588,7 +592,9 @@ export default function ClinicalSchedulingPage() {
         setUploadedData(mappedData);
         
         const services = Array.from(new Set(mappedData.map(d => d.ten_dich_vu).filter(Boolean)));
+        const serviceCodes = Array.from(new Set(mappedData.map(d => d.ma_dich_vu).filter(Boolean)));
         setUniqueServices(services as string[]);
+        setUniqueServiceCodes(serviceCodes as string[]);
         setSelectedServices(services as string[]);
         
         setMappingModalVisible(false);
@@ -1170,6 +1176,8 @@ export default function ClinicalSchedulingPage() {
                     <Tabs
                         type="card"
                         style={{ marginTop: 24 }}
+                        activeKey={activeInnerTab}
+                        onChange={(key) => setActiveInnerTab(key)}
                         items={[
                             {
                                 key: 'basic',
@@ -1192,7 +1200,25 @@ export default function ClinicalSchedulingPage() {
                                         </div>
 
                                         <div style={{ marginTop: 24, textAlign: 'center', background: '#f6ffed', padding: 16, border: '1px solid #b7eb8f', borderRadius: 8 }}>
-                                            <h3 style={{ margin: 0, color: '#389e0d' }}>✅ Đã tải thành công {uploadedData.length} chỉ định dịch vụ</h3>
+                                            <h3 style={{ margin: 0, color: '#389e0d', marginBottom: 8 }}>✅ Đã tải thành công {uploadedData.length} chỉ định dịch vụ</h3>
+                                            
+                                            {unconfiguredCount > 0 && (
+                                                <Alert 
+                                                    message={`Phát hiện ${unconfiguredCount} loại dịch vụ trong danh sách chưa được cấu hình Mẫu 05 (Chưa có thời gian thực hiện)!`}
+                                                    description={
+                                                        <div>
+                                                            Thuật toán xếp lịch sẽ bị lỗi với các dịch vụ này. Vui lòng sang tab <strong>Cấu hình Mẫu 05</strong> để bổ sung thời gian ngay.
+                                                            <div style={{ marginTop: 8 }}>
+                                                                <Button danger size="small" onClick={() => setActiveInnerTab('mau05')}>Cấu hình ngay</Button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    type="error"
+                                                    showIcon
+                                                    style={{ marginBottom: 16, textAlign: 'left' }}
+                                                />
+                                            )}
+
                                             <p style={{ color: '#595959', marginBottom: 16 }}>Hệ thống đã sẵn sàng tính toán lịch cho <strong>{selectedServices.length}</strong> loại dịch vụ đã chọn.</p>
                                             <Button 
                                                 type="primary" 
@@ -1327,6 +1353,18 @@ export default function ClinicalSchedulingPage() {
                                             )}
                                         </div>
                                     </>
+                                )
+                            },
+                            {
+                                key: 'mau05',
+                                label: 'Cấu hình Mẫu 05',
+                                children: (
+                                    <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
+                                        <Mau05Config 
+                                            externalFilterCodes={uniqueServiceCodes} 
+                                            onConfigStatus={(count) => setUnconfiguredCount(count)}
+                                        />
+                                    </div>
                                 )
                             }
                         ]}

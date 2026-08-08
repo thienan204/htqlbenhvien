@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
 import * as XLSX from 'xlsx';
 import ExcelTemplateConfig from './ExcelTemplateConfig';
+import Mau05Config from '../components/Mau05Config';
 
 const { Option } = Select;
 
@@ -377,100 +378,12 @@ export default function ClinicalSchedulingConfigPage() {
                 />
             </Card>
 
-            <Card 
-                title="Danh mục Dịch vụ (Mau 05)" 
-                extra={
-                    <Button 
-                        type="primary" 
-                        icon={<SaveOutlined />} 
-                        onClick={handleSave} 
-                        loading={saving}
-                    >
-                        Lưu Thay Đổi
-                    </Button>
-                }
-            >
-                <div style={{ marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <Input
-                        placeholder="Tìm kiếm theo Tên hoặc Mã Dịch vụ..."
-                        prefix={<SearchOutlined />}
-                        value={searchText}
-                        onChange={e => setSearchText(e.target.value)}
-                        allowClear
-                        style={{ width: 400 }}
-                    />
-                    
-                    <Upload beforeUpload={handleUploadExcel} showUploadList={false} accept=".xlsx, .xls">
-                        <Button icon={<UploadOutlined />}>Tải File Excel để Lọc nhanh</Button>
-                    </Upload>
-
-                    {filterCodes.length > 0 && (
-                        <Tag 
-                            color="blue" 
-                            closable 
-                            onClose={() => setFilterCodes([])}
-                            style={{ fontSize: 14, padding: '4px 12px' }}
-                        >
-                            Đang lọc {filterCodes.length} dịch vụ từ Excel
-                        </Tag>
-                    )}
-                </div>
-                
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: 40 }}>
-                        <Spin size="large" />
-                    </div>
-                ) : (
-                    <Tabs
-                        type="card"
-                        defaultActiveKey="1"
-                        items={[
-                            {
-                                key: '1',
-                                label: `Tất cả (${filteredServices.length})`,
-                                children: (
-                                    <Table 
-                                        dataSource={filteredServices} 
-                                        columns={columns} 
-                                        rowKey="id"
-                                        pagination={{ pageSize: 20 }}
-                                        bordered
-                                        size="middle"
-                                    />
-                                )
-                            },
-                            {
-                                key: '2',
-                                label: <span style={{ color: unconfiguredServices.length > 0 ? '#ff4d4f' : 'inherit' }}>Chưa cấu hình ({unconfiguredServices.length})</span>,
-                                children: (
-                                    <Table 
-                                        dataSource={unconfiguredServices} 
-                                        columns={columns} 
-                                        rowKey="id"
-                                        pagination={{ pageSize: 20 }}
-                                        bordered
-                                        size="middle"
-                                    />
-                                )
-                            },
-                            {
-                                key: '3',
-                                label: <span style={{ color: '#52c41a' }}>Đã cấu hình ({configuredServices.length})</span>,
-                                children: (
-                                    <Table 
-                                        dataSource={configuredServices} 
-                                        columns={columns} 
-                                        rowKey="id"
-                                        pagination={{ pageSize: 20 }}
-                                        bordered
-                                        size="middle"
-                                    />
-                                )
-                            }
-                        ]}
-                    />
-                )}
-            </Card>
+            <div style={{ marginBottom: 16 }}>
+                <Upload beforeUpload={handleUploadExcel} showUploadList={false} accept=".xlsx, .xls">
+                    <Button icon={<UploadOutlined />} type="dashed">Tải File Excel để Lọc nhanh Mẫu 05</Button>
+                </Upload>
+            </div>
+            <Mau05Config externalFilterCodes={filterCodes} />
         </div>
     );
 }
