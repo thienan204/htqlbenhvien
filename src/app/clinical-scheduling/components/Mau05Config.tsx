@@ -48,7 +48,7 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
             const data = await res.json();
             if (data.success) {
                 setServices(data.services || []);
-                setOriginalServices(data.services || []);
+                setOriginalServices(data.services ? data.services.map((s: any) => ({ ...s })) : []);
                 if (data.qualifications) {
                     const uniqueQuals = Array.from(new Set(data.qualifications.map((q: any) => q.name))).map(name => {
                         return data.qualifications.find((q: any) => q.name === name);
@@ -87,7 +87,7 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
             if (data.success) {
                 message.success('Đã lưu cấu hình dịch vụ thành công!');
                 setEditedRows({}); // Reset edited state
-                setOriginalServices(services); // Update original services to avoid jumping
+                setOriginalServices(services.map(s => ({ ...s }))); // Update original services to avoid jumping
             } else {
                 message.error('Lỗi lưu cấu hình: ' + data.message);
             }
@@ -102,7 +102,7 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
         const newData = [...services];
         const index = newData.findIndex(item => item.id === record.id);
         if (index > -1) {
-            newData[index][field] = value;
+            newData[index] = { ...newData[index], [field]: value };
             setServices(newData);
             
             setEditedRows(prev => ({
