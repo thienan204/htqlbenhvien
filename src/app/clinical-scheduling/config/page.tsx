@@ -6,8 +6,7 @@ import dayjs from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
 import * as XLSX from 'xlsx';
 import ExcelTemplateConfig from './ExcelTemplateConfig';
-import Mau05Config from '../components/Mau05Config';
-
+import ExcelTemplateConfig from './ExcelTemplateConfig';
 const { Option } = Select;
 
 export default function ClinicalSchedulingConfigPage() {
@@ -15,14 +14,9 @@ export default function ClinicalSchedulingConfigPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [bufferTime, setBufferTime] = useState<number>(5);
-    const [services, setServices] = useState<any[]>([]);
-    const [filterCodes, setFilterCodes] = useState<string[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
-    const [qualifications, setQualifications] = useState<any[]>([]);
     const [deptSearchText, setDeptSearchText] = useState('');
-    const [searchText, setSearchText] = useState('');
-    const [editedRows, setEditedRows] = useState<{ [id: string]: any }>({});
 
     useEffect(() => {
         if (user !== undefined) {
@@ -37,22 +31,12 @@ export default function ClinicalSchedulingConfigPage() {
             const data = await res.json();
             if (data.success) {
                 setBufferTime(data.bufferTime);
-                setServices(data.services);
-                
                 let depts = data.departments || [];
                 if (user?.role !== 'ADMIN' && user?.ma_khoa) {
                     depts = depts.filter((d: any) => d.MA_KHOA === user.ma_khoa);
                 }
                 setDepartments(depts);
                 setDeptHours(data.deptHours || {});
-                
-                // Lọc bỏ các trùng lặp tên trình độ/chức danh
-                if (data.qualifications) {
-                    const uniqueQuals = Array.from(new Set(data.qualifications.map((q: any) => q.name))).map(name => {
-                        return data.qualifications.find((q: any) => q.name === name);
-                    });
-                    setQualifications(uniqueQuals);
-                }
             } else {
                 message.error('Lỗi tải dữ liệu: ' + data.message);
             }
@@ -66,22 +50,18 @@ export default function ClinicalSchedulingConfigPage() {
     const handleSave = async () => {
         try {
             setSaving(true);
-            const updatedServices = Object.values(editedRows);
-            
             const res = await fetch('/api/clinical-scheduling/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     bufferTime,
-                    deptHours,
-                    updatedServices: updatedServices.length > 0 ? updatedServices : undefined
+                    deptHours
                 })
             });
             const data = await res.json();
             
             if (data.success) {
                 message.success('Đã lưu cấu hình thành công!');
-                setEditedRows({}); // Reset edited state
             } else {
                 message.error('Lỗi lưu cấu hình: ' + data.message);
             }
@@ -92,24 +72,7 @@ export default function ClinicalSchedulingConfigPage() {
         }
     };
 
-    const handleRowChange = (record: any, field: string, value: any) => {
-        const newData = [...services];
-        const index = newData.findIndex(item => item.id === record.id);
-        if (index > -1) {
-            newData[index][field] = value;
-            setServices(newData);
-            
-            // Theo dõi các dòng bị sửa để tối ưu quá trình lưu (chỉ gửi những dòng bị sửa lên API)
-            setEditedRows(prev => ({
-                ...prev,
-                [record.id]: {
-                    ...prev[record.id],
-                    id: record.id,
-                    [field]: value
-                }
-            }));
-        }
-    };
+
 
     const handleDeptHoursChange = (maKhoa: string, field: string, timeString: string) => {
         setDeptHours(prev => ({
@@ -183,83 +146,7 @@ export default function ClinicalSchedulingConfigPage() {
         }
     ];
 
-    const columns = [
-        {
-            title: 'Mã Dịch vụ',
-            dataIndex: 'MA_DICH_VU',
-            key: 'MA_DICH_VU',
-            width: 150,
-        },
-        {
-            title: 'Tên Dịch vụ',
-            dataIndex: 'TEN_DICH_VU',
-            key: 'TEN_DICH_VU',
-        },
-        {
-            title: 'Thời gian thực hiện (Phút)',
-            dataIndex: 'thoigian_thuc_hien',
-            key: 'thoigian_thuc_hien',
-            width: 250,
-            render: (text: number, record: any) => (
-                <InputNumber
-                    min={1}
-                    value={text}
-                    onChange={(val) => handleRowChange(record, 'thoigian_thuc_hien', val)}
-                    placeholder="VD: 5"
-                    style={{ width: '100%' }}
-                />
-            )
-        },
-        {
-            title: 'Khoảng nghỉ (Buffer)',
-            dataIndex: 'buffer_time',
-            key: 'buffer_time',
-            width: 150,
-            render: (text: number, record: any) => (
-                <InputNumber
-                    min={0}
-                    value={text}
-                    onChange={(val) => handleRowChange(record, 'buffer_time', val)}
-                    placeholder="Theo khoa"
-                    style={{ width: '100%' }}
-                />
-            )
-        },
-        {
-            title: 'Làm song song',
-            dataIndex: 'is_concurrent',
-            key: 'is_concurrent',
-            width: 120,
-            align: 'center' as const,
-            render: (text: boolean, record: any) => (
-                <Checkbox
-                    checked={text}
-                    onChange={(e) => handleRowChange(record, 'is_concurrent', e.target.checked)}
-                />
-            )
-        },
-        {
-            title: 'Yêu cầu Máy móc',
-            dataIndex: 'yeu_cau_may_moc',
-            key: 'yeu_cau_may_moc',
-            width: 250,
-            render: (text: string, record: any) => (
-                <Select
-                    value={text || undefined}
-                    onChange={(val) => handleRowChange(record, 'yeu_cau_may_moc', val)}
-                    placeholder="Chọn loại máy"
-                    style={{ width: '100%' }}
-                    allowClear
-                    showSearch
-                    optionFilterProp="children"
-                >
-                    {qualifications.filter(q => q.type === 'LOAI_MAY').map((q, idx) => (
-                        <Option key={idx} value={q.code}>{q.name}</Option>
-                    ))}
-                </Select>
-            )
-        }
-    ];
+
 
     // Hàm hỗ trợ: Chuyển tiếng Việt có dấu thành không dấu và lấy các chữ cái đầu
     const getInitials = (text: string) => {
@@ -287,55 +174,7 @@ export default function ClinicalSchedulingConfigPage() {
                initials.includes(searchLower);
     });
 
-    const filteredServices = services.filter(s => {
-        const searchLower = searchText.toLowerCase();
-        const tenDichVu = s.TEN_DICH_VU || '';
-        const maDichVu = s.MA_DICH_VU || '';
-        const initials = getInitials(tenDichVu);
-        
-        // Nếu có list mã dịch vụ từ Excel, chỉ hiển thị những mã nằm trong list đó
-        if (filterCodes.length > 0 && !filterCodes.includes(maDichVu)) {
-            return false;
-        }
 
-        return tenDichVu.toLowerCase().includes(searchLower) ||
-               maDichVu.toLowerCase().includes(searchLower) ||
-               initials.includes(searchLower); // Tìm theo chữ cái đầu (VD: tcdtd)
-    });
-
-    const unconfiguredServices = filteredServices.filter(s => !s.thoigian_thuc_hien || s.thoigian_thuc_hien <= 0);
-    const configuredServices = filteredServices.filter(s => s.thoigian_thuc_hien && s.thoigian_thuc_hien > 0);
-
-    const handleUploadExcel = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(firstSheet);
-                
-                const codes = new Set<string>();
-                json.forEach((row: any) => {
-                    const lowerRow: any = {};
-                    for (const k in row) lowerRow[k.toLowerCase()] = row[k];
-                    const code = lowerRow['mã dịch vụ'] || lowerRow['ma_dich_vu'] || lowerRow['madichvu'];
-                    if (code) codes.add(code.toString());
-                });
-
-                if (codes.size === 0) {
-                    message.warning('Không tìm thấy Mã dịch vụ nào trong file Excel (Cột cần có tên là "Mã dịch vụ").');
-                } else {
-                    setFilterCodes(Array.from(codes));
-                    message.success(`Đã tự động lọc ra ${codes.size} dịch vụ dựa trên file Excel của bạn!`);
-                }
-            } catch (error) {
-                message.error('Lỗi khi đọc file Excel.');
-            }
-        };
-        reader.readAsArrayBuffer(file);
-        return false;
-    };
 
     return (
         <div style={{ padding: 24, maxWidth: '100%', margin: '0 auto' }}>
@@ -378,12 +217,7 @@ export default function ClinicalSchedulingConfigPage() {
                 />
             </Card>
 
-            <div style={{ marginBottom: 16 }}>
-                <Upload beforeUpload={handleUploadExcel} showUploadList={false} accept=".xlsx, .xls">
-                    <Button icon={<UploadOutlined />} type="dashed">Tải File Excel để Lọc nhanh Mẫu 05</Button>
-                </Upload>
-            </div>
-            <Mau05Config externalFilterCodes={filterCodes} />
+
         </div>
     );
 }
