@@ -6,12 +6,15 @@ import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, Up
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { Input, Switch, Tag } from 'antd';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
 
 export default function DataFormClient({ formId }: { formId: string }) {
     const id = formId;
     const router = useRouter();
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
     const [loading, setLoading] = useState(true);
     const [formConfig, setFormConfig] = useState<any>(null);
     const [dataRows, setDataRows] = useState<any[]>([]);
@@ -327,23 +330,25 @@ export default function DataFormClient({ formId }: { formId: string }) {
                             In ảnh
                         </Button>
                     )}
-                    <Popconfirm
-                        title="Bạn có chắc chắn muốn xóa dòng dữ liệu này không?"
-                        onConfirm={() => handleDeleteRow(record.id)}
-                        okText="Có, xóa"
-                        cancelText="Hủy"
-                        okButtonProps={{ danger: true }}
-                        placement="left"
-                    >
-                        <Button 
-                            size="small" 
-                            danger 
-                            icon={<DeleteOutlined />} 
-                            className="text-xs w-full"
+                    {isAdmin && (
+                        <Popconfirm
+                            title="Bạn có chắc chắn muốn xóa dòng dữ liệu này không?"
+                            onConfirm={() => handleDeleteRow(record.id)}
+                            okText="Có, xóa"
+                            cancelText="Hủy"
+                            okButtonProps={{ danger: true }}
+                            placement="left"
                         >
-                            Xóa
-                        </Button>
-                    </Popconfirm>
+                            <Button 
+                                size="small" 
+                                danger 
+                                icon={<DeleteOutlined />} 
+                                className="text-xs w-full"
+                            >
+                                Xóa
+                            </Button>
+                        </Popconfirm>
+                    )}
                 </div>
             );
         }
