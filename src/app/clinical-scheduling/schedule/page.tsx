@@ -1204,7 +1204,7 @@ export default function ClinicalSchedulingPage() {
                                             
                                             {unconfiguredCount > 0 && (
                                                 <Alert 
-                                                    message={`Phát hiện ${unconfiguredCount} loại dịch vụ trong danh sách chưa được cấu hình Mẫu 05 (Chưa có thời gian thực hiện)!`}
+                                                    title={`Phát hiện ${unconfiguredCount} loại dịch vụ trong danh sách chưa được cấu hình Mẫu 05 (Chưa có thời gian thực hiện)!`}
                                                     description={
                                                         <div>
                                                             Thuật toán xếp lịch sẽ bị lỗi với các dịch vụ này. Vui lòng sang tab <strong>Cấu hình Mẫu 05</strong> để bổ sung thời gian ngay.
