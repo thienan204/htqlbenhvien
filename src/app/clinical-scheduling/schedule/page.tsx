@@ -1204,10 +1204,10 @@ export default function ClinicalSchedulingPage() {
                                             
                                             {unconfiguredCount > 0 && (
                                                 <Alert 
-                                                    title={`Phát hiện ${unconfiguredCount} loại dịch vụ trong danh sách chưa được cấu hình Mẫu 05 (Chưa có thời gian thực hiện)!`}
+                                                    title={`Phát hiện ${unconfiguredCount} loại dịch vụ trong danh sách chưa được cấu hình (Chưa có thời gian thực hiện)!`}
                                                     description={
                                                         <div>
-                                                            Thuật toán xếp lịch sẽ bị lỗi với các dịch vụ này. Vui lòng sang tab <strong>Cấu hình Mẫu 05</strong> để bổ sung thời gian ngay.
+                                                            Thuật toán xếp lịch sẽ bị lỗi với các dịch vụ này. Vui lòng sang tab <strong>Cấu hình DVKT</strong> để bổ sung thời gian ngay.
                                                             <div style={{ marginTop: 8 }}>
                                                                 <Button danger size="small" onClick={() => setActiveInnerTab('mau05')}>Cấu hình ngay</Button>
                                                             </div>
@@ -1357,7 +1357,7 @@ export default function ClinicalSchedulingPage() {
                             },
                             {
                                 key: 'mau05',
-                                label: 'Cấu hình Mẫu 05',
+                                label: <strong>Cấu hình DVKT</strong>,
                                 children: (
                                     <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
                                         <Mau05Config 
