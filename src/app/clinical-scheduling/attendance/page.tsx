@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Select, Switch, message, Spin, DatePicker, Tag, Row, Col, Radio, Tooltip, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Option } = Select;
 
 export default function ClinicalSchedulingAttendancePage() {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [departments, setDepartments] = useState<any[]>([]);
     const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
@@ -16,7 +18,7 @@ export default function ClinicalSchedulingAttendancePage() {
 
     useEffect(() => {
         fetchData();
-    }, [selectedDate, selectedDept]);
+    }, [selectedDate, selectedDept, user]);
 
     const fetchData = async () => {
         try {
@@ -30,12 +32,26 @@ export default function ClinicalSchedulingAttendancePage() {
             const data = await res.json();
             
             if (data.success) {
-                if (departments.length === 0 && data.departments) {
-                    setDepartments(data.departments);
+                let depts = data.departments || [];
+                if (user?.role !== 'ADMIN' && user?.ma_khoa) {
+                    depts = depts.filter((d: any) => d.ma_khoa === user.ma_khoa);
                 }
+
+                if (departments.length === 0 && depts.length > 0) {
+                    setDepartments(depts);
+                    
+                    // Tự động chọn khoa nếu chỉ có 1 khoa (hoặc user ko phải admin)
+                    if (depts.length === 1 && !selectedDept) {
+                        setSelectedDept(depts[0].ma_khoa);
+                        // Khi setSelectedDept, useEffect sẽ tự gọi lại fetchData lần 2 với maKhoa
+                        return; 
+                    }
+                }
+                
                 if (attendanceStatuses.length === 0 && data.attendanceStatuses) {
                     setAttendanceStatuses(data.attendanceStatuses);
                 }
+                
                 setStaffList(data.staffList || []);
             } else {
                 message.error('Lỗi tải dữ liệu: ' + data.message);
