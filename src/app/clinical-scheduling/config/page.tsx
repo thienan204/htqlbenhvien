@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
 import * as XLSX from 'xlsx';
 import ExcelTemplateConfig from './ExcelTemplateConfig';
-import ExcelTemplateConfig from './ExcelTemplateConfig';
+
 const { Option } = Select;
 
 export default function ClinicalSchedulingConfigPage() {
