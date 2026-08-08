@@ -16,6 +16,7 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [services, setServices] = useState<any[]>([]);
+    const [originalServices, setOriginalServices] = useState<any[]>([]);
     const [qualifications, setQualifications] = useState<any[]>([]);
     const [searchText, setSearchText] = useState('');
     const [filterCodes, setFilterCodes] = useState<string[]>([]);
@@ -47,6 +48,7 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
             const data = await res.json();
             if (data.success) {
                 setServices(data.services || []);
+                setOriginalServices(data.services || []);
                 if (data.qualifications) {
                     const uniqueQuals = Array.from(new Set(data.qualifications.map((q: any) => q.name))).map(name => {
                         return data.qualifications.find((q: any) => q.name === name);
@@ -85,6 +87,7 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
             if (data.success) {
                 message.success('Đã lưu cấu hình dịch vụ thành công!');
                 setEditedRows({}); // Reset edited state
+                setOriginalServices(services); // Update original services to avoid jumping
             } else {
                 message.error('Lỗi lưu cấu hình: ' + data.message);
             }
@@ -217,9 +220,17 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
                initials.includes(searchLower);
     });
 
-    const unconfiguredServices = filteredServices.filter(s => !s.thoigian_thuc_hien || s.thoigian_thuc_hien <= 0);
-    const configuredServices = filteredServices.filter(s => s.thoigian_thuc_hien && s.thoigian_thuc_hien > 0);
+    const unconfiguredServices = filteredServices.filter(s => {
+        const original = originalServices.find(os => os.id === s.id);
+        const thoigian = original ? original.thoigian_thuc_hien : s.thoigian_thuc_hien;
+        return !thoigian || thoigian <= 0;
+    });
 
+    const configuredServices = filteredServices.filter(s => {
+        const original = originalServices.find(os => os.id === s.id);
+        const thoigian = original ? original.thoigian_thuc_hien : s.thoigian_thuc_hien;
+        return thoigian && thoigian > 0;
+    });
     useEffect(() => {
         if (onConfigStatus && !loading) {
             onConfigStatus(unconfiguredServices.length);
