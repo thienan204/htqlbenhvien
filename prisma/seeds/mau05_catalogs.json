@@ -100654,12 +100654,12 @@
     "MA_CSKCB": null,
     "isActive": true,
     "createdAt": "2026-06-08T07:39:36.262Z",
-    "updatedAt": "2026-06-08T07:39:36.262Z",
-    "thoigian_thuc_hien": null,
+    "updatedAt": "2026-08-08T23:08:22.203Z",
+    "thoigian_thuc_hien": 1,
     "yeu_cau_trinh_do": null,
-    "buffer_time": null,
+    "buffer_time": 1,
     "is_concurrent": false,
-    "yeu_cau_may_moc": null
+    "yeu_cau_may_moc": "MAY_DIEN_CHAM"
   },
   {
     "id": "e4587e2e-4b53-4487-a22a-1d8c299b1a1d",
