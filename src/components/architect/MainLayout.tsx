@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import SidebarClient from './SidebarClient';
 import TopHeader from './TopHeader';
 import { useAuth } from '@/contexts/AuthContext';
+import GlobalInstructionDrawer from './GlobalInstructionDrawer';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -98,6 +99,8 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
             >
                 {children}
             </div>
+            
+            <GlobalInstructionDrawer />
         </>
     );
 }

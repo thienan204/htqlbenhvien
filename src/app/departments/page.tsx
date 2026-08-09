@@ -331,7 +331,7 @@ export default function DepartmentPage() {
 
                 <Drawer
                     title={editingDept ? "Cập nhật Khoa" : "Thêm mới Khoa"}
-                    size="default"
+                    size="large"
                     onClose={() => setIsDrawerOpen(false)}
                     open={isDrawerOpen}
                     extra={

@@ -352,7 +352,7 @@ export default function ITConfigPage() {
 
                 <Drawer
                     title={editingError ? "Cập nhật Lỗi" : "Thêm mới Lỗi"}
-                    size="default"
+                    size="large"
                     onClose={() => setIsDrawerOpen(false)}
                     open={isDrawerOpen}
                     extra={

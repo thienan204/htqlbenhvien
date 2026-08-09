@@ -68,8 +68,13 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
 
             menuData.push({
                 key: group.id,
-                label: <span className="font-semibold text-[13px]">{group.title}</span>,
-                onClick: () => { if (group.path) router.push(group.path); }
+                label: group.path ? (
+                    <Link href={group.path} className="font-semibold text-[13px] text-inherit">
+                        {group.title}
+                    </Link>
+                ) : (
+                    <span className="font-semibold text-[13px]">{group.title}</span>
+                )
             });
             continue;
         }
@@ -102,13 +107,17 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
                 }
                 return {
                     key: child.id,
-                    label: (
+                    label: child.path ? (
+                        <Link href={child.path} className="flex items-center gap-2 py-1 text-inherit hover:text-inherit">
+                            {renderIcon(child.icon)}
+                            <span className={isActive ? 'text-blue-600 font-semibold' : ''}>{child.title}</span>
+                        </Link>
+                    ) : (
                         <div className="flex items-center gap-2 py-1">
                             {renderIcon(child.icon)}
                             <span className={isActive ? 'text-blue-600 font-semibold' : ''}>{child.title}</span>
                         </div>
-                    ),
-                    onClick: () => { if (child.path) router.push(child.path); }
+                    )
                 };
             }),
             ...(canSeeSpecial ? rules.map(rule => {
@@ -120,12 +129,11 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
                 return {
                     key: rule.id,
                     label: (
-                        <div className="flex items-center gap-2 truncate max-w-[200px] py-1">
+                        <Link href={`/chuyen-de/${rule.slug}`} className="flex items-center gap-2 truncate max-w-[200px] py-1 text-inherit hover:text-inherit">
                             <Icons.FileTextOutlined className={`text-[16px] opacity-70 ${isActive ? 'text-blue-600' : ''}`} />
                             <span className={isActive ? 'text-blue-600 font-semibold' : ''}>{rule.name}</span>
-                        </div>
-                    ),
-                    onClick: () => router.push(`/chuyen-de/${rule.slug}`)
+                        </Link>
+                    )
                 };
             }) : [])
         ];
