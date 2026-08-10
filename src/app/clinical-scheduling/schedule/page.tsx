@@ -154,13 +154,13 @@ export default function ClinicalSchedulingPage() {
 
     const staffStats = React.useMemo(() => {
         if (!scheduledData.length) return [];
-        const stats: Record<string, number> = {};
+        const stats: Record<string, { count: number, name: string }> = {};
         scheduledData.forEach(item => {
-            const name = item.nguoi_thuc_hien;
-            if (!stats[name]) stats[name] = 0;
-            stats[name]++;
+            const key = item.ma_nv || item.nguoi_thuc_hien;
+            if (!stats[key]) stats[key] = { count: 0, name: item.nguoi_thuc_hien };
+            stats[key].count++;
         });
-        return Object.entries(stats).sort((a, b) => b[1] - a[1]);
+        return Object.entries(stats).sort((a, b) => b[1].count - a[1].count);
     }, [scheduledData]);
 
     const groupedScheduledData = React.useMemo(() => {
@@ -181,9 +181,9 @@ export default function ClinicalSchedulingPage() {
             const shift = getShift(item.bat_dau);
             if (!shiftGroups[shift]) shiftGroups[shift] = {};
             
-            const staff = item.nguoi_thuc_hien;
-            if (!shiftGroups[shift][staff]) shiftGroups[shift][staff] = [];
-            shiftGroups[shift][staff].push(item);
+            const staffKey = item.ma_nv ? `${item.nguoi_thuc_hien} (${item.ma_nv})` : item.nguoi_thuc_hien;
+            if (!shiftGroups[shift][staffKey]) shiftGroups[shift][staffKey] = [];
+            shiftGroups[shift][staffKey].push(item);
         });
 
         const result: any[] = [];
@@ -242,6 +242,8 @@ export default function ClinicalSchedulingPage() {
         out_thoi_gian_chi_dinh?: string;
         out_ten_dich_vu?: string;
         out_nguoi_thuc_hien?: string;
+        out_ma_nv?: string;
+        out_cchn?: string;
         out_ma_may?: string;
         out_ten_may?: string;
         out_bat_dau?: string;
@@ -974,7 +976,12 @@ export default function ClinicalSchedulingPage() {
             if (outputMapping.enable_out_nguoi_thuc_hien !== 'false') {
                 row[outputMapping.out_nguoi_thuc_hien || 'Người thực hiện (Bác sĩ/Điều dưỡng)'] = item.nguoi_thuc_hien;
             }
-            
+            if (outputMapping.out_ma_nv) {
+                row[outputMapping.out_ma_nv] = item.ma_nv;
+            }
+            if (outputMapping.out_cchn) {
+                row[outputMapping.out_cchn] = item.cchn;
+            }
             if (outputMapping.enable_out_ten_may !== 'false' || outputMapping.enable_out_ma_may !== 'false') {
                 row[outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy thực hiện'] = item.ten_may ? `${item.ten_may} (${item.ma_may})` : '';
             }
@@ -1451,12 +1458,12 @@ export default function ClinicalSchedulingPage() {
                                 label: 'Thống kê lượng việc theo Bác sĩ/Điều dưỡng',
                                 children: (
                                     <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
-                                        {staffStats.map(([name, count]) => (
-                                            <Col span={6} key={name}>
+                                        {staffStats.map(([key, data]) => (
+                                            <Col span={6} key={key}>
                                                 <Card size="small" style={{ textAlign: 'center', background: '#f6ffed', borderColor: '#b7eb8f' }}>
-                                                    <div style={{ fontSize: 15, fontWeight: 'bold', color: '#237804' }}>{name}</div>
+                                                    <div style={{ fontSize: 15, fontWeight: 'bold', color: '#237804' }}>{data.name} <span style={{fontSize: 12, color: '#8c8c8c'}}>({key})</span></div>
                                                     <div style={{ fontSize: 24, marginTop: 8, color: '#135200' }}>
-                                                        {count} <span style={{fontSize: 13, color: '#595959', fontWeight: 'normal'}}>bệnh nhân</span>
+                                                        {data.count} <span style={{fontSize: 13, color: '#595959', fontWeight: 'normal'}}>bệnh nhân</span>
                                                     </div>
                                                 </Card>
                                             </Col>

@@ -415,6 +415,8 @@ export async function POST(request: Request) {
                 scheduledResults.push({
                     ...task,
                     nguoi_thuc_hien: finalStaff.ho_ten,
+                    ma_nv: finalStaff.ma_nv,
+                    cchn: (finalStaff.certificates && finalStaff.certificates.length > 0) ? finalStaff.certificates[0].so_cchn : '',
                     ma_may: finalMachine ? finalMachine.MA_MAY : '',
                     ten_may: finalMachine ? (finalMachine.TEN_BV || finalMachine.TEN_TB) : '',
                     bat_dau: formatTime(finalTime),
