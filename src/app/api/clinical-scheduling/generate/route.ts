@@ -128,7 +128,9 @@ export async function POST(request: Request) {
                 chuc_danh_ref: true,
                 trinh_do_ref: true,
                 attendances: {
-                    where: { workDate: date },
+                    where: { workDate: { lte: date } },
+                    orderBy: { workDate: 'desc' },
+                    take: 1,
                     include: { status_ref: true }
                 },
                 certificates: {
@@ -140,13 +142,17 @@ export async function POST(request: Request) {
 
         // Lọc ra nhân viên đi làm (Không có bản ghi điểm danh, hoặc trạng thái không chứa chữ "nghỉ", và is_thuc_hien_dvkt = true)
         const availableStaff = rawStaff.filter(staff => {
-            if (staff.attendances.length === 0) return true; // Chưa điểm danh = Mặc định đi làm & có làm DVKT
+            if (staff.attendances.length === 0) return true; // Chưa điểm danh bao giờ = Mặc định đi làm & có làm DVKT
             
             const attendance = staff.attendances[0];
-            const statusName = (attendance.status_ref?.name || '').toLowerCase();
+            const isToday = attendance.workDate === date;
             
-            if (statusName.includes('nghỉ')) return false; // Lọc bỏ nghỉ phép, nghỉ ốm...
-            if (attendance.is_thuc_hien_dvkt === false) return false; // Bỏ qua nếu đánh dấu không làm DVKT
+            if (isToday) {
+                const statusName = (attendance.status_ref?.name || '').toLowerCase();
+                if (statusName.includes('nghỉ')) return false; // Lọc bỏ nghỉ phép, nghỉ ốm nếu điểm danh hnay
+            }
+            
+            if (attendance.is_thuc_hien_dvkt === false) return false; // Bỏ qua nếu đánh dấu không làm DVKT (bảo lưu trạng thái các ngày trước)
             
             return true;
         });
