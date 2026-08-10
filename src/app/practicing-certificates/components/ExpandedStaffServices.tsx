@@ -42,6 +42,9 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
         { title: 'Đơn Giá', dataIndex: 'DON_GIA', width: 120, render: (val: any) => val ? val.toLocaleString() + ' đ' : '-' }
     ];
 
+    const [mappedTableParams, setMappedTableParams] = useState({ current: 1, pageSize: 10 });
+    const [otherTableParams, setOtherTableParams] = useState({ current: 1, pageSize: 10 });
+
     return (
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-inner">
             <Tabs
@@ -54,7 +57,18 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
                             <Table
                                 dataSource={staffServices.mappedServices || []}
                                 rowKey="id"
-                                pagination={{ pageSize: 10 }}
+                                pagination={{
+                                    current: mappedTableParams.current,
+                                    pageSize: mappedTableParams.pageSize,
+                                    showSizeChanger: true,
+                                    locale: { items_per_page: '/ Trang' }
+                                }}
+                                onChange={(pagination) => {
+                                    setMappedTableParams({
+                                        current: pagination.current || 1,
+                                        pageSize: pagination.pageSize || 10,
+                                    });
+                                }}
                                 size="small"
                                 columns={columns}
                                 bordered
@@ -68,7 +82,18 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
                             <Table
                                 dataSource={staffServices.otherServices || []}
                                 rowKey="id"
-                                pagination={{ pageSize: 10 }}
+                                pagination={{
+                                    current: otherTableParams.current,
+                                    pageSize: otherTableParams.pageSize,
+                                    showSizeChanger: true,
+                                    locale: { items_per_page: '/ Trang' }
+                                }}
+                                onChange={(pagination) => {
+                                    setOtherTableParams({
+                                        current: pagination.current || 1,
+                                        pageSize: pagination.pageSize || 10,
+                                    });
+                                }}
                                 size="small"
                                 columns={columns}
                                 bordered
