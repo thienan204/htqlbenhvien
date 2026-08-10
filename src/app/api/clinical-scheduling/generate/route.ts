@@ -206,8 +206,11 @@ export async function POST(request: Request) {
                 for (const cert of s.certificates) {
                     // 1. Kiểm tra Dịch vụ kỹ thuật khác (Mẫu 05)
                     if (cert.dich_vu_ky_thuat) {
-                        const extraServices = cert.dich_vu_ky_thuat.split(',').map((code: string) => code.trim()).filter(Boolean);
-                        if (extraServices.includes(ma_dich_vu)) return true;
+                        const extraServices = cert.dich_vu_ky_thuat.split(/[,;]/).map((code: string) => code.trim()).filter(Boolean);
+                        const isMatch = extraServices.some(allowedCode => {
+                            return allowedCode === ma_dich_vu || ma_dich_vu.startsWith(allowedCode);
+                        });
+                        if (isMatch) return true;
                     }
 
                     // 2. Kiểm tra Phạm vi hành nghề (Mapping)

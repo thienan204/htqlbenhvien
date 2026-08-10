@@ -93,8 +93,11 @@ export async function POST(request: Request) {
 
                 // Check exceptions
                 if (cert.dich_vu_ky_thuat) {
-                    const exceptions = cert.dich_vu_ky_thuat.split(';').map((s: string) => s.trim()).filter(Boolean);
-                    if (exceptions.includes(ma_dich_vu)) {
+                    const exceptions = cert.dich_vu_ky_thuat.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean);
+                    const isMatch = exceptions.some((allowedCode: string) => {
+                        return allowedCode === ma_dich_vu || ma_dich_vu.startsWith(allowedCode);
+                    });
+                    if (isMatch) {
                         isValid = true;
                         break;
                     }

@@ -27,11 +27,18 @@ export default function LoginPage() {
                 // Force a hard reload to ensure layout and context are fully updated
                 window.location.href = getBasePath() + '/';
             } else {
-                const data = await res.json();
-                setError(data.error || 'Đăng nhập thất bại');
+                let errorMsg = 'Đăng nhập thất bại';
+                try {
+                    const data = await res.json();
+                    errorMsg = data.error || errorMsg;
+                } catch (e) {
+                    errorMsg = `Server error (${res.status}): ${res.statusText}`;
+                }
+                setError(errorMsg);
             }
-        } catch (err) {
-            setError('Có lỗi xảy ra, vui lòng thử lại');
+        } catch (err: any) {
+            console.error("Login fetch error:", err);
+            setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
         } finally {
             setLoading(false);
         }

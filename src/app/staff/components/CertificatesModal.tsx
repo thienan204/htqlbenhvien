@@ -210,7 +210,8 @@ export default function CertificatesModal({ open, onClose, staffId, staffName, o
             type: 'textarea', 
             span: 24,
             customNode: (
-                <div className="mt-2 text-right">
+                <div className="mt-2 flex justify-between items-center">
+                    <span className="text-xs text-gray-500 italic">Mẹo: Bạn có thể nhập mã gốc 7 ký tự (VD: 08.0002) để tự động map toàn bộ dịch vụ con.</span>
                     <Button 
                         type="dashed" 
                         icon={<SettingOutlined />} 
