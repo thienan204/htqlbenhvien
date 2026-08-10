@@ -17,12 +17,12 @@
     },
     {
       "name": "TEN_DTBN",
-      "visible": true,
+      "visible": false,
       "alias": "TEN_DTBN"
     },
     {
       "name": "LOAIDICHVU",
-      "visible": true,
+      "visible": false,
       "alias": "LOAIDICHVU"
     },
     {
@@ -32,22 +32,22 @@
     },
     {
       "name": "MAMKHOA",
-      "visible": true,
+      "visible": false,
       "alias": "MAMKHOA"
     },
     {
       "name": "BSCHIDINH",
-      "visible": true,
+      "visible": false,
       "alias": "BSCHIDINH"
     },
     {
       "name": "PHONGTHUCHIEN",
-      "visible": true,
+      "visible": false,
       "alias": "PHONGTHUCHIEN"
     },
     {
       "name": "NGUOITHUCHIEN",
-      "visible": true,
+      "visible": false,
       "alias": "NGUOITHUCHIEN"
     },
     {
@@ -57,33 +57,23 @@
     },
     {
       "name": "SOLUONG",
-      "visible": true,
+      "visible": false,
       "alias": "SOLUONG"
     },
     {
       "name": "TIEN_CHITRA",
-      "visible": true,
+      "visible": false,
       "alias": "TIEN_CHITRA"
     },
     {
       "name": "THANHTIEN",
-      "visible": true,
+      "visible": false,
       "alias": "THANHTIEN"
     },
     {
       "name": "NGAYTIEPNHAN",
-      "visible": true,
+      "visible": false,
       "alias": "NGAYTIEPNHAN"
-    },
-    {
-      "name": "NGAY_RAVIEN",
-      "visible": true,
-      "alias": "NGAY_RAVIEN"
-    },
-    {
-      "name": "MABENHNHAN",
-      "visible": true,
-      "alias": "MABENHNHAN"
     },
     {
       "name": "MAHOSOBENHAN",
@@ -91,34 +81,19 @@
       "alias": "MAHOSOBENHAN"
     },
     {
-      "name": "TENBENHNHAN",
+      "name": "MAGIUONG",
       "visible": true,
-      "alias": "TENBENHNHAN"
+      "alias": "MAGIUONG"
     },
     {
-      "name": "DIACHI",
-      "visible": true,
-      "alias": "DIACHI"
+      "name": "NGAY_RAVIEN",
+      "visible": false,
+      "alias": "NGAY_RAVIEN"
     },
     {
-      "name": "NGAYSINH",
-      "visible": true,
-      "alias": "NGAYSINH"
-    },
-    {
-      "name": "NAMSINH",
-      "visible": true,
-      "alias": "NAMSINH"
-    },
-    {
-      "name": "MA_BHYT",
-      "visible": true,
-      "alias": "MA_BHYT"
-    },
-    {
-      "name": "MACHANDOANRAVIEN",
-      "visible": true,
-      "alias": "MACHANDOANRAVIEN"
+      "name": "MABENHNHAN",
+      "visible": false,
+      "alias": "MABENHNHAN"
     },
     {
       "name": "NGAYCHIDINH",
@@ -131,9 +106,34 @@
       "alias": "NGAYKETTHUC"
     },
     {
-      "name": "MAGIUONG",
+      "name": "TENBENHNHAN",
       "visible": true,
-      "alias": "MAGIUONG"
+      "alias": "TENBENHNHAN"
+    },
+    {
+      "name": "DIACHI",
+      "visible": false,
+      "alias": "DIACHI"
+    },
+    {
+      "name": "NGAYSINH",
+      "visible": false,
+      "alias": "NGAYSINH"
+    },
+    {
+      "name": "NAMSINH",
+      "visible": false,
+      "alias": "NAMSINH"
+    },
+    {
+      "name": "MA_BHYT",
+      "visible": false,
+      "alias": "MA_BHYT"
+    },
+    {
+      "name": "MACHANDOANRAVIEN",
+      "visible": false,
+      "alias": "MACHANDOANRAVIEN"
     },
     {
       "name": "TYLE_DV",

@@ -738,19 +738,6 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                 _violations: [rule.name],
                                 _overlapTimes: group[idx]._overlapTimes ? Array.from(group[idx]._overlapTimes) : []
                             };
-                            
-                            // Deduplicate based on ignoreIfSameField
-                            if (ignoreSameColIdx !== -1) {
-                                const val = clone[ignoreSameColIdx];
-                                if (val !== undefined) {
-                                    const strVal = String(val).trim();
-                                    if (strVal !== '') {
-                                        if (seenIgnoreVals.has(strVal)) return; // Skip duplicate row for this component
-                                        seenIgnoreVals.add(strVal);
-                                    }
-                                }
-                            }
-                            
                             allDuplicates.push(clone);
                         });
                         globalGroupCounter++;
