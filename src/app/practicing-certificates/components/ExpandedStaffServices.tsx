@@ -5,6 +5,8 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
     const [staffServices, setStaffServices] = useState<{ mappedServices: any[], otherServices: any[] } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [mappedTableParams, setMappedTableParams] = useState({ current: 1, pageSize: 10 });
+    const [otherTableParams, setOtherTableParams] = useState({ current: 1, pageSize: 10 });
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -41,9 +43,6 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
         { title: 'Tên Dịch Vụ', dataIndex: 'TEN_DICH_VU' },
         { title: 'Đơn Giá', dataIndex: 'DON_GIA', width: 120, render: (val: any) => val ? val.toLocaleString() + ' đ' : '-' }
     ];
-
-    const [mappedTableParams, setMappedTableParams] = useState({ current: 1, pageSize: 10 });
-    const [otherTableParams, setOtherTableParams] = useState({ current: 1, pageSize: 10 });
 
     return (
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-inner">
