@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs, Table, Spin, Alert } from 'antd';
+import { Tabs, Table, Spin, Alert, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 
 export default function ExpandedStaffServices({ certId }: { certId: string }) {
     const [staffServices, setStaffServices] = useState<{ mappedServices: any[], otherServices: any[] } | null>(null);
@@ -7,6 +8,7 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
     const [error, setError] = useState<string | null>(null);
     const [mappedTableParams, setMappedTableParams] = useState({ current: 1, pageSize: 10 });
     const [otherTableParams, setOtherTableParams] = useState({ current: 1, pageSize: 10 });
+    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -44,17 +46,43 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
         { title: 'Đơn Giá', dataIndex: 'DON_GIA', width: 120, render: (val: any) => val ? val.toLocaleString() + ' đ' : '-' }
     ];
 
+    const filterServices = (services: any[]) => {
+        if (!searchText) return services;
+        const lowerSearch = searchText.toLowerCase();
+        return services.filter(s => 
+            (s.MA_DICH_VU && s.MA_DICH_VU.toLowerCase().includes(lowerSearch)) ||
+            (s.TEN_DICH_VU && s.TEN_DICH_VU.toLowerCase().includes(lowerSearch))
+        );
+    };
+
+    const mappedFiltered = staffServices ? filterServices(staffServices.mappedServices || []) : [];
+    const otherFiltered = staffServices ? filterServices(staffServices.otherServices || []) : [];
+
     return (
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-inner">
+            <div className="flex justify-end mb-4">
+                <Input
+                    placeholder="Tìm kiếm theo Mã hoặc Tên Dịch Vụ..."
+                    prefix={<SearchOutlined className="text-slate-400" />}
+                    value={searchText}
+                    onChange={(e) => {
+                        setSearchText(e.target.value);
+                        setMappedTableParams(prev => ({ ...prev, current: 1 }));
+                        setOtherTableParams(prev => ({ ...prev, current: 1 }));
+                    }}
+                    className="max-w-md rounded-lg"
+                    allowClear
+                />
+            </div>
             <Tabs
                 type="card"
                 items={[
                     {
                         key: '1',
-                        label: `Dịch vụ được thực hiện (${staffServices.mappedServices?.length || 0})`,
+                        label: `Dịch vụ được thực hiện (${mappedFiltered.length})`,
                         children: (
                             <Table
-                                dataSource={staffServices.mappedServices || []}
+                                dataSource={mappedFiltered}
                                 rowKey="id"
                                 pagination={{
                                     current: mappedTableParams.current,
@@ -76,10 +104,10 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
                     },
                     {
                         key: '2',
-                        label: `Dịch vụ kỹ thuật khác (${staffServices.otherServices?.length || 0})`,
+                        label: `Dịch vụ kỹ thuật khác (${otherFiltered.length})`,
                         children: (
                             <Table
-                                dataSource={staffServices.otherServices || []}
+                                dataSource={otherFiltered}
                                 rowKey="id"
                                 pagination={{
                                     current: otherTableParams.current,
