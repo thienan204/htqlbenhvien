@@ -362,13 +362,15 @@ export async function POST(request: Request) {
                     return Math.abs((dbVal || 0) - exVal) > 5;
                 };
 
+                const dbTongChiBH = (matchedDbRec.baoHiemTT || 0) + (matchedDbRec.benhNhanCCT || 0);
+                matchedDbRec.tongChiBH = dbTongChiBH;
+
                 const isCostDiff = 
                     checkCost(matchedDbRec.tongChi, exRec.tongChi) ||
-                    checkCost(matchedDbRec.tongChiBH, exRec.tongChiBH) ||
+                    checkCost(dbTongChiBH, exRec.tongChiBH) ||
                     checkCost(matchedDbRec.baoHiemTT, exRec.baoHiemTT) ||
                     checkCost(matchedDbRec.benhNhanCCT, exRec.benhNhanCCT) ||
-                    checkCost(matchedDbRec.benhNhanTT, exRec.benhNhanTT) ||
-                    checkCost(matchedDbRec.nguonKhac, exRec.nguonKhac);
+                    checkCost(matchedDbRec.benhNhanTT, exRec.benhNhanTT);
                 
                 const ngayVaoDiff = exRec.ngayVao !== null && dbNgayVao !== exNgayVao;
                 const ngayRaDiff = exRec.ngayRa !== null && dbNgayRa !== exNgayRa;
@@ -389,7 +391,7 @@ export async function POST(request: Request) {
                             gioiTinhDiff,
                             chanDoanDiff,
                             tongChi: exRec.tongChi === null ? 0 : (matchedDbRec.tongChi || 0) - exRec.tongChi,
-                            tongChiBH: exRec.tongChiBH === null ? 0 : (matchedDbRec.tongChiBH || 0) - exRec.tongChiBH,
+                            tongChiBH: exRec.tongChiBH === null ? 0 : dbTongChiBH - exRec.tongChiBH,
                             baoHiemTT: exRec.baoHiemTT === null ? 0 : (matchedDbRec.baoHiemTT || 0) - exRec.baoHiemTT,
                             benhNhanCCT: exRec.benhNhanCCT === null ? 0 : (matchedDbRec.benhNhanCCT || 0) - exRec.benhNhanCCT,
                             benhNhanTT: exRec.benhNhanTT === null ? 0 : (matchedDbRec.benhNhanTT || 0) - exRec.benhNhanTT,

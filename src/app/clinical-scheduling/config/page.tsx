@@ -197,7 +197,15 @@ export default function ClinicalSchedulingConfigPage() {
                 </div>
             </Card>
 
-            <Card title="Cấu hình Khung giờ làm việc theo Khoa" style={{ marginBottom: 24 }}>
+            <Card 
+                title="Cấu hình Khung giờ làm việc theo Khoa" 
+                style={{ marginBottom: 24 }}
+                extra={
+                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving}>
+                        Lưu Cấu Hình
+                    </Button>
+                }
+            >
                 <div style={{ marginBottom: 16 }}>
                     <Input
                         placeholder="Tìm kiếm theo Tên hoặc Mã Khoa..."

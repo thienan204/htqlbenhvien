@@ -467,7 +467,6 @@ export default function HoSoDaGuiPage() {
         mapping.baoHiemTT = findMatch(['T_BHTT', 'Bảo hiểm TT', 'Bảo hiểm thanh toán']);
         mapping.benhNhanCCT = findMatch(['T_BNCCT', 'Bệnh nhân CCT', 'Cùng chi trả']);
         mapping.benhNhanTT = findMatch(['T_BNTT', 'Bệnh nhân TT', 'Người bệnh tự trả']);
-        mapping.nguonKhac = findMatch(['T_NGUONKHAC', 'Nguồn khác']);
         
         setColumnMapping(mapping);
     };
@@ -880,7 +879,7 @@ export default function HoSoDaGuiPage() {
     };
 
     const compareContent = (
-        <div className="max-w-6xl mx-auto">
+        <div className="w-full">
             <div className="flex justify-end mb-3">
                 <button 
                     onClick={() => setShowInstructions(!showInstructions)}
@@ -1043,7 +1042,7 @@ export default function HoSoDaGuiPage() {
                                     {Object.entries({
                                         maThe: 'Mã Thẻ BHYT (*)', hoTen: 'Họ Tên (*)', ngaySinh: 'Ngày Sinh', gioiTinh: 'Giới Tính', chanDoan: 'Chẩn Đoán',
                                         ngayVao: 'Ngày Vào (*)', ngayRa: 'Ngày Ra (*)', tongChi: 'Tổng Chi', tongChiBH: 'Tổng Chi BH', 
-                                        baoHiemTT: 'Bảo Hiểm TT', benhNhanCCT: 'Bệnh Nhân CCT', benhNhanTT: 'Bệnh Nhân TT', nguonKhac: 'Nguồn Khác'
+                                        baoHiemTT: 'Bảo Hiểm TT', benhNhanCCT: 'Bệnh Nhân CCT', benhNhanTT: 'Bệnh Nhân TT'
                                     }).map(([key, label]) => (
                                         <div key={key} className="flex flex-col">
                                             <label className="text-xs font-medium text-slate-600 mb-1">{label}</label>
@@ -1093,11 +1092,11 @@ export default function HoSoDaGuiPage() {
                                 <p className="text-3xl font-bold text-orange-700 mt-1">{compareResult.summary.diffMatches}</p>
                             </div>
                             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 border-l-4 border-l-blue-500">
-                                <p className="text-sm text-blue-600 font-medium">Có trong Excel, vắng PM</p>
+                                <p className="text-sm text-blue-600 font-medium">Có trong Mẫu 01/BH-C79, vắng Cổng GĐBHXH</p>
                                 <p className="text-3xl font-bold text-blue-700 mt-1">{compareResult.summary.notInDb}</p>
                             </div>
                             <div className="bg-red-50 rounded-lg p-4 border border-red-200 border-l-4 border-l-red-500">
-                                <p className="text-sm text-red-600 font-medium">Có trong PM, vắng Excel</p>
+                                <p className="text-sm text-red-600 font-medium">Có trong Cổng GĐBHXH, vắng Mẫu 01/BH-C79</p>
                                 <p className="text-3xl font-bold text-red-700 mt-1">{compareResult.summary.notInExcel}</p>
                             </div>
                         </div>
@@ -1106,124 +1105,136 @@ export default function HoSoDaGuiPage() {
                     {compareResult.details.diffMatches.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                             <h3 className="text-lg font-bold text-slate-800 mb-4">Hồ sơ lệch thông tin / chi phí</h3>
-                            <Table 
-                                dataSource={compareResult.details.diffMatches}
-                                rowKey={(r: any) => r.excel.maThe + r.excel.ngayVao}
-                                size="small"
-                                bordered
-                                pagination={{ pageSize: 10 }}
-                                scroll={{ x: 1500 }}
-                                columns={[
-                                    { 
-                                        title: 'Họ Tên', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'hoTen'], width: 150 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'hoTen'], width: 150, render: (val, record: any) => {
-                                                return <span className={record.diff?.hoTenDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Ngày Sinh', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'ngaySinh'], width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'ngaySinh'], width: 100, render: (val, record: any) => {
-                                                return <span className={record.diff?.ngaySinhDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Giới Tính', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'gioiTinh'], width: 80 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'gioiTinh'], width: 80, render: (val, record: any) => {
-                                                return <span className={record.diff?.gioiTinhDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Mã Bệnh', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'chanDoan'], width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'chanDoan'], width: 100, render: (val, record: any) => {
-                                                return <span className={record.diff?.chanDoanDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Ngày Vào', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'ngayVao'], width: 130 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayVao'], width: 130, render: (val, record: any) => {
-                                                return <span className={record.diff?.ngayVaoDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Ngày Ra', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'ngayRa'], width: 130 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'ngayRa'], width: 130, render: (val, record: any) => {
-                                                return <span className={record.diff?.ngayRaDiff ? 'text-red-500 font-bold' : ''}>{val}</span>;
-                                            } },
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Tổng Chi', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'tongChi'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'tongChi'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChi'], align: 'right', render: (v, record: any) => record.excel.tongChi === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Tổng Chi BH', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'tongChiBH'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'tongChiBH'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'tongChiBH'], align: 'right', render: (v, record: any) => record.excel.tongChiBH === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Bảo Hiểm TT', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'baoHiemTT'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'baoHiemTT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'baoHiemTT'], align: 'right', render: (v, record: any) => record.excel.baoHiemTT === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Bệnh Nhân CCT', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'benhNhanCCT'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'benhNhanCCT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanCCT'], align: 'right', render: (v, record: any) => record.excel.benhNhanCCT === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Bệnh Nhân TT', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'benhNhanTT'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'benhNhanTT'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'benhNhanTT'], align: 'right', render: (v, record: any) => record.excel.benhNhanTT === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
-                                        ]
-                                    },
-                                    { 
-                                        title: 'Nguồn Khác', 
-                                        children: [
-                                            { title: 'Excel', dataIndex: ['excel', 'nguonKhac'], align: 'right', render: v => v === null ? '-' : v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Phần mềm', dataIndex: ['db', 'nguonKhac'], align: 'right', render: v => v?.toLocaleString('vi-VN'), width: 100 },
-                                            { title: 'Chênh lệch', dataIndex: ['diff', 'nguonKhac'], align: 'right', render: (v, record: any) => record.excel.nguonKhac === null ? '-' : (v !== 0 ? <span className="text-red-600 font-bold">{v?.toLocaleString('vi-VN')}</span> : '-'), width: 90 }
-                                        ]
+                            {(() => {
+                                const flatDiffMatches: any[] = [];
+                                compareResult.details.diffMatches.forEach((m: any, idx: number) => {
+                                    flatDiffMatches.push({ ...m.excel, _type: 'Mẫu 01/BH-C79', _diff: m.diff, _idx: idx });
+                                    flatDiffMatches.push({ ...m.db, _type: 'Cổng GĐBHXH', _diff: m.diff, _idx: idx });
+                                });
+
+                                const renderTextDiff = (val: any, record: any, diffKey: string) => {
+                                    const isDiff = record._type === 'Cổng GĐBHXH' && record._diff?.[diffKey];
+                                    return <span className={isDiff ? 'text-red-500 font-bold bg-red-50 px-1 rounded' : ''}>{val || '-'}</span>;
+                                };
+
+                                const renderCostDiff = (val: any, record: any, diffKey: string) => {
+                                    const v = val === null ? '-' : val?.toLocaleString('vi-VN');
+                                    const diffAmount = record._diff?.[diffKey];
+                                    if (record._type === 'Cổng GĐBHXH' && diffAmount !== 0 && diffAmount !== undefined) {
+                                        return (
+                                            <div className="flex flex-col items-end">
+                                                <span className="font-medium text-slate-800">{v}</span>
+                                                <span className="text-red-600 font-bold text-[11px] bg-red-50 px-1 rounded border border-red-100 mt-1" title="Chênh lệch so với mẫu 01/BH-C79 (Cổng GĐBHXH - 01/BH-C79)">
+                                                    {diffAmount > 0 ? '+' : ''}{diffAmount?.toLocaleString('vi-VN')}
+                                                </span>
+                                            </div>
+                                        );
                                     }
-                                ]}
-                            />
+                                    return v;
+                                };
+
+                                return (
+                                    <Table 
+                                        dataSource={flatDiffMatches}
+                                        rowKey={(r: any) => `${r.maThe}_${r.ngayVao}_${r._type}_${r._idx}`}
+                                        size="small"
+                                        bordered
+                                        pagination={{ pageSize: 20 }}
+                                        scroll={{ x: 1200 }}
+                                        rowClassName={(record: any) => {
+                                            const isEvenGroup = record._idx % 2 === 0;
+                                            const isLastInGroup = record._type === 'Cổng GĐBHXH';
+                                            return `${isEvenGroup ? 'bg-white' : 'bg-slate-50'} ${isLastInGroup ? 'border-b-2 border-b-slate-300' : 'border-b-0 border-b-transparent [&>td]:border-b-transparent'}`;
+                                        }}
+                                        columns={[
+                                            { 
+                                                title: 'Nguồn', 
+                                                dataIndex: '_type', 
+                                                width: 100, 
+                                                fixed: 'left',
+                                                render: (val) => <Tag color={val === 'Mẫu 01/BH-C79' ? 'green' : 'blue'} className="w-full text-center m-0 text-[11px] whitespace-normal">{val}</Tag>
+                                            },
+                                            { 
+                                                title: 'Họ Tên', 
+                                                dataIndex: 'hoTen', 
+                                                width: 150, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'hoTenDiff')
+                                            },
+                                            { 
+                                                title: 'Ngày Sinh', 
+                                                dataIndex: 'ngaySinh', 
+                                                width: 100, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'ngaySinhDiff')
+                                            },
+                                            { 
+                                                title: 'Giới Tính', 
+                                                dataIndex: 'gioiTinh', 
+                                                width: 80, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'gioiTinhDiff')
+                                            },
+                                            { 
+                                                title: 'Mã Bệnh', 
+                                                dataIndex: 'chanDoan', 
+                                                width: 100, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'chanDoanDiff')
+                                            },
+                                            { 
+                                                title: 'Ngày Vào', 
+                                                dataIndex: 'ngayVao', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'ngayVaoDiff')
+                                            },
+                                            { 
+                                                title: 'Ngày Ra', 
+                                                dataIndex: 'ngayRa', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'ngayRaDiff')
+                                            },
+                                            { 
+                                                title: 'Tổng Chi', 
+                                                dataIndex: 'tongChi', 
+                                                align: 'right', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderCostDiff(val, record, 'tongChi')
+                                            },
+                                            { 
+                                                title: 'Tổng Chi BH', 
+                                                dataIndex: 'tongChiBH', 
+                                                align: 'right', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderCostDiff(val, record, 'tongChiBH')
+                                            },
+                                            { 
+                                                title: 'Bảo Hiểm TT', 
+                                                dataIndex: 'baoHiemTT', 
+                                                align: 'right', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderCostDiff(val, record, 'baoHiemTT')
+                                            },
+                                            { 
+                                                title: 'Bệnh Nhân CCT', 
+                                                dataIndex: 'benhNhanCCT', 
+                                                align: 'right', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderCostDiff(val, record, 'benhNhanCCT')
+                                            },
+                                            { 
+                                                title: 'Bệnh Nhân TT', 
+                                                dataIndex: 'benhNhanTT', 
+                                                align: 'right', 
+                                                width: 120, 
+                                                render: (val, record: any) => renderCostDiff(val, record, 'benhNhanTT')
+                                            },
+                                        ]}
+                                    />
+                                );
+                            })()}
                         </div>
                     )}
                     
                     {compareResult.details.notInDb.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">Dữ liệu có trong Excel nhưng không có trong phần mềm (hoặc khác trạng thái)</h3>
+                            <h3 className="text-lg font-bold text-slate-800 mb-4">Có trong Mẫu 01/BH-C79, không có trên Cổng GĐBHXH (hoặc khác trạng thái)</h3>
                             <Table 
                                 dataSource={compareResult.details.notInDb}
                                 rowKey={(r: any) => r.maThe + r.ngayVao}
@@ -1245,7 +1256,7 @@ export default function HoSoDaGuiPage() {
 
                     {compareResult.details.notInExcel.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mt-6">
-                            <h3 className="text-lg font-bold text-red-800 mb-4">Dữ liệu có trong Phần mềm nhưng không có trong Excel</h3>
+                            <h3 className="text-lg font-bold text-red-800 mb-4">Có trên Cổng GĐBHXH, không có trong Mẫu 01/BH-C79</h3>
                             <Table 
                                 dataSource={compareResult.details.notInExcel}
                                 rowKey="id"
@@ -1290,7 +1301,6 @@ export default function HoSoDaGuiPage() {
             { key: 'baoHiemTT', label: 'Bảo Hiểm TT' },
             { key: 'benhNhanTT', label: 'Bệnh Nhân TT' },
             { key: 'benhNhanCCT', label: 'Bệnh Nhân CCT' },
-            { key: 'nguonKhac', label: 'Nguồn Khác' },
             { key: 'trangThaiHS', label: 'Trạng Thái HS' },
             { key: 'trangThaiTT', label: 'Trạng Thái TT' },
             { key: 'maLoi', label: 'Mã Lỗi' },
@@ -1330,7 +1340,7 @@ export default function HoSoDaGuiPage() {
                             
                             const formatVal = (key: string, val: any) => {
                                 if (val === null || val === undefined) return '-';
-                                if (['tongChi', 'tongChiBH', 'baoHiemTT', 'benhNhanTT', 'benhNhanCCT', 'nguonKhac'].includes(key)) {
+                                if (['tongChi', 'tongChiBH', 'baoHiemTT', 'benhNhanTT', 'benhNhanCCT'].includes(key)) {
                                     return Number(val).toLocaleString('vi-VN');
                                 }
                                 return String(val);
