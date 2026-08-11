@@ -154,13 +154,17 @@ export default function ClinicalSchedulingPage() {
 
     const staffStats = React.useMemo(() => {
         if (!scheduledData.length) return [];
-        const stats: Record<string, { count: number, name: string }> = {};
+        const stats: Record<string, { patientSet: Set<string>, serviceCount: number, name: string }> = {};
         scheduledData.forEach(item => {
             const key = item.ma_nv || item.nguoi_thuc_hien;
-            if (!stats[key]) stats[key] = { count: 0, name: item.nguoi_thuc_hien };
-            stats[key].count++;
+            if (!stats[key]) stats[key] = { patientSet: new Set(), serviceCount: 0, name: item.nguoi_thuc_hien };
+            stats[key].serviceCount++;
+            stats[key].patientSet.add(item.ma_ba || item.TENBENHNHAN);
         });
-        return Object.entries(stats).sort((a, b) => b[1].count - a[1].count);
+        return Object.entries(stats).map(([key, data]) => [
+            key,
+            { name: data.name, patientCount: data.patientSet.size, serviceCount: data.serviceCount }
+        ] as [string, any]).sort((a, b) => b[1].patientCount - a[1].patientCount);
     }, [scheduledData]);
 
     const groupedScheduledData = React.useMemo(() => {
@@ -338,6 +342,71 @@ export default function ClinicalSchedulingPage() {
         
         return result;
     }, [scheduledData]);
+
+    const groupedByServiceData = React.useMemo(() => {
+        if (!scheduledData.length) return [];
+        
+        const getShift = (timeStr: string) => {
+            if (!timeStr) return 'Không xác định';
+            const hour = parseInt(timeStr.split(':')[0]);
+            return hour < 12 ? 'Buổi Sáng' : 'Buổi Chiều';
+        };
+
+        const shiftGroups: Record<string, Record<string, any[]>> = {
+            'Buổi Sáng': {},
+            'Buổi Chiều': {}
+        };
+        
+        scheduledData.forEach(item => {
+            const shift = getShift(item.bat_dau);
+            if (!shiftGroups[shift]) shiftGroups[shift] = {};
+            
+            const serviceKey = item.ten_dich_vu || item.TENDICHVU || 'Dịch vụ khác';
+            if (!shiftGroups[shift][serviceKey]) shiftGroups[shift][serviceKey] = [];
+            shiftGroups[shift][serviceKey].push(item);
+        });
+
+        const result: any[] = [];
+        let shiftIdx = 0;
+        for (const shift of ['Buổi Sáng', 'Buổi Chiều']) {
+            const services = shiftGroups[shift];
+            const serviceKeys = Object.keys(services).sort();
+            
+            if (serviceKeys.length === 0) continue;
+            
+            let totalItems = 0;
+            const shiftChildren = serviceKeys.map((service, sIdx) => {
+                const items = services[service];
+                totalItems += items.length;
+                return {
+                    key: `service_group_${shiftIdx}_${sIdx}`,
+                    ten_dich_vu: `${service} (${items.length} ca)`,
+                    ten_bn: '',
+                    nguoi_thuc_hien: '',
+                    ma_ba: '',
+                    bat_dau: '',
+                    ket_thuc: '',
+                    thoi_gian_chi_dinh: '',
+                    children: items.map((child, cIdx) => ({
+                        ...child,
+                        key: `service_child_${shiftIdx}_${sIdx}_${cIdx}`,
+                        ten_dich_vu: ''
+                    }))
+                };
+            });
+            
+            result.push({
+                key: `shift_service_group_${shiftIdx}`,
+                ten_dich_vu: `--- ${shift.toUpperCase()} (${totalItems} ca) ---`,
+                _isShiftHeader: true,
+                children: shiftChildren
+            });
+            shiftIdx++;
+        }
+        
+        return result;
+    }, [scheduledData]);
+
 
     const reportData = React.useMemo(() => {
         if (!scheduledData.length) return { dataSource: [], columns: [] };
@@ -904,6 +973,183 @@ export default function ClinicalSchedulingPage() {
         }
     };
 
+    const generateExcelWorkbookFormat2 = (dataSource: any[], title: string) => {
+        if (!dataSource || dataSource.length === 0) return null;
+        
+        const deptName = departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa || '';
+        const dateStr = dayjs(selectedDate || new Date()).format('DD/MM/YYYY');
+        const headerTitle = `CHIA THỜI GIAN THỰC HIỆN DVKT NGÀY ${dateStr} CỦA KHOA ${deptName}`.toUpperCase();
+        const isPatientView = title === 'DanhSachBenhNhan';
+        const isServiceView = title === 'DanhSachTheoDichVu';
+
+        const generateSheetFormat2 = (data: any[], subTitle: string = '') => {
+            const exportData: any[][] = [];
+            
+            let headerCol2 = 'Người thực hiện / Tên bệnh nhân';
+            if (isPatientView) headerCol2 = 'Tên Bệnh nhân / Người thực hiện';
+            if (isServiceView) headerCol2 = 'Người thực hiện - Tên bệnh nhân';
+            
+            exportData.push(['STT', headerCol2, 'Tên dịch vụ', 'Mã máy', 'Bắt đầu', 'Kết thúc']);
+
+            const merges: any[] = [];
+            let currentRow = 4;
+            let stt = 1;
+
+            data.forEach((buoi) => {
+                let buoiText = '';
+                if (isPatientView) buoiText = buoi.ten_bn;
+                else if (isServiceView) buoiText = buoi.ten_dich_vu;
+                else buoiText = buoi.nguoi_thuc_hien;
+
+                if (buoiText) {
+                    exportData.push([buoiText, '', '', '', '', '']);
+                    merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: 5 } });
+                    currentRow++;
+                }
+
+                if (buoi.children) {
+                    buoi.children.forEach((group2: any) => {
+                        let group2Text = '';
+                        if (isPatientView) group2Text = group2.ten_bn;
+                        else if (isServiceView) group2Text = group2.ten_dich_vu;
+                        else group2Text = group2.nguoi_thuc_hien;
+                        
+                        exportData.push([stt.toString(), group2Text, '', '', '', '']);
+                        merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow, c: 5 } });
+                        stt++;
+                        currentRow++;
+
+                        if (group2.children) {
+                            group2.children.forEach((dichvu: any) => {
+                                const may = dichvu.ten_may ? `${dichvu.ten_may} (${dichvu.ma_may})` : '';
+                                
+                                let colBText = '';
+                                if (isPatientView) colBText = dichvu.nguoi_thuc_hien || '';
+                                else if (isServiceView) colBText = (dichvu.nguoi_thuc_hien ? `${dichvu.nguoi_thuc_hien} - ` : '') + (dichvu.ten_bn || dichvu.TENBENHNHAN || '');
+                                else colBText = dichvu.ten_bn || dichvu.TENBENHNHAN || '';
+
+                                exportData.push([
+                                    '', 
+                                    colBText, 
+                                    dichvu.ten_dich_vu || dichvu.TENDICHVU || dichvu._originalRow?.TENDICHVU || '', 
+                                    may, 
+                                    dichvu.bat_dau || dichvu._formatted_start || '', 
+                                    dichvu.ket_thuc || dichvu._formatted_end || ''
+                                ]);
+                                currentRow++;
+                            });
+                        }
+                    });
+                }
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(exportData, { origin: 'A4' });
+            
+            const finalHeader = subTitle ? `${headerTitle} - ${subTitle}` : headerTitle;
+            XLSX.utils.sheet_add_aoa(ws, [
+                ['SỞ Y TẾ TỈNH LẠNG SƠN'],
+                ['BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN'],
+                [finalHeader]
+            ], { origin: 'A1' });
+
+            if(!ws['!merges']) ws['!merges'] = [];
+            ws['!merges'].push(
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 5 } }
+            );
+            
+            merges.forEach(m => ws['!merges'].push(m));
+
+            for (let R = 0; R <= 2; R++) {
+                const cell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+                if (cell) {
+                    cell.s = { font: { bold: true, sz: R === 2 ? 14 : 11 }, alignment: { horizontal: 'center', vertical: 'center' } };
+                }
+            }
+
+            for (let C = 0; C <= 5; C++) {
+                const cell = ws[XLSX.utils.encode_cell({ r: 3, c: C })];
+                if (cell) {
+                    cell.s = { font: { bold: true }, alignment: { horizontal: 'center', vertical: 'center' } };
+                }
+            }
+
+            for (let R = 4; R < currentRow; R++) {
+                const cellA = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+                const cellB = ws[XLSX.utils.encode_cell({ r: R, c: 1 })];
+                if (cellA && cellA.v && String(cellA.v).includes('BUỔI')) {
+                    cellA.s = { font: { bold: true } };
+                }
+                if (cellA && cellA.v && !isNaN(Number(cellA.v)) && cellB && cellB.v) {
+                    cellA.s = { font: { bold: true }, alignment: { horizontal: 'center' } };
+                    cellB.s = { font: { bold: true } };
+                }
+            }
+
+            ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
+            ws['!cols'] = [
+                { wch: 5 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 10 }, { wch: 10 }
+            ];
+            
+            return ws;
+        };
+
+        const wb = XLSX.utils.book_new();
+        
+        // 1. Tạo sheet Tổng hợp
+        const wsReport = generateSheetFormat2(dataSource);
+        XLSX.utils.book_append_sheet(wb, wsReport, 'Tổng hợp');
+
+        // 2. Tạo sheet cho từng nhân viên
+        if (title === 'DanhSachBenhNhan' || title === 'DanhSachTheoDichVu') {
+            const uniqueStaffs = Array.from(new Set(scheduledData.map(item => item.nguoi_thuc_hien).filter(Boolean)));
+            
+            const filterByStaff = (dataToFilter: any[], staffName: string) => {
+                return dataToFilter.map(group => {
+                    if (!group.children) return group;
+                    const filteredGroup = { ...group };
+                    filteredGroup.children = group.children.map((patient: any) => {
+                        if (!patient.children) return patient;
+                        const filteredPatient = { ...patient };
+                        filteredPatient.children = patient.children.filter((service: any) => service.nguoi_thuc_hien === staffName);
+                        return filteredPatient;
+                    }).filter((patient: any) => patient.children && patient.children.length > 0);
+                    return filteredGroup;
+                }).filter(group => group.children && group.children.length > 0);
+            };
+
+            uniqueStaffs.forEach(staff => {
+                const staffData = filterByStaff(dataSource, staff as string);
+                if (staffData.length > 0) {
+                    const wsStaff = generateSheetFormat2(staffData, `BS. ${staff}`);
+                    const safeSheetName = String(staff).replace(/[/\\?%*:|"<>]/g, '').substring(0, 31);
+                    XLSX.utils.book_append_sheet(wb, wsStaff, safeSheetName);
+                }
+            });
+        }
+
+        const safeDeptName = deptName.replace(/[/\\?%*:|"<>]/g, '-');
+        const dateFileStr = dayjs(selectedDate || new Date()).format('DD-MM-YYYY');
+        let fileName = `${title}_Mau2_${dayjs(selectedDate || new Date()).format('YYYYMMDD')}.xlsx`;
+        if (title === 'DanhSachBenhNhan') {
+            fileName = `Chia_thoi_gian_thuc_hien_dvkt_Mau2_ngay_${dateFileStr}_cua_khoa_${safeDeptName}.xlsx`;
+        } else if (title === 'DanhSachTheoBacSi') {
+            fileName = `Danh_sach_chia_thoi_gian_theo_bac_si_Mau2_${safeDeptName}_ngay_${dateFileStr}.xlsx`;
+        } else if (title === 'DanhSachTheoDichVu') {
+            fileName = `Danh_sach_chia_thoi_gian_theo_dich_vu_Mau2_${safeDeptName}_ngay_${dateFileStr}.xlsx`;
+        }
+
+        return { wb, fileName };
+    };
+
+    const handleExportExcelTabFormat2 = (dataSource: any[], title: string) => {
+        const result = generateExcelWorkbookFormat2(dataSource, title);
+        if (result) {
+            XLSX.writeFile(result.wb, result.fileName);
+        }
+    };
+
     const handleSaveExcelToServer = async (dataSource: any[], columns: any[], title: string) => {
         if (!selectedDept) {
             return message.warning('Vui lòng chọn Khoa/Phòng');
@@ -1096,6 +1342,17 @@ export default function ClinicalSchedulingPage() {
         { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
         { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
         { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+    ].filter(col => isColumnEnabled(col.key as string));
+
+    const serviceColumns = [
+        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#fa8c16' : '#000')}}>{t}</strong> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%', render: (t: string, r: any) => t || r._originalRow?.TENBENHNHAN || '' },
+        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
+        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '10%' },
+        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
+        { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
     ].filter(col => isColumnEnabled(col.key as string));
 
     const patientColumns = [
@@ -1390,15 +1647,14 @@ export default function ClinicalSchedulingPage() {
                         items={[
                             {
                                 key: '2',
-                                label: 'Bác sĩ / Điều dưỡng',
+                                label: 'Người thực hiện',
                                 children: (
                                     <>
                                         <Space style={{ marginBottom: 16 }}>
-                                            <Button icon={<PrinterOutlined />} onClick={() => handlePrint('print-doctor')}>In Báo Cáo</Button>
-                                            <Button icon={<FilePdfOutlined />} onClick={() => handleExportPDF('print-doctor', 'DanhSachTheoBacSi')}>Tải PDF</Button>
+
                                             <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Tải Excel</Button>
+                                            <Button icon={<FileExcelOutlined />} style={{ color: '#eb2f96', borderColor: '#eb2f96' }} onClick={() => handleExportExcelTabFormat2(groupedScheduledData, 'DanhSachTheoBacSi')}>Tải Excel (Mẫu 2)</Button>
                                             <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveExcelToServer(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Lưu Excel</Button>
-                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveReport('print-doctor', 'Danh Sách Theo Bác Sĩ')}>Lưu Báo Cáo (PDF)</Button>
                                         </Space>
                                         <div id="print-doctor" style={{ background: '#fff', padding: '20px' }}>
                                             <div className="print-header" style={{ display: 'none', marginBottom: 20 }}>
@@ -1427,10 +1683,10 @@ export default function ClinicalSchedulingPage() {
                                 children: (
                                     <>
                                         <Space style={{ marginBottom: 16 }}>
-                                            <Button icon={<PrinterOutlined />} onClick={() => handlePrint('print-patient')}>In Báo Cáo</Button>
-                                            <Button icon={<FilePdfOutlined />} onClick={() => handleExportPDF('print-patient', 'DanhSachBenhNhan')}>Tải PDF</Button>
+
                                             <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedByPatientData, patientColumns, 'DanhSachBenhNhan')}>Tải Excel</Button>
-                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveReport('print-patient', 'Danh Sách Bệnh Nhân')}>Lưu Báo Cáo</Button>
+                                            <Button icon={<FileExcelOutlined />} style={{ color: '#eb2f96', borderColor: '#eb2f96' }} onClick={() => handleExportExcelTabFormat2(groupedByPatientData, 'DanhSachBenhNhan')}>Tải Excel (Mẫu 2)</Button>
+                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveExcelToServer(groupedByPatientData, patientColumns, 'DanhSachBenhNhan')}>Lưu Excel</Button>
                                         </Space>
                                         <div id="print-patient" ref={patientRef} style={{ background: '#fff', padding: '20px' }}>
                                             <div className="print-header" style={{ display: 'none', marginBottom: 20 }}>
@@ -1454,8 +1710,39 @@ export default function ClinicalSchedulingPage() {
                                 )
                             },
                             {
+                                key: 'service',
+                                label: 'Tên DVKT',
+                                children: (
+                                    <>
+                                        <Space style={{ marginBottom: 16 }}>
+                                            <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedByServiceData, serviceColumns, 'DanhSachTheoDichVu')}>Tải Excel</Button>
+                                            <Button icon={<FileExcelOutlined />} style={{ color: '#eb2f96', borderColor: '#eb2f96' }} onClick={() => handleExportExcelTabFormat2(groupedByServiceData, 'DanhSachTheoDichVu')}>Tải Excel (Mẫu 2)</Button>
+                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveExcelToServer(groupedByServiceData, serviceColumns, 'DanhSachTheoDichVu')}>Lưu Excel</Button>
+                                        </Space>
+                                        <div id="print-service" style={{ background: '#fff', padding: '20px' }}>
+                                            <div className="print-header" style={{ display: 'none', marginBottom: 20 }}>
+                                                <h2 style={{ textAlign: 'center' }}>SỞ Y TẾ TỈNH LẠNG SƠN<br/>BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN</h2>
+                                                <h1 style={{ textAlign: 'center', marginTop: 20 }}>CHIA THỜI GIAN THỰC HIỆN DVKT NGÀY {dayjs(selectedDate).format('DD/MM/YYYY')} CỦA KHOA {departments.find((d: any) => d.ma_khoa === selectedDept)?.ten_khoa?.toUpperCase()}</h1>
+                                            </div>
+                                            <Table 
+                                                dataSource={groupedByServiceData} 
+                                                columns={serviceColumns} 
+                                                rowKey="key"
+                                                pagination={{ pageSize: 50 }}
+                                                defaultExpandAllRows
+                                                size="small"
+                                                bordered
+                                            />
+                                        </div>
+                                        <div style={{ marginTop: 12, color: '#595959', fontStyle: 'italic' }}>
+                                            File Excel xuất ra sẽ giữ nguyên toàn bộ các cột gốc của hệ thống (bao gồm MAHOSOBENHAN, SOPHIEU, v.v.) và <strong>tự động thêm các cột Bắt đầu, Kết thúc, Người thực hiện vào cuối.</strong>
+                                        </div>
+                                    </>
+                                )
+                            },
+                            {
                                 key: '3',
-                                label: 'Thống kê lượng việc theo Bác sĩ/Điều dưỡng',
+                                label: 'Thống kê theo Người thực hiện',
                                 children: (
                                     <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
                                         {staffStats.map(([key, data]) => (
@@ -1463,7 +1750,9 @@ export default function ClinicalSchedulingPage() {
                                                 <Card size="small" style={{ textAlign: 'center', background: '#f6ffed', borderColor: '#b7eb8f' }}>
                                                     <div style={{ fontSize: 15, fontWeight: 'bold', color: '#237804' }}>{data.name} <span style={{fontSize: 12, color: '#8c8c8c'}}>({key})</span></div>
                                                     <div style={{ fontSize: 24, marginTop: 8, color: '#135200' }}>
-                                                        {data.count} <span style={{fontSize: 13, color: '#595959', fontWeight: 'normal'}}>bệnh nhân</span>
+                                                        {data.patientCount} <span style={{fontSize: 13, color: '#595959', fontWeight: 'normal'}}>bệnh nhân</span>
+                                                        <span style={{ fontSize: 18, margin: '0 8px', color: '#8c8c8c' }}>-</span>
+                                                        {data.serviceCount} <span style={{fontSize: 13, color: '#595959', fontWeight: 'normal'}}>DVKT</span>
                                                     </div>
                                                 </Card>
                                             </Col>
@@ -1473,12 +1762,11 @@ export default function ClinicalSchedulingPage() {
                             },
                             {
                                 key: '4',
-                                label: 'Tổng hợp Y lệnh Thủ thuật',
+                                label: 'Tổng hợp y lệnh',
                                 children: (
                                     <div style={{ marginTop: 16 }}>
                                         <Space style={{ marginBottom: 16 }}>
-                                            <Button icon={<PrinterOutlined />} onClick={() => handlePrint('print-report')}>In Báo Cáo</Button>
-                                            <Button icon={<FilePdfOutlined />} onClick={() => handleExportPDF('print-report', 'TongHopYLenh')}>Tải PDF</Button>
+
                                             <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(reportData.dataSource, reportData.columns as any, 'TongHopYLenh')}>Tải Excel</Button>
                                             <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveReport('print-report', 'Tổng Hợp Y Lệnh Thủ Thuật')}>Lưu Báo Cáo</Button>
                                         </Space>
