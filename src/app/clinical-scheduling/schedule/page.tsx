@@ -1043,7 +1043,8 @@ export default function ClinicalSchedulingPage() {
                 }
             });
 
-            const ws = XLSX.utils.aoa_to_sheet(exportData, { origin: 'A4' });
+            exportData.unshift([], [], []);
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
             
             const finalHeader = subTitle ? `${headerTitle} - ${subTitle}` : headerTitle;
             XLSX.utils.sheet_add_aoa(ws, [
