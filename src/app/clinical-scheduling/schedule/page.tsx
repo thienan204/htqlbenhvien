@@ -1054,13 +1054,13 @@ export default function ClinicalSchedulingPage() {
             ], { origin: 'A1' });
 
             if(!ws['!merges']) ws['!merges'] = [];
-            ws['!merges'].push(
+            ws['!merges']!.push(
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
                 { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 5 } }
             );
             
-            merges.forEach(m => ws['!merges'].push(m));
+            merges.forEach(m => ws['!merges']!.push(m));
 
             for (let R = 0; R <= 2; R++) {
                 const cell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
