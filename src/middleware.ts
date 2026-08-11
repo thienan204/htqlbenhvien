@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get('auth_token')?.value;
 
     // --- MAINTENANCE MODE CHECK ---
-    if (path !== '/maintenance' && path !== '/login' && !path.startsWith('/api/') && !path.startsWith('/_next') && !path.startsWith('/images') && !path.startsWith('/uploads')) {
+    if (path !== '/maintenance' && path !== '/login' && path !== '/logo.png' && path !== '/favicon.ico' && !path.startsWith('/api/') && !path.startsWith('/_next') && !path.startsWith('/images') && !path.startsWith('/uploads')) {
         let isMaintenance = process.env.MAINTENANCE_MODE === 'true';
         if (!isMaintenance) {
             const maintenanceConfig = await fetchInternal('/api/configs/maintenance');
