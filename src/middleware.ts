@@ -42,7 +42,35 @@ export async function middleware(request: NextRequest) {
     }
 
     // Define strictly public routes that don't need DB checks
-    const isPublic = ['/login', '/favicon.ico', '/logo.png'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/uploads') || path.startsWith('/api/menus/aliases') || path.startsWith('/api/upload-image');
+    const isPublic = ['/login', '/maintenance', '/favicon.ico', '/logo.png'].includes(path) || path.startsWith('/_next') || path.startsWith('/images') || path.startsWith('/uploads') || path.startsWith('/api/menus/aliases') || path.startsWith('/api/upload-image');
+
+    const token = request.cookies.get('auth_token')?.value;
+
+    // --- MAINTENANCE MODE CHECK ---
+    if (path !== '/maintenance' && !path.startsWith('/api/') && !path.startsWith('/_next') && !path.startsWith('/images') && !path.startsWith('/uploads')) {
+        let isMaintenance = process.env.MAINTENANCE_MODE === 'true';
+        if (!isMaintenance) {
+            const maintenanceConfig = await fetchInternal('/api/configs/maintenance');
+            if (maintenanceConfig && maintenanceConfig.isMaintenance) {
+                isMaintenance = true;
+            }
+        }
+
+        if (isMaintenance) {
+            let isAdmin = false;
+            if (token) {
+                try {
+                    const secret = new TextEncoder().encode(JWT_SECRET);
+                    const { payload } = await jose.jwtVerify(token, secret);
+                    if (payload.role === 'ADMIN') isAdmin = true;
+                } catch (e) {}
+            }
+            if (!isAdmin) {
+                return NextResponse.redirect(new URL(`${bp}/maintenance`, request.url));
+            }
+        }
+    }
+    // --- END MAINTENANCE MODE CHECK ---
 
     if (isPublic) {
         if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
@@ -57,7 +85,6 @@ export async function middleware(request: NextRequest) {
     }
 
     const isRoleManagedPublic = roleManagedPublicPaths.some(p => path.startsWith(p));
-    const token = request.cookies.get('auth_token')?.value;
 
     if (!token) {
         if (isRoleManagedPublic) {

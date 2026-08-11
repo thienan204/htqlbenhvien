@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Button, Typography, Space, message, Popconfirm, Spin, Layout, Breadcrumb } from 'antd';
+import { Card, Input, Button, Typography, Space, message, Popconfirm, Spin, Layout, Breadcrumb, Switch } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, ReloadOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -12,6 +12,9 @@ export default function PathsConfigPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [newPath, setNewPath] = useState('');
+
+    const [isMaintenance, setIsMaintenance] = useState(false);
+    const [toggling, setToggling] = useState(false);
 
     const fetchPaths = async () => {
         setLoading(true);
@@ -28,9 +31,43 @@ export default function PathsConfigPage() {
         }
     };
 
+    const fetchMaintenance = async () => {
+        try {
+            const res = await fetch('/api/configs/maintenance');
+            if (res.ok) {
+                const data = await res.json();
+                setIsMaintenance(data.isMaintenance);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchPaths();
+        fetchMaintenance();
     }, []);
+
+    const handleToggleMaintenance = async (checked: boolean) => {
+        setToggling(true);
+        try {
+            const res = await fetch('/api/configs/maintenance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: checked })
+            });
+            if (res.ok) {
+                setIsMaintenance(checked);
+                message.success(checked ? 'Đã BẬT chế độ bảo trì!' : 'Đã TẮT chế độ bảo trì!');
+            } else {
+                throw new Error('Failed');
+            }
+        } catch (error) {
+            message.error('Có lỗi xảy ra khi thay đổi trạng thái bảo trì.');
+        } finally {
+            setToggling(false);
+        }
+    };
 
     const handleAddPath = () => {
         if (!newPath.trim()) return;
@@ -73,8 +110,28 @@ export default function PathsConfigPage() {
     return (
         <Layout className="min-h-screen bg-slate-50">
             <Content className="p-6 max-w-4xl mx-auto w-full">
-                <Breadcrumb className="mb-4" items={[{ title: 'Quản trị' }, { title: 'Cấu hình đường dẫn bảo mật' }]} />
+                <Breadcrumb className="mb-4" items={[{ title: 'Quản trị' }, { title: 'Cấu hình hệ thống' }]} />
                 
+                <Card 
+                    title={<Title level={4} className="!m-0 text-orange-600">Bảo trì Hệ thống (Maintenance Mode)</Title>}
+                    className="shadow-sm border-orange-200 mb-6"
+                >
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <Text strong>Trạng thái Bảo trì</Text>
+                            <br/>
+                            <Text type="secondary">Khi bật, tất cả người dùng bình thường sẽ bị chuyển hướng sang trang Bảo trì. Chỉ có Admin mới có thể tiếp tục sử dụng hệ thống.</Text>
+                        </div>
+                        <Switch 
+                            checked={isMaintenance} 
+                            onChange={handleToggleMaintenance} 
+                            loading={toggling}
+                            checkedChildren="ĐANG BẬT"
+                            unCheckedChildren="ĐANG TẮT"
+                        />
+                    </div>
+                </Card>
+
                 <Card 
                     title={<Title level={4} className="!m-0">Quản lý Không gian Quản trị (ADMIN_ONLY_PATHS)</Title>}
                     extra={
