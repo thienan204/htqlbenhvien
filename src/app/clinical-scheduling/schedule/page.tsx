@@ -67,7 +67,7 @@ function SavedPdfReportsTab() {
             render: (text: string, record: any) => {
                 const isExcel = record.url && record.url.toLowerCase().endsWith('.xlsx');
                 return (
-                    <a href={record.url} target="_blank" rel="noopener noreferrer" style={{color: '#1890ff', fontWeight: 500}}>
+                    <a href={`${getBasePath()}${record.url}`} target="_blank" rel="noopener noreferrer" style={{color: '#1890ff', fontWeight: 500}}>
                         {isExcel ? (
                             <FileExcelOutlined style={{color: '#16a34a', marginRight: 8}} />
                         ) : (
@@ -88,7 +88,7 @@ function SavedPdfReportsTab() {
             align: 'center' as const,
             render: (_: any, record: any) => (
                 <Space>
-                    <a href={record.url} download={record.url.split('/').pop()}>
+                    <a href={`${getBasePath()}${record.url}`} download={record.url.split('/').pop()}>
                         <Button type="primary" icon={<DownloadOutlined />} size="small" style={{ background: '#10b981', borderColor: '#10b981' }}>Tải</Button>
                     </a>
                     <Popconfirm title="Xóa báo cáo này?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
