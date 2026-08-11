@@ -186,8 +186,23 @@ export async function POST(request: Request) {
             groupedServices[task.ma_ba].push(task);
         }
         
+        const maBaList = Object.keys(groupedServices);
+        // Sắp xếp thứ tự ưu tiên xử lý: Sáng -> Tự động -> Chiều
+        maBaList.sort((a, b) => {
+            const shiftA = patientShifts[a] || 'AUTO';
+            const shiftB = patientShifts[b] || 'AUTO';
+            
+            const getPriority = (shift: string) => {
+                if (shift === 'MORNING') return 1;
+                if (shift === 'AFTERNOON') return 3;
+                return 2; // AUTO
+            };
+            
+            return getPriority(shiftA) - getPriority(shiftB);
+        });
+
         const sortedServices = [];
-        for (const ma_ba of Object.keys(groupedServices)) {
+        for (const ma_ba of maBaList) {
             sortedServices.push(...groupedServices[ma_ba]);
         }
 
