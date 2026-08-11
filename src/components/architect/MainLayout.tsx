@@ -49,7 +49,23 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
         if (menuLayout === 'vertical') {
             // setIsSidebarOpen(false); 
         }
-    }, [pathname]);
+        
+        // Update document title based on current path
+        if (menus && menus.length > 0) {
+            let title = 'Hệ thống QLBV';
+            if (pathname === '/') {
+                const homeMenu = menus.find(m => m.path === '/');
+                if (homeMenu) title = homeMenu.title;
+            } else {
+                const matchingMenus = menus.filter(m => m.path && pathname.startsWith(m.path) && m.path !== '/');
+                matchingMenus.sort((a, b) => b.path.length - a.path.length);
+                if (matchingMenus.length > 0) {
+                    title = matchingMenus[0].title;
+                }
+            }
+            document.title = `${title} | Bệnh viện Đa khoa Lạng Sơn`;
+        }
+    }, [pathname, menus, menuLayout]);
 
     const handleToggleLayout = () => {
         const newLayout = menuLayout === 'horizontal' ? 'vertical' : 'horizontal';
