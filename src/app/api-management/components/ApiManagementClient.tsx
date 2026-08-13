@@ -67,7 +67,7 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
                 return (
                     <Card 
                         key={category} 
-                        title={<span className="font-black text-slate-700 uppercase">{category} APIs</span>} 
+                        title={<span className="font-black text-slate-700 uppercase">{category}</span>} 
                         className="shadow-sm border-slate-200 rounded-2xl overflow-hidden"
                         styles={{ 
                             header: { backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' },
@@ -136,6 +136,15 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
                                                                 <div className="mt-3 bg-blue-50 border border-blue-200 p-3 rounded-md">
                                                                     <Text className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1 block">🚀 Hướng dẫn dùng Postman:</Text>
                                                                     <Text className="text-sm text-blue-900 whitespace-pre-line">{doc.postmanSnippet}</Text>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {doc.extensionSnippet && (
+                                                                <div className="mt-3 bg-slate-800 border border-slate-700 p-3 rounded-md">
+                                                                    <Text className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2 block">💻 Hướng dẫn gọi từ Extension (Javascript):</Text>
+                                                                    <pre className="text-slate-300 text-sm overflow-x-auto whitespace-pre-wrap">
+                                                                        {doc.extensionSnippet}
+                                                                    </pre>
                                                                 </div>
                                                             )}
                                                         </div>

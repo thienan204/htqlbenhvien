@@ -31,6 +31,7 @@ export async function POST(request: Request) {
                 where: {
                     OR: [
                         { username },
+                        { userHIS: username },
                         { staff: { cccd: username } },
                         { staff: { ma_nv: username } }
                     ]

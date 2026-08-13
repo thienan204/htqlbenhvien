@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Card, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Card, Popconfirm, Upload } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, SearchOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 
 interface User {
@@ -13,6 +14,7 @@ interface User {
     ma_khoa: string | null;
     staffId: string | null;
     telegram_id: string | null;
+    userHIS: string | null;
     createdAt: string;
 }
 
@@ -94,6 +96,80 @@ export default function UsersPage() {
         fetchAllStaffs();
     }, []);
 
+    const handleExportTemplate = () => {
+        const exportData = allStaffs.map((staff, index) => {
+            const user = users.find(u => u.staffId === staff.id);
+            return {
+                'STT': index + 1,
+                'Số CCCD': staff.cccd || '',
+                'Tên đăng nhập hệ thống': user ? user.username : '',
+                'Mật khẩu mới': '',
+                'Tên đăng nhập HIS (userHIS)': user ? (user.userHIS || '') : '',
+                'Vai trò (Role)': user ? user.role : 'USER',
+                'Họ tên': staff.ho_ten,
+                'Khoa phòng': staff.department ? staff.department.ten_khoa : staff.ma_khoa,
+                'Có CCHN': (staff.certificates && staff.certificates.length > 0) ? 'Có' : 'Không'
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wscols = [
+            {wch: 5}, {wch: 15}, {wch: 25}, {wch: 15}, {wch: 25}, {wch: 15}, {wch: 25}, {wch: 20}, {wch: 10}
+        ];
+        ws['!cols'] = wscols;
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "DanhSachNhanVien");
+        XLSX.writeFile(wb, "Template_CapNhat_UserHIS.xlsx");
+    };
+
+    const handleImportExcel = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (jsonData.length === 0) {
+                    message.error("File Excel không có dữ liệu");
+                    return;
+                }
+
+                message.loading({ content: 'Đang xử lý dữ liệu...', key: 'import' });
+                
+                const res = await fetch('/api/users/bulk-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(jsonData)
+                });
+
+                const result = await res.json();
+                
+                if (res.ok) {
+                    if (result.errors && result.errors.length > 0) {
+                        message.warning({ 
+                            content: `Thành công ${result.success}/${result.total}. Có ${result.errors.length} lỗi. Xem Console.`, 
+                            key: 'import',
+                            duration: 5
+                        });
+                        console.log("LỖI IMPORT:", result.errors);
+                    } else {
+                        message.success({ content: `Đã xử lý thành công ${result.success} dòng.`, key: 'import' });
+                    }
+                    fetchUsers();
+                } else {
+                    message.error({ content: result.error || 'Lỗi xử lý file', key: 'import' });
+                }
+            } catch (error) {
+                message.error({ content: 'Không thể đọc file Excel', key: 'import' });
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        return false;
+    };
+
     const handleSave = async (values: any) => {
         const isUpdate = !!selectedUser;
         const url = '/api/users';
@@ -153,6 +229,7 @@ export default function UsersPage() {
                 ma_khoa: user.ma_khoa,
                 staffId: user.staffId,
                 telegram_id: user.telegram_id,
+                userHIS: user.userHIS,
                 password: '' // Không show password cũ
             });
         } else {
@@ -175,6 +252,12 @@ export default function UsersPage() {
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => text || <span className="text-slate-400 italic">Chưa có</span>
+        },
+        {
+            title: 'Tài khoản HIS',
+            dataIndex: 'userHIS',
+            key: 'userHIS',
+            render: (text: string) => text ? <Tag color="purple">{text}</Tag> : '-'
         },
         {
             title: 'Vai trò (Role)',
@@ -228,7 +311,8 @@ export default function UsersPage() {
 
     const filteredUsers = users.filter(u => {
         const matchText = (u.username?.toLowerCase().includes(searchText.toLowerCase())) || 
-                          (u.name && u.name.toLowerCase().includes(searchText.toLowerCase()));
+                          (u.name && u.name.toLowerCase().includes(searchText.toLowerCase())) ||
+                          (u.userHIS && u.userHIS.toLowerCase().includes(searchText.toLowerCase()));
         const matchRole = filterRole ? u.role === filterRole : true;
         const matchDept = filterDept ? u.ma_khoa === filterDept : true;
         return matchText && matchRole && matchDept;
@@ -246,9 +330,17 @@ export default function UsersPage() {
                         <p className="text-slate-500 m-0">Thêm, sửa, xóa và phân quyền người dùng trong hệ thống.</p>
                     </div>
                 </div>
-                <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => openModal()}>
-                    Tạo Tài khoản mới
-                </Button>
+                <Space>
+                    <Button icon={<DownloadOutlined />} onClick={handleExportTemplate}>
+                        Tải File Mẫu
+                    </Button>
+                    <Upload beforeUpload={handleImportExcel} showUploadList={false} accept=".xlsx,.xls">
+                        <Button icon={<UploadOutlined />}>Nhập Excel</Button>
+                    </Upload>
+                    <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => openModal()}>
+                        Tạo Tài khoản mới
+                    </Button>
+                </Space>
             </div>
 
             <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>
@@ -318,6 +410,10 @@ export default function UsersPage() {
 
                     <Form.Item name="name" label="Họ và tên">
                         <Input />
+                    </Form.Item>
+
+                    <Form.Item name="userHIS" label="Tên đăng nhập HIS (userHIS)">
+                        <Input placeholder="Nhập nếu có" />
                     </Form.Item>
 
                     <Form.Item name="role" label="Vai trò (Role)" rules={[{ required: true, message: 'Bắt buộc chọn' }]}>

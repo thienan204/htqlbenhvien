@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Space, message, Spin, Typography, Upload, Popconfirm } from 'antd';
+import { Card, Table, Button, Space, message, Spin, Typography, Upload, Popconfirm, Image } from 'antd';
 import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, PrinterOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
@@ -87,44 +87,79 @@ export default function DataFormClient({ formId }: { formId: string }) {
         }
     };
 
-    const handlePrintImages = (urls: string[]) => {
+    const handlePrintImages = (printData: { name: string, cccd: string, images: string[] }[]) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             message.error('Vui lòng cho phép mở popup để in ảnh');
             return;
         }
 
+        const totalImages = printData.reduce((acc, curr) => acc + curr.images.length, 0);
+
         const html = `
             <!DOCTYPE html>
             <html>
             <head>
-                <title>In ảnh</title>
+                <title>In ảnh hàng loạt</title>
                 <style>
                     body {
                         margin: 0;
                         padding: 20px;
+                        font-family: Arial, sans-serif;
+                    }
+                    .page {
+                        page-break-after: always;
                         text-align: center;
+                        margin-bottom: 30px;
+                    }
+                    .page:last-child {
+                        page-break-after: auto;
+                    }
+                    .header-info {
+                        margin-bottom: 20px;
+                        padding-bottom: 10px;
+                        border-bottom: 2px solid #ccc;
+                    }
+                    h2 {
+                        margin: 5px 0;
+                        color: #333;
+                        text-transform: uppercase;
+                    }
+                    p {
+                        margin: 5px 0;
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: #555;
                     }
                     img {
                         max-width: 100%;
-                        max-height: 45vh;
+                        max-height: 40vh;
                         object-fit: contain;
-                        margin-bottom: 20px;
+                        margin: 10px;
                         page-break-inside: avoid;
                         display: inline-block;
+                        border: 1px solid #eee;
                     }
                     @media print {
-                        body {
-                            padding: 0;
-                        }
+                        body { padding: 0; }
                     }
                 </style>
             </head>
             <body>
-                ${urls.map(url => `<img src="${url}" />`).join('')}
+                ${printData.map(item => `
+                    <div class="page">
+                        <div class="header-info">
+                            <h2>${item.name}</h2>
+                            <p>SỐ CCCD: ${item.cccd}</p>
+                        </div>
+                        <div class="images-container">
+                            ${item.images.map(url => `<img src="${url}" />`).join('')}
+                        </div>
+                    </div>
+                `).join('')}
                 <script>
                     let loadedCount = 0;
-                    const totalImages = ${urls.length};
+                    const totalImages = ${totalImages};
                     const images = document.querySelectorAll('img');
                     
                     if (totalImages === 0) {
@@ -155,22 +190,37 @@ export default function DataFormClient({ formId }: { formId: string }) {
     };
 
     const handlePrintAllImages = () => {
-        let allImages: string[] = [];
+        let printData: { name: string, cccd: string, images: string[] }[] = [];
+        
         filteredData.forEach((row: any) => {
+            let urls: string[] = [];
+            
             formConfig?.config?.forEach((f: any) => {
                 if (f.type === 'image' && row.data[f.name]) {
-                    const urls = row.data[f.name].split(',').map((u: string) => u.trim()).filter(Boolean);
-                    allImages = [...allImages, ...urls];
+                    const rowUrls = row.data[f.name].split(',').map((u: string) => u.trim()).filter(Boolean);
+                    urls = [...urls, ...rowUrls];
                 }
             });
+
+            if (urls.length > 0) {
+                // Tự động tìm cột chứa tên và CCCD dựa vào label (bỏ chữ id để tránh nhầm với LOAIGT_ID)
+                const nameField = formConfig?.config?.find((f: any) => /tên|name|nhân viên|cán bộ|họ/i.test(f.label))?.name;
+                const cccdField = formConfig?.config?.find((f: any) => /cccd|cmnd|căn cước|định danh/i.test(f.label))?.name;
+                
+                printData.push({
+                    name: nameField ? row.data[nameField] || 'Không rõ tên' : 'Không rõ tên',
+                    cccd: cccdField ? row.data[cccdField] || 'Không có CCCD' : 'Không có CCCD',
+                    images: urls
+                });
+            }
         });
 
-        if (allImages.length === 0) {
+        if (printData.length === 0) {
             message.warning('Không có ảnh nào trong danh sách hiện tại');
             return;
         }
         
-        handlePrintImages(allImages);
+        handlePrintImages(printData);
     };
 
 
@@ -299,12 +349,19 @@ export default function DataFormClient({ formId }: { formId: string }) {
             if (field.type === 'image' && text) {
                 const urls = text.split(',');
                 return (
-                    <div className="flex flex-col gap-1">
-                        {urls.map((url: string, idx: number) => (
-                            <a key={idx} href={url.trim()} target="_blank" rel="noreferrer" className="text-blue-500 underline">
-                                Xem ảnh {idx + 1}
-                            </a>
-                        ))}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <Image.PreviewGroup>
+                            {urls.map((url: string, idx: number) => (
+                                <Image
+                                    key={idx}
+                                    width={40}
+                                    height={40}
+                                    src={url.trim()}
+                                    className="object-cover rounded-md border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                                    alt={`Ảnh ${idx + 1}`}
+                                />
+                            ))}
+                        </Image.PreviewGroup>
                     </div>
                 );
             }
@@ -359,7 +416,15 @@ export default function DataFormClient({ formId }: { formId: string }) {
                         <Button 
                             size="small" 
                             icon={<PrinterOutlined />} 
-                            onClick={() => handlePrintImages(allImages)}
+                            onClick={() => {
+                                const nameField = formConfig?.config?.find((f: any) => /tên|name|nhân viên|cán bộ|họ/i.test(f.label))?.name;
+                                const cccdField = formConfig?.config?.find((f: any) => /cccd|cmnd|căn cước|định danh/i.test(f.label))?.name;
+                                handlePrintImages([{
+                                    name: nameField ? record.data[nameField] || 'Không rõ tên' : 'Không rõ tên',
+                                    cccd: cccdField ? record.data[cccdField] || 'Không có CCCD' : 'Không có CCCD',
+                                    images: allImages
+                                }]);
+                            }}
                             className="text-xs w-full mb-1"
                         >
                             In ảnh

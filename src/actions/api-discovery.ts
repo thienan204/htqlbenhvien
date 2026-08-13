@@ -50,17 +50,112 @@ const API_DOCS_DB: Record<string, Record<string, ApiDoc>> = {
             },
             postmanSnippet: '1. Gắn Header Authorization giống API GET ở trên.\n2. Chuyển sang tab Body -> raw -> JSON và dán nội dung body mẫu vào.'
         }
+    },
+    '/api/his-services': {
+        'GET': {
+            description: 'Lấy danh sách dịch vụ bác sĩ được thực hiện dựa vào tên đăng nhập HIS (userHIS). API sẽ tự động map userHIS -> CCHN -> Các dịch vụ được phép thực hiện.',
+            headers: { 'Content-Type': 'application/json' },
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/his-services?userHIS=admin vào Postman, chọn Method GET để xem danh sách dịch vụ.'
+        },
+        'POST': {
+            description: 'Thêm mới (cấp phép) hàng loạt mã dịch vụ vào CCHN của bác sĩ dựa trên tên đăng nhập HIS (userHIS). Các mã đã có sẽ tự động bị bỏ qua.',
+            headers: { 'Content-Type': 'application/json' },
+            body: { 
+                userHIS: "tendangnhapHIS", 
+                services: [
+                    { ma_dich_vu: "DV001", ten_dich_vu: "Khám bệnh", isChiDinh: true, isThucHien: true },
+                    { ma_dich_vu: "DV002", ten_dich_vu: "Siêu âm", isChiDinh: true, isThucHien: false }
+                ] 
+            },
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/his-services vào Postman, chọn Method POST. Chuyển qua tab Body -> raw (JSON) và dán nội dung body mẫu vào để cấp quyền dịch vụ.'
+        }
+    },
+    '/api/beds/check-overlap': {
+        'POST': {
+            description: 'Kiểm tra trùng lặp thời gian sử dụng giường bệnh (Extension check)',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: {
+                userHIS: 'admin',
+                ma_giuong: 'H016',
+                tu_ngay: '202310010800',
+                den_ngay: '202310021000',
+                ma_lk_hien_tai: 'OP',
+                ma_nhom: '15'
+            },
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/beds/check-overlap vào Postman, chọn Method POST và truyền Body dạng JSON. API sẽ tự tra ma_khoa từ userHIS để lọc bảng Xml3.',
+            extensionSnippet: `async function checkBedOverlap(maGiuong, tuNgay, denNgay, userHIS, maNhom = '15') {
+  try {
+    const response = await fetch('http://localhost:3000/htqlbenhvien/api/beds/check-overlap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userHIS: userHIS,
+        ma_giuong: maGiuong,
+        tu_ngay: tuNgay,
+        den_ngay: denNgay,
+        ma_nhom: maNhom
+      })
+    });
+    
+    const result = await response.json();
+    if (result.isOverlapped) {
+      const bn = result.overlapDetails[0];
+      alert(\`CẢNH BÁO: Giường \${maGiuong} ĐÃ CÓ NGƯỜI NẰM!\\nBệnh nhân: \${bn.ho_ten} (\${bn.ma_bn})\\nTừ: \${bn.tu_ngay}\\nĐến: \${bn.den_ngay}\`);
+    } else {
+      console.log('Giường hợp lệ!');
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}`
+        }
+    },
+    '/api/extension-config': {
+        'GET': {
+            description: 'Lấy cấu hình cho extension. Mặc định key="carecheck_rules". Trả về trực tiếp mảng JSON.',
+            headers: { 'Content-Type': 'application/json' },
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/extension-config?key=carecheck_rules vào Postman và chọn GET.'
+        },
+        'POST': {
+            description: 'Lưu hoặc cập nhật cấu hình cho extension. Gửi mảng JSON cấu hình vào Body.',
+            headers: { 'Content-Type': 'application/json' },
+            body: [
+                {
+                    "id": "mock-1",
+                    "name": "Cảnh báo trái tuyến"
+                }
+            ],
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/extension-config?key=carecheck_rules vào Postman, chọn Method POST, dán mảng JSON vào Body.'
+        }
     }
 };
 
 export async function discoverApiEndpoints(): Promise<ApiEndpoint[]> {
     const apiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'mobile');
+    const hisApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'his-services');
+    const extApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'extension-config');
+    const bedsApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'beds');
     
-    if (!fs.existsSync(apiDirectory)) {
-        return [];
+    let endpoints: ApiEndpoint[] = [];
+    
+    if (fs.existsSync(apiDirectory)) {
+        endpoints = endpoints.concat(scanDirectory(apiDirectory, '/api/mobile'));
+    }
+    
+    if (fs.existsSync(hisApiDirectory)) {
+        endpoints = endpoints.concat(scanDirectory(hisApiDirectory, '/api/his-services'));
     }
 
-    const endpoints = scanDirectory(apiDirectory, '/api/mobile');
+    if (fs.existsSync(extApiDirectory)) {
+        endpoints = endpoints.concat(scanDirectory(extApiDirectory, '/api/extension-config'));
+    }
+
+    if (fs.existsSync(bedsApiDirectory)) {
+        endpoints = endpoints.concat(scanDirectory(bedsApiDirectory, '/api/beds'));
+    }
+
     return endpoints.sort((a, b) => a.path.localeCompare(b.path));
 }
 
@@ -86,8 +181,16 @@ function scanDirectory(dir: string, baseRoute: string): ApiEndpoint[] {
             
             if (methods.length > 0) {
                 // Determine category from path
-                const pathParts = baseRoute.replace('/api/mobile/', '').split('/');
-                const category = pathParts.length > 0 && pathParts[0] ? `MOBILE / ${pathParts[0].toUpperCase()}` : 'MOBILE GENERAL';
+                let category = 'GENERAL APIS';
+                if (baseRoute.includes('/api/mobile')) {
+                    const pathParts = baseRoute.replace('/api/mobile/', '').split('/');
+                    category = pathParts.length > 0 && pathParts[0] ? `MOBILE / ${pathParts[0].toUpperCase()}` : 'MOBILE GENERAL';
+                } else if (baseRoute.includes('/api/his-services')) {
+                    category = 'HIS INTEGRATION APIS';
+                } else if (baseRoute.includes('/api/extension-config') || baseRoute.includes('/api/beds')) {
+                    category = 'EXTENSION APIS';
+                }
+
                 const finalPath = baseRoute.replace(/\\/g, '/');
                 
                 results.push({

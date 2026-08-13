@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, message, Spin, Upload, Typography, Result, Tabs } from 'antd';
+import { Card, Form, Input, Button, message, Spin, Upload, Typography, Result, Tabs, Image } from 'antd';
 import { UploadOutlined, LockOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import PageInstruction from '@/components/shared/PageInstruction';
@@ -187,7 +187,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (event) => {
-                const img = new Image();
+                const img = new window.Image();
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
@@ -231,12 +231,13 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                         }
                     }, 'image/jpeg', 0.85);
                 };
-                img.onerror = (error) => {
+                };
+                img.onerror = () => {
                     message.destroy('compressing');
                     resolve(file); // Fallback to original
                 }
             };
-            reader.onerror = (error) => {
+            reader.onerror = () => {
                 message.destroy('compressing');
                 resolve(file); // Fallback to original
             }
@@ -334,10 +335,19 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                                                                 <span className="text-gray-500 font-medium sm:w-1/3">{field.label}:</span>
                                                                 <span className="text-gray-900 font-semibold sm:w-2/3 text-left sm:text-right break-words">
                                                                     {isImage ? (
-                                                                        <div className="flex flex-col gap-1 sm:items-end">
-                                                                            {value.split(',').map((url: string, idx: number) => (
-                                                                                <a key={idx} href={url.trim()} target="_blank" rel="noreferrer" className="text-blue-600 underline">Xem ảnh {idx + 1}</a>
-                                                                            ))}
+                                                                        <div className="flex flex-wrap gap-2 sm:justify-end">
+                                                                            <Image.PreviewGroup>
+                                                                                {value.split(',').map((url: string, idx: number) => (
+                                                                                    <Image
+                                                                                        key={idx}
+                                                                                        width={40}
+                                                                                        height={40}
+                                                                                        src={url.trim()}
+                                                                                        className="object-cover rounded-md border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                                                                                        alt={`Ảnh ${idx + 1}`}
+                                                                                    />
+                                                                                ))}
+                                                                            </Image.PreviewGroup>
                                                                         </div>
                                                                     ) : (
                                                                         value || <span className="text-gray-400 font-normal italic">Chưa có thông tin</span>

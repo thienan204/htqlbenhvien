@@ -55,6 +55,7 @@ model User {
   ma_khoa      String?
   telegram_id  String?
   staffId      String?           @unique
+  userHIS      String?           @unique
   staff        Staff?            @relation(fields: [staffId], references: [id])
   deviceTokens UserDeviceToken[]
 }
@@ -1691,4 +1692,12 @@ model DynamicFormData {
   updatedAt     DateTime    @updatedAt
   lastUpdatedBy String?
   isDone        Boolean     @default(false)
+}
+
+model ExtensionConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
