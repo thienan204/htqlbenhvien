@@ -916,7 +916,7 @@ export class ValidationEngine {
                 Number: Number,
                 parseFloat: parseFloat,
                 parseInt: parseInt,
-                parseDate: parseDate,
+                parseDate: this.parseDate.bind(this),
                 diffHours: diffHours,
                 EXISTS_IN: EXISTS_IN,
                 CHECK_DUPLICATE_DIFF: CHECK_DUPLICATE_DIFF,
