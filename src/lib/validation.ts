@@ -442,6 +442,31 @@ export class ValidationEngine {
         return String(val).trim();
     }
 
+    // Helper: Parse XML Date String (YYYYMMDDHHmm or YYYYMMDD)
+    private parseDate(str: any): Date | null {
+        if (!str) return null;
+        const s = String(str).trim();
+        if (s.length === 12) {
+            // YYYYMMDDHHmm
+            const year = parseInt(s.substring(0, 4));
+            const month = parseInt(s.substring(4, 6)) - 1;
+            const day = parseInt(s.substring(6, 8));
+            const hour = parseInt(s.substring(8, 10));
+            const minute = parseInt(s.substring(10, 12));
+            return new Date(year, month, day, hour, minute);
+        }
+        if (s.length === 8) {
+            // YYYYMMDD
+            const year = parseInt(s.substring(0, 4));
+            const month = parseInt(s.substring(4, 6)) - 1;
+            const day = parseInt(s.substring(6, 8));
+            return new Date(year, month, day);
+        }
+        // Try standard Date parse
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
     public evaluateRule(rule: ValidationRule, record: HosoRecord): { isMatch: boolean, error?: string } {
         try {
             const rootContext: Record<string, any> = {};
@@ -703,35 +728,10 @@ export class ValidationEngine {
             // Using raw expression without auto-fix
             let expr = expression;
 
-            // Helper: Parse XML Date String (YYYYMMDDHHmm or YYYYMMDD)
-            const parseDate = (str: any): Date | null => {
-                if (!str) return null;
-                const s = String(str).trim();
-                if (s.length === 12) {
-                    // YYYYMMDDHHmm
-                    const year = parseInt(s.substring(0, 4));
-                    const month = parseInt(s.substring(4, 6)) - 1;
-                    const day = parseInt(s.substring(6, 8));
-                    const hour = parseInt(s.substring(8, 10));
-                    const minute = parseInt(s.substring(10, 12));
-                    return new Date(year, month, day, hour, minute);
-                }
-                if (s.length === 8) {
-                    // YYYYMMDD
-                    const year = parseInt(s.substring(0, 4));
-                    const month = parseInt(s.substring(4, 6)) - 1;
-                    const day = parseInt(s.substring(6, 8));
-                    return new Date(year, month, day);
-                }
-                // Try standard Date parse
-                const d = new Date(s);
-                return isNaN(d.getTime()) ? null : d;
-            };
-
             // Helper: Calculate difference in hours (d1 - d2)
             const diffHours = (d1: any, d2: any): number => {
-                const date1 = parseDate(d1);
-                const date2 = parseDate(d2);
+                const date1 = this.parseDate(d1);
+                const date2 = this.parseDate(d2);
                 if (!date1 || !date2) return 999999; // Return huge number if invalid dates to avoid false positives in < checks
                 const diffMs = date1.getTime() - date2.getTime();
                 return diffMs / (1000 * 60 * 60);
@@ -1148,6 +1148,75 @@ export class ValidationEngine {
             });
 
             // 0.6.6.5. Handle CHECK_MAX_CODES
+            cleanCode = cleanCode.replace(/CHECK_MAX_CODES\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, (match, fieldName, requiredPrefix, maxCountStr) => {
+                const fieldVal = getVal(fieldName.trim());
+                const prefix = requiredPrefix.trim().replace(/['"]/g, '');
+                const maxCount = parseInt(maxCountStr.trim(), 10);
+                const valStr = fieldVal !== null && fieldVal !== undefined ? String(fieldVal).trim() : '';
+                if (!valStr) return "false";
+                
+                const codes = valStr.split(';').map(s => s.trim()).filter(Boolean);
+                const matchingCodes = codes.filter(c => c.startsWith(prefix));
+                if (matchingCodes.length > maxCount) {
+                    this.dynamicMessage = `Chỉ được phép tối đa ${maxCount} mã bắt đầu bằng ${prefix}, hiện có: ${matchingCodes.length} (${matchingCodes.join(', ')})`;
+                    return "true";
+                }
+                return "false";
+            });
+
+            // 0.6.7. Handle CHECK_OVERLAP_BHYT(MA_THE, NGAY_VAO, NGAY_RA, MA_LK)
+            cleanCode = cleanCode.replace(/CHECK_OVERLAP_BHYT\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/g, (match, maTheRef, ngayVaoRef, ngayRaRef, maLkRef) => {
+                const maThe = getVal(maTheRef.trim());
+                const ngayVao = getVal(ngayVaoRef.trim());
+                const ngayRa = getVal(ngayRaRef.trim());
+                const maLk = getVal(maLkRef.trim());
+                
+                const maTheStr = maThe !== null && maThe !== undefined ? String(maThe).trim() : '';
+                const maLkStr = maLk !== null && maLk !== undefined ? String(maLk).trim() : '';
+                
+                if (!maTheStr || !maLkStr) return "false";
+                
+                const currentVaoDate = this.parseDate(ngayVao);
+                const currentRaDate = this.parseDate(ngayRa);
+                
+                if (!currentVaoDate || !currentRaDate) return "false";
+                
+                let hasOverlap = false;
+                for (const r of this.allRecords) {
+                    const rMaLk = String(r.summary?.MA_LK || '').trim();
+                    const rMaThe = String(r.summary?.MA_THE || r.summary?.MA_THE_BHYT || '').trim();
+                    
+                    if (rMaLk === maLkStr) continue; // Bỏ qua chính hồ sơ này
+                    if (rMaThe !== maTheStr) continue; // Bỏ qua thẻ BHYT khác
+                    
+                    const rVaoDate = this.parseDate(r.summary?.NGAY_VAO);
+                    const rRaDate = this.parseDate(r.summary?.NGAY_RA);
+                    const rMaBn = String(r.summary?.MA_BN || '').trim();
+                    
+                    if (rVaoDate && rRaDate) {
+                        // Tính đè: (Bắt đầu 1 < Kết thúc 2) && (Bắt đầu 2 < Kết thúc 1)
+                        if (currentVaoDate.getTime() < rRaDate.getTime() && rVaoDate.getTime() < currentRaDate.getTime()) {
+                            hasOverlap = true;
+                            
+                            const formatXMLDate = (d: string) => {
+                                if (!d || d.length < 12) return d;
+                                return `${d.substring(6,8)}/${d.substring(4,6)}/${d.substring(0,4)} ${d.substring(8,10)}:${d.substring(10,12)}`;
+                            };
+                            
+                            const msg = `Thẻ BHYT ${maTheStr} bị trùng lấp thời gian điều trị với hồ sơ (MA_LK: ${rMaLk} | MA_BN: ${rMaBn}) (${formatXMLDate(String(r.summary?.NGAY_VAO || ''))} - ${formatXMLDate(String(r.summary?.NGAY_RA || ''))})`;
+                            if (this.dynamicMessage) {
+                                if (!this.dynamicMessage.includes(rMaLk)) {
+                                    this.dynamicMessage += ` | ${msg}`;
+                                }
+                            } else {
+                                this.dynamicMessage = msg;
+                            }
+                        }
+                    }
+                }
+                
+                return hasOverlap ? "true" : "false";
+            });
             cleanCode = cleanCode.replace(/CHECK_MAX_CODES\(\s*([^,]+)\s*,\s*(\d+)\s*\)/g, (match, field, maxCountStr) => {
                 const val = getVal(field.trim());
                 const valStr = val !== null && val !== undefined ? String(val).trim() : '';
@@ -1331,6 +1400,16 @@ export class ValidationEngine {
 
 // Initial Default Rules (from screenshot)
 export const DEFAULT_RULES: ValidationRule[] = [
+    {
+        id: 'overlap_bhyt_1',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        name: 'Trùng BHYT (Đè thời gian)',
+        code: 'CHECK_OVERLAP_BHYT(MA_THE, NGAY_VAO, NGAY_RA, MA_LK)',
+        errorMessage: 'Phát hiện đè thời gian điều trị với một hồ sơ khác cùng phiên tải lên.'
+    },
     {
         id: '1',
         active: true,

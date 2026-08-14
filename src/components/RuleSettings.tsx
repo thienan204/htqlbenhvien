@@ -446,6 +446,11 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         <ul className="list-disc pl-4 space-y-1 mt-2">
                             <li><code className="bg-white px-1 border rounded text-red-600">CHECK_DUPLICATE_DIFF('BẢNG.TRƯỜNG1', GiáTrị1, 'BẢNG.TRƯỜNG2', GiáTrị2)</code> : Dùng để tìm xem có hồ sơ nào khác TRÙNG Trường 1 nhưng lại KHÁC Trường 2 không.</li>
                             <li><span className="text-gray-500 italic">Ví dụ (Trùng Mã Thẻ BHYT nhưng Khác Mã Bệnh nhân):</span> <code className="bg-white px-1 border rounded text-red-600">CHECK_DUPLICATE_DIFF('XML1.MA_THE', MA_THE, 'XML1.MA_BN', MA_BN)</code></li>
+                            <li className="mt-2 pt-2 border-t border-gray-100">
+                                <div className="text-orange-700 font-semibold text-[13px] mb-1">🔥 MỚI: Kiểm tra đè thời gian (BHYT):</div>
+                                Quét tất cả hồ sơ, phát hiện 2 hồ sơ cùng MA_THE nhưng thời gian Nằm viện (Ngày vào - Ngày ra) bị đè lên nhau. <br/>
+                                Cú pháp: <code className="bg-white px-1 border rounded text-red-600">CHECK_OVERLAP_BHYT(MA_THE, NGAY_VAO, NGAY_RA, MA_LK)</code>
+                            </li>
                         </ul>
                     </div>
                     <div>
