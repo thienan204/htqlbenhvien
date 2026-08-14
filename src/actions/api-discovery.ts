@@ -8,6 +8,7 @@ export interface ApiDoc {
     headers?: Record<string, string>;
     body?: any;
     postmanSnippet?: string;
+    extensionSnippet?: string;
 }
 
 export interface ApiEndpoint {
