@@ -231,11 +231,10 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
                         }
                     }, 'image/jpeg', 0.85);
                 };
-                };
                 img.onerror = () => {
                     message.destroy('compressing');
                     resolve(file); // Fallback to original
-                }
+                };
             };
             reader.onerror = () => {
                 message.destroy('compressing');
