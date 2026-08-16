@@ -348,8 +348,12 @@ export async function POST(request: Request) {
                         continue;
                     }
 
-                    // Điều kiện 1 & 2: Nhân viên rảnh và Bệnh nhân rảnh
-                    if (isSlotFree(sTracker, currentTime, staffOccupiedTime) && isSlotFree(pTracker, currentTime, requiredTime)) {
+                    // Tính tổng thời gian chiếm dụng (bao gồm cả buffer time) để check khoảng trống thực sự
+                    const totalStaffOccupiedTime = staffOccupiedTime + (config.isConcurrent ? 0 : currentServiceBufferTime);
+                    const totalPatientOccupiedTime = requiredTime + currentServiceBufferTime;
+
+                    // Điều kiện 1 & 2: Nhân viên rảnh và Bệnh nhân rảnh (tính cả thời gian nghỉ)
+                    if (isSlotFree(sTracker, currentTime, totalStaffOccupiedTime) && isSlotFree(pTracker, currentTime, totalPatientOccupiedTime)) {
                         
                         // Điều kiện 3: Máy móc rảnh (nếu cần)
                         let machineFree = true;
@@ -357,11 +361,11 @@ export async function POST(request: Request) {
                         
                         if (requiredMachineCode) {
                             machineFree = false;
-                            // Tìm 1 máy rảnh trong số các máy phù hợp
+                            // Tìm 1 máy rảnh trong số các máy phù hợp (máy luôn bị giam đủ thời gian + buffer)
                             for (const machine of capableMachines) {
                                 if (!machine.MA_MAY) continue;
                                 const mTracker = machineTracker[machine.MA_MAY as string];
-                                if (isSlotFree(mTracker, currentTime, requiredTime)) {
+                                if (isSlotFree(mTracker, currentTime, requiredTime + currentServiceBufferTime)) {
                                     machineFree = true;
                                     selectedMachine = machine;
                                     break;
