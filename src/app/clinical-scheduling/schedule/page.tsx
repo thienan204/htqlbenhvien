@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App } from 'antd';
+import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip } from 'antd';
 import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
@@ -125,6 +125,8 @@ export default function ClinicalSchedulingPage() {
     const [failedData, setFailedData] = useState<any[]>([]);
     
     const [loading, setLoading] = useState(false);
+    const [generatingOptimized, setGeneratingOptimized] = useState(false);
+    const [heuristic, setHeuristic] = useState('LPT');
     const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
     const [staffList, setStaffList] = useState<any[]>([]);
     const [enableStaffMapping, setEnableStaffMapping] = useState(false);
@@ -727,6 +729,59 @@ export default function ClinicalSchedulingPage() {
             message.error("Có lỗi xảy ra khi gọi API");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGenerateScheduleOptimized = async () => {
+        if (!selectedDate || !selectedDept) {
+            message.error("Vui lòng chọn ngày và Khoa/Phòng");
+            return;
+        }
+
+        const filteredData = uploadedData.filter(d => selectedServices.includes(d.ten_dich_vu));
+        
+        if (filteredData.length === 0) {
+            message.warning("Không có dịch vụ nào để xếp lịch");
+            return;
+        }
+
+        const patientShifts: Record<string, string> = {};
+        morningPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'MORNING'; });
+        afternoonPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'AFTERNOON'; });
+
+        const staffShifts: Record<string, string> = {};
+        morningStaffs.forEach(staffId => { staffShifts[staffId] = 'MORNING'; });
+        afternoonStaffs.forEach(staffId => { staffShifts[staffId] = 'AFTERNOON'; });
+
+        setGeneratingOptimized(true);
+        try {
+            const res = await fetch('/api/clinical-scheduling/generate-optimized', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: selectedDate,
+                    maKhoa: selectedDept,
+                    services: filteredData,
+                    patientShifts,
+                    staffShifts,
+                    serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
+                    heuristic
+                })
+            });
+            
+            const data = await res.json();
+            if (data.success) {
+                setScheduledData(data.scheduled);
+                setFailedData(data.failed.map((item: any, i: number) => ({ ...item, key: `failed_${i}` })));
+                message.success(`Đã xếp lịch TỐI ƯU thành công ${data.scheduled.length} dịch vụ!`);
+            } else {
+                message.error("Lỗi: " + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            message.error("Có lỗi xảy ra khi gọi API");
+        } finally {
+            setGeneratingOptimized(false);
         }
     };
 
@@ -1485,15 +1540,57 @@ export default function ClinicalSchedulingPage() {
                                             )}
 
                                             <p style={{ color: '#595959', marginBottom: 16 }}>Hệ thống đã sẵn sàng tính toán lịch cho <strong>{selectedServices.length}</strong> loại dịch vụ đã chọn.</p>
-                                            <Button 
-                                                type="primary" 
-                                                size="large" 
-                                                icon={<PlayCircleOutlined />} 
-                                                onClick={handleGenerateSchedule}
-                                                loading={loading}
-                                            >
-                                                CHẠY THUẬT TOÁN XẾP LỊCH
-                                            </Button>
+                                            <Space style={{ marginTop: 8 }}>
+                                                <Tooltip title="Thuật toán CŨ: Bốc từng bệnh nhân và xếp lịch liền mạch cho họ từ sáng tới chiều. Ưu tiên: Bệnh nhân không phải chờ đợi. Nhược điểm: Bác sĩ có thể bị thủng lỗ rỗng.">
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="large" 
+                                                        icon={<PlayCircleOutlined />} 
+                                                        onClick={handleGenerateSchedule}
+                                                        loading={loading}
+                                                        disabled={generatingOptimized}
+                                                    >
+                                                        Xếp lịch thời gian thực hiện 1
+                                                    </Button>
+                                                </Tooltip>
+                                                
+                                                <Tooltip title="Thuật toán MỚI: Bốc từng Bác sĩ và lấp đầy lịch làm việc của họ. Ưu tiên: Tối đa hóa công suất Bác sĩ. Nhược điểm: Bệnh nhân có thể phải ngồi chờ giữa 2 dịch vụ.">
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="large" 
+                                                        icon={<PlayCircleOutlined />} 
+                                                        style={{ background: '#722ed1', borderColor: '#722ed1' }}
+                                                        onClick={handleGenerateScheduleOptimized}
+                                                        loading={generatingOptimized}
+                                                        disabled={loading}
+                                                    >
+                                                        Xếp lịch thời gian thực hiện 2
+                                                    </Button>
+                                                </Tooltip>
+
+                                                <Select
+                                                    value={heuristic}
+                                                    onChange={setHeuristic}
+                                                    style={{ width: 250 }}
+                                                    size="large"
+                                                >
+                                                    <Option value="LPT">
+                                                        <div title="Nhét dịch vụ tốn nhiều thời gian vào trước để tối ưu lấp đầy lịch bác sĩ. Cuối ngày dễ dàng lấp chỗ trống bằng các ca ngắn. (Khuyên dùng)">
+                                                            Ưu tiên Ca dài trước (LPT)
+                                                        </div>
+                                                    </Option>
+                                                    <Option value="SPT">
+                                                        <div title="Giải phóng số lượng lớn bệnh nhân vào đầu ngày bằng cách làm các ca ngắn trước. Nguy cơ có thể hở lịch cuối ngày.">
+                                                            Ưu tiên Ca ngắn trước (SPT)
+                                                        </div>
+                                                    </Option>
+                                                    <Option value="FCFS">
+                                                        <div title="Không quan tâm dài ngắn, bệnh nhân nào đứng trên cùng trong file Excel sẽ được gọi vào làm trước.">
+                                                            Theo File Excel (FCFS)
+                                                        </div>
+                                                    </Option>
+                                                </Select>
+                                            </Space>
                                         </div>
                                     </>
                                 )

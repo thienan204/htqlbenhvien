@@ -32,7 +32,7 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {} } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, heuristic = 'LPT' } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -177,86 +177,43 @@ export async function POST(request: Request) {
         const failedResults = [];
         const patientAssignedStaff: Record<string, Set<string>> = {};
 
-        // Nhóm các dịch vụ theo Bệnh nhân (ma_ba) để đảm bảo các dịch vụ của cùng 1 người được xếp liên tiếp nhau
-        const groupedServices: Record<string, any[]> = {};
-        for (const task of services) {
-            if (!groupedServices[task.ma_ba]) {
-                groupedServices[task.ma_ba] = [];
-            }
-            groupedServices[task.ma_ba].push(task);
-        }
-        
-        const maBaList = Object.keys(groupedServices);
-        // Sắp xếp thứ tự ưu tiên xử lý: Sáng -> Tự động -> Chiều
-        maBaList.sort((a, b) => {
-            const shiftA = patientShifts[a] || 'AUTO';
-            const shiftB = patientShifts[b] || 'AUTO';
-            
-            const getPriority = (shift: string) => {
-                if (shift === 'MORNING') return 1;
-                if (shift === 'AFTERNOON') return 3;
-                return 2; // AUTO
-            };
-            
-            return getPriority(shiftA) - getPriority(shiftB);
-        });
-
-        const sortedServices = [];
-        for (const ma_ba of maBaList) {
-            sortedServices.push(...groupedServices[ma_ba]);
-        }
-
-        // 5. Chạy thuật toán cho từng dòng dữ liệu đã được nhóm
-        for (const task of sortedServices) {
+        // 5. Chuẩn bị danh sách dịch vụ chờ xếp lịch (Unscheduled Pool)
+        const unscheduled = [];
+        for (let i = 0; i < services.length; i++) {
+            const task = services[i];
             const ma_dich_vu = String(task.ma_dich_vu);
             const ma_ba = String(task.ma_ba);
             const config = catalogMap[ma_dich_vu] || { time: 10, qualification: null, bufferTime: deptBufferTime, isConcurrent: false };
             const requiredTime = config.time;
             const requiredQual = config.qualification ? config.qualification.toLowerCase() : null;
             const currentServiceBufferTime = config.bufferTime;
-            // Tính toán thời gian Bác sĩ thực sự bị chiếm dụng (khoảng cách giữa các lần làm song song)
-            // Lấy chính xác theo cấu hình Buffer của Dịch vụ -> Khoa (tối thiểu 1 phút để không bị trùng hoàn toàn)
             const staffOccupiedTime = config.isConcurrent ? Math.max(1, currentServiceBufferTime) : requiredTime;
-
-            // Tìm nhân viên phù hợp dựa trên CCHN
             const requiredScopes = serviceScopes[ma_dich_vu] || [];
             
             let capableStaff = availableStaff.filter(s => {
-                // Kiểm tra các CCHN đang hoạt động của nhân viên
                 if (!s.certificates || s.certificates.length === 0) return false;
-
                 for (const cert of s.certificates) {
-                    // 1. Kiểm tra Dịch vụ kỹ thuật khác (Mẫu 05)
                     if (cert.dich_vu_ky_thuat) {
                         const extraServices = cert.dich_vu_ky_thuat.split(/[,;]/).map((code: string) => code.trim()).filter(Boolean);
-                        const isMatch = extraServices.some(allowedCode => {
-                            return allowedCode === ma_dich_vu || ma_dich_vu.startsWith(allowedCode);
-                        });
+                        const isMatch = extraServices.some(allowedCode => allowedCode === ma_dich_vu || ma_dich_vu.startsWith(allowedCode));
                         if (isMatch) return true;
                     }
-
-                    // 2. Kiểm tra Phạm vi hành nghề (Mapping)
                     if (cert.scopes && cert.scopes.length > 0) {
                         const certScopes = cert.scopes.map((sc: any) => sc.ma_pham_vi);
                         const hasMatchingScope = requiredScopes.some(reqScope => certScopes.includes(reqScope));
                         if (hasMatchingScope) return true;
                     }
                 }
-                
                 return false;
             });
 
-            // Xử lý tùy chọn gán đích danh Bác sĩ (key là Tên Dịch Vụ)
             const assignedStaffIds = serviceStaffMappings[task.ten_dich_vu];
             if (assignedStaffIds && Array.isArray(assignedStaffIds) && assignedStaffIds.length > 0) {
-                capableStaff = availableStaff.filter(s => assignedStaffIds.includes(s.id)); // Bỏ qua kiểm tra chứng chỉ, ép buộc xếp lịch cho những người này
+                capableStaff = availableStaff.filter(s => assignedStaffIds.includes(s.id));
             } else if (assignedStaffIds && typeof assignedStaffIds === 'string') {
                 const assignedStaff = availableStaff.find(s => s.id === assignedStaffIds);
-                if (assignedStaff) {
-                    capableStaff = [assignedStaff];
-                } else {
-                    capableStaff = [];
-                }
+                if (assignedStaff) capableStaff = [assignedStaff];
+                else capableStaff = [];
             }
 
             if (capableStaff.length === 0) {
@@ -268,17 +225,11 @@ export async function POST(request: Request) {
                 continue;
             }
 
-            if (!patientTracker[ma_ba]) {
-                patientTracker[ma_ba] = [];
-            }
-
-            // Lấy danh sách máy phù hợp (nếu dịch vụ có yêu cầu máy)
             const requiredMachineCode = config.reqMachineCode;
             let capableMachines = availableMachines;
             if (requiredMachineCode) {
                 capableMachines = availableMachines.filter((m: any) => (m.loai_may_code || '').trim() === requiredMachineCode.trim());
             }
-            
             if (requiredMachineCode && capableMachines.length === 0) {
                 failedResults.push({ ...task, error: 'Không có thiết bị loại ' + requiredMachineCode + ' khả dụng trong ngày' });
                 continue;
@@ -289,12 +240,10 @@ export async function POST(request: Request) {
                 const timeStr = String(task.thoi_gian_chi_dinh).trim();
                 let hm = '';
                 if (timeStr.includes(' ')) {
-                    const parts = timeStr.split(' ');
-                    hm = parts.find(p => p.includes(':')) || '';
+                    hm = timeStr.split(' ').find(p => p.includes(':')) || '';
                 } else {
                     hm = timeStr;
                 }
-                
                 if (hm) {
                     const prescriptionMinutes = parseTime(hm.substring(0, 5));
                     if (prescriptionMinutes > minStartMinutes) {
@@ -303,155 +252,167 @@ export async function POST(request: Request) {
                 }
             }
 
-            // Tìm khung giờ sớm nhất thỏa mãn cả 3 yếu tố: Nhân viên, Bệnh nhân, và Máy móc (nếu cần)
-            let earliestGlobalTime = 24 * 60; // Max time
-            let earliestPriorityTime = 24 * 60;
-            let chosenStaffForEarliest = null;
-            let chosenStaffForPriority = null;
-            let chosenMachineForEarliest = null;
-            let chosenMachineForPriority = null;
-            
-            const previouslyAssignedStaffIds = patientAssignedStaff[ma_ba] || new Set();
+            unscheduled.push({
+                task,
+                config,
+                requiredTime,
+                currentServiceBufferTime,
+                staffOccupiedTime,
+                capableStaffIds: new Set(capableStaff.map(s => s.id)),
+                requiredMachineCode,
+                capableMachines,
+                minStartMinutes,
+                index: i
+            });
 
-            for (const staff of capableStaff) {
-                const sTracker = staffTracker[staff.id];
-                const pTracker = patientTracker[ma_ba];
+            if (!patientTracker[ma_ba]) {
+                patientTracker[ma_ba] = [];
+            }
+        }
+
+        // 6. Mô phỏng sự kiện (Event-driven / Greedy) - Quét theo từng phút
+        let currentTime = mStart;
+        while (unscheduled.length > 0 && currentTime < aEnd) {
+            // Bỏ qua giờ nghỉ trưa
+            if (currentTime >= mEnd && currentTime < aStart) {
+                currentTime = aStart;
+            }
+
+            let scheduledAnyInThisMinute = false;
+
+            // Xử lý từng nhân viên đang rảnh
+            for (const staff of availableStaff) {
+                let keepAssigningToStaff = true;
                 
-                let currentTime = minStartMinutes;
-                while (currentTime < aEnd) { 
-                    // Bỏ qua giờ nghỉ trưa
-                    if (currentTime + requiredTime > mEnd && currentTime < aStart) {
-                        currentTime = aStart;
-                    }
+                while (keepAssigningToStaff) {
+                    keepAssigningToStaff = false;
 
-                    // Nếu nhảy qua aEnd thì dừng
-                    if (currentTime + requiredTime > aEnd) {
-                        break;
-                    }
+                    // Tối ưu: Nếu nhân viên đang bận ngay tại phút này, bỏ qua luôn
+                    if (!isSlotFree(staffTracker[staff.id], currentTime, 1)) break;
 
-                    // Ưu tiên Sáng/Chiều theo cấu hình
-                    const shiftPref = patientShifts[ma_ba];
-                    if (shiftPref === 'MORNING' && currentTime >= mEnd) {
-                        break; // Hết giờ sáng thì dừng tìm cho nhân viên này
-                    }
-                    if (shiftPref === 'AFTERNOON' && currentTime < aStart) {
-                        currentTime = aStart; // Nhảy thẳng đến giờ chiều
-                        continue;
-                    }
+                    // Tìm tất cả ứng viên (dịch vụ) có thể thực hiện bởi staff này lúc currentTime
+                    const candidates = [];
+                    for (const u of unscheduled) {
+                        const ma_ba = String(u.task.ma_ba);
 
-                    // Ưu tiên Sáng/Chiều theo cấu hình Nhân viên
-                    const staffShiftPref = staffShifts[staff.id];
-                    if (staffShiftPref === 'MORNING' && currentTime >= mEnd) {
-                        break; // Nhân viên này chỉ làm buổi sáng
-                    }
-                    if (staffShiftPref === 'AFTERNOON' && currentTime < aStart) {
-                        currentTime = aStart; // Nhảy đến buổi chiều cho nhân viên này
-                        continue;
-                    }
+                        // Chặn theo ca Bệnh nhân
+                        const shiftPref = patientShifts[ma_ba];
+                        if (shiftPref === 'MORNING' && currentTime >= mEnd) continue;
+                        if (shiftPref === 'AFTERNOON' && currentTime < aStart) continue;
 
-                    // Tính tổng thời gian chiếm dụng (bao gồm cả buffer time) để check khoảng trống thực sự
-                    const totalStaffOccupiedTime = staffOccupiedTime + (config.isConcurrent ? 0 : currentServiceBufferTime);
-                    const totalPatientOccupiedTime = requiredTime + currentServiceBufferTime;
+                        // Chặn theo ca Nhân viên
+                        const staffShiftPref = staffShifts[staff.id];
+                        if (staffShiftPref === 'MORNING' && currentTime >= mEnd) continue;
+                        if (staffShiftPref === 'AFTERNOON' && currentTime < aStart) continue;
 
-                    // Điều kiện 1 & 2: Nhân viên rảnh và Bệnh nhân rảnh (tính cả thời gian nghỉ)
-                    if (isSlotFree(sTracker, currentTime, totalStaffOccupiedTime) && isSlotFree(pTracker, currentTime, totalPatientOccupiedTime)) {
-                        
-                        // Điều kiện 3: Máy móc rảnh (nếu cần)
+                        // Chặn theo thời gian chỉ định
+                        if (currentTime < u.minStartMinutes) continue;
+
+                        // Nhân viên này có làm được không?
+                        if (!u.capableStaffIds.has(staff.id)) continue;
+
+                        // Nhân viên có rảnh đủ thời gian không?
+                        const totalStaffOccupiedTime = u.staffOccupiedTime + (u.config.isConcurrent ? 0 : u.currentServiceBufferTime);
+                        if (currentTime + u.requiredTime > (currentTime < mEnd ? mEnd : aEnd)) continue; // Không vắt qua ca
+                        if (!isSlotFree(staffTracker[staff.id], currentTime, totalStaffOccupiedTime)) continue;
+
+                        // Bệnh nhân có rảnh không?
+                        const totalPatientOccupiedTime = u.requiredTime + u.currentServiceBufferTime;
+                        if (!isSlotFree(patientTracker[ma_ba], currentTime, totalPatientOccupiedTime)) continue;
+
+                        // Máy có rảnh không?
                         let machineFree = true;
                         let selectedMachine = null;
-                        
-                        if (requiredMachineCode) {
+                        if (u.requiredMachineCode) {
                             machineFree = false;
-                            // Tìm 1 máy rảnh trong số các máy phù hợp (máy luôn bị giam đủ thời gian + buffer)
-                            for (const machine of capableMachines) {
+                            for (const machine of u.capableMachines) {
                                 if (!machine.MA_MAY) continue;
                                 const mTracker = machineTracker[machine.MA_MAY as string];
-                                if (isSlotFree(mTracker, currentTime, requiredTime + currentServiceBufferTime)) {
+                                if (isSlotFree(mTracker, currentTime, u.requiredTime + u.currentServiceBufferTime)) {
                                     machineFree = true;
                                     selectedMachine = machine;
                                     break;
                                 }
                             }
                         }
+                        if (!machineFree) continue;
 
-                        if (machineFree) {
-                            if (previouslyAssignedStaffIds.has(staff.id)) {
-                                if (currentTime < earliestPriorityTime) {
-                                    earliestPriorityTime = currentTime;
-                                    chosenStaffForPriority = staff;
-                                    chosenMachineForPriority = selectedMachine;
-                                }
+                        candidates.push({ ...u, selectedMachine });
+                    }
+
+                    // Nếu có ứng viên, chọn ra 1 người dựa theo chiến thuật (Heuristic)
+                    if (candidates.length > 0) {
+                        let winner = candidates[0];
+                        if (candidates.length > 1) {
+                            if (heuristic === 'LPT') {
+                                // Longest Processing Time First
+                                candidates.sort((a, b) => b.requiredTime - a.requiredTime || a.index - b.index);
+                            } else if (heuristic === 'SPT') {
+                                // Shortest Processing Time First
+                                candidates.sort((a, b) => a.requiredTime - b.requiredTime || a.index - b.index);
                             } else {
-                                if (currentTime < earliestGlobalTime) {
-                                    earliestGlobalTime = currentTime;
-                                    chosenStaffForEarliest = staff;
-                                    chosenMachineForEarliest = selectedMachine;
-                                }
+                                // First Come First Serve
+                                candidates.sort((a, b) => a.index - b.index);
                             }
-                            break; // Tìm được giờ sớm nhất cho nhân viên này thì dừng vòng lặp while
+                            winner = candidates[0];
+                        }
+
+                        // Gán lịch cho người chiến thắng
+                        const finalTime = currentTime;
+                        const endTime = finalTime + winner.requiredTime;
+                        const ma_ba = String(winner.task.ma_ba);
+
+                        const totalStaffOccupiedTime = winner.staffOccupiedTime + (winner.config.isConcurrent ? 0 : winner.currentServiceBufferTime);
+                        
+                        staffTracker[staff.id].push({ start: finalTime, end: finalTime + totalStaffOccupiedTime });
+                        patientTracker[ma_ba].push({ start: finalTime, end: endTime + winner.currentServiceBufferTime });
+                        
+                        if (winner.selectedMachine && winner.selectedMachine.MA_MAY) {
+                            machineTracker[winner.selectedMachine.MA_MAY].push({ start: finalTime, end: endTime + winner.currentServiceBufferTime });
+                        }
+
+                        scheduledResults.push({
+                            ...winner.task,
+                            nguoi_thuc_hien: staff.ho_ten,
+                            ma_nv: staff.ma_nv,
+                            cchn: (staff.certificates && staff.certificates.length > 0) ? staff.certificates[0].so_cchn : '',
+                            ma_may: winner.selectedMachine ? winner.selectedMachine.MA_MAY : '',
+                            ten_may: winner.selectedMachine ? (winner.selectedMachine.TEN_BV || winner.selectedMachine.TEN_TB) : '',
+                            bat_dau: formatTime(finalTime),
+                            ket_thuc: formatTime(endTime),
+                            _startMinutes: finalTime
+                        });
+
+                        // Xóa khỏi bể chứa
+                        const idx = unscheduled.findIndex(u => u.index === winner.index);
+                        if (idx !== -1) unscheduled.splice(idx, 1);
+
+                        scheduledAnyInThisMinute = true;
+                        
+                        // Nếu dịch vụ này là song song (occupied time = 0), staff vẫn rảnh trong phút này!
+                        if (isSlotFree(staffTracker[staff.id], currentTime, 1)) {
+                            keepAssigningToStaff = true;
                         }
                     }
-                    // Nhảy 1 phút một lần để check lại
-                    currentTime += 1;
                 }
             }
-            
-            let finalStaff = null;
-            let finalTime = 24 * 60;
-            let finalMachine = null;
 
-            // Ưu tiên tuyệt đối Nhân viên đã từng thực hiện dịch vụ cho Bệnh nhân này trong ngày
-            if (chosenStaffForPriority && earliestPriorityTime < 24 * 60) {
-                finalStaff = chosenStaffForPriority;
-                finalTime = earliestPriorityTime;
-                finalMachine = chosenMachineForPriority;
-            } else if (chosenStaffForEarliest && earliestGlobalTime < 24 * 60) {
-                finalStaff = chosenStaffForEarliest;
-                finalTime = earliestGlobalTime;
-                finalMachine = chosenMachineForEarliest;
+            if (!scheduledAnyInThisMinute) {
+                // Không ai xếp được ở phút này, tua thời gian tới
+                currentTime++;
             }
+        }
 
-            if (finalStaff && finalTime < 24 * 60) {
-                // Đánh dấu nhân viên này đã thực hiện cho bệnh nhân
-                if (!patientAssignedStaff[ma_ba]) {
-                    patientAssignedStaff[ma_ba] = new Set();
-                }
-                patientAssignedStaff[ma_ba].add(finalStaff.id);
-
-                // Book the slot
-                const endTime = finalTime + requiredTime;
-                
-                // Bác sĩ chỉ bị giam khoảng staffOccupiedTime, cộng thêm bufferTime nếu không phải làm song song
-                staffTracker[finalStaff.id].push({ start: finalTime, end: finalTime + staffOccupiedTime + (config.isConcurrent ? 0 : currentServiceBufferTime) });
-                
-                // Bệnh nhân vẫn tính đủ buffer time
-                patientTracker[ma_ba].push({ start: finalTime, end: endTime + currentServiceBufferTime }); 
-                
-                // Máy móc bị giam 100% thời gian (kể cả làm song song), cộng thêm buffer time để máy được vệ sinh/nghỉ ngơi
-                if (finalMachine && finalMachine.MA_MAY) {
-                    machineTracker[finalMachine.MA_MAY as string].push({ start: finalTime, end: endTime + currentServiceBufferTime });
-                }
-
-                scheduledResults.push({
-                    ...task,
-                    nguoi_thuc_hien: finalStaff.ho_ten,
-                    ma_nv: finalStaff.ma_nv,
-                    cchn: (finalStaff.certificates && finalStaff.certificates.length > 0) ? finalStaff.certificates[0].so_cchn : '',
-                    ma_may: finalMachine ? finalMachine.MA_MAY : '',
-                    ten_may: finalMachine ? (finalMachine.TEN_BV || finalMachine.TEN_TB) : '',
-                    bat_dau: formatTime(finalTime),
-                    ket_thuc: formatTime(endTime),
-                    _startMinutes: finalTime // used for sorting later
-                });
+        // 7. Nhặt những ca không thể xếp được (hết giờ)
+        for (const u of unscheduled) {
+            const ma_ba = String(u.task.ma_ba);
+            const shiftPref = patientShifts[ma_ba];
+            if (shiftPref === 'MORNING') {
+                failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
+            } else if (shiftPref === 'AFTERNOON') {
+                failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
             } else {
-                const shiftPref = patientShifts[ma_ba];
-                if (shiftPref === 'MORNING') {
-                    failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
-                } else if (shiftPref === 'AFTERNOON') {
-                    failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
-                } else {
-                    failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
-                }
+                failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
             }
         }
 
