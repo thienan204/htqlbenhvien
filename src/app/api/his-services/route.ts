@@ -5,14 +5,16 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const userHIS = searchParams.get('userHIS');
+        const idHIS = searchParams.get('idHIS');
 
-        if (!userHIS) {
-            return NextResponse.json({ error: 'Thiếu tham số userHIS' }, { status: 400 });
+        if (!userHIS && !idHIS) {
+            return NextResponse.json({ error: 'Thiếu tham số userHIS hoặc idHIS' }, { status: 400 });
         }
 
         // Bước 1: Tìm User -> Staff -> PracticingCertificate
+        const whereClause = idHIS ? { idHIS } : { userHIS: userHIS as string };
         const user = await prisma.user.findUnique({
-            where: { userHIS },
+            where: whereClause,
             include: {
                 staff: {
                     include: {
@@ -76,15 +78,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { userHIS, services } = body;
+        const { userHIS, idHIS, services } = body;
 
-        if (!userHIS || !Array.isArray(services)) {
-            return NextResponse.json({ error: 'Dữ liệu không hợp lệ (yêu cầu userHIS và mảng services)' }, { status: 400 });
+        if ((!userHIS && !idHIS) || !Array.isArray(services)) {
+            return NextResponse.json({ error: 'Dữ liệu không hợp lệ (yêu cầu userHIS/idHIS và mảng services)' }, { status: 400 });
         }
 
         // Bước 1: Tìm User -> Staff -> PracticingCertificate
+        const whereClause = idHIS ? { idHIS } : { userHIS: userHIS as string };
         const user = await prisma.user.findUnique({
-            where: { userHIS },
+            where: whereClause,
             include: {
                 staff: {
                     include: {

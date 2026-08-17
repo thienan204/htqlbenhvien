@@ -13,6 +13,15 @@ interface Props {
 
 export function ApiManagementClient({ groupedEndpoints }: Props) {
     const [searchText, setSearchText] = useState('');
+    const [origin, setOrigin] = useState('');
+    const [basePath, setBasePath] = useState('');
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setOrigin(window.location.origin);
+            setBasePath(window.location.pathname.split('/api-management')[0] || '');
+        }
+    }, []);
 
     const getMethodColor = (method: string) => {
         switch (method) {
@@ -99,8 +108,8 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <LinkOutlined className="text-slate-400" />
-                                                <Text copyable={{ text: `http://localhost:3000${endpoint.path}` }} className="font-mono text-blue-600">
-                                                    http://localhost:3000{endpoint.path}
+                                                <Text copyable={{ text: `${origin}${basePath}${endpoint.path}` }} className="font-mono text-blue-600">
+                                                    {origin}{basePath}{endpoint.path}
                                                 </Text>
                                             </div>
                                             
@@ -135,7 +144,7 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
                                                             {doc.postmanSnippet && (
                                                                 <div className="mt-3 bg-blue-50 border border-blue-200 p-3 rounded-md">
                                                                     <Text className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1 block">🚀 Hướng dẫn dùng Postman:</Text>
-                                                                    <Text className="text-sm text-blue-900 whitespace-pre-line">{doc.postmanSnippet}</Text>
+                                                                    <Text className="text-sm text-blue-900 whitespace-pre-line">{doc.postmanSnippet.replace(/http:\/\/localhost:3000(\/htqlbenhvien)?/g, `${origin}${basePath}`)}</Text>
                                                                 </div>
                                                             )}
                                                             
@@ -143,7 +152,7 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
                                                                 <div className="mt-3 bg-slate-800 border border-slate-700 p-3 rounded-md">
                                                                     <Text className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2 block">💻 Hướng dẫn gọi từ Extension (Javascript):</Text>
                                                                     <pre className="text-slate-300 text-sm overflow-x-auto whitespace-pre-wrap">
-                                                                        {doc.extensionSnippet}
+                                                                        {doc.extensionSnippet.replace(/http:\/\/localhost:3000(\/htqlbenhvien)?/g, `${origin}${basePath}`)}
                                                                     </pre>
                                                                 </div>
                                                             )}
