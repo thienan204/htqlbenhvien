@@ -169,6 +169,144 @@ export default function ClinicalSchedulingPage() {
         ] as [string, any]).sort((a, b) => b[1].patientCount - a[1].patientCount);
     }, [scheduledData]);
 
+    
+    const availableSlotsData = React.useMemo(() => {
+        if (!scheduledData.length || !staffList.length) return [];
+        
+        const timeToMinutes = (timeStr: string) => {
+            if (!timeStr) return 0;
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        const formatMinutes = (minutes: number) => {
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        };
+
+        const currentDeptHours = (selectedDept && deptHours[selectedDept]) || { morningStart: '07:30', morningEnd: '11:30', afternoonStart: '13:30', afternoonEnd: '17:30' };
+
+        const mStart = timeToMinutes(currentDeptHours.morningStart);
+        const mEnd = timeToMinutes(currentDeptHours.morningEnd);
+        const aStart = timeToMinutes(currentDeptHours.afternoonStart);
+        const aEnd = timeToMinutes(currentDeptHours.afternoonEnd);
+        
+        const staffIntervals: Record<string, [number, number][]> = {};
+        scheduledData.forEach((item: any) => {
+            const staffId = item.ma_nv || item.nguoi_thuc_hien;
+            if (!staffIntervals[staffId]) staffIntervals[staffId] = [];
+            const startMin = timeToMinutes(item.bat_dau);
+            const endMin = timeToMinutes(item.ket_thuc);
+            if (startMin < endMin) {
+                staffIntervals[staffId].push([startMin, endMin]);
+            }
+        });
+
+        const mergeIntervals = (intervals: [number, number][]) => {
+            if (!intervals.length) return [];
+            intervals.sort((a, b) => a[0] - b[0]);
+            const merged = [[...intervals[0]]];
+            for (let i = 1; i < intervals.length; i++) {
+                const last = merged[merged.length - 1];
+                const curr = intervals[i];
+                if (curr[0] <= last[1]) {
+                    last[1] = Math.max(last[1], curr[1]);
+                } else {
+                    merged.push([...curr]);
+                }
+            }
+            return merged;
+        };
+
+        const findFreeSlots = (intervals: [number, number][], shiftStart: number, shiftEnd: number) => {
+            const freeSlots = [];
+            let current = shiftStart;
+            for (const [start, end] of intervals) {
+                if (start > current) {
+                    freeSlots.push({ start: current, end: start });
+                }
+                current = Math.max(current, end);
+            }
+            if (current < shiftEnd) {
+                freeSlots.push({ start: current, end: shiftEnd });
+            }
+            return freeSlots.filter(s => (s.end - s.start) >= 10); // Filter out gaps < 10 mins
+        };
+
+        const uniqueStaffs = Array.from(new Set(scheduledData.map((item: any) => item.nguoi_thuc_hien).filter(Boolean)));
+        
+        const result: any[] = [];
+        let keyIndex = 0;
+
+        uniqueStaffs.forEach((staffName: any) => {
+            const staffInfo = staffList.find(s => s.ho_ten === staffName || s.ma_nv === staffName);
+            
+            let isMorning = true;
+            let isAfternoon = true;
+            if (staffInfo) {
+                if (morningStaffs.length > 0 && !morningStaffs.includes(staffInfo.id)) isMorning = false;
+                if (afternoonStaffs.length > 0 && !afternoonStaffs.includes(staffInfo.id)) isAfternoon = false;
+            }
+
+            const intervals = staffIntervals[staffInfo?.ma_nv || staffName] || [];
+            const merged = mergeIntervals(intervals);
+            
+            const morningIntervals = merged.map(i => [Math.max(i[0], mStart), Math.min(i[1], mEnd)]).filter(i => i[0] < i[1]) as [number, number][];
+            const afternoonIntervals = merged.map(i => [Math.max(i[0], aStart), Math.min(i[1], aEnd)]).filter(i => i[0] < i[1]) as [number, number][];
+
+            if (isMorning) {
+                const mFree = findFreeSlots(morningIntervals, mStart, mEnd);
+                mFree.forEach(slot => {
+                    result.push({
+                        key: `slot_${keyIndex++}`,
+                        nguoi_thuc_hien: staffName,
+                        ca: 'Sáng',
+                        thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
+                        do_dai: slot.end - slot.start,
+                        _startMin: slot.start
+                    });
+                });
+            }
+            if (isAfternoon) {
+                const aFree = findFreeSlots(afternoonIntervals, aStart, aEnd);
+                aFree.forEach(slot => {
+                    result.push({
+                        key: `slot_${keyIndex++}`,
+                        nguoi_thuc_hien: staffName,
+                        ca: 'Chiều',
+                        thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
+                        do_dai: slot.end - slot.start,
+                        _startMin: slot.start
+                    });
+                });
+            }
+        });
+
+        result.sort((a, b) => {
+            if (b.do_dai !== a.do_dai) return b.do_dai - a.do_dai;
+            return a._startMin - b._startMin;
+        });
+
+        return result;
+    }, [scheduledData, staffList, selectedDept, deptHours, morningStaffs, afternoonStaffs]);
+
+    const handleExportAvailableSlots = () => {
+        if (!availableSlotsData.length) return message.warning("Không có dữ liệu thời gian rảnh");
+        const exportData = availableSlotsData.map((s, i) => ({
+            'STT': i + 1,
+            'Người thực hiện': s.nguoi_thuc_hien,
+            'Ca': s.ca,
+            'Thời gian rảnh': s.thoi_gian,
+            'Độ dài (phút)': s.do_dai
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        ws['!cols'] = [{wch:5}, {wch:30}, {wch:15}, {wch:20}, {wch:15}];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Lịch rảnh");
+        XLSX.writeFile(wb, `Bang_Thoi_Gian_Ranh_${dayjs().format('DDMMYYYY')}.xlsx`);
+    };
+
     const groupedScheduledData = React.useMemo(() => {
         if (!scheduledData.length) return [];
         
@@ -1834,6 +1972,35 @@ export default function ClinicalSchedulingPage() {
                                         </div>
                                         <div style={{ marginTop: 12, color: '#595959', fontStyle: 'italic' }}>
                                             File Excel xuất ra sẽ giữ nguyên toàn bộ các cột gốc của hệ thống (bao gồm MAHOSOBENHAN, SOPHIEU, v.v.) và <strong>tự động thêm các cột Bắt đầu, Kết thúc, Người thực hiện vào cuối.</strong>
+                                        </div>
+                                    </>
+                                )
+                            },
+                                                        {
+                                key: 'available-slots',
+                                label: <span style={{ color: '#eb2f96', fontWeight: 'bold' }}>Bảng thời gian rảnh</span>,
+                                children: (
+                                    <>
+                                        <Space style={{ marginBottom: 16 }}>
+                                            <Button icon={<FileExcelOutlined />} type="primary" onClick={handleExportAvailableSlots} style={{ background: '#eb2f96', borderColor: '#eb2f96' }}>Tải Excel (Lịch Rảnh)</Button>
+                                        </Space>
+                                        <div style={{ background: '#fff', padding: '20px' }}>
+                                            <div style={{ marginBottom: 12, color: '#595959', fontStyle: 'italic' }}>
+                                                * Bảng này tự động phân tích và liệt kê các khoảng thời gian trống của Bác sĩ sau khi đã xếp lịch xong. Quầy tiếp đón có thể nhìn vào đây để nhận bệnh nhân mới (Walk-in) và gán ngay cho Bác sĩ. Các khoảng trống nhỏ hơn 10 phút đã được tự động ẩn đi.
+                                            </div>
+                                            <Table 
+                                                dataSource={availableSlotsData} 
+                                                columns={[
+                                                    { title: 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', render: (text: string) => <strong style={{color: '#1677ff'}}>{text}</strong> },
+                                                    { title: 'Ca làm việc', dataIndex: 'ca', key: 'ca', render: (text: string) => <Tag color={text === 'Sáng' ? 'orange' : 'blue'}>{text}</Tag> },
+                                                    { title: 'Khoảng thời gian trống', dataIndex: 'thoi_gian', key: 'thoi_gian', render: (text: string) => <strong style={{fontSize: 16}}>{text}</strong> },
+                                                    { title: 'Độ dài', dataIndex: 'do_dai', key: 'do_dai', render: (val: number) => <span style={{color: '#eb2f96', fontWeight: 'bold'}}>{val} phút</span> }
+                                                ]} 
+                                                rowKey="key"
+                                                pagination={{ pageSize: 50 }}
+                                                size="middle"
+                                                bordered
+                                            />
                                         </div>
                                     </>
                                 )
