@@ -28,6 +28,7 @@ export async function GET() {
                 staffId: true,
                 telegram_id: true,
                 userHIS: true,
+                idHIS: true,
                 isAvailable: true,
                 dutyOrder: true,
                 createdAt: true
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     try {
         await requireAdmin();
         const body = await request.json();
-        const { username, password, name, role, ma_khoa, telegram_id, staffId, userHIS } = body;
+        const { username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS } = body;
 
         if (!username || !password || !role) {
             return NextResponse.json({ error: 'Thiếu thông tin bắt buộc (username, password, role)' }, { status: 400 });
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
                 role,
                 telegram_id: telegram_id || null,
                 userHIS: userHIS || null,
+                idHIS: idHIS || null,
                 staffId: staffId || null,
                 ma_khoa: role === 'KHOA' ? ma_khoa : null
             },
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
                 name: true,
                 role: true,
                 userHIS: true,
+                idHIS: true,
                 staffId: true,
                 ma_khoa: true
             }
@@ -97,13 +100,13 @@ export async function PUT(request: Request) {
     try {
         await requireAdmin();
         const body = await request.json();
-        const { id, username, password, name, role, ma_khoa, telegram_id, staffId, userHIS } = body;
+        const { id, username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'Thiếu ID user cần cập nhật' }, { status: 400 });
         }
 
-        const dataToUpdate: any = { username, name, role, ma_khoa: role === 'KHOA' ? ma_khoa : null, telegram_id: telegram_id || null, userHIS: userHIS || null, staffId: staffId || null };
+        const dataToUpdate: any = { username, name, role, ma_khoa: role === 'KHOA' ? ma_khoa : null, telegram_id: telegram_id || null, userHIS: userHIS || null, idHIS: idHIS || null, staffId: staffId || null };
 
         // Nếu có nhập password mới thì hash và cập nhật
         if (password && password.trim() !== '') {
@@ -119,6 +122,7 @@ export async function PUT(request: Request) {
                 name: true,
                 role: true,
                 userHIS: true,
+                idHIS: true,
                 staffId: true,
                 ma_khoa: true
             }

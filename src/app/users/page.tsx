@@ -15,6 +15,7 @@ interface User {
     staffId: string | null;
     telegram_id: string | null;
     userHIS: string | null;
+    idHIS: string | null;
     createdAt: string;
 }
 
@@ -105,6 +106,7 @@ export default function UsersPage() {
                 'Tên đăng nhập hệ thống': user ? user.username : '',
                 'Mật khẩu mới': '',
                 'Tên đăng nhập HIS (userHIS)': user ? (user.userHIS || '') : '',
+                'ID HIS': user ? (user.idHIS || '') : '',
                 'Vai trò (Role)': user ? user.role : 'USER',
                 'Họ tên': staff.ho_ten,
                 'Khoa phòng': staff.department ? staff.department.ten_khoa : staff.ma_khoa,
@@ -230,6 +232,7 @@ export default function UsersPage() {
                 staffId: user.staffId,
                 telegram_id: user.telegram_id,
                 userHIS: user.userHIS,
+                idHIS: user.idHIS,
                 password: '' // Không show password cũ
             });
         } else {
@@ -258,6 +261,12 @@ export default function UsersPage() {
             dataIndex: 'userHIS',
             key: 'userHIS',
             render: (text: string) => text ? <Tag color="purple">{text}</Tag> : '-'
+        },
+        {
+            title: 'ID HIS',
+            dataIndex: 'idHIS',
+            key: 'idHIS',
+            render: (text: string) => text ? <Tag color="blue">{text}</Tag> : '-'
         },
         {
             title: 'Vai trò (Role)',
@@ -312,7 +321,8 @@ export default function UsersPage() {
     const filteredUsers = users.filter(u => {
         const matchText = (u.username?.toLowerCase().includes(searchText.toLowerCase())) || 
                           (u.name && u.name.toLowerCase().includes(searchText.toLowerCase())) ||
-                          (u.userHIS && u.userHIS.toLowerCase().includes(searchText.toLowerCase()));
+                          (u.userHIS && u.userHIS.toLowerCase().includes(searchText.toLowerCase())) ||
+                          (u.idHIS && u.idHIS.toLowerCase().includes(searchText.toLowerCase()));
         const matchRole = filterRole ? u.role === filterRole : true;
         const matchDept = filterDept ? u.ma_khoa === filterDept : true;
         return matchText && matchRole && matchDept;
@@ -414,6 +424,10 @@ export default function UsersPage() {
 
                     <Form.Item name="userHIS" label="Tên đăng nhập HIS (userHIS)">
                         <Input placeholder="Nhập nếu có" />
+                    </Form.Item>
+
+                    <Form.Item name="idHIS" label="ID HIS">
+                        <Input placeholder="Nhập ID HIS nếu có" />
                     </Form.Item>
 
                     <Form.Item name="role" label="Vai trò (Role)" rules={[{ required: true, message: 'Bắt buộc chọn' }]}>
