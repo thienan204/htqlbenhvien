@@ -105,11 +105,11 @@ export default function XmlErrorManager() {
                     // Đánh dấu màu xen kẽ cho các nhóm
                     let currentColorIndex = 0;
                     const groupColors = [
-                        'bg-orange-50/70 hover:bg-orange-100/70', 
-                        'bg-teal-50/70 hover:bg-teal-100/70', 
-                        'bg-rose-50/70 hover:bg-rose-100/70',
-                        'bg-amber-50/70 hover:bg-amber-100/70',
-                        'bg-indigo-50/70 hover:bg-indigo-100/70'
+                        'bg-orange-50/70 chuyende-row', 
+                        'bg-teal-50/70 chuyende-row', 
+                        'bg-rose-50/70 chuyende-row',
+                        'bg-amber-50/70 chuyende-row',
+                        'bg-indigo-50/70 chuyende-row'
                     ];
                     const excelColors = ['FFFCE4D6', 'FFE0F2F1', 'FFFDE0DF', 'FFF4E6CE', 'FFE8EAF6'];
                     
@@ -657,6 +657,19 @@ export default function XmlErrorManager() {
     ];
 
     return (
+        <>
+            <style jsx global>{`
+                .custom-chuyende-table .ant-table-tbody > tr.chuyende-row:hover > td {
+                    background: inherit !important;
+                }
+                .custom-chuyende-table .ant-table-tbody > tr.chuyende-row:hover td {
+                    color: #2563eb !important;
+                }
+                .custom-chuyende-table .ant-table-tbody > tr.chuyende-row:hover td div,
+                .custom-chuyende-table .ant-table-tbody > tr.chuyende-row:hover td span {
+                    color: #2563eb !important;
+                }
+            `}</style>
         <div className="w-full px-4 sm:px-6 py-4 sm:py-6 space-y-6 bg-slate-50/50 min-h-screen pb-12">
             {/* Header & Stats */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
@@ -741,13 +754,13 @@ export default function XmlErrorManager() {
             {/* Table Area */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <Table
+                    className={sourceType === 'CHUYEN_DE' ? 'custom-chuyende-table' : ''}
                     rowSelection={canDelete ? {
                         selectedRowKeys,
                         onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
                     } : undefined}
                     dataSource={filteredErrors}
                     columns={sourceType === 'CHUYEN_DE' ? chuyenDeColumns : columns}
-                    rowClassName={(record) => sourceType === 'CHUYEN_DE' ? (record.groupColor || '') : ''}
                     rowKey="id"
                     bordered={sourceType === 'CHUYEN_DE'}
                     loading={loading}
@@ -834,5 +847,6 @@ export default function XmlErrorManager() {
                 </Form>
             </Modal>
         </div>
+        </>
     );
 }
