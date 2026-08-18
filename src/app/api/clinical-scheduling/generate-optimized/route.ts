@@ -344,16 +344,42 @@ export async function POST(request: Request) {
                     if (candidates.length > 0) {
                         let winner = candidates[0];
                         if (candidates.length > 1) {
-                            if (heuristic === 'LPT') {
-                                // Longest Processing Time First
-                                candidates.sort((a, b) => b.requiredTime - a.requiredTime || a.index - b.index);
-                            } else if (heuristic === 'SPT') {
-                                // Shortest Processing Time First
-                                candidates.sort((a, b) => a.requiredTime - b.requiredTime || a.index - b.index);
-                            } else {
-                                // First Come First Serve
-                                candidates.sort((a, b) => a.index - b.index);
-                            }
+                            candidates.sort((a, b) => {
+                                const maBaA = String(a.task.ma_ba);
+                                const maBaB = String(b.task.ma_ba);
+                                
+                                // 1. Ưu tiên Máy móc (Nút thắt cổ chai)
+                                const machineA = a.requiredMachineCode ? 1 : 0;
+                                const machineB = b.requiredMachineCode ? 1 : 0;
+                                if (machineA !== machineB) return machineB - machineA;
+                                
+                                // 2. Ưu tiên Bám sát Bác sĩ (Affinity)
+                                const sameStaffA = patientAssignedStaff[maBaA]?.has(staff.id) ? 1 : 0;
+                                const sameStaffB = patientAssignedStaff[maBaB]?.has(staff.id) ? 1 : 0;
+                                if (sameStaffA !== sameStaffB) return sameStaffB - sameStaffA;
+                                
+                                // 3. Ưu tiên dứt điểm ca dang dở (Continuity)
+                                const startedA = patientAssignedStaff[maBaA] ? 1 : 0;
+                                const startedB = patientAssignedStaff[maBaB] ? 1 : 0;
+                                if (startedA !== startedB) return startedB - startedA;
+                                
+                                // 4. Ưu tiên lấp khe hẹp cuối giờ
+                                const shiftEnd = currentTime < mEnd ? mEnd : aEnd;
+                                const timeRemaining = shiftEnd - currentTime;
+                                if (timeRemaining <= 30) {
+                                    // Gần hết giờ, ưu tiên ca NGẮN để nhét vừa khe hẹp
+                                    return a.requiredTime - b.requiredTime || a.index - b.index;
+                                }
+                                
+                                // 5. Theo chiến thuật mặc định (LPT/SPT/FCFS)
+                                if (heuristic === 'LPT') {
+                                    return b.requiredTime - a.requiredTime || a.index - b.index;
+                                } else if (heuristic === 'SPT') {
+                                    return a.requiredTime - b.requiredTime || a.index - b.index;
+                                } else {
+                                    return a.index - b.index;
+                                }
+                            });
                             winner = candidates[0];
                         }
 
@@ -366,6 +392,9 @@ export async function POST(request: Request) {
                         
                         staffTracker[staff.id].push({ start: finalTime, end: finalTime + totalStaffOccupiedTime });
                         patientTracker[ma_ba].push({ start: finalTime, end: endTime + winner.currentServiceBufferTime });
+                        
+                        if (!patientAssignedStaff[ma_ba]) patientAssignedStaff[ma_ba] = new Set();
+                        patientAssignedStaff[ma_ba].add(staff.id);
                         
                         if (winner.selectedMachine && winner.selectedMachine.MA_MAY) {
                             machineTracker[winner.selectedMachine.MA_MAY].push({ start: finalTime, end: endTime + winner.currentServiceBufferTime });
