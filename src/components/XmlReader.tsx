@@ -318,8 +318,8 @@ export default function XmlReader() {
         }
         setIsLoadingDB(true);
         try {
-            const fromDateStr = dbDateRange[0].format('YYYYMMDDHHmm');
-            const toDateStr = dbDateRange[1].format('YYYYMMDDHHmm');
+            const fromDateStr = dbDateRange[0].startOf('day').format('YYYYMMDDHHmm');
+            const toDateStr = dbDateRange[1].endOf('day').format('YYYYMMDDHHmm');
             const res = await fetch(`${getBasePath()}/api/xml1/fetch-full?fromDate=${fromDateStr}&toDate=${toDateStr}`);
             
             if (res.ok) {
