@@ -767,6 +767,7 @@ export default function XmlErrorManager() {
                     columns={sourceType === 'CHUYEN_DE' ? chuyenDeColumns : columns}
                     rowClassName={(record) => sourceType === 'CHUYEN_DE' ? (record.groupColor || '') : ''}
                     rowKey="id"
+                    bordered={sourceType === 'CHUYEN_DE'}
                     loading={loading}
                     pagination={{ 
                         defaultPageSize: 15, 
