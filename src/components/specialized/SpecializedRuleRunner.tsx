@@ -37,7 +37,6 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     const [filterKhoa, setFilterKhoa] = useState<string>('');
     const [filterMaGiuong, setFilterMaGiuong] = useState<string>('');
     const [filterTrinhDo, setFilterTrinhDo] = useState<string>('');
-    const [filterNgayRaRange, setFilterNgayRaRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
     const [hide50Percent, setHide50Percent] = useState<boolean>(false);
     const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
     const [filterSentStatus, setFilterSentStatus] = useState<string>('ALL');
@@ -45,7 +44,6 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     // Duplicate Doctor specific state
     const [doctorOrders, setDoctorOrders] = useState<any[]>([]);
     const [isDuplicateDoctorMode, setIsDuplicateDoctorMode] = useState(false);
-    const [filterNgayYlRange, setFilterNgayYlRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
 
     const [deptMap, setDeptMap] = useState<Record<string, string>>({});
     const [staffMap, setStaffMap] = useState<Record<string, { ho_ten: string, trinh_do: string }>>({});
@@ -693,39 +691,11 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         setFilterKhoa('');
         setFilterMaGiuong('');
         setFilterTrinhDo('');
-        setFilterNgayRaRange([null, null]);
         setFilterSentStatus('ALL');
         fetchData();
     };
 
     const getFilteredData = () => {
-        const matchingGroupsByDate = new Set<string>();
-        // Check if user has selected any date range
-        const hasDateRange = filterNgayRaRange && filterNgayRaRange.length === 2 && (filterNgayRaRange[0] || filterNgayRaRange[1]);
-
-        if (hasDateRange) {
-            const startRange = filterNgayRaRange[0] ? filterNgayRaRange[0].startOf('day').toDate() : null;
-            const endRange = filterNgayRaRange[1] ? filterNgayRaRange[1].endOf('day').toDate() : null;
-
-            bedServices.forEach(item => {
-                if (item.NGAY_RA) {
-                    const rowDate = parseDate(item.NGAY_RA);
-
-                    let inRange = true;
-                    if (startRange && rowDate < startRange) inRange = false;
-                    if (endRange && rowDate > endRange) inRange = false;
-
-                    if (inRange) {
-                        if (item.groupId) {
-                            matchingGroupsByDate.add(item.groupId);
-                        } else {
-                            matchingGroupsByDate.add(`ungrouped_${item.key}`);
-                        }
-                    }
-                }
-            });
-        }
-
         let filtered = bedServices.filter(item => {
             const searchMatch = !filterBed ||
                 (item.HO_TEN && item.HO_TEN.toLowerCase().includes(filterBed.toLowerCase())) ||
@@ -746,25 +716,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 (filterSentStatus === 'SENT' && sentRecordsSet.has(String(item.MA_LK))) ||
                 (filterSentStatus === 'UNSENT' && !sentRecordsSet.has(String(item.MA_LK)));
 
-            let ngayRaMatch = true;
-            if (hasDateRange) {
-                const matchesByGroup = item.groupId && matchingGroupsByDate.has(item.groupId);
-                let matchesByRow = false;
-
-                if (item.NGAY_RA) {
-                    const rowDate = parseDate(item.NGAY_RA);
-                    const startRange = filterNgayRaRange[0] ? filterNgayRaRange[0].startOf('day').toDate() : null;
-                    const endRange = filterNgayRaRange[1] ? filterNgayRaRange[1].endOf('day').toDate() : null;
-
-                    matchesByRow = true;
-                    if (startRange && rowDate < startRange) matchesByRow = false;
-                    if (endRange && rowDate > endRange) matchesByRow = false;
-                }
-
-                ngayRaMatch = matchesByGroup || matchesByRow;
-            }
-
-            return searchMatch && khoaMatch && giuongMatch && trinhDoMatch && ngayRaMatch && sentMatch;
+            return searchMatch && khoaMatch && giuongMatch && trinhDoMatch && sentMatch;
         });
 
         if (hide50Percent) {
@@ -1314,57 +1266,12 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     };
 
     const getFilteredDoctorData = () => {
-        const matchingGroupsByDate = new Set<string>();
-        // Check if user has selected any date range
-        const hasDateRange = filterNgayYlRange && filterNgayYlRange.length === 2 && (filterNgayYlRange[0] || filterNgayYlRange[1]);
-
-        if (hasDateRange) {
-            const startRange = filterNgayYlRange[0] ? filterNgayYlRange[0].startOf('day').toDate() : null;
-            const endRange = filterNgayYlRange[1] ? filterNgayYlRange[1].endOf('day').toDate() : null;
-
-            doctorOrders.forEach(item => {
-                if (item.THOI_GIAN_YL) {
-                    const rowDate = parseDate(item.THOI_GIAN_YL);
-
-                    let inRange = true;
-                    if (startRange && rowDate < startRange) inRange = false;
-                    if (endRange && rowDate > endRange) inRange = false;
-
-                    if (inRange) {
-                        if (item.groupId) {
-                            matchingGroupsByDate.add(item.groupId);
-                        } else {
-                            matchingGroupsByDate.add(`ungrouped_${item.key}`);
-                        }
-                    }
-                }
-            });
-        }
-
         const filtered = doctorOrders.filter(item => {
-            let ngayYlMatch = true;
-            if (hasDateRange) {
-                const matchesByGroup = item.groupId && matchingGroupsByDate.has(item.groupId);
-                let matchesByRow = false;
-
-                if (item.THOI_GIAN_YL) {
-                    const rowDate = parseDate(item.THOI_GIAN_YL);
-                    const startRange = filterNgayYlRange[0] ? filterNgayYlRange[0].startOf('day').toDate() : null;
-                    const endRange = filterNgayYlRange[1] ? filterNgayYlRange[1].endOf('day').toDate() : null;
-
-                    matchesByRow = true;
-                    if (startRange && rowDate < startRange) matchesByRow = false;
-                    if (endRange && rowDate > endRange) matchesByRow = false;
-                }
-
-                ngayYlMatch = matchesByGroup || matchesByRow;
-            }
-
             const sentMatch = filterSentStatus === 'ALL' ||
                 (filterSentStatus === 'SENT' && sentRecordsSet.has(String(item.MA_LK))) ||
                 (filterSentStatus === 'UNSENT' && !sentRecordsSet.has(String(item.MA_LK)));
 
-            return ngayYlMatch && sentMatch;
+            return sentMatch;
         });
 
         return filtered;
@@ -1611,16 +1518,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             ]}
                         />
                         <DatePicker.RangePicker
-                            placeholder={["Từ ngày (Ngày chỉ định)", "Đến ngày (Ngày chỉ định)"]}
-                            format="DD/MM/YYYY"
-                            style={{ width: 280 }}
-                            onChange={(dates) => {
-                                setFilterNgayYlRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null]);
-                            }}
-                            allowClear
-                        />
-                        <DatePicker.RangePicker
-                            placeholder={["Từ ngày (Ngày ra)", "Đến ngày (Ngày ra)"]}
+                            placeholder={["Từ ngày (Tải CSDL)", "Đến ngày (Tải CSDL)"]}
                             format="DD/MM/YYYY"
                             style={{ width: 280 }}
                             value={dbDateRange}
@@ -1762,16 +1660,6 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             onChange={(e) => setFilterTrinhDo(e.target.value)}
                             allowClear
                         />
-                        <DatePicker.RangePicker
-                            placeholder={["Từ ngày (Ngày ra)", "Đến ngày (Ngày ra)"]}
-                            format="DD/MM/YYYY"
-                            style={{ width: 280 }}
-                            value={filterNgayRaRange}
-                            onChange={(dates) => {
-                                setFilterNgayRaRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null]);
-                            }}
-                            allowClear
-                        />
                         <Select
                             value={filterSentStatus}
                             onChange={setFilterSentStatus}
@@ -1786,7 +1674,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
                     <div className="flex items-center gap-2 flex-wrap">
                         <DatePicker.RangePicker
-                            placeholder={["Từ ngày (Ngày ra)", "Đến ngày (Ngày ra)"]}
+                            placeholder={["Từ ngày (Tải CSDL)", "Đến ngày (Tải CSDL)"]}
                             format="DD/MM/YYYY"
                             style={{ width: 280 }}
                             value={dbDateRange}
