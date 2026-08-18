@@ -1632,33 +1632,37 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             <Button icon={<ReloadOutlined />} onClick={fetchData}>Tải lại dữ liệu (Local)</Button>
                         )}
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcelDoctor}>Xuất Excel</Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveErrorsLogToDB}
-                            className="bg-red-600 hover:bg-red-700 shadow-md shadow-red-200"
-                            disabled={getFilteredDoctorData().length === 0}
-                        >
-                            Lưu lỗi vào CSDL
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveXmlsToDB}
-                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
-                            disabled={getFilteredDoctorData().length === 0}
-                        >
-                            Lưu DB (XMLVIEW)
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveToServerDoctor}
-                            loading={isSavingDoctor}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
-                            Lưu Excel máy chủ
-                        </Button>
+                        {user?.role === 'ADMIN' && (
+                            <>
+                                <Button
+                                    type="primary"
+                                    icon={<CloudUploadOutlined />}
+                                    onClick={handleSaveErrorsLogToDB}
+                                    className="bg-red-600 hover:bg-red-700 shadow-md shadow-red-200"
+                                    disabled={getFilteredDoctorData().length === 0}
+                                >
+                                    Lưu lỗi vào CSDL
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    icon={<CloudUploadOutlined />}
+                                    onClick={handleSaveXmlsToDB}
+                                    className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                                    disabled={getFilteredDoctorData().length === 0}
+                                >
+                                    Lưu DB (XMLVIEW)
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    icon={<CloudUploadOutlined />}
+                                    onClick={handleSaveToServerDoctor}
+                                    loading={isSavingDoctor}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    Lưu Excel máy chủ
+                                </Button>
+                            </>
+                        )}
                         <Button
                             type="primary"
                             icon={<CloudUploadOutlined />}
@@ -1801,34 +1805,38 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                         >
                             {hide50Percent ? "Đang ẩn cặp 50%" : "Ẩn cặp 50%"}
                         </Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveErrorsLogToDB}
-                            className="bg-red-600 hover:bg-red-700 shadow-md shadow-red-200"
-                            disabled={getFilteredData().length === 0}
-                        >
-                            Lưu lỗi vào CSDL
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveXmlsToDB}
-                            className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
-                            disabled={getFilteredData().length === 0}
-                        >
-                            Lưu DB (XMLVIEW)
-                        </Button>
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
-                        <Button
-                            type="primary"
-                            icon={<CloudUploadOutlined />}
-                            onClick={handleSaveToServer}
-                            loading={isSaving}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
-                            Lưu Excel máy chủ
-                        </Button>
+                        {user?.role === 'ADMIN' && (
+                            <>
+                                <Button
+                                    type="primary"
+                                    icon={<CloudUploadOutlined />}
+                                    onClick={handleSaveErrorsLogToDB}
+                                    className="bg-red-600 hover:bg-red-700 shadow-md shadow-red-200"
+                                    disabled={getFilteredData().length === 0}
+                                >
+                                    Lưu lỗi vào CSDL
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    icon={<CloudUploadOutlined />}
+                                    onClick={handleSaveXmlsToDB}
+                                    className="bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-200"
+                                    disabled={getFilteredData().length === 0}
+                                >
+                                    Lưu DB (XMLVIEW)
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    icon={<CloudUploadOutlined />}
+                                    onClick={handleSaveToServer}
+                                    loading={isSaving}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    Lưu Excel máy chủ
+                                </Button>
+                            </>
+                        )}
                         <Button
                             type="primary"
                             danger
