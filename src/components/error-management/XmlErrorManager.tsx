@@ -454,10 +454,11 @@ export default function XmlErrorManager() {
                 const isCheckingTH = record.chi_tiet_loi?.includes('Trùng mã máy') || record.chi_tiet_loi?.includes('Trùng giường');
                 return (
                     <div className="flex flex-col gap-1.5 text-xs py-2">
-                        {record.ngay_vao && <div><span className="text-slate-400 font-medium w-12 inline-block">Vào NT:</span> <span className="text-slate-700">{dayjs(record.ngay_vao).format('DD/MM/YY HH:mm')}</span></div>}
-                        {record.ngay_ra && <div><span className="text-slate-400 font-medium w-12 inline-block">Ra NT:</span> <span className="text-slate-700">{dayjs(record.ngay_ra).format('DD/MM/YY HH:mm')}</span></div>}
-                        {record.ngay_yl && <div className={isCheckingYL ? "text-red-600 font-bold bg-red-50 p-1 -ml-1 rounded" : ""}><span className="text-slate-400 font-medium w-12 inline-block">Y Lệnh:</span> {dayjs(record.ngay_yl).format('DD/MM/YY HH:mm')}</div>}
-                        {record.ngay_th_yl && <div className={isCheckingTH ? "text-red-600 font-bold bg-red-50 p-1 -ml-1 rounded" : ""}><span className="text-slate-400 font-medium w-12 inline-block">TH YL:</span> {dayjs(record.ngay_th_yl).format('DD/MM/YY HH:mm')}</div>}
+                        {record.ngay_vao && <div><span className="text-slate-400 font-medium w-14 inline-block">Vào NT:</span> <span className="text-slate-700">{dayjs(record.ngay_vao).format('DD/MM/YY HH:mm')}</span></div>}
+                        {record.ngay_ra && <div><span className="text-slate-400 font-medium w-14 inline-block">Ra NT:</span> <span className="text-slate-700">{dayjs(record.ngay_ra).format('DD/MM/YY HH:mm')}</span></div>}
+                        {record.ngay_yl && <div className={isCheckingYL ? "text-red-600 font-bold bg-red-50 p-1 -ml-1 rounded" : ""}><span className="text-slate-400 font-medium w-14 inline-block">Y Lệnh:</span> {dayjs(record.ngay_yl).format('DD/MM/YY HH:mm')}</div>}
+                        {record.ngay_th_yl && <div className={isCheckingTH ? "text-red-600 font-bold bg-red-50 p-1 -ml-1 rounded" : ""}><span className="text-slate-400 font-medium w-14 inline-block">TH YL:</span> {dayjs(record.ngay_th_yl).format('DD/MM/YY HH:mm')}</div>}
+                        {record.ngay_kq && <div className={isCheckingTH ? "text-red-600 font-bold bg-red-50 p-1 -ml-1 rounded" : ""}><span className="text-slate-400 font-medium w-14 inline-block">Ngày KQ:</span> {dayjs(record.ngay_kq).format('DD/MM/YY HH:mm')}</div>}
                     </div>
                 );
             }
