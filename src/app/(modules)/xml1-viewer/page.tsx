@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip, InputNumber, Alert } from 'antd';
+import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip, InputNumber, Alert, Checkbox } from 'antd';
 import { InboxOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, FileTextOutlined, MedicineBoxOutlined, ExperimentOutlined, ProfileOutlined, ToolOutlined, DashboardOutlined, DatabaseOutlined, PlayCircleOutlined, FileExcelOutlined, WarningOutlined, SettingOutlined } from '@ant-design/icons';
 import { addWorkingDays, calculateRemainingTime } from '@/utils/dateUtils';
 import type { UploadProps } from 'antd';
@@ -37,8 +37,9 @@ export default function XmlViewerPage() {
     const [fromDate, setFromDate] = useState<string>('');
     const [toDate, setToDate] = useState<string>('');
     const [errorStatus, setErrorStatus] = useState<string>('ALL');
+    const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
+    const [hasHistory, setHasHistory] = useState<boolean>(false);
     const [isValidating, setIsValidating] = useState(false);
-    
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [selectedRecord, setSelectedRecord] = useState<any>(null);
     const [recordDetails, setRecordDetails] = useState<any>(null);
@@ -66,14 +67,31 @@ export default function XmlViewerPage() {
             }
         };
         fetchConfig();
+
+        const fetchDepartments = async () => {
+            try {
+                const res = await fetch('/api/departments');
+                if (res.ok) {
+                    const data = await res.json();
+                    const map: any = {};
+                    data.forEach((d: any) => map[d.ma_khoa] = d.ten_khoa);
+                    setDepartmentsMap(map);
+                }
+            } catch (e) {
+                console.error("Error fetching departments", e);
+            }
+        };
+        fetchDepartments();
     }, []);
+
+    const [departmentsMap, setDepartmentsMap] = useState<Record<string, string>>({});
 
     const { user } = useAuth();
 
-    const fetchData = async (p = page, s = searchText, fDate = fromDate, tDate = toDate, errStt = errorStatus) => {
+    const fetchData = async (p = page, s = searchText, fDate = fromDate, tDate = toDate, errStt = errorStatus, dept = departmentFilter, hist = hasHistory) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/xml1?page=${p}&limit=${limit}&search=${s}&fromDate=${fDate}&toDate=${tDate}&errorStatus=${errStt}`);
+            const res = await fetch(`/api/xml1?page=${p}&limit=${limit}&search=${s}&fromDate=${fDate}&toDate=${tDate}&errorStatus=${errStt}&maKhoa=${dept}&hasHistory=${hist}`);
             const json = await res.json();
             if (json.data) {
                 setData(json.data);
@@ -96,7 +114,7 @@ export default function XmlViewerPage() {
                 currentSearch = searchParam;
             }
         }
-        fetchData(page, currentSearch, fromDate, toDate, errorStatus);
+        fetchData(page, currentSearch, fromDate, toDate, errorStatus, departmentFilter, hasHistory);
     }, [page]);
 
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -115,7 +133,7 @@ export default function XmlViewerPage() {
         if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         setSearchText(value);
         setPage(1);
-        fetchData(1, value, fromDate, toDate, errorStatus);
+        fetchData(1, value, fromDate, toDate, errorStatus, departmentFilter, hasHistory);
     };
 
     const handleDateChange = (dates: any, dateStrings: [string, string]) => {
@@ -132,13 +150,26 @@ export default function XmlViewerPage() {
         setFromDate(fDate);
         setToDate(tDate);
         setPage(1);
-        fetchData(1, searchText, fDate, tDate, errorStatus);
+        fetchData(1, searchText, fDate, tDate, errorStatus, departmentFilter, hasHistory);
     };
 
     const handleErrorStatusChange = (value: string) => {
         setErrorStatus(value);
         setPage(1);
-        fetchData(1, searchText, fromDate, toDate, value);
+        fetchData(1, searchText, fromDate, toDate, value, departmentFilter, hasHistory);
+    };
+
+    const handleDepartmentChange = (value: string) => {
+        const newValue = value || 'ALL';
+        setDepartmentFilter(newValue);
+        setPage(1);
+        fetchData(1, searchText, fromDate, toDate, errorStatus, newValue, hasHistory);
+    };
+
+    const handleHistoryChange = (checked: boolean) => {
+        setHasHistory(checked);
+        setPage(1);
+        fetchData(1, searchText, fromDate, toDate, errorStatus, departmentFilter, checked);
     };
 
     const handleRunValidation = async () => {
@@ -156,7 +187,7 @@ export default function XmlViewerPage() {
             const json = await res.json();
             if (json.success) {
                 message.success(json.message);
-                fetchData(page, searchText, fromDate, toDate, errorStatus);
+                fetchData(page, searchText, fromDate, toDate, errorStatus, departmentFilter, hasHistory);
                 // Also refresh details if currently viewing one
                 if (selectedRecord) {
                     handleRowClick(selectedRecord);
@@ -525,11 +556,34 @@ export default function XmlViewerPage() {
                                 onChange={handleErrorStatusChange}
                                 style={{ width: 180 }}
                                 options={[
-                                    { value: 'ALL', label: 'Tất cả' },
+                                    { value: 'ALL', label: 'Tất cả trạng thái' },
                                     { value: 'ERROR', label: 'Có lỗi (Cảnh báo)' },
                                     { value: 'VALID', label: 'Hợp lệ' }
                                 ]}
                             />
+                            <Select
+                                placeholder="Lọc theo Khoa"
+                                allowClear
+                                showSearch
+                                style={{ width: 200 }}
+                                optionFilterProp="label"
+                                filterOption={(input, option: any) =>
+                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                }
+                                options={Object.entries(departmentsMap).map(([code, name]) => ({
+                                    value: code,
+                                    label: `${code} - ${name}`
+                                }))}
+                                value={departmentFilter === 'ALL' ? null : departmentFilter}
+                                onChange={handleDepartmentChange}
+                            />
+                            <Checkbox 
+                                checked={hasHistory} 
+                                onChange={(e) => handleHistoryChange(e.target.checked)}
+                                className="mt-1"
+                            >
+                                Lịch sử thay đổi
+                            </Checkbox>
                             <Button icon={<FileTextOutlined />} onClick={handleViewReport}>
                                 Xem báo cáo
                             </Button>

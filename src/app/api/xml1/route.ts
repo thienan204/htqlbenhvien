@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
         const fromDate = searchParams.get('fromDate') || '';
         const toDate = searchParams.get('toDate') || '';
         const errorStatus = searchParams.get('errorStatus') || 'ALL'; // ALL, ERROR, VALID
+        const maKhoa = searchParams.get('maKhoa') || '';
+        const hasHistory = searchParams.get('hasHistory') === 'true';
 
         const skip = (page - 1) * limit;
 
@@ -51,6 +53,24 @@ export async function GET(req: NextRequest) {
             andConditions.push({ hasError: true });
         } else if (errorStatus === 'VALID') {
             andConditions.push({ hasError: false });
+        }
+
+        if (maKhoa && maKhoa !== 'ALL') {
+             andConditions.push({
+                 OR: [
+                     { xml7Records: { some: { MA_KHOA_RV: maKhoa } } },
+                     { MA_KHOA: maKhoa, xml7Records: { none: {} } }
+                 ]
+             });
+        }
+
+        if (hasHistory) {
+             const historyGroup = await (prisma as any).xml1.groupBy({
+                 by: ['MA_LK'],
+                 having: { MA_LK: { _count: { gt: 1 } } }
+             });
+             const historyMaLks = historyGroup.map((g: any) => g.MA_LK);
+             andConditions.push({ MA_LK: { in: historyMaLks } });
         }
 
         if (andConditions.length > 0) {

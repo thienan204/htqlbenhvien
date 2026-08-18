@@ -1452,7 +1452,7 @@ export default function XmlReader() {
                 if (xml7Data.length > 0) {
                     // Lấy mã khoa ở bản ghi cuối cùng của XML7 (Khoa ra viện)
                     const lastRecord = xml7Data[xml7Data.length - 1];
-                    codes = [String(lastRecord.MA_KHOA || '')];
+                    codes = [String(lastRecord.MA_KHOA_RV || lastRecord.MA_KHOA || '')];
                 } else {
                     // Nếu không có XML7 thì lấy MA_KHOA từ XML1
                     codes = String(r.summary?.MA_KHOA || '').split(';').filter(Boolean);
