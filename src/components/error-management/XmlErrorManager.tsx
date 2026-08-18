@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Tag, Modal, Form, Input, Select, message, Segmented, Card, Space, Statistic, Typography } from 'antd';
+import { Table, Button, Tag, Modal, Form, Input, Select, message, Segmented, Card, Space, Statistic, Typography, Tabs } from 'antd';
 const { Text } = Typography;
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -679,82 +679,64 @@ export default function XmlErrorManager() {
             </div>
 
             {/* Filter Bar */}
-            <Card className="shadow-sm border-slate-200 rounded-2xl bg-white" styles={{ body: { padding: '20px' } }}>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <Space size="middle" className="flex-wrap">
-                        <Segmented
-                            options={[
-                                { label: '🔴 Chờ xử lý', value: 'PENDING' },
-                                { label: '✅ Đã xử lý', value: 'EXPLAINED' },
-                                { label: 'Tất cả trạng thái', value: 'ALL' }
-                            ]}
-                            value={statusFilter}
-                            onChange={(val: any) => setStatusFilter(val)}
-                            className="bg-slate-100 p-1 font-medium"
-                        />
-                        <Segmented
-                            options={[
-                                { label: 'Lỗi XML', value: 'XML' },
-                                { label: 'Lỗi Chuyên đề trùng thời gian', value: 'CHUYEN_DE' }
-                            ]}
-                            value={sourceType}
-                            onChange={(val: any) => {
-                                setSourceType(val);
-                                setChuyenDeFilter('ALL');
-                            }}
-                            className="bg-slate-100 p-1 font-medium"
-                        />
-                        {sourceType === 'CHUYEN_DE' && (
-                            <Select
-                                value={chuyenDeFilter}
-                                onChange={setChuyenDeFilter}
-                                style={{ width: 300 }}
+            <Tabs
+                type="card"
+                activeKey={sourceType}
+                onChange={(val: any) => {
+                    setSourceType(val);
+                    setChuyenDeFilter('ALL');
+                }}
+                className="mb-4 font-medium custom-tabs"
+                tabBarExtraContent={
+                    <div className="flex gap-4 items-center mb-1">
+                        <Space size="middle" className="flex-wrap">
+                            <Segmented
                                 options={[
-                                    { value: 'ALL', label: 'Tất cả Lỗi Chuyên đề trùng thời gian' },
-                                    ...uniqueChuyenDeRules.map(rule => ({ value: rule, label: rule }))
+                                    { label: '🔴 Chờ xử lý', value: 'PENDING' },
+                                    { label: '✅ Đã xử lý', value: 'EXPLAINED' },
+                                    { label: 'Tất cả trạng thái', value: 'ALL' }
                                 ]}
-                                className="font-medium"
+                                value={statusFilter}
+                                onChange={(val: any) => setStatusFilter(val)}
+                                className="bg-slate-100 p-1 font-medium"
                             />
-                        )}
-                    </Space>
-                    
-                    <Space size="small" className="flex-wrap">
-                        <Button  
-                            onClick={() => router.push('/error-management/xml-summary')}
-                            className="rounded-lg font-medium"
-                        >
-                            Báo cáo Tổng hợp
-                        </Button>
-                        <Button 
-                            type="primary" 
-                            icon={<FileExcelOutlined />} 
-                            onClick={handleExportExcel}
-                            className="bg-green-600 hover:bg-green-700 rounded-lg font-medium shadow-md shadow-green-200"
-                        >
-                            Xuất Excel
-                        </Button>
-                        {canDelete && selectedRowKeys.length > 0 && (
-                            <Button 
-                                danger 
-                                type="primary" 
-                                onClick={() => handleDelete(selectedRowKeys as string[])}
-                                className="rounded-lg font-medium shadow-md shadow-red-200"
+                            {sourceType === 'CHUYEN_DE' && (
+                                <Select
+                                    value={chuyenDeFilter}
+                                    onChange={setChuyenDeFilter}
+                                    style={{ width: 300 }}
+                                    options={[
+                                        { value: 'ALL', label: 'Tất cả Lỗi Chuyên đề trùng thời gian' },
+                                        ...uniqueChuyenDeRules.map(rule => ({ value: rule, label: rule }))
+                                    ]}
+                                    className="font-medium"
+                                />
+                            )}
+                        </Space>
+                        
+                        <Space size="small" className="flex-wrap">
+                            <Button  
+                                onClick={() => router.push('/error-management/xml-summary')}
+                                className="rounded-lg font-medium"
                             >
-                                Xóa ({selectedRowKeys.length})
+                                Báo cáo Tổng hợp
                             </Button>
-                        )}
-                    </Space>
-                </div>
-                
-                {paramKhoa && (
-                    <div className="mt-5 pt-4 border-t border-slate-100">
-                        <Tag closable onClose={() => router.push(`/error-management/xml-errors?sourceType=${sourceType}`)} color="blue" className="text-sm py-1.5 px-3 m-0 rounded-lg border-blue-200">
-                            Đang lọc theo Khoa: <b className="text-blue-700">{departments[paramKhoa] || paramKhoa}</b> 
-                            {paramDetail && <span className="ml-2 text-slate-500">| Lỗi: <b className="text-slate-700">{paramDetail}</b></span>}
-                        </Tag>
+                            <Button 
+                                type="primary" 
+                                icon={<FileExcelOutlined />} 
+                                onClick={handleExportExcel}
+                                className="bg-green-600 hover:bg-green-700 rounded-lg font-medium shadow-md shadow-green-200"
+                            >
+                                Xuất Excel
+                            </Button>
+                        </Space>
                     </div>
-                )}
-            </Card>
+                }
+                items={[
+                    { key: 'XML', label: 'Lỗi XML' },
+                    { key: 'CHUYEN_DE', label: 'Lỗi Chuyên đề trùng thời gian' }
+                ]}
+            />
 
             {/* Table Area */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
