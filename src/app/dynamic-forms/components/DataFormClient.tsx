@@ -325,12 +325,12 @@ export default function DataFormClient({ formId }: { formId: string }) {
     });
 
     const handleExportExcel = () => {
-        if (!formConfig || dataRows.length === 0) {
+        if (!formConfig || filteredData.length === 0) {
             message.warning('Không có dữ liệu để xuất');
             return;
         }
 
-        const exportData = dataRows.map(row => {
+        const exportData = filteredData.map(row => {
             const flatRow: any = {};
             formConfig.config.forEach((field: any) => {
                 flatRow[field.label] = row.data[field.name] || '';
