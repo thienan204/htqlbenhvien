@@ -5,7 +5,7 @@ import { Card, Table, Button, Space, message, Spin, Typography, Upload, Popconfi
 import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined, UploadOutlined, PrinterOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
-import { Input, Switch, Tag } from 'antd';
+import { Input, Switch, Tag, Select } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
@@ -19,6 +19,60 @@ export default function DataFormClient({ formId }: { formId: string }) {
     const [formConfig, setFormConfig] = useState<any>(null);
     const [dataRows, setDataRows] = useState<any[]>([]);
     const [searchText, setSearchText] = useState('');
+    const [imageFilter, setImageFilter] = useState<'ALL' | 'NO_IMAGE' | 'HAS_IMAGE' | 'BROKEN' | 'NO_IMAGE_OR_BROKEN'>('ALL');
+    const [brokenRowIds, setBrokenRowIds] = useState<Set<string>>(new Set());
+    const [scanned, setScanned] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+
+    useEffect(() => {
+        if (!formConfig || dataRows.length === 0 || scanned || isScanning) return;
+        
+        const imageFields = formConfig.config?.filter((f: any) => f.type === 'image').map((f: any) => f.name);
+        if (!imageFields || imageFields.length === 0) return;
+
+        const checkImage = (url: string) => new Promise<boolean>((resolve) => {
+            const img = new window.Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = url;
+        });
+
+        const runScan = async () => {
+            setIsScanning(true);
+            const broken = new Set<string>();
+            const queue = [...dataRows];
+            
+            const processChunk = async () => {
+                if (queue.length === 0) {
+                    setScanned(true);
+                    setIsScanning(false);
+                    return;
+                }
+                const batch = queue.splice(0, 10);
+                await Promise.all(batch.map(async (row: any) => {
+                    let isBroken = false;
+                    for (const field of imageFields) {
+                        if (row.data[field]) {
+                            const urls = String(row.data[field]).split(',').map(u => u.trim()).filter(Boolean);
+                            for (const url of urls) {
+                                const ok = await checkImage(url);
+                                if (!ok) {
+                                    isBroken = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (isBroken) broken.add(row.id);
+                }));
+                setBrokenRowIds(new Set(broken));
+                setTimeout(processChunk, 100);
+            };
+            
+            processChunk();
+        };
+        runScan();
+    }, [dataRows, formConfig, scanned, isScanning]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -232,6 +286,31 @@ export default function DataFormClient({ formId }: { formId: string }) {
 
     // Lọc dữ liệu theo ô tìm kiếm
     const filteredData = dataRows.filter((row: any) => {
+        if (imageFilter !== 'ALL') {
+            const imageFields = formConfig?.config?.filter((f: any) => f.type === 'image').map((f: any) => f.name) || [];
+            if (imageFields.length > 0) {
+                let hasAnyImageUrl = false;
+                for (const field of imageFields) {
+                    if (row.data[field] && row.data[field].trim() !== '') {
+                        hasAnyImageUrl = true;
+                        break;
+                    }
+                }
+                
+                const isBroken = brokenRowIds.has(row.id);
+                
+                if (imageFilter === 'NO_IMAGE') {
+                    if (hasAnyImageUrl) return false;
+                } else if (imageFilter === 'HAS_IMAGE') {
+                    if (!hasAnyImageUrl || isBroken) return false;
+                } else if (imageFilter === 'BROKEN') {
+                    if (!hasAnyImageUrl || !isBroken) return false;
+                } else if (imageFilter === 'NO_IMAGE_OR_BROKEN') {
+                    if (hasAnyImageUrl && !isBroken) return false;
+                }
+            }
+        }
+
         if (!searchText) return true;
         const searchLower = searchText.toLowerCase().trim();
         
@@ -496,7 +575,7 @@ export default function DataFormClient({ formId }: { formId: string }) {
             </div>
 
             <Card className="shadow-sm">
-                <div className="mb-4">
+                <div className="mb-4 flex items-center gap-4">
                     <Input 
                         placeholder="Tìm kiếm theo họ tên, viết tắt (VD: hmc), email, SDT..." 
                         prefix={<SearchOutlined className="text-gray-400" />}
@@ -506,6 +585,20 @@ export default function DataFormClient({ formId }: { formId: string }) {
                         size="large"
                         className="max-w-md border-blue-200 hover:border-blue-400 focus:border-blue-500"
                     />
+                    <Select
+                        size="large"
+                        value={imageFilter}
+                        onChange={setImageFilter}
+                        style={{ width: 250 }}
+                        options={[
+                            { value: 'ALL', label: 'Tất cả trạng thái ảnh' },
+                            { value: 'HAS_IMAGE', label: 'Có ảnh bình thường' },
+                            { value: 'NO_IMAGE_OR_BROKEN', label: 'Ảnh bị lỗi hoặc chưa upload' },
+                            { value: 'NO_IMAGE', label: 'Chưa upload ảnh' },
+                            { value: 'BROKEN', label: 'Ảnh bị lỗi' }
+                        ]}
+                    />
+                    {isScanning && <Spin size="small" />}
                 </div>
                 <Table
                     columns={tableColumns}
