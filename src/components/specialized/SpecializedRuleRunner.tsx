@@ -10,6 +10,7 @@ import { saveAs } from 'file-saver';
 import { getDepartments } from '@/actions/department';
 import { getBasePath } from '@/utils/config';
 import dayjs from 'dayjs';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DISTINCT_COLORS = [
     '#ffebee', '#e3f2fd', '#e8f5e9', '#f3e5f5', '#fff3e0', 
@@ -23,6 +24,7 @@ interface SpecializedRuleRunnerProps {
 }
 
 export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerProps) {
+    const { user } = useAuth();
     const [records, setRecords] = useState<ExtendedHosoRecord[]>([]);
     const [loading, setLoading] = useState(true);
     // Generic logic results
@@ -1626,7 +1628,9 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             allowClear
                         />
                         <Button type="primary" icon={<CloudDownloadOutlined />} onClick={fetchDataFromDB} className="bg-green-600 hover:bg-green-700">Tải từ CSDL</Button>
-                        <Button icon={<ReloadOutlined />} onClick={fetchData}>Tải lại dữ liệu (Local)</Button>
+                        {user?.role === 'ADMIN' && (
+                            <Button icon={<ReloadOutlined />} onClick={fetchData}>Tải lại dữ liệu (Local)</Button>
+                        )}
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcelDoctor}>Xuất Excel</Button>
                         <Button
                             type="primary"
@@ -1786,7 +1790,9 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             allowClear
                         />
                         <Button type="primary" icon={<CloudDownloadOutlined />} onClick={fetchDataFromDB} className="bg-green-600 hover:bg-green-700">Tải từ CSDL</Button>
-                        <Button icon={<ReloadOutlined />} onClick={handleReload}>Tải lại (Local)</Button>
+                        {user?.role === 'ADMIN' && (
+                            <Button icon={<ReloadOutlined />} onClick={handleReload}>Tải lại (Local)</Button>
+                        )}
                         <Button 
                             icon={<FilterOutlined />} 
                             onClick={() => setHide50Percent(!hide50Percent)}
