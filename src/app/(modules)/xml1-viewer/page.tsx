@@ -284,7 +284,8 @@ export default function XmlViewerPage() {
                 setUploadProgress(100);
 
                 if (res.status === 413) {
-                    throw new Error('File tải lên quá lớn (vượt giới hạn của hệ thống/Nginx). Vui lòng chia nhỏ file ZIP.');
+                    const fileSizeMB = file instanceof File ? (file.size / 1024 / 1024).toFixed(2) : "Không xác định";
+                    throw new Error(`Dung lượng file tải lên (${fileSizeMB} MB) quá lớn nên bị hệ thống chặn. Nginx thường giới hạn ở mức 50MB hoặc thấp hơn. Vui lòng chia nhỏ thành nhiều file ZIP gọn nhẹ hơn (khoảng 300 - 500 file mỗi ZIP) rồi tải lên lần lượt.`);
                 }
 
                 let json;

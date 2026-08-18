@@ -108,6 +108,25 @@ export async function POST(req: NextRequest) {
                         const rawXml1Data = xmlDataMap['XML1'][0];
                         const xml1Data = normalizeDataForModel(rawXml1Data, 'Xml1');
                         
+                        // Lấy MA_KHOA chuẩn (Ưu tiên XML7 MA_KHOA_RV -> XML1 MA_KHOA_RV -> XML1 MA_KHOA)
+                        let finalMaKhoa = xml1Data.MA_KHOA;
+                        
+                        if (xmlDataMap['XML7'] && xmlDataMap['XML7'].length > 0) {
+                            const xml7Records = xmlDataMap['XML7'];
+                            for (let j = xml7Records.length - 1; j >= 0; j--) {
+                                if (xml7Records[j].MA_KHOA_RV) {
+                                    finalMaKhoa = String(xml7Records[j].MA_KHOA_RV);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!finalMaKhoa && rawXml1Data.MA_KHOA_RV) {
+                            finalMaKhoa = String(rawXml1Data.MA_KHOA_RV);
+                        }
+                        
+                        xml1Data.MA_KHOA = finalMaKhoa;
+                        
                         const newXml1 = await (prisma as any).xml1.create({
                             data: {
                                 importBatchId,
