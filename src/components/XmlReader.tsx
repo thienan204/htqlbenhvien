@@ -351,8 +351,14 @@ export default function XmlReader() {
                 // Chạy kiểm tra lỗi mặc định sẽ tự động chạy qua useEffect khi records thay đổi
                 message.success(`Đã tải ${data.length} hồ sơ từ CSDL.`);
             } else {
-                const err = await res.json();
-                message.error(`Lỗi: ${err.error}`);
+                const isJson = res.headers.get('content-type')?.includes('application/json');
+                if (isJson) {
+                    const err = await res.json();
+                    message.error(`Lỗi: ${err.error}`);
+                } else {
+                    await res.text(); // consume the body
+                    message.error(`Lỗi máy chủ (Vượt quá dung lượng tải). Vui lòng chọn khoảng thời gian ngắn hơn.`);
+                }
             }
         } catch (error: any) {
             console.error("Error loading data from DB:", error);
@@ -1044,31 +1050,49 @@ export default function XmlReader() {
 
     const proceedSaveToDBForViewer = async (targetRecords: ExtendedHosoRecord[]) => {
         try {
-            message.loading({ content: 'Đang gửi dữ liệu...', key: 'saveXMLDB' });
+            message.loading({ content: `Đang gửi dữ liệu (0/${targetRecords.length})...`, key: 'saveXMLDB' });
             
-            const payload = targetRecords.map(r => {
-                return {
+            const CHUNK_SIZE = 50;
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < targetRecords.length; i += CHUNK_SIZE) {
+                const chunk = targetRecords.slice(i, i + CHUNK_SIZE);
+                const payload = chunk.map(r => ({
                     id: r.id || r.summary?.MA_LK,
                     summary: r.summary,
                     groups: r.groups,
-                };
-            });
+                }));
 
-            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-            const formData = new FormData();
-            formData.append('file', blob, 'filtered_records.json');
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                const formData = new FormData();
+                formData.append('file', blob, 'filtered_records.json');
 
-            const res = await fetch('/api/xml-import-json', {
-                method: 'POST',
-                body: formData
-            });
+                const res = await fetch('/api/xml-import-json', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            if (res.ok) {
-                const data = await res.json();
-                message.success({ content: data.message || 'Bắt đầu lưu vào CSDL.', key: 'saveXMLDB' });
+                if (res.ok) {
+                    successCount += chunk.length;
+                    message.loading({ content: `Đang gửi dữ liệu (${successCount}/${targetRecords.length})...`, key: 'saveXMLDB' });
+                } else {
+                    errorCount += chunk.length;
+                    const isJson = res.headers.get('content-type')?.includes('application/json');
+                    if (isJson) {
+                        const err = await res.json();
+                        console.error('Lưu chunk thất bại:', err);
+                    } else {
+                        const text = await res.text();
+                        console.error('Lỗi máy chủ/Nginx trả về dạng HTML (có thể do quá tải):', text.substring(0, 200));
+                    }
+                }
+            }
+
+            if (errorCount === 0) {
+                message.success({ content: `Đã hoàn tất lưu ${successCount} hồ sơ vào CSDL.`, key: 'saveXMLDB' });
             } else {
-                const err = await res.json();
-                message.error({ content: `Lỗi: ${err.error || 'Có lỗi xảy ra'}`, key: 'saveXMLDB' });
+                message.warning({ content: `Đã lưu ${successCount} hồ sơ. Có ${errorCount} hồ sơ bị lỗi khi lưu do file quá nặng.`, key: 'saveXMLDB' });
             }
         } catch (error: any) {
             message.error({ content: `Lỗi kết nối: ${error.message}`, key: 'saveXMLDB' });
