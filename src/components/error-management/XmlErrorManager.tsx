@@ -559,13 +559,13 @@ export default function XmlErrorManager() {
                 
                 <div className="flex gap-4 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0">
                     <Card className="flex-1 min-w-[140px] shadow-sm border-slate-200 rounded-2xl bg-white" styles={{ body: { padding: '16px 24px' } }}>
-                        <Statistic title={<span className="text-slate-500 font-medium">Tổng hồ sơ lỗi</span>} value={stats.total} valueStyle={{ color: '#1e293b', fontWeight: 700 }} />
+                        <Statistic title={<span className="text-slate-500 font-medium">Tổng hồ sơ lỗi</span>} value={stats.total} styles={{ content: { color: '#1e293b', fontWeight: 700 } }} />
                     </Card>
                     <Card className="flex-1 min-w-[140px] shadow-sm border-orange-100 rounded-2xl bg-orange-50/50" styles={{ body: { padding: '16px 24px' } }}>
-                        <Statistic title={<span className="text-orange-600 font-medium">Chờ xử lý</span>} value={stats.pending} valueStyle={{ color: '#ea580c', fontWeight: 700 }} />
+                        <Statistic title={<span className="text-orange-600 font-medium">Chờ xử lý</span>} value={stats.pending} styles={{ content: { color: '#ea580c', fontWeight: 700 } }} />
                     </Card>
                     <Card className="flex-1 min-w-[140px] shadow-sm border-green-100 rounded-2xl bg-green-50/50" styles={{ body: { padding: '16px 24px' } }}>
-                        <Statistic title={<span className="text-green-600 font-medium">Đã khắc phục</span>} value={stats.resolved} valueStyle={{ color: '#16a34a', fontWeight: 700 }} />
+                        <Statistic title={<span className="text-green-600 font-medium">Đã khắc phục</span>} value={stats.resolved} styles={{ content: { color: '#16a34a', fontWeight: 700 } }} />
                     </Card>
                 </div>
             </div>
