@@ -1595,9 +1595,9 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
     if (isDuplicateDoctorMode) {
         return (
             <div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="text-lg font-bold text-slate-700">Kiểm tra Trùng Bác Sĩ (Cùng Y Lệnh)</div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col items-start gap-4">
+                    <div className="text-lg font-bold text-slate-700 w-full border-b pb-2">Kiểm tra Trùng Bác Sĩ (Cùng Y Lệnh)</div>
+                    <div className="flex items-center gap-2 flex-wrap w-full">
                         <Select
                             value={filterSentStatus}
                             onChange={setFilterSentStatus}
@@ -1724,8 +1724,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             <div className="space-y-4">
                 {/* Header Section */}
                 {/* Header Section */}
-                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex flex-row items-center gap-2">
+                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col items-start gap-4">
+                    <div className="flex flex-row items-center gap-2 flex-wrap w-full">
                         <Input
                             prefix={<SearchOutlined className="text-slate-400" />}
                             placeholder="Tìm kiếm..."
