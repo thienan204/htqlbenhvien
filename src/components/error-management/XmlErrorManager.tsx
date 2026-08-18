@@ -426,14 +426,18 @@ export default function XmlErrorManager() {
             title: 'Bác sĩ / Máy', key: 'bs_may', width: 140,
             render: (_: any, record: any) => (
                 <div className="flex flex-col gap-0.5">
-                    {record.ten_bac_si && <div className="text-indigo-700 font-semibold text-xs leading-tight" title="Bác sĩ">{record.ten_bac_si}</div>}
-                    {record.ma_may && <div className="text-purple-700 font-semibold text-xs leading-tight" title="Máy/Giường">Mã: {record.ma_may}</div>}
-                    {!record.ten_bac_si && !record.ma_may && '-'}
+                    {record.ten_bac_si && record.ten_bac_si !== 'null' && <div className="text-indigo-700 font-semibold text-xs leading-tight" title="Bác sĩ">{record.ten_bac_si}</div>}
+                    {record.ma_may && record.ma_may !== 'null' && <div className="text-purple-700 font-semibold text-xs leading-tight" title="Máy/Giường">Mã: {record.ma_may}</div>}
+                    {(!record.ten_bac_si || record.ten_bac_si === 'null') && (!record.ma_may || record.ma_may === 'null') && '-'}
                 </div>
             )
         },
         {
-            title: 'Y Lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: 120,
+            title: 'Ngày Y Lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: 120,
+            render: (text: string) => text ? <span className="font-medium text-slate-700">{dayjs(text).format('DD/MM/YY HH:mm')}</span> : '-'
+        },
+        {
+            title: 'Ngày TH YL', dataIndex: 'ngay_th_yl', key: 'ngay_th_yl', width: 120,
             render: (text: string) => text ? <span className="font-medium text-slate-700">{dayjs(text).format('DD/MM/YY HH:mm')}</span> : '-'
         },
         {
