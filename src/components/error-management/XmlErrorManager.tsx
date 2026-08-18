@@ -233,7 +233,7 @@ export default function XmlErrorManager() {
 
             const dynamicFields = {
                 'Người báo': nguoiBaoName,
-                'Loại lỗi': sourceType === 'XML' ? 'Lỗi XML' : 'Lỗi Chuyên đề',
+                'Loại lỗi': sourceType === 'XML' ? 'Lỗi XML' : 'Lỗi Chuyên đề trùng thời gian',
                 'Tên chuyên đề': ruleName,
                 'Mã máy/Giường': selectedErrorForIT.ma_may || '',
                 'Chi tiết vi phạm': tenLoiGoc,
@@ -588,7 +588,7 @@ export default function XmlErrorManager() {
                         <Segmented
                             options={[
                                 { label: 'Lỗi XML', value: 'XML' },
-                                { label: 'Lỗi Chuyên đề', value: 'CHUYEN_DE' }
+                                { label: 'Lỗi Chuyên đề trùng thời gian', value: 'CHUYEN_DE' }
                             ]}
                             value={sourceType}
                             onChange={(val: any) => {
@@ -603,7 +603,7 @@ export default function XmlErrorManager() {
                                 onChange={setChuyenDeFilter}
                                 style={{ width: 300 }}
                                 options={[
-                                    { value: 'ALL', label: 'Tất cả Lỗi Chuyên đề' },
+                                    { value: 'ALL', label: 'Tất cả Lỗi Chuyên đề trùng thời gian' },
                                     ...uniqueChuyenDeRules.map(rule => ({ value: rule, label: rule }))
                                 ]}
                                 className="font-medium"
