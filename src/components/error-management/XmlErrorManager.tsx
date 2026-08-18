@@ -505,7 +505,7 @@ export default function XmlErrorManager() {
                             }
                         }}
                     >
-                        {isAdmin ? 'Xử lý' : '💬 Phản hồi'}
+                        {isAdmin ? 'Xử lý' : 'Gửi CNTT'}
                     </Button>
                 </div>
             )
@@ -639,7 +639,7 @@ export default function XmlErrorManager() {
                             }
                         }}
                     >
-                        {isAdmin ? 'Xử lý' : '💬 Phản hồi'}
+                        {isAdmin ? 'Xử lý' : 'Gửi CNTT'}
                     </Button>
                     
                     {canDelete && (
