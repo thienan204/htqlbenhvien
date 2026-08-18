@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         let finalPermissions: string[] = [];
 
         // Hardcode admin account bypass
-        if (username === 'admin' && password === '123456') {
+        if (username.toLowerCase() === 'admin' && password === '123456') {
             finalUserId = 'admin-hardcoded';
             finalUserName = 'Quản trị viên';
             finalRole = 'ADMIN';
@@ -30,10 +30,10 @@ export async function POST(request: Request) {
             const user = await prisma.user.findFirst({
                 where: {
                     OR: [
-                        { username },
-                        { userHIS: username },
-                        { staff: { cccd: username } },
-                        { staff: { ma_nv: username } }
+                        { username: { equals: username, mode: 'insensitive' } },
+                        { userHIS: { equals: username, mode: 'insensitive' } },
+                        { staff: { cccd: { equals: username, mode: 'insensitive' } } },
+                        { staff: { ma_nv: { equals: username, mode: 'insensitive' } } }
                     ]
                 },
             });
