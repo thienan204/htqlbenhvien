@@ -149,7 +149,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
     const fetchDataFromDB = async () => {
         if (!dbDateRange[0] || !dbDateRange[1]) {
-            message.warning("Vui lòng chọn Từ ngày - Đến ngày để tải dữ liệu từ CSDL (định dạng ngày sinh YYYYMMDD)");
+            message.warning("Vui lòng chọn Từ ngày - Đến ngày để tải dữ liệu từ CSDL");
             return;
         }
         setLoading(true);
@@ -1618,7 +1618,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             allowClear
                         />
                         <DatePicker.RangePicker
-                            placeholder={["Từ ngày (CSDL)", "Đến ngày (CSDL)"]}
+                            placeholder={["Từ ngày (Ngày ra)", "Đến ngày (Ngày ra)"]}
                             format="DD/MM/YYYY"
                             style={{ width: 280 }}
                             value={dbDateRange}
@@ -1778,7 +1778,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
                     <div className="flex items-center gap-2 flex-wrap">
                         <DatePicker.RangePicker
-                            placeholder={["Từ ngày (CSDL)", "Đến ngày (CSDL)"]}
+                            placeholder={["Từ ngày (Ngày ra)", "Đến ngày (Ngày ra)"]}
                             format="DD/MM/YYYY"
                             style={{ width: 280 }}
                             value={dbDateRange}
