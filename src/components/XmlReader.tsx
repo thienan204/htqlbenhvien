@@ -1445,7 +1445,19 @@ export default function XmlReader() {
 
         if (headerDepartmentFilter) {
             result = result.filter(r => {
-                const codes = String(r.summary?.MA_KHOA || '').split(';');
+                const xml7Group = r.groups?.find(g => g.type === 'XML7');
+                const xml7Data = xml7Group?.data || [];
+                
+                let codes: string[] = [];
+                if (xml7Data.length > 0) {
+                    // Lấy mã khoa ở bản ghi cuối cùng của XML7 (Khoa ra viện)
+                    const lastRecord = xml7Data[xml7Data.length - 1];
+                    codes = [String(lastRecord.MA_KHOA || '')];
+                } else {
+                    // Nếu không có XML7 thì lấy MA_KHOA từ XML1
+                    codes = String(r.summary?.MA_KHOA || '').split(';').filter(Boolean);
+                }
+                
                 return codes.includes(headerDepartmentFilter);
             });
         }
