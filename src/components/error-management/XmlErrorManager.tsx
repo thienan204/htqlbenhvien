@@ -409,6 +409,107 @@ export default function XmlErrorManager() {
         return { total, pending, resolved };
     }, [filteredErrors]);
 
+
+    const chuyenDeColumns = [
+        {
+            title: 'Mã LK', dataIndex: 'ma_lk', key: 'ma_lk', width: 110,
+            render: (text: string) => <span className="font-semibold text-blue-600">{text || '-'}</span>
+        },
+        { title: 'Mã BN', dataIndex: 'ma_bn', key: 'ma_bn', width: 100 },
+        { title: 'Họ Tên BN', dataIndex: 'ho_ten', key: 'ho_ten', width: 160, className: 'uppercase font-bold text-blue-800' },
+        { title: 'Khoa', dataIndex: 'ten_khoa', key: 'ten_khoa', width: 150, ellipsis: true },
+        {
+            title: 'Tên DV / Thuốc', dataIndex: 'ten_dv', key: 'ten_dv', width: 220, ellipsis: true,
+            render: (text: string) => <span className="font-medium">{text || '-'}</span>
+        },
+        {
+            title: 'Bác sĩ / Máy', key: 'bs_may', width: 140,
+            render: (_: any, record: any) => {
+                if (record.ten_bac_si) return <div className="text-indigo-700 font-semibold">{record.ten_bac_si}</div>;
+                if (record.ma_may) return <div className="text-purple-700 font-semibold">{record.ma_may}</div>;
+                return '-';
+            }
+        },
+        {
+            title: 'Y Lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: 120,
+            render: (text: string) => text ? <span className="font-medium text-slate-700">{dayjs(text).format('DD/MM/YY HH:mm')}</span> : '-'
+        },
+        {
+            title: 'Ngày KQ', dataIndex: 'ngay_kq', key: 'ngay_kq', width: 120,
+            render: (text: string) => text ? <span className="font-medium text-slate-700">{dayjs(text).format('DD/MM/YY HH:mm')}</span> : '-'
+        },
+        {
+            title: 'Khoảng trùng', dataIndex: 'khoang_thoi_gian_trung', key: 'khoang_thoi_gian_trung', width: 170,
+            render: (text: string) => text ? <div className="text-red-600 font-bold bg-white/60 p-1.5 border border-red-200 rounded leading-tight">{text}</div> : '-'
+        },
+        {
+            title: 'Chi tiết lỗi', dataIndex: 'chi_tiet_loi', key: 'chi_tiet_loi', width: 200,
+            render: (text: string) => <div className="text-red-700 font-medium whitespace-pre-wrap text-xs">{text || '-'}</div>
+        },
+        {
+            title: 'Trao đổi & Xử lý',
+            key: 'exchange',
+            width: 250,
+            render: (_: any, record: any) => (
+                <div className="flex flex-col gap-1 py-1">
+                    {record.departmentNote ? (
+                        <div className="bg-blue-50/80 border border-blue-100 p-2 rounded-lg shadow-sm">
+                            <div className="text-[11px] font-bold text-blue-800 mb-1 flex items-center gap-1">✉ Khoa giải trình:</div>
+                            <div className="text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">{record.departmentNote}</div>
+                        </div>
+                    ) : (
+                        <div className="text-slate-400 text-[11px] italic px-1">Chưa giải trình</div>
+                    )}
+                    {record.adminNote && (
+                        <div className="bg-green-50/80 border border-green-100 p-2 rounded-lg mt-1 shadow-sm">
+                            <div className="text-[11px] font-bold text-green-700 mb-1 flex items-center gap-1">✔ CNTT / Admin:</div>
+                            <div className="text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">{record.adminNote}</div>
+                        </div>
+                    )}
+                </div>
+            )
+        },
+        {
+            title: 'Thao tác',
+            key: 'action',
+            width: 120,
+            fixed: 'right' as const,
+            render: (_: any, record: any) => (
+                <div className="flex flex-col gap-1.5 py-1">
+                    <Tag 
+                        color={record.status === 'PENDING' ? 'warning' : 'success'} 
+                        className="w-full text-center m-0 py-0.5 font-semibold border-transparent text-xs"
+                    >
+                        {record.status === 'PENDING' ? '⏳ Chờ xử lý' : '✓ Đã xử lý'}
+                    </Tag>
+                    <Button 
+                        size="small" 
+                        type={record.status === 'PENDING' ? 'primary' : 'default'}
+                        className={record.status === 'PENDING' ? "bg-blue-600 hover:bg-blue-700 text-xs" : "bg-white text-xs"}
+                        onClick={() => {
+                            if (!isAdmin) {
+                                setSelectedErrorForIT(record);
+                                itForm.resetFields();
+                                if (user?.staffId) itForm.setFieldsValue({ nguoi_bao_id: user.staffId });
+                                setIsITModalVisible(true);
+                            } else {
+                                setSelectedError(record);
+                                form.setFieldsValue({
+                                    status: record.status,
+                                    departmentNote: record.departmentNote,
+                                    adminNote: record.adminNote
+                                });
+                                setIsModalVisible(true);
+                            }
+                        }}
+                    >
+                        {isAdmin ? 'Xử lý' : '💬 Phản hồi'}
+                    </Button>
+                </div>
+            )
+        }
+    ];
+
     const columns = [
         {
             title: 'Hồ sơ Bệnh nhân',
@@ -657,7 +758,8 @@ export default function XmlErrorManager() {
                         onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
                     } : undefined}
                     dataSource={filteredErrors}
-                    columns={columns}
+                    columns={sourceType === 'CHUYEN_DE' ? chuyenDeColumns : columns}
+                    rowClassName={(record) => sourceType === 'CHUYEN_DE' ? (record.groupColor || '') : ''}
                     rowKey="id"
                     loading={loading}
                     pagination={{ 
