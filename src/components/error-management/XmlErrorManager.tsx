@@ -424,11 +424,13 @@ export default function XmlErrorManager() {
         },
         {
             title: 'Bác sĩ / Máy', key: 'bs_may', width: 140,
-            render: (_: any, record: any) => {
-                if (record.ten_bac_si) return <div className="text-indigo-700 font-semibold">{record.ten_bac_si}</div>;
-                if (record.ma_may) return <div className="text-purple-700 font-semibold">{record.ma_may}</div>;
-                return '-';
-            }
+            render: (_: any, record: any) => (
+                <div className="flex flex-col gap-0.5">
+                    {record.ten_bac_si && <div className="text-indigo-700 font-semibold text-xs leading-tight" title="Bác sĩ">{record.ten_bac_si}</div>}
+                    {record.ma_may && <div className="text-purple-700 font-semibold text-xs leading-tight" title="Máy/Giường">Mã: {record.ma_may}</div>}
+                    {!record.ten_bac_si && !record.ma_may && '-'}
+                </div>
+            )
         },
         {
             title: 'Y Lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: 120,
