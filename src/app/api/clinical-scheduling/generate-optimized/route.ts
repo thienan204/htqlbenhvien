@@ -270,6 +270,19 @@ export async function POST(request: Request) {
             }
         }
 
+        // Tạo danh sách ưu tiên theo buổi
+        const morningPriorityStaffs = [...availableStaff].sort((a, b) => {
+            const aIsMorning = morningStaffs.includes(a.id) ? 1 : 0;
+            const bIsMorning = morningStaffs.includes(b.id) ? 1 : 0;
+            return bIsMorning - aIsMorning;
+        });
+
+        const afternoonPriorityStaffs = [...availableStaff].sort((a, b) => {
+            const aIsAfternoon = afternoonStaffs.includes(a.id) ? 1 : 0;
+            const bIsAfternoon = afternoonStaffs.includes(b.id) ? 1 : 0;
+            return bIsAfternoon - aIsAfternoon;
+        });
+
         // 6. Mô phỏng sự kiện (Event-driven / Greedy) - Quét theo từng phút
         let currentTime = mStart;
         while (unscheduled.length > 0 && currentTime < aEnd) {
@@ -280,8 +293,10 @@ export async function POST(request: Request) {
 
             let scheduledAnyInThisMinute = false;
 
+            const currentStaffList = currentTime < mEnd ? morningPriorityStaffs : afternoonPriorityStaffs;
+
             // Xử lý từng nhân viên đang rảnh
-            for (const staff of availableStaff) {
+            for (const staff of currentStaffList) {
                 let keepAssigningToStaff = true;
                 
                 while (keepAssigningToStaff) {
@@ -301,12 +316,6 @@ export async function POST(request: Request) {
                         if (shiftPref === 'AFTERNOON' && currentTime < aStart) continue;
 
                         // Chặn theo ca Nhân viên
-                        const isMorningTime = currentTime < mEnd;
-                        const isAfternoonTime = currentTime >= aStart;
-                        
-                        if (isMorningTime && morningStaffs.length > 0 && !morningStaffs.includes(staff.id)) continue;
-                        if (isAfternoonTime && afternoonStaffs.length > 0 && !afternoonStaffs.includes(staff.id)) continue;
-
                         const staffShiftPref = staffShifts[staff.id];
                         if (staffShiftPref === 'MORNING' && currentTime >= mEnd) continue;
                         if (staffShiftPref === 'AFTERNOON' && currentTime < aStart) continue;
