@@ -32,7 +32,7 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, heuristic = 'LPT' } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, morningStaffs = [], afternoonStaffs = [], heuristic = 'LPT' } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -301,6 +301,12 @@ export async function POST(request: Request) {
                         if (shiftPref === 'AFTERNOON' && currentTime < aStart) continue;
 
                         // Chặn theo ca Nhân viên
+                        const isMorningTime = currentTime < mEnd;
+                        const isAfternoonTime = currentTime >= aStart;
+                        
+                        if (isMorningTime && morningStaffs.length > 0 && !morningStaffs.includes(staff.id)) continue;
+                        if (isAfternoonTime && afternoonStaffs.length > 0 && !afternoonStaffs.includes(staff.id)) continue;
+
                         const staffShiftPref = staffShifts[staff.id];
                         if (staffShiftPref === 'MORNING' && currentTime >= mEnd) continue;
                         if (staffShiftPref === 'AFTERNOON' && currentTime < aStart) continue;
