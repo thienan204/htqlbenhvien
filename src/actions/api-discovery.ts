@@ -54,9 +54,9 @@ const API_DOCS_DB: Record<string, Record<string, ApiDoc>> = {
     },
     '/api/his-services': {
         'GET': {
-            description: 'Lấy danh sách dịch vụ bác sĩ được thực hiện dựa vào tên đăng nhập HIS (userHIS) hoặc ID HIS (idHIS). Tham số idHIS sẽ được ưu tiên. API sẽ tự động map thông tin -> CCHN -> Các dịch vụ được phép thực hiện.',
+            description: 'Lấy danh sách dịch vụ bác sĩ được thực hiện dựa vào tên đăng nhập HIS (userHIS) hoặc ID HIS (idHIS). Tham số idHIS sẽ được ưu tiên. userHIS không phân biệt chữ hoa chữ thường. Kết quả trả về danh sách dịch vụ (services) và mã thông tin chức danh (chucDanhCode), trình độ (trinhDoCode) của nhân viên.',
             headers: { 'Content-Type': 'application/json' },
-            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/his-services?idHIS=123 (hoặc ?userHIS=admin) vào Postman, chọn Method GET để xem danh sách dịch vụ.'
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/his-services?idHIS=123 (hoặc ?userHIS=admin) vào Postman, chọn Method GET để xem danh sách dịch vụ kèm theo mã Trình độ/Chức danh.'
         },
         'POST': {
             description: 'Thêm mới (cấp phép) hàng loạt mã dịch vụ vào CCHN của bác sĩ dựa trên tên đăng nhập HIS (userHIS) hoặc ID HIS (idHIS). Các mã đã có sẽ tự động bị bỏ qua.',

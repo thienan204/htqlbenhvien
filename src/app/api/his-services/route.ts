@@ -12,12 +12,13 @@ export async function GET(request: Request) {
         }
 
         // Bước 1: Tìm User -> Staff -> PracticingCertificate
-        const whereClause = idHIS ? { idHIS } : { userHIS: userHIS as string };
-        const user = await prisma.user.findUnique({
-            where: whereClause,
+        const user = await prisma.user.findFirst({
+            where: idHIS ? { idHIS } : { userHIS: { equals: userHIS as string, mode: 'insensitive' } },
             include: {
                 staff: {
                     include: {
+                        trinh_do_ref: true,
+                        chuc_danh_ref: true,
                         certificates: {
                             where: { isActive: true },
                             orderBy: { createdAt: 'desc' }
@@ -64,6 +65,10 @@ export async function GET(request: Request) {
         return NextResponse.json({
             success: true,
             userHIS,
+            trinhDo: user.staff.trinh_do_ref?.name || null,
+            trinhDoCode: user.staff.trinh_do_ref?.code || null,
+            chucDanh: user.staff.chuc_danh_ref?.name || null,
+            chucDanhCode: user.staff.chuc_danh_ref?.code || null,
             cchnList,
             totalServices: services.length,
             services
@@ -85,9 +90,8 @@ export async function POST(request: Request) {
         }
 
         // Bước 1: Tìm User -> Staff -> PracticingCertificate
-        const whereClause = idHIS ? { idHIS } : { userHIS: userHIS as string };
-        const user = await prisma.user.findUnique({
-            where: whereClause,
+        const user = await prisma.user.findFirst({
+            where: idHIS ? { idHIS } : { userHIS: { equals: userHIS as string, mode: 'insensitive' } },
             include: {
                 staff: {
                     include: {
