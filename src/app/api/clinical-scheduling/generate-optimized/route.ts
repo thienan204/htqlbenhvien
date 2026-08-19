@@ -32,7 +32,7 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, morningStaffs = [], afternoonStaffs = [], heuristic = 'LPT' } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, morningStaffs = [], afternoonStaffs = [], savedSchedules = [], heuristic = 'LPT' } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -177,6 +177,35 @@ export async function POST(request: Request) {
         const failedResults = [];
         const patientAssignedStaff: Record<string, Set<string>> = {};
 
+        // --- PRE-LOAD TRACKERS WITH ALL SAVED SCHEDULES ---
+        // Block out all time slots that were previously saved, regardless of whether they appear in the new Excel file or not.
+        savedSchedules.forEach((saved: any) => {
+            const sStart = parseTime(saved.bat_dau);
+            const sEnd = parseTime(saved.ket_thuc);
+            const ma_nv = saved.ma_nv;
+            const ma_may = saved.ma_may;
+            const ma_ba = saved.ma_ba;
+            
+            if (ma_nv) {
+                if (!staffTracker[ma_nv]) staffTracker[ma_nv] = [];
+                staffTracker[ma_nv].push({ start: sStart, end: sEnd });
+                if (!patientAssignedStaff[ma_ba]) patientAssignedStaff[ma_ba] = new Set();
+                patientAssignedStaff[ma_ba].add(ma_nv);
+            }
+            if (ma_may) {
+                if (!machineTracker[ma_may]) machineTracker[ma_may] = [];
+                machineTracker[ma_may].push({ start: sStart, end: sEnd });
+            }
+            if (ma_ba) {
+                if (!patientTracker[ma_ba]) patientTracker[ma_ba] = [];
+                patientTracker[ma_ba].push({ start: sStart, end: sEnd });
+            }
+        });
+
+        // --- SEQUENTIAL MATCHING LOGIC ---
+        // Biến danh sách savedSchedules thành một mảng clone để có thể 'gạch sổ'
+        const availableSavedSchedules = [...savedSchedules];
+
         // 5. Chuẩn bị danh sách dịch vụ chờ xếp lịch (Unscheduled Pool)
         const unscheduled = [];
         for (let i = 0; i < services.length; i++) {
@@ -250,6 +279,39 @@ export async function POST(request: Request) {
                         minStartMinutes = prescriptionMinutes;
                     }
                 }
+            }
+
+            // --- SEQUENTIAL MATCH FINDER ---
+            const soPhieu = String(task.so_phieu || task.SOPHIEU || '');
+            let matchedSavedSchedule = null;
+            if (soPhieu) {
+                const matchIndex = availableSavedSchedules.findIndex(
+                    (s: any) => s.so_phieu === soPhieu && String(s.ma_dich_vu) === ma_dich_vu
+                );
+                if (matchIndex !== -1) {
+                    matchedSavedSchedule = availableSavedSchedules[matchIndex];
+                    // Gạch sổ (Xóa khỏi danh sách đối chiếu để ca tiếp theo không lấy trùng)
+                    availableSavedSchedules.splice(matchIndex, 1);
+                }
+            }
+
+            // Nếu đã có lịch lưu, đẩy thẳng vào scheduledResults, bỏ qua unscheduled
+            if (matchedSavedSchedule) {
+                const sStart = parseTime(matchedSavedSchedule.bat_dau);
+                
+                scheduledResults.push({
+                    ...task,
+                    nguoi_thuc_hien: matchedSavedSchedule.nguoi_thuc_hien,
+                    ma_nv: matchedSavedSchedule.ma_nv,
+                    ma_may: matchedSavedSchedule.ma_may,
+                    ten_may: matchedSavedSchedule.ten_may,
+                    bat_dau: matchedSavedSchedule.bat_dau,
+                    ket_thuc: matchedSavedSchedule.ket_thuc,
+                    _startMinutes: sStart,
+                    is_saved: true // Cờ báo hiệu là dữ liệu bảo lưu
+                });
+                
+                continue; // Chuyển sang dịch vụ tiếp theo
             }
 
             unscheduled.push({

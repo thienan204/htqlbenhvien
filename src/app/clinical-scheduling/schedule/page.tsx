@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip } from 'antd';
-import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined, TableOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
 import { useAuth } from '@/contexts/AuthContext';
@@ -122,11 +122,14 @@ export default function ClinicalSchedulingPage() {
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     
     const [scheduledData, setScheduledData] = useState<any[]>([]);
+    const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
+    const [loadingSaved, setLoadingSaved] = useState(false);
     const [failedData, setFailedData] = useState<any[]>([]);
     
     const [loading, setLoading] = useState(false);
     const [generatingOptimized, setGeneratingOptimized] = useState(false);
     const [heuristic, setHeuristic] = useState('LPT');
+    const [useSavedSchedule, setUseSavedSchedule] = useState(false);
     const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
     const [staffList, setStaffList] = useState<any[]>([]);
     const [enableStaffMapping, setEnableStaffMapping] = useState(false);
@@ -661,6 +664,16 @@ export default function ClinicalSchedulingPage() {
                     }
                 })
                 .catch(console.error);
+
+            // Fetch saved schedules
+            setLoadingSaved(true);
+            fetch(`/api/clinical-scheduling/get-schedule?date=${selectedDate}&maKhoa=${selectedDept}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) setSavedSchedules(data.schedules || []);
+                })
+                .catch(console.error)
+                .finally(() => setLoadingSaved(false));
         }
     }, [selectedDate, selectedDept]);
 
@@ -818,6 +831,29 @@ export default function ClinicalSchedulingPage() {
         }
     };
 
+
+
+
+
+    const handleSaveSchedule = async (schedule: any) => {
+        try {
+            const res = await fetch('/api/clinical-scheduling/save-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: selectedDate, maKhoa: selectedDept, schedules: schedule })
+            });
+            const data = await res.json();
+            if (data.success) {
+                message.success('Đã lưu lịch thành công vào hệ thống!');
+                setSavedSchedules(schedule);
+            } else {
+                message.error('Lỗi khi lưu: ' + data.message);
+            }
+        } catch (e) {
+            message.error('Lỗi khi lưu lịch');
+        }
+    };
+
     const handleGenerateSchedule = async () => {
         if (!selectedDate || !selectedDept) {
             message.error("Vui lòng chọn ngày và Khoa/Phòng");
@@ -850,6 +886,7 @@ export default function ClinicalSchedulingPage() {
                     services: filteredData,
                     patientShifts,
                     staffShifts,
+                    savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {}
                 })
             });
@@ -902,6 +939,7 @@ export default function ClinicalSchedulingPage() {
                     services: filteredData,
                     patientShifts,
                     staffShifts,
+                    savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
                     heuristic
                 })
@@ -1679,6 +1717,15 @@ export default function ClinicalSchedulingPage() {
 
                                             <p style={{ color: '#595959', marginBottom: 16 }}>Hệ thống đã sẵn sàng tính toán lịch cho <strong>{selectedServices.length}</strong> loại dịch vụ đã chọn.</p>
                                             <Space style={{ marginTop: 8 }}>
+                                                <Tooltip title="Nếu check, hệ thống sẽ đối chiếu với lịch đã lưu trong Cơ sở dữ liệu để tránh xếp đè vào các khung giờ bác sĩ đã có lịch (Phù hợp để xếp lịch nối tiếp Sáng - Chiều). Nếu bỏ check, hệ thống sẽ tính toán lại từ đầu như một ngày trống.">
+                                                    <Checkbox 
+                                                        checked={useSavedSchedule} 
+                                                        onChange={(e) => setUseSavedSchedule(e.target.checked)}
+                                                        style={{ marginRight: 8, fontWeight: 'bold', color: '#1890ff' }}
+                                                    >
+                                                        Kế thừa lịch đã lưu
+                                                    </Checkbox>
+                                                </Tooltip>
                                                 <Tooltip title="Thuật toán CŨ: Bốc từng bệnh nhân và xếp lịch liền mạch cho họ từ sáng tới chiều. Ưu tiên: Bệnh nhân không phải chờ đợi. Nhược điểm: Bác sĩ có thể bị thủng lỗ rỗng.">
                                                     <Button 
                                                         type="primary" 
@@ -1886,12 +1933,17 @@ export default function ClinicalSchedulingPage() {
                                 label: 'Người thực hiện',
                                 children: (
                                     <>
-                                        <Space style={{ marginBottom: 16 }}>
-
-                                            <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Tải Excel</Button>
-                                            <Button icon={<FileExcelOutlined />} style={{ color: '#eb2f96', borderColor: '#eb2f96' }} onClick={() => handleExportExcelTabFormat2(groupedScheduledData, 'DanhSachTheoBacSi')}>Tải Excel (Mẫu 2)</Button>
-                                            <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveExcelToServer(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Lưu Excel</Button>
-                                        </Space>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                                            <Space>
+                                                <Button icon={<FileExcelOutlined />} onClick={() => handleExportExcelTab(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Tải Excel</Button>
+                                                <Button icon={<FileExcelOutlined />} style={{ color: '#eb2f96', borderColor: '#eb2f96' }} onClick={() => handleExportExcelTabFormat2(groupedScheduledData, 'DanhSachTheoBacSi')}>Tải Excel (Mẫu 2)</Button>
+                                                <Button type="primary" icon={<SaveOutlined />} loading={savingReport} onClick={() => handleSaveExcelToServer(groupedScheduledData, resultColumns, 'DanhSachTheoBacSi')}>Lưu Excel</Button>
+                                            </Space>
+                                            <Space>
+                                                <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }} icon={<SaveOutlined />} loading={loading} onClick={() => handleSaveSchedule(scheduledData)}>Lưu vào CSDL</Button>
+                                                <Button type="default" icon={<TableOutlined />} onClick={() => window.open(`/htqlbenhvien/clinical-scheduling/saved-schedules?date=${selectedDate}&maKhoa=${selectedDept}`, '_blank')}>Xem Lịch Đã Lưu (Tab mới)</Button>
+                                            </Space>
+                                        </div>
                                         <div id="print-doctor" style={{ background: '#fff', padding: '20px' }}>
                                             <div className="print-header" style={{ display: 'none', marginBottom: 20 }}>
                                                 <h2 style={{ textAlign: 'center' }}>SỞ Y TẾ TỈNH LẠNG SƠN<br/>BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN</h2>
@@ -2258,6 +2310,7 @@ export default function ClinicalSchedulingPage() {
                     </Col>
                 </Row>
             </Modal>
+
         </div>
     );
 }

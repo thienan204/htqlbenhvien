@@ -284,6 +284,38 @@ export async function POST(request: Request) {
                 continue;
             }
 
+
+            // --- SEQUENTIAL MATCH FINDER ---
+            const soPhieu = String(task.so_phieu || task.SOPHIEU || '');
+            let matchedSavedSchedule = null;
+            if (soPhieu) {
+                const matchIndex = availableSavedSchedules.findIndex(
+                    (s: any) => s.so_phieu === soPhieu && String(s.ma_dich_vu) === ma_dich_vu
+                );
+                if (matchIndex !== -1) {
+                    matchedSavedSchedule = availableSavedSchedules[matchIndex];
+                    availableSavedSchedules.splice(matchIndex, 1);
+                }
+            }
+
+            if (matchedSavedSchedule) {
+                const sStart = parseTime(matchedSavedSchedule.bat_dau);
+                
+                scheduledResults.push({
+                    ...task,
+                    nguoi_thuc_hien: matchedSavedSchedule.nguoi_thuc_hien,
+                    ma_nv: matchedSavedSchedule.ma_nv,
+                    ma_may: matchedSavedSchedule.ma_may,
+                    ten_may: matchedSavedSchedule.ten_may,
+                    bat_dau: matchedSavedSchedule.bat_dau,
+                    ket_thuc: matchedSavedSchedule.ket_thuc,
+                    _startMinutes: sStart,
+                    is_saved: true
+                });
+                
+                continue;
+            }
+
             let minStartMinutes = mStart;
             if (task.thoi_gian_chi_dinh) {
                 const timeStr = String(task.thoi_gian_chi_dinh).trim();

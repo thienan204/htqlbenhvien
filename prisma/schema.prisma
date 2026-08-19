@@ -1702,3 +1702,24 @@ model ExtensionConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+model ClinicalScheduleRecord {
+  id              String   @id @default(cuid())
+  so_phieu        String   // Số phiếu chỉ định
+  ma_ba           String   // Mã bệnh án
+  ten_bn          String   // Tên bệnh nhân
+  ma_dich_vu      String   // Mã dịch vụ
+  ten_dich_vu     String   // Tên dịch vụ
+  ma_khoa         String   // Mã khoa
+  ngay_thuc_hien  String   // Ngày thực hiện (YYYY-MM-DD)
+  bat_dau         String   // Giờ bắt đầu (HH:mm)
+  ket_thuc        String   // Giờ kết thúc (HH:mm)
+  nguoi_thuc_hien String   // Tên người thực hiện
+  ma_nv           String   // Mã nhân viên
+  ma_may          String?  // Mã máy
+  ten_may         String?  // Tên máy
+  trang_thai      String   @default("SCHEDULED")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([ngay_thuc_hien, ma_khoa])
+}
