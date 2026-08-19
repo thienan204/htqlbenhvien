@@ -32,7 +32,8 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {} } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, savedSchedules = [] } = body;
+        const availableSavedSchedules = [...savedSchedules];
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
