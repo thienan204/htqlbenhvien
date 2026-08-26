@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, FileType, CheckCircle, AlertCircle, RefreshCw, Search, History, Download, Filter, GitCompare, HelpCircle } from 'lucide-react';
-import { Tabs, Table, Input, Button, Tag, Space, Typography, Select, Modal, Switch, DatePicker, Collapse, Alert } from 'antd';
+import { Tabs, Table, Input, Button, Tag, Space, Typography, Select, Modal, Switch, DatePicker, Collapse, Alert, message, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getBasePath } from '@/utils/config';
 import * as xlsx from 'xlsx';
@@ -28,6 +28,42 @@ export default function HoSoDaGuiPage() {
     const [compareResult, setCompareResult] = useState<any>(null);
     const [compareError, setCompareError] = useState<string | null>(null);
     const [showInstructions, setShowInstructions] = useState(false);
+    const [isExportingDiff, setIsExportingDiff] = useState(false);
+
+    const handleExportDiffExcel = async () => {
+        if (!compareResult || !compareResult.details || compareResult.details.diffMatches.length === 0) return;
+        setIsExportingDiff(true);
+        message.loading({ content: 'Đang tạo file Excel...', key: 'exportDiff' });
+        try {
+            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/export-diff-excel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ diffMatches: compareResult.details.diffMatches })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Lỗi xuất file');
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'HoSoLechChiPhi.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            
+            message.success({ content: 'Xuất file thành công!', key: 'exportDiff', duration: 3 });
+        } catch (error: any) {
+            console.error(error);
+            message.error({ content: error.message || 'Lỗi tải file', key: 'exportDiff' });
+        } finally {
+            setIsExportingDiff(false);
+        }
+    };
     
     // --- COMPARE FILTER STATES ---
     const [compareFilterModalVisible, setCompareFilterModalVisible] = useState(false);
@@ -985,15 +1021,24 @@ export default function HoSoDaGuiPage() {
             </div>
 
             <Modal
-                title="Tùy chọn lọc dữ liệu đối chiếu"
+                title={
+                    <div className="flex items-center gap-2">
+                        Tùy chọn lọc dữ liệu đối chiếu
+                        <Tooltip title={<span>Hệ thống sẽ lọc những hồ sơ thỏa mãn các điều kiện trên <b>chỉ ở trên phần mềm</b> trước khi thực hiện đối chiếu chéo.<br/>(Toàn bộ dữ liệu trong file Excel tải lên sẽ được giữ nguyên để đem đi đối chiếu).</span>}>
+                            <HelpCircle size={16} className="text-slate-400 cursor-pointer hover:text-slate-600" />
+                        </Tooltip>
+                    </div>
+                }
                 open={compareFilterModalVisible}
+                width={800}
+                style={{ top: 30 }}
                 onOk={handleCompare}
                 onCancel={() => setCompareFilterModalVisible(false)}
                 okText="Bắt đầu đối chiếu"
                 cancelText="Hủy bỏ"
                 okButtonProps={{ className: 'bg-indigo-600' }}
             >
-                <div className="py-4 flex flex-col gap-4">
+                <div className="py-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Tình trạng hồ sơ (Trạng thái HS)</label>
                         <Select
@@ -1028,10 +1073,8 @@ export default function HoSoDaGuiPage() {
                             }}
                         />
                     </div>
-                    <div className="text-sm text-slate-500 bg-slate-50 p-3 rounded mt-2">
-                        Hệ thống sẽ lọc những hồ sơ thỏa mãn các điều kiện trên <b>chỉ ở trên phần mềm</b> trước khi thực hiện đối chiếu chéo. (Toàn bộ dữ liệu trong file Excel tải lên sẽ được giữ nguyên để đem đi đối chiếu).
-                    </div>
-                    
+                </div>
+                <div className="flex flex-col">
                     {excelHeaders.length > 0 && (
                         <div className="mt-4 border-t pt-4">
                             <h4 className="font-semibold text-slate-700 mb-3">Cấu hình Map Cột Excel</h4>
@@ -1104,7 +1147,19 @@ export default function HoSoDaGuiPage() {
 
                     {compareResult.details.diffMatches.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">Hồ sơ lệch thông tin / chi phí</h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-800">Hồ sơ lệch thông tin / chi phí</h3>
+                                <Button 
+                                    type="primary" 
+                                    danger
+                                    icon={<Download size={16} />} 
+                                    loading={isExportingDiff}
+                                    onClick={handleExportDiffExcel}
+                                    className="flex items-center gap-2"
+                                >
+                                    Xuất Excel Lệch Chi Phí
+                                </Button>
+                            </div>
                             {(() => {
                                 const flatDiffMatches: any[] = [];
                                 compareResult.details.diffMatches.forEach((m: any, idx: number) => {
