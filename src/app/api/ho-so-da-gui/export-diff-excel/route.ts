@@ -17,9 +17,10 @@ export async function POST(request: Request) {
 
         // Định nghĩa cột
         sheet.columns = [
-            { header: 'STT', key: 'stt', width: 5 },
-            { header: 'Nguồn', key: 'nguon', width: 15 },
-            { header: 'Họ Tên', key: 'hoTen', width: 25 },
+            { header: 'STT', key: 'stt', width: 6 },
+            { header: 'Nguồn', key: 'nguon', width: 18 },
+            { header: 'Mã BN', key: 'maBN', width: 15 },
+            { header: 'Họ Tên', key: 'hoTen', width: 22 },
             { header: 'Ngày Sinh', key: 'ngaySinh', width: 15 },
             { header: 'Giới Tính', key: 'gioiTinh', width: 10 },
             { header: 'Mã Bệnh', key: 'maBenh', width: 10 },
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
             const r1 = sheet.addRow({
                 stt: stt,
                 nguon: 'Mẫu 01/BH-C79',
+                maBN: m.excel.maBN || '',
                 hoTen: m.excel.hoTen,
                 ngaySinh: formatYYYYMMDD(m.excel.ngaySinh),
                 gioiTinh: m.excel.gioiTinh,
@@ -127,6 +129,7 @@ export async function POST(request: Request) {
             const r2 = sheet.addRow({
                 stt: '',
                 nguon: 'Cổng GĐBHXH',
+                maBN: m.db.maBN || '',
                 hoTen: m.db.hoTen,
                 ngaySinh: m.db.ngaySinh,
                 gioiTinh: m.db.gioiTinh,

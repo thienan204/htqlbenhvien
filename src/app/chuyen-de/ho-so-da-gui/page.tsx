@@ -1254,6 +1254,12 @@ export default function HoSoDaGuiPage() {
                                                 render: (val) => <Tag color={val === 'Mẫu 01/BH-C79' ? 'green' : 'blue'} className="w-full text-center m-0 text-[11px] whitespace-normal">{val}</Tag>
                                             },
                                             { 
+                                                title: 'Mã BN', 
+                                                dataIndex: 'maBN', 
+                                                width: 100, 
+                                                render: (val, record: any) => renderTextDiff(val, record, 'maBNDiff')
+                                            },
+                                            { 
                                                 title: 'Họ Tên', 
                                                 dataIndex: 'hoTen', 
                                                 width: 150, 
