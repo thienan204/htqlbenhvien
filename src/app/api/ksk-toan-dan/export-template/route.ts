@@ -179,6 +179,7 @@ export async function GET(request: Request) {
                 rules: [
                     {
                         type: 'expression',
+                        priority: 1,
                         formulae: [`AND(${colLetter}2<>"", ISERROR(MATCH(${colLetter}2, DANHMUC!$${danhmucCol}:$${danhmucCol}, 0)))`],
                         style: {
                             fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFFFC7CE' } },
