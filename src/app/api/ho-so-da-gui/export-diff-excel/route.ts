@@ -74,6 +74,18 @@ export async function POST(request: Request) {
 
         let currentRowIndex = 2;
 
+        const formatYYYYMMDD = (val: any) => {
+            if (!val || typeof val !== 'string') return val;
+            const clean = val.trim();
+            if (/^\d{8}$/.test(clean)) {
+                return `${clean.substring(6, 8)}/${clean.substring(4, 6)}/${clean.substring(0, 4)}`;
+            }
+            if (/^\d{12}$/.test(clean)) {
+                return `${clean.substring(6, 8)}/${clean.substring(4, 6)}/${clean.substring(0, 4)} ${clean.substring(8, 10)}:${clean.substring(10, 12)}`;
+            }
+            return val;
+        };
+
         diffMatches.forEach((m: any, idx: number) => {
             const stt = idx + 1;
 
@@ -82,11 +94,11 @@ export async function POST(request: Request) {
                 stt: stt,
                 nguon: 'Mẫu 01/BH-C79',
                 hoTen: m.excel.hoTen,
-                ngaySinh: m.excel.ngaySinh,
+                ngaySinh: formatYYYYMMDD(m.excel.ngaySinh),
                 gioiTinh: m.excel.gioiTinh,
                 maBenh: m.excel.chanDoan,
-                ngayVao: m.excel.ngayVao,
-                ngayRa: m.excel.ngayRa,
+                ngayVao: formatYYYYMMDD(m.excel.ngayVao),
+                ngayRa: formatYYYYMMDD(m.excel.ngayRa),
                 tongChi: m.excel.tongChi,
                 tongChiBH: m.excel.tongChiBH,
                 baoHiemTT: m.excel.baoHiemTT,

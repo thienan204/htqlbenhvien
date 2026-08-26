@@ -1167,9 +1167,27 @@ export default function HoSoDaGuiPage() {
                                     flatDiffMatches.push({ ...m.db, _type: 'Cổng GĐBHXH', _diff: m.diff, _idx: idx });
                                 });
 
+                                const formatYYYYMMDD = (val: any) => {
+                                    if (!val || typeof val !== 'string') return val;
+                                    const clean = val.trim();
+                                    if (/^\d{8}$/.test(clean)) {
+                                        return `${clean.substring(6, 8)}/${clean.substring(4, 6)}/${clean.substring(0, 4)}`;
+                                    }
+                                    if (/^\d{12}$/.test(clean)) {
+                                        return `${clean.substring(6, 8)}/${clean.substring(4, 6)}/${clean.substring(0, 4)} ${clean.substring(8, 10)}:${clean.substring(10, 12)}`;
+                                    }
+                                    return val;
+                                };
+
                                 const renderTextDiff = (val: any, record: any, diffKey: string) => {
                                     const isDiff = record._type === 'Cổng GĐBHXH' && record._diff?.[diffKey];
                                     return <span className={isDiff ? 'text-red-500 font-bold bg-red-50 px-1 rounded' : ''}>{val || '-'}</span>;
+                                };
+
+                                const renderDateDiff = (val: any, record: any, diffKey: string) => {
+                                    const isDiff = record._type === 'Cổng GĐBHXH' && record._diff?.[diffKey];
+                                    const formattedVal = record._type === 'Mẫu 01/BH-C79' ? formatYYYYMMDD(val) : val;
+                                    return <span className={isDiff ? 'text-red-500 font-bold bg-red-50 px-1 rounded' : ''}>{formattedVal || '-'}</span>;
                                 };
 
                                 const renderCostDiff = (val: any, record: any, diffKey: string) => {
@@ -1237,7 +1255,7 @@ export default function HoSoDaGuiPage() {
                                                 title: 'Ngày Sinh', 
                                                 dataIndex: 'ngaySinh', 
                                                 width: 100, 
-                                                render: (val, record: any) => renderTextDiff(val, record, 'ngaySinhDiff')
+                                                render: (val, record: any) => renderDateDiff(val, record, 'ngaySinhDiff')
                                             },
                                             { 
                                                 title: 'Giới Tính', 
@@ -1255,13 +1273,13 @@ export default function HoSoDaGuiPage() {
                                                 title: 'Ngày Vào', 
                                                 dataIndex: 'ngayVao', 
                                                 width: 120, 
-                                                render: (val, record: any) => renderTextDiff(val, record, 'ngayVaoDiff')
+                                                render: (val, record: any) => renderDateDiff(val, record, 'ngayVaoDiff')
                                             },
                                             { 
                                                 title: 'Ngày Ra', 
                                                 dataIndex: 'ngayRa', 
                                                 width: 120, 
-                                                render: (val, record: any) => renderTextDiff(val, record, 'ngayRaDiff')
+                                                render: (val, record: any) => renderDateDiff(val, record, 'ngayRaDiff')
                                             },
                                             { 
                                                 title: 'Tổng Chi', 
