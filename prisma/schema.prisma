@@ -1723,3 +1723,42 @@ model ClinicalScheduleRecord {
   
   @@index([ngay_thuc_hien, ma_khoa])
 }
+
+model KskToanDan {
+  id              String   @id @default(cuid())
+  
+  // Thông tin hành chính
+  tenBenhNhan     String   // Bắt buộc
+  ngaySinh        String   // Bắt buộc (lưu chuỗi để xử lý cả năm sinh hoặc ngày tháng)
+  gioiTinh        String   // Bắt buộc (Lưu mã GENDER)
+  ngheNghiep      String   // Bắt buộc (Lưu mã NGHE_NGHIEP)
+  danToc          String   // Bắt buộc (Lưu mã DAN_TOC)
+  quocGia         String   // Bắt buộc (Lưu mã QUOC_GIA)
+  cccd            String   // Bắt buộc
+  ngayCapCccd     String?
+  noiCapCccd      String?
+  
+  // Địa chỉ & Liên hệ
+  tinh            String   // Bắt buộc (Lưu mã PROVINCE)
+  xa              String   // Bắt buộc (Lưu mã WARD)
+  diaChi          String   // Bắt buộc
+  sdtBenhNhan     String   // Bắt buộc
+  tenNguoiThan    String?
+  
+  // Khám & BHYT
+  dotKham         String?
+  maBHYT          String?
+  bhytBd          String?
+  bhytKt          String?
+  maKcbbd         String?
+  diaChiBhyt      String?
+
+  // Import từ cơ quan
+  maCoQuan        String?
+  tenCoQuan       String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sdtBenhNhan])
+}

@@ -30,6 +30,7 @@ const HARDCODED_TYPES = [
     { key: 'NGUON_KINH_PHI', label: 'Nguồn kinh phí', icon: <BookOutlined /> },
     { key: 'NHOM_DICH_VU', label: 'Nhóm Dịch vụ (Mẫu 05)', icon: <TagsOutlined /> },
     { key: 'PHUONG_PHAP_VO_CAM', label: 'Phương pháp vô cảm', icon: <TagsOutlined /> },
+    { key: 'CO_QUAN', label: 'Cơ quan / Doanh nghiệp', icon: <PartitionOutlined /> },
 ];
 
 export default function SystemCategoriesPage() {

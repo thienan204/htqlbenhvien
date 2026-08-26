@@ -1147,6 +1147,24 @@ export default function HoSoDaGuiPage() {
                                             return `${isEvenGroup ? 'bg-white' : 'bg-slate-50'} ${isLastInGroup ? 'border-b-2 border-b-slate-300' : 'border-b-0 border-b-transparent [&>td]:border-b-transparent'}`;
                                         }}
                                         columns={[
+                                            {
+                                                title: 'STT',
+                                                width: 60,
+                                                align: 'center',
+                                                fixed: 'left',
+                                                render: (_, record) => {
+                                                    const obj = {
+                                                        children: record._idx + 1,
+                                                        props: {} as any,
+                                                    };
+                                                    if (record._type === 'Mẫu 01/BH-C79') {
+                                                        obj.props.rowSpan = 2;
+                                                    } else {
+                                                        obj.props.rowSpan = 0;
+                                                    }
+                                                    return obj;
+                                                }
+                                            },
                                             { 
                                                 title: 'Nguồn', 
                                                 dataIndex: '_type', 
