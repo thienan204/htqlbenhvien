@@ -1121,10 +1121,18 @@ export default function HoSoDaGuiPage() {
                 <div className="space-y-6">
                     <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                         <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Tổng quan đối chiếu</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4">
                             <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 border-l-4 border-l-slate-500">
                                 <p className="text-sm text-slate-700 font-medium">Tổng hồ sơ so sánh</p>
-                                <p className="text-3xl font-bold text-slate-700 mt-1">{compareResult.summary.totalExcel}</p>
+                                <p className="text-3xl font-bold text-slate-700 mt-1">{Math.max(compareResult.summary.totalExcel, compareResult.summary.totalDb)}</p>
+                            </div>
+                            <div className="bg-purple-50 rounded-lg p-4 border border-purple-200 border-l-4 border-l-purple-500">
+                                <p className="text-sm text-purple-700 font-medium">Số hồ sơ GĐBHXH</p>
+                                <p className="text-3xl font-bold text-purple-700 mt-1">{compareResult.summary.totalDb}</p>
+                            </div>
+                            <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200 border-l-4 border-l-indigo-500">
+                                <p className="text-sm text-indigo-700 font-medium">Số hồ sơ 01/BH-C79</p>
+                                <p className="text-3xl font-bold text-indigo-700 mt-1">{compareResult.summary.totalExcel}</p>
                             </div>
                             <div className="bg-green-50 rounded-lg p-4 border border-green-200 border-l-4 border-l-green-500">
                                 <p className="text-sm text-green-700 font-medium">Khớp hoàn toàn</p>
