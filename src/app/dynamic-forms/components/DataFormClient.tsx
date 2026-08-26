@@ -593,9 +593,7 @@ export default function DataFormClient({ formId }: { formId: string }) {
                         options={[
                             { value: 'ALL', label: 'Tất cả trạng thái ảnh' },
                             { value: 'HAS_IMAGE', label: 'Có ảnh bình thường' },
-                            { value: 'NO_IMAGE_OR_BROKEN', label: 'Ảnh bị lỗi hoặc chưa upload' },
-                            { value: 'NO_IMAGE', label: 'Chưa upload ảnh' },
-                            { value: 'BROKEN', label: 'Ảnh bị lỗi' }
+                            { value: 'NO_IMAGE_OR_BROKEN', label: 'Ảnh bị lỗi (hoặc chưa có)' }
                         ]}
                     />
                     {isScanning && <Spin size="small" />}
