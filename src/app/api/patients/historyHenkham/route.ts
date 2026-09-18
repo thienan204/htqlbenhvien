@@ -4,7 +4,9 @@ import prisma from '@/lib/prisma';
 export async function GET(req: NextRequest) {
     try {
         const searchParams = new URL(req.url).searchParams;
-        const maTheBHYT = searchParams.get('maTheBHYT');
+        const rawMaTheBHYT = searchParams.get('maTheBHYT');
+        // Loại bỏ mọi khoảng trắng thừa (nếu có) trước khi kiểm tra chiều dài và query
+        const maTheBHYT = rawMaTheBHYT ? rawMaTheBHYT.replace(/\s+/g, '') : null;
         const limitParam = searchParams.get('limit');
         const hasGiayHen = searchParams.get('hasGiayHen');
         
