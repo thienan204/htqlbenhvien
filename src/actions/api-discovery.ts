@@ -131,6 +131,13 @@ const API_DOCS_DB: Record<string, Record<string, ApiDoc>> = {
             ],
             postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/extension-config?key=carecheck_rules vào Postman, chọn Method POST, dán mảng JSON vào Body.'
         }
+    },
+    '/api/patients/history': {
+        'GET': {
+            description: 'Lấy lịch sử khám bệnh của bệnh nhân dựa trên số thẻ BHYT (Hỗ trợ thẻ có dấu ;). Trả về MA_BN, NGAY_VAO, NGAY_RA và SO_GIAYHEN_KL.',
+            headers: { 'Content-Type': 'application/json' },
+            postmanSnippet: 'Gắn URL http://localhost:3000/api/patients/history?maTheBHYT=HT2201503003346&limit=10 vào Postman và chọn GET.'
+        }
     }
 };
 
@@ -139,6 +146,7 @@ export async function discoverApiEndpoints(): Promise<ApiEndpoint[]> {
     const hisApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'his-services');
     const extApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'extension-config');
     const bedsApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'beds');
+    const patientsApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'patients');
     
     let endpoints: ApiEndpoint[] = [];
     
@@ -156,6 +164,10 @@ export async function discoverApiEndpoints(): Promise<ApiEndpoint[]> {
 
     if (fs.existsSync(bedsApiDirectory)) {
         endpoints = endpoints.concat(scanDirectory(bedsApiDirectory, '/api/beds'));
+    }
+
+    if (fs.existsSync(patientsApiDirectory)) {
+        endpoints = endpoints.concat(scanDirectory(patientsApiDirectory, '/api/patients'));
     }
 
     return endpoints.sort((a, b) => a.path.localeCompare(b.path));
@@ -189,6 +201,8 @@ function scanDirectory(dir: string, baseRoute: string): ApiEndpoint[] {
                     category = pathParts.length > 0 && pathParts[0] ? `MOBILE / ${pathParts[0].toUpperCase()}` : 'MOBILE GENERAL';
                 } else if (baseRoute.includes('/api/his-services')) {
                     category = 'HIS INTEGRATION APIS';
+                } else if (baseRoute.includes('/api/patients')) {
+                    category = 'PATIENT APIS';
                 } else if (baseRoute.includes('/api/extension-config') || baseRoute.includes('/api/beds')) {
                     category = 'EXTENSION APIS';
                 }
