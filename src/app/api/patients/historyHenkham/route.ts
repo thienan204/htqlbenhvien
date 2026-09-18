@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
         const searchParams = new URL(req.url).searchParams;
         const maTheBHYT = searchParams.get('maTheBHYT');
         const limitParam = searchParams.get('limit');
+        const hasGiayHen = searchParams.get('hasGiayHen');
         
         const limit = limitParam ? parseInt(limitParam) : 10;
 
@@ -16,13 +17,45 @@ export async function GET(req: NextRequest) {
             );
         }
 
+        // Có thể truyền qua query parameter (ví dụ: validLengths=10,15)
+        const validLengthsParam = searchParams.get('validLengths');
+        
+        let validLengths = [15]; // Mặc định là 15
+        if (validLengthsParam) {
+            // Tách bằng dấu phẩy và chuyển thành mảng số nguyên
+            validLengths = validLengthsParam.split(',').map(l => parseInt(l.trim())).filter(l => !isNaN(l));
+        }
+
+        if (!validLengths.includes(maTheBHYT.length)) {
+            return NextResponse.json({
+                success: true,
+                data: []
+            });
+        }
+
+        const whereClause: any = {
+            OR: [
+                { MA_THE_BHYT: maTheBHYT },
+                { MA_THE_BHYT: { startsWith: `${maTheBHYT};` } },
+                { MA_THE_BHYT: { endsWith: `;${maTheBHYT}` } },
+                { MA_THE_BHYT: { contains: `;${maTheBHYT};` } }
+            ]
+        };
+
+        if (hasGiayHen === 'true') {
+            whereClause.xml14Records = {
+                some: {
+                    AND: [
+                        { SO_GIAYHEN_KL: { not: null } },
+                        { SO_GIAYHEN_KL: { not: "" } }
+                    ]
+                }
+            };
+        }
+
         // Truy vấn dữ liệu từ Xml1, giới hạn số lượng và sắp xếp theo ngày vào giảm dần
         const records = await (prisma as any).xml1.findMany({
-            where: {
-                MA_THE_BHYT: {
-                    contains: maTheBHYT
-                }
-            },
+            where: whereClause,
             orderBy: {
                 NGAY_VAO: 'desc'
             },

@@ -1623,6 +1623,7 @@ export default function ClinicalSchedulingPage() {
                     <Col span={6}>
                         <div style={{ marginBottom: 8 }}><strong>1. Chọn ngày thực hiện:</strong></div>
                         <DatePicker 
+                            id="date-picker-schedule"
                             value={selectedDate ? dayjs(selectedDate) : null}
                             onChange={(date) => { if (date) setSelectedDate(date.format('YYYY-MM-DD')) }}
                             format="DD/MM/YYYY"
@@ -1633,6 +1634,7 @@ export default function ClinicalSchedulingPage() {
                     <Col span={8}>
                         <div style={{ marginBottom: 8 }}><strong>2. Chọn Khoa/Phòng (Lấy danh sách điểm danh):</strong></div>
                         <Select
+                            id="select-dept-schedule"
                             value={selectedDept}
                             onChange={(val) => setSelectedDept(val)}
                             placeholder="--- Vui lòng chọn Khoa/Phòng ---"
