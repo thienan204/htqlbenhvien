@@ -67,19 +67,19 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // Ánh xạ dữ liệu để trả về 4 trường rút gọn
+        // Ánh xạ dữ liệu để trả về
         const formattedData = records.map((record: any) => {
-            // Lấy thông tin giấy hẹn khám lại từ bản ghi Xml14 đầu tiên (nếu có)
-            let soGiayHenKhamLai = null;
+            // Lấy toàn bộ thông tin giấy hẹn khám lại từ bản ghi Xml14 đầu tiên (nếu có)
+            let xml14Data = null;
             if (record.xml14Records && record.xml14Records.length > 0) {
-                soGiayHenKhamLai = record.xml14Records[0].SO_GIAYHEN_KL;
+                xml14Data = record.xml14Records[0];
             }
 
             return {
                 maBn: record.MA_BN,
                 ngayVao: record.NGAY_VAO,
                 ngayRa: record.NGAY_RA,
-                soGiayHenKhamLai: soGiayHenKhamLai
+                xml14: xml14Data
             };
         });
 
