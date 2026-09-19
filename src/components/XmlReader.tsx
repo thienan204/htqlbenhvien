@@ -304,6 +304,10 @@ export default function XmlReader() {
     const [colFilters, setColFilters] = useState<Record<string, string>>({});
     const [detailFilters, setDetailFilters] = useState<Record<string, string>>({});
     const [headerDepartmentFilter, setHeaderDepartmentFilter] = useState<string | null>(null);
+    const [hasGiayHenFilter, setHasGiayHenFilter] = useState<boolean>(false);
+    const [headerMaDTFilter, setHeaderMaDTFilter] = useState<string | null>(null);
+    const [headerMaLoaiKCBFilter, setHeaderMaLoaiKCBFilter] = useState<string | null>(null);
+    const [tablePagination, setTablePagination] = useState({ current: 1, pageSize: 10 });
     const [initialDBLoadDone, setInitialDBLoadDone] = useState(false);
     const [masterData, setMasterData] = useState<Record<string, Set<string>>>({});
     
@@ -1198,7 +1202,7 @@ export default function XmlReader() {
                 </div>
             ),
             key: 'edit_status',
-            width: 130,
+            width: 100,
             align: 'center',
             render: (_, record) => {
                 const ngayRaStr = String(record.summary?.NGAY_RA || '');
@@ -1238,7 +1242,7 @@ export default function XmlReader() {
                 </div>
             ),
             key: 'remaining_time',
-            width: 150,
+            width: 100,
             align: 'center',
             render: (_, record) => {
                 const ngayRaStr = String(record.summary?.NGAY_RA || '');
@@ -1275,6 +1279,7 @@ export default function XmlReader() {
             ),
             dataIndex: ['summary', 'MA_LK'],
             key: 'MA_LK',
+            width: 100,
             render: (text) => {
                 const isSent = sentRecordsSet.has(String(text));
                 return (
@@ -1304,34 +1309,29 @@ export default function XmlReader() {
             width: 120,
         },
         {
-            title: (
-                <div className="flex flex-col gap-1">
-                    <span>Mã Khoa</span>
-                    <Input
-                        placeholder="Tìm..."
-                        size="small"
-                        allowClear
-                        value={colFilters.MA_KHOA}
-                        onChange={(e) => setColFilters(prev => ({ ...prev, MA_KHOA: e.target.value }))}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </div>
-            ),
-            key: 'MA_KHOA',
-            width: 100,
+            title: 'Khoa ra viện',
+            key: 'KHOA_RA_VIEN',
+            width: 150,
             render: (_, record) => {
-                const code = renderValue(record.summary?.MA_KHOA);
-                return <div className="font-medium text-blue-700">{code}</div>;
-            }
-        },
-        {
-            title: 'Tên Khoa',
-            key: 'TEN_KHOA',
-            width: 200,
-            render: (_, record) => {
-                const code = renderValue(record.summary?.MA_KHOA);
-                const name = code.split(';').map((c: string) => departments[c] || c).join('; ');
-                return <div className="text-slate-600 truncate" title={name}>{name}</div>;
+                let maKhoa = '';
+                const xml7Group = record.groups?.find(g => g.type === 'XML7');
+                if (xml7Group) {
+                    const list = getXmlDataList(xml7Group);
+                    if (list.length > 0) {
+                        maKhoa = list[list.length - 1]?.MA_KHOA || '';
+                    }
+                }
+                if (!maKhoa) {
+                    const codes = String(record.summary?.MA_KHOA || '').split(';');
+                    maKhoa = codes[codes.length - 1] || '';
+                }
+                const tenKhoa = departments[maKhoa] || maKhoa;
+                const displayText = maKhoa !== tenKhoa ? `${maKhoa} - ${tenKhoa}` : maKhoa;
+                return (
+                    <div className="text-slate-600 truncate" title={displayText}>
+                        {displayText}
+                    </div>
+                );
             }
         },
         {
@@ -1363,6 +1363,37 @@ export default function XmlReader() {
             dataIndex: ['summary', 'NGAY_RA'],
             key: 'NGAY_RA',
             render: (text) => formatDateTime(text)
+        },
+        {
+            title: (
+                <div className="flex flex-col gap-1">
+                    <span>Mã Khoa</span>
+                    <Input
+                        placeholder="Tìm..."
+                        size="small"
+                        allowClear
+                        value={colFilters.MA_KHOA}
+                        onChange={(e) => setColFilters(prev => ({ ...prev, MA_KHOA: e.target.value }))}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            ),
+            key: 'MA_KHOA',
+            width: 100,
+            render: (_, record) => {
+                const code = renderValue(record.summary?.MA_KHOA);
+                return <div className="font-medium text-blue-700">{code}</div>;
+            }
+        },
+        {
+            title: 'Tên Khoa',
+            key: 'TEN_KHOA',
+            width: 200,
+            render: (_, record) => {
+                const code = renderValue(record.summary?.MA_KHOA);
+                const name = code.split(';').map((c: string) => departments[c] || c).join('; ');
+                return <div className="text-slate-600 truncate" title={name}>{name}</div>;
+            }
         },
         {
             title: 'Mã ĐT',
@@ -1442,6 +1473,12 @@ export default function XmlReader() {
             });
         }
 
+        if (headerMaDTFilter) {
+            result = result.filter(r => String(r.summary?.MA_DOITUONG_KCB || '').toLowerCase() === headerMaDTFilter.toLowerCase());
+        }
+        if (headerMaLoaiKCBFilter) {
+            result = result.filter(r => String(r.summary?.MA_LOAI_KCB || '').toLowerCase() === headerMaLoaiKCBFilter.toLowerCase());
+        }
 
         if (headerDepartmentFilter) {
             result = result.filter(r => {
@@ -1459,6 +1496,19 @@ export default function XmlReader() {
                 }
                 
                 return codes.includes(headerDepartmentFilter);
+            });
+        }
+
+        if (hasGiayHenFilter) {
+            result = result.filter(r => {
+                const xml14Group = r.groups?.find(g => g.type === 'XML14');
+                if (!xml14Group) return false;
+                
+                const list = getXmlDataList(xml14Group);
+                return list.some((item: any) => {
+                    const val = renderValue(item.SO_GIAYHEN_KL);
+                    return val && val.trim() !== '';
+                });
             });
         }
 
@@ -2008,153 +2058,181 @@ export default function XmlReader() {
                         return (
                             <>
                                 {/* Header Actions */}
-                                <div className="flex justify-between items-center bg-white py-2 px-4 rounded-lg shadow-sm border">
-                                    <div className="flex items-center gap-2 text-slate-600 font-medium">
-                                        <div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
-                                            <ContainerOutlined />
+                                <div className="flex flex-col gap-4 bg-white py-3 px-4 rounded-lg shadow-sm border">
+                                    {/* Top Row: Info and Primary Actions */}
+                                    <div className="flex flex-wrap justify-between items-center gap-4">
+                                        <div className="flex items-center gap-2 text-slate-600 font-medium whitespace-nowrap">
+                                            <div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
+                                                <ContainerOutlined />
+                                            </div>
+                                            <span>
+                                                Hiển thị <span className="font-bold text-blue-600">{displayedRecords.length}</span> / <span className="font-bold text-slate-800">{records.length}</span> hồ sơ
+                                            </span>
                                         </div>
-                                        <span>
-                                            Hiển thị <span className="font-bold text-blue-600">{displayedRecords.length}</span> / <span className="font-bold text-slate-800">{records.length}</span> hồ sơ
-                                        </span>
-                                    </div>
-                                    <Space>
-                                        {user?.role === 'ADMIN' && (
-                                            <Button 
-                                                icon={<CloudUploadOutlined />} 
-                                                type="default"
-                                                className="text-purple-600 border-purple-200 hover:border-purple-400 hover:text-purple-700 bg-purple-50"
-                                                onClick={handleSaveToDBForViewer}
-                                                title="Lưu những hồ sơ lỗi (theo filter) vào Database để có thể xem lại ở XML Viewer"
+                                        <Space wrap className="justify-end">
+                                            {user?.role === 'ADMIN' && (
+                                                <Button 
+                                                    icon={<CloudUploadOutlined />} 
+                                                    type="default"
+                                                    className="text-purple-600 border-purple-200 hover:border-purple-400 hover:text-purple-700 bg-purple-50"
+                                                    onClick={handleSaveToDBForViewer}
+                                                    title="Lưu những hồ sơ lỗi (theo filter) vào Database để có thể xem lại ở XML Viewer"
+                                                >
+                                                    Lưu DB (XML Viewer)
+                                                </Button>
+                                            )}
+                                            <Button
+                                                icon={<FileExcelOutlined />}
+                                                onClick={() => router.push(`/report?filter=${mainFilter}`)}
+                                                className="text-green-600 border-green-200 hover:text-green-700 hover:border-green-400"
                                             >
-                                                Lưu DB (XML Viewer)
+                                                Xem báo cáo
                                             </Button>
-                                        )}
-                                        <Dropdown
-                                            menu={{
-                                                items: [
-                                                    {
-                                                        key: 'run-all',
-                                                        label: <span className="font-bold text-blue-600">Kiểm tra tất cả trên lưới</span>,
-                                                        onClick: () => handleRunAllSpecializedRules()
-                                                    },
-                                                    { type: 'divider' },
-                                                    ...specializedRules.map(rule => ({
-                                                        key: rule.id,
-                                                        label: rule.name,
-                                                        children: [
-                                                            { key: `${rule.id}-check`, label: 'Kiểm tra trên lưới', onClick: () => handleRunSpecializedRule(rule) },
-                                                            { key: `${rule.id}-export`, label: 'Xuất Báo cáo Excel', onClick: () => handleExportSpecializedRule(rule) }
-                                                        ]
-                                                    }))
-                                                ]
-                                            }}
-                                            trigger={['click']}
-                                            disabled={specializedRules.length === 0}
-                                        >
-                                            <Button 
-                                                type="default" 
-                                                loading={isSpecializedChecking}
-                                                className="text-teal-600 border-teal-200 hover:text-teal-700 hover:border-teal-400"
+                                            <Button
+                                                type="primary"
+                                                icon={<FileExcelOutlined />}
+                                                onClick={handleExportExcel}
+                                                disabled={records.length === 0}
                                             >
-                                                Kiểm tra theo chuyên đề {specializedRules.length > 0 && `(${specializedRules.length})`}
+                                                Xuất Excel
                                             </Button>
-                                        </Dropdown>
-                                        <Select
-                                            placeholder="Lọc theo Khoa"
-                                            allowClear
-                                            showSearch
-                                            style={{ width: 250 }}
-                                            optionFilterProp="label"
-                                            filterOption={(input, option: any) =>
-                                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                            }
-                                            options={Object.entries(departments).map(([code, name]) => ({
-                                                value: code,
-                                                label: `${code} - ${name}`
-                                            }))}
-                                            value={headerDepartmentFilter}
-                                            onChange={setHeaderDepartmentFilter}
-                                        />
-                                        <Select
-                                            value={mainFilter}
-                                            onChange={setMainFilter}
-                                            style={{ width: 220 }}
-                                            options={[
-                                                { value: 'ALL', label: 'Tất cả hồ sơ' },
-                                                { value: 'ALL_SENT', label: 'Tất cả (Đã gửi)' },
-                                                { value: 'ALL_UNSENT', label: 'Tất cả (Chưa gửi)' },
-                                                { value: 'ERROR', label: 'Hồ sơ lỗi (Tất cả)' },
-                                                { value: 'ERROR_SENT', label: 'Hồ sơ lỗi (Đã gửi)' },
-                                                { value: 'ERROR_UNSENT', label: 'Hồ sơ lỗi (Chưa gửi)' },
-                                                { value: 'VALID', label: 'Hồ sơ đúng (Tất cả)' },
-                                                { value: 'VALID_SENT', label: 'Hồ sơ đúng (Đã gửi)' },
-                                                { value: 'VALID_UNSENT', label: 'Hồ sơ đúng (Chưa gửi)' }
-                                            ]}
-                                        />
-                                        <Button
-                                            icon={<FileExcelOutlined />}
-                                            onClick={() => router.push(`/report?filter=${mainFilter}`)}
-                                            className="text-green-600 border-green-200 hover:text-green-700 hover:border-green-400"
-                                        >
-                                            Xem báo cáo
-                                        </Button>
-                                        <Button
-                                            type="primary"
-                                            icon={<FileExcelOutlined />}
-                                            onClick={handleExportExcel}
-                                            disabled={records.length === 0}
-                                        >
-                                            Xuất Excel
-                                        </Button>
-
-
-
-                                        <Button
-                                            icon={<ReloadOutlined />}
-                                            onClick={async () => {
-                                                const latestRules = await reloadRules();
-                                                if (records.length === 0) {
-                                                    message.info('Không có hồ sơ nào để kiểm tra.');
-                                                    return;
-                                                }
-
-                                                setProcessingProgress({ current: 0, total: records.length });
-                                                
-                                                // Run asynchronously to prevent browser freeze
-                                                setTimeout(async () => {
-                                                    try {
-                                                        const currentRecords = [...records];
-                                                        const validator = new ValidationEngine(latestRules, masterData);
-                                                        validator.setContextRecords(currentRecords);
-                                                        
-                                                        const icd10Map = await fetchIcd10Map(currentRecords);
-                                                        validator.setExternalContext({ icd10Map });
-
-                                                        const VALIDATION_CHUNK_SIZE = 50;
-                                                        for (let i = 0; i < currentRecords.length; i += VALIDATION_CHUNK_SIZE) {
-                                                            const chunk = currentRecords.slice(i, i + VALIDATION_CHUNK_SIZE);
-                                                            chunk.forEach(r => {
-                                                                r.validationResults = validator.validate(r);
-                                                            });
-                                                            setProcessingProgress({ current: Math.min(i + chunk.length, currentRecords.length), total: currentRecords.length });
-                                                            await new Promise(resolve => setTimeout(resolve, 0));
-                                                        }
-                                                        
-                                                        setRecords(currentRecords);
-                                                        addRecordsToDB(currentRecords).catch(e => console.error(e));
-                                                        message.success('Đã tải lại quy tắc mới nhất và cập nhật cho dữ liệu hiện tại.');
-                                                    } catch (error) {
-                                                        console.error(error);
-                                                        message.error('Có lỗi xảy ra khi chạy lại kiểm tra.');
-                                                    } finally {
-                                                        setProcessingProgress(null);
+                                            <Button
+                                                icon={<ReloadOutlined />}
+                                                onClick={async () => {
+                                                    const latestRules = await reloadRules();
+                                                    if (records.length === 0) {
+                                                        message.info('Không có hồ sơ nào để kiểm tra.');
+                                                        return;
                                                     }
-                                                }, 0);
-                                            }}
-                                        >
-                                            Chạy lại kiểm tra
-                                        </Button>
-                                    </Space>
+
+                                                    setProcessingProgress({ current: 0, total: records.length });
+                                                    
+                                                    // Run asynchronously to prevent browser freeze
+                                                    setTimeout(async () => {
+                                                        try {
+                                                            const currentRecords = [...records];
+                                                            const validator = new ValidationEngine(latestRules, masterData);
+                                                            validator.setContextRecords(currentRecords);
+                                                            
+                                                            const icd10Map = await fetchIcd10Map(currentRecords);
+                                                            validator.setExternalContext({ icd10Map });
+
+                                                            const VALIDATION_CHUNK_SIZE = 50;
+                                                            for (let i = 0; i < currentRecords.length; i += VALIDATION_CHUNK_SIZE) {
+                                                                const chunk = currentRecords.slice(i, i + VALIDATION_CHUNK_SIZE);
+                                                                chunk.forEach(r => {
+                                                                    r.validationResults = validator.validate(r);
+                                                                });
+                                                                setProcessingProgress({ current: Math.min(i + chunk.length, currentRecords.length), total: currentRecords.length });
+                                                                await new Promise(resolve => setTimeout(resolve, 0));
+                                                            }
+                                                            
+                                                            setRecords(currentRecords);
+                                                            addRecordsToDB(currentRecords).catch(e => console.error(e));
+                                                            message.success('Đã tải lại quy tắc mới nhất và cập nhật cho dữ liệu hiện tại.');
+                                                        } catch (error) {
+                                                            console.error(error);
+                                                            message.error('Có lỗi xảy ra khi chạy lại kiểm tra.');
+                                                        } finally {
+                                                            setProcessingProgress(null);
+                                                        }
+                                                    }, 0);
+                                                }}
+                                            >
+                                                Chạy lại kiểm tra
+                                            </Button>
+                                        </Space>
+                                    </div>
+                                    
+                                    {/* Bottom Row: Filters */}
+                                    <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-100">
+                                        <Space wrap>
+                                            <Dropdown
+                                                menu={{
+                                                    items: [
+                                                        {
+                                                            key: 'run-all',
+                                                            label: <span className="font-bold text-blue-600">Kiểm tra tất cả trên lưới</span>,
+                                                            onClick: () => handleRunAllSpecializedRules()
+                                                        },
+                                                        { type: 'divider' },
+                                                        ...specializedRules.map(rule => ({
+                                                            key: rule.id,
+                                                            label: rule.name,
+                                                            children: [
+                                                                { key: `${rule.id}-check`, label: 'Kiểm tra trên lưới', onClick: () => handleRunSpecializedRule(rule) },
+                                                                { key: `${rule.id}-export`, label: 'Xuất Báo cáo Excel', onClick: () => handleExportSpecializedRule(rule) }
+                                                            ]
+                                                        }))
+                                                    ]
+                                                }}
+                                                trigger={['click']}
+                                                disabled={specializedRules.length === 0}
+                                            >
+                                                <Button 
+                                                    type="default" 
+                                                    loading={isSpecializedChecking}
+                                                    className="text-teal-600 border-teal-200 hover:text-teal-700 hover:border-teal-400"
+                                                >
+                                                    Kiểm tra theo chuyên đề {specializedRules.length > 0 && `(${specializedRules.length})`}
+                                                </Button>
+                                            </Dropdown>
+                                        </Space>
+                                        <Space wrap>
+                                            <Select
+                                                placeholder="Lọc theo Khoa"
+                                                allowClear
+                                                showSearch
+                                                style={{ width: 250 }}
+                                                optionFilterProp="label"
+                                                filterOption={(input, option: any) =>
+                                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                                }
+                                                options={Object.entries(departments).map(([code, name]) => ({
+                                                    value: code,
+                                                    label: `${code} - ${name}`
+                                                }))}
+                                                value={headerDepartmentFilter}
+                                                onChange={setHeaderDepartmentFilter}
+                                            />
+                                            <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+                                                <span className="text-sm font-medium text-slate-600">Có giấy hẹn (XML14)</span>
+                                                <Switch size="small" checked={hasGiayHenFilter} onChange={setHasGiayHenFilter} />
+                                            </div>
+                                            <Select
+                                                value={mainFilter}
+                                                onChange={setMainFilter}
+                                                style={{ width: 220 }}
+                                                options={[
+                                                    { value: 'ALL', label: 'Tất cả hồ sơ' },
+                                                    { value: 'ALL_SENT', label: 'Tất cả (Đã gửi)' },
+                                                    { value: 'ALL_UNSENT', label: 'Tất cả (Chưa gửi)' },
+                                                    { value: 'ERROR', label: 'Hồ sơ lỗi (Tất cả)' },
+                                                    { value: 'ERROR_SENT', label: 'Hồ sơ lỗi (Đã gửi)' },
+                                                    { value: 'ERROR_UNSENT', label: 'Hồ sơ lỗi (Chưa gửi)' },
+                                                    { value: 'VALID', label: 'Hồ sơ đúng (Tất cả)' },
+                                                    { value: 'VALID_SENT', label: 'Hồ sơ đúng (Đã gửi)' },
+                                                    { value: 'VALID_UNSENT', label: 'Hồ sơ đúng (Chưa gửi)' }
+                                                ]}
+                                            />
+                                            <Select
+                                                placeholder="Mã ĐT"
+                                                allowClear
+                                                style={{ width: 100 }}
+                                                options={Array.from(new Set(records.map(r => String(r.summary?.MA_DOITUONG_KCB || '')).filter(Boolean))).map(v => ({ value: v, label: v }))}
+                                                value={headerMaDTFilter}
+                                                onChange={setHeaderMaDTFilter}
+                                            />
+                                            <Select
+                                                placeholder="Mã Loại KCB"
+                                                allowClear
+                                                style={{ width: 140 }}
+                                                options={Array.from(new Set(records.map(r => String(r.summary?.MA_LOAI_KCB || '')).filter(Boolean))).map(v => ({ value: v, label: v }))}
+                                                value={headerMaLoaiKCBFilter}
+                                                onChange={setHeaderMaLoaiKCBFilter}
+                                            />
+                                        </Space>
+                                    </div>
                                 </div>
 
                                 {/* Main Table */}
@@ -2164,10 +2242,17 @@ export default function XmlReader() {
                                         dataSource={displayedRecords}
                                         rowKey={(r) => r.uuid || r.id}
                                         pagination={{
-                                            defaultPageSize: 10,
+                                            current: tablePagination.current,
+                                            pageSize: tablePagination.pageSize,
                                             showSizeChanger: true,
                                             locale: { items_per_page: '/ trang' },
                                             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} hồ sơ`
+                                        }}
+                                        onChange={(paginationParams) => {
+                                            setTablePagination({ 
+                                                current: paginationParams.current || 1, 
+                                                pageSize: paginationParams.pageSize || 10 
+                                            });
                                         }}
                                         onRow={(record) => ({
                                             onClick: () => {
@@ -2178,6 +2263,7 @@ export default function XmlReader() {
                                         })}
                                         size="middle"
                                         bordered
+                                        scroll={{ x: 'max-content' }}
                                     />
                                 </div>
                             </>

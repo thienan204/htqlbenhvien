@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Card, Popconfirm, Upload } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Card, Popconfirm, Upload, Switch } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, SearchOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
@@ -16,6 +16,7 @@ interface User {
     telegram_id: string | null;
     userHIS: string | null;
     idHIS: string | null;
+    isActive?: boolean;
     createdAt: string;
 }
 
@@ -233,12 +234,13 @@ export default function UsersPage() {
                 telegram_id: user.telegram_id,
                 userHIS: user.userHIS,
                 idHIS: user.idHIS,
+                isActive: user.isActive !== false,
                 password: '' // Không show password cũ
             });
         } else {
             setSelectedRole('KHOA'); // Default
             form.resetFields();
-            form.setFieldsValue({ role: 'KHOA' });
+            form.setFieldsValue({ role: 'KHOA', isActive: true });
         }
         setIsModalVisible(true);
     };
@@ -292,6 +294,12 @@ export default function UsersPage() {
                 const dept = departments.find(d => d.ma_khoa === text);
                 return dept ? `${dept.ten_khoa} (${text})` : text || <span className="text-red-500 italic">Chưa gán</span>;
             }
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'isActive',
+            key: 'isActive',
+            render: (isActive: boolean) => isActive !== false ? <Tag color="success">Hoạt động</Tag> : <Tag color="default">Vô hiệu hóa</Tag>
         },
         {
             title: 'Ngày tạo',
@@ -420,6 +428,10 @@ export default function UsersPage() {
 
                     <Form.Item name="name" label="Họ và tên">
                         <Input />
+                    </Form.Item>
+
+                    <Form.Item name="isActive" label="Trạng thái" valuePropName="checked">
+                        <Switch checkedChildren="Hoạt động" unCheckedChildren="Vô hiệu hóa" />
                     </Form.Item>
 
                     <Form.Item name="userHIS" label="Tên đăng nhập HIS (userHIS)">

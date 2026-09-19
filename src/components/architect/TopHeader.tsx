@@ -49,8 +49,8 @@ const TopHeader = ({
     return (
         <div
             className={`
-                h-[60px] bg-white/90 backdrop-blur fixed top-0 right-0 z-10 border-b border-slate-200 px-8 flex items-center justify-between shadow-sm transition-all duration-300 ease-in-out
-                ${(isSidebarOpen && menuLayout === 'vertical') ? 'left-[280px]' : 'left-0'}
+                h-[60px] bg-white/90 backdrop-blur fixed top-0 right-0 z-10 border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between shadow-sm transition-all duration-300 ease-in-out
+                ${(isSidebarOpen && menuLayout === 'vertical') ? 'lg:left-[280px] left-0' : 'left-0'}
             `}
         >
             <div className="flex items-center gap-4 flex-1 overflow-hidden">
@@ -63,8 +63,8 @@ const TopHeader = ({
                 {menuLayout === 'vertical' && !hideToggle && (
                     <Button
                         shape="circle"
-                        icon={<MenuFoldOutlined className="text-slate-500" />}
-                        className="border-none shadow-none bg-transparent hover:bg-slate-100 shrink-0"
+                        icon={isSidebarOpen ? <MenuFoldOutlined className="text-slate-600" /> : <MenuUnfoldOutlined className="text-slate-600" />}
+                        className="border-none shadow-none bg-slate-100 hover:bg-slate-200 shrink-0"
                         onClick={onToggleSidebar}
                     />
                 )}

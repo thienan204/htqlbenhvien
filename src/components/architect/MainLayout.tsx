@@ -22,10 +22,12 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
     const pathname = usePathname();
 
     useEffect(() => {
+        const checkIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 1024;
         const savedLayout = localStorage.getItem('menuLayout') as 'horizontal' | 'vertical';
+        
         if (savedLayout) {
             setMenuLayout(savedLayout);
-            if (savedLayout === 'horizontal') {
+            if (savedLayout === 'horizontal' || checkIsMobile()) {
                 setIsSidebarOpen(false);
             } else {
                 setIsSidebarOpen(true);
@@ -33,6 +35,13 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
         } else {
             setIsSidebarOpen(false);
         }
+
+        const handleResize = () => {
+            if (window.innerWidth < 1024) {
+                setIsSidebarOpen(false);
+            }
+        };
+        window.addEventListener('resize', handleResize);
 
         const savedAdminMode = localStorage.getItem('adminMode');
         if (savedAdminMode === 'true') {
@@ -43,11 +52,13 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
                 setAdminMode(false);
             }
         }
+        
+        return () => window.removeEventListener('resize', handleResize);
     }, [user]);
 
     useEffect(() => {
-        if (menuLayout === 'vertical') {
-            // setIsSidebarOpen(false); 
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            setIsSidebarOpen(false);
         }
         
         // Update document title based on current path
@@ -107,10 +118,18 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
                 adminOnlyPaths={adminOnlyPaths}
             />
 
+            {/* Mobile Overlay */}
+            {isSidebarOpen && menuLayout === 'vertical' && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/50 z-10 lg:hidden transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             <div
                 className={`
                     pt-[60px] min-h-screen bg-slate-50 transition-all duration-300 ease-in-out
-                    ${(isSidebarOpen && menuLayout === 'vertical') ? 'pl-[280px]' : 'pl-0'}
+                    ${(isSidebarOpen && menuLayout === 'vertical') ? 'lg:pl-[280px] pl-0' : 'pl-0'}
                 `}
             >
                 {children}

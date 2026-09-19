@@ -52,6 +52,7 @@ model User {
   updatedAt    DateTime          @updatedAt
   dutyOrder    Int               @default(999)
   isAvailable  Boolean           @default(false)
+  isActive     Boolean           @default(true)
   ma_khoa      String?
   telegram_id  String?
   staffId      String?           @unique

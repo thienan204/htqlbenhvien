@@ -42,6 +42,10 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Tài khoản hoặc mật khẩu không đúng' }, { status: 401 });
             }
 
+            if (!user.isActive) {
+                return NextResponse.json({ error: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.' }, { status: 403 });
+            }
+
             const isValid = await bcrypt.compare(password, user.password);
 
             if (!isValid) {

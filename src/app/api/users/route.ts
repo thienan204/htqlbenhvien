@@ -30,6 +30,7 @@ export async function GET() {
                 userHIS: true,
                 idHIS: true,
                 isAvailable: true,
+                isActive: true,
                 dutyOrder: true,
                 createdAt: true
             }
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     try {
         await requireAdmin();
         const body = await request.json();
-        const { username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS } = body;
+        const { username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS, isActive } = body;
 
         if (!username || !password || !role) {
             return NextResponse.json({ error: 'Thiếu thông tin bắt buộc (username, password, role)' }, { status: 400 });
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
                 userHIS: userHIS || null,
                 idHIS: idHIS || null,
                 staffId: staffId || null,
+                isActive: isActive !== undefined ? isActive : true,
                 ma_khoa: role === 'KHOA' ? ma_khoa : null
             },
             select: {
@@ -100,13 +102,13 @@ export async function PUT(request: Request) {
     try {
         await requireAdmin();
         const body = await request.json();
-        const { id, username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS } = body;
+        const { id, username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS, isActive } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'Thiếu ID user cần cập nhật' }, { status: 400 });
         }
 
-        const dataToUpdate: any = { username, name, role, ma_khoa: role === 'KHOA' ? ma_khoa : null, telegram_id: telegram_id || null, userHIS: userHIS || null, idHIS: idHIS || null, staffId: staffId || null };
+        const dataToUpdate: any = { username, name, role, ma_khoa: role === 'KHOA' ? ma_khoa : null, telegram_id: telegram_id || null, userHIS: userHIS || null, idHIS: idHIS || null, staffId: staffId || null, isActive: isActive !== undefined ? isActive : true };
 
         // Nếu có nhập password mới thì hash và cập nhật
         if (password && password.trim() !== '') {
