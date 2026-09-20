@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip, InputNumber, Alert, Checkbox } from 'antd';
+import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip, InputNumber, Alert, Checkbox, Radio } from 'antd';
 import { InboxOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, FileTextOutlined, MedicineBoxOutlined, ExperimentOutlined, ProfileOutlined, ToolOutlined, DashboardOutlined, DatabaseOutlined, PlayCircleOutlined, FileExcelOutlined, WarningOutlined, SettingOutlined } from '@ant-design/icons';
 import { addWorkingDays, calculateRemainingTime } from '@/utils/dateUtils';
 import type { UploadProps } from 'antd';
@@ -48,6 +48,8 @@ export default function XmlViewerPage() {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
+    const [uploadMode, setUploadMode] = useState<'ZIP' | 'XML'>('ZIP');
+    const [uploadMessage, setUploadMessage] = useState('');
 
     const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
     const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
@@ -285,6 +287,61 @@ export default function XmlViewerPage() {
         } catch (error) {
             message.error('Lỗi hệ thống khi xóa');
         }
+    };
+
+    const handleXmlFilesUpload = async (fileList: File[]) => {
+        setUploading(true);
+        setUploadProgress(0);
+        setUploadMessage(`Đang chuẩn bị xử lý ${fileList.length} hồ sơ...`);
+        const BATCH_SIZE = 50;
+        let processedCount = 0;
+
+        try {
+            for (let i = 0; i < fileList.length; i += BATCH_SIZE) {
+                const batch = fileList.slice(i, i + BATCH_SIZE);
+                const formData = new FormData();
+                batch.forEach(f => formData.append('files', f as Blob));
+                
+                setUploadMessage(`Đang đẩy lên máy chủ (${processedCount} / ${fileList.length} hồ sơ)...`);
+
+                const res = await fetch('/api/xml-import-batch', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || `Lỗi khi upload lô ${Math.floor(i/BATCH_SIZE) + 1}`);
+                }
+
+                processedCount += batch.length;
+                setUploadProgress(Math.floor((processedCount / fileList.length) * 100));
+                setUploadMessage(`Đang đẩy lên máy chủ (${processedCount} / ${fileList.length} hồ sơ)...`);
+            }
+            message.success(`Đã tải lên thành công ${fileList.length} file XML.`);
+            fetchData(1);
+        } catch (err: any) {
+            message.error(err.message || 'Lỗi khi tải file XML');
+        } finally {
+            setUploading(false);
+            setUploadProgress(0);
+            setUploadMessage('');
+            setIsUploadModalVisible(false);
+        }
+    };
+
+    const uploadXmlProps: UploadProps = {
+        name: 'file',
+        multiple: true,
+        accept: '.xml',
+        showUploadList: false,
+        beforeUpload: (file, fileList) => {
+            if (fileList.length > 0 && file === fileList[0]) {
+                handleXmlFilesUpload(fileList as File[]);
+            }
+            return false;
+        },
+        fileList: []
     };
 
     const uploadProps: UploadProps = {
@@ -749,31 +806,60 @@ export default function XmlViewerPage() {
                     icon={<InboxOutlined className="text-lg" />} 
                     onClick={() => setIsUploadModalVisible(true)}
                 >
-                    TẢI LÊN DỮ LIỆU ZIP
+                    TẢI LÊN DỮ LIỆU
                 </Button>
             </div>
             
             <Modal
-                title="Tải lên dữ liệu XML 3176 (ZIP)"
+                title="Tải lên dữ liệu XML 3176"
                 open={isUploadModalVisible}
                 onCancel={() => !uploading && setIsUploadModalVisible(false)}
                 footer={null}
                 destroyOnHidden
+                maskClosable={false}
+                keyboard={false}
             >
                 <div className="p-2">
-                    <Dragger {...uploadProps} disabled={uploading}>
-                        <p className="ant-upload-drag-icon">
-                            <InboxOutlined className="text-blue-500" />
-                        </p>
-                        <p className="ant-upload-text font-semibold">Click hoặc kéo thả file ZIP chứa XML vào đây</p>
-                        <p className="ant-upload-hint text-slate-500">
-                            Hỗ trợ upload hàng ngàn file XML thông qua chuẩn nén .zip. Hệ thống sẽ xử lý siêu tốc ở Background.
-                        </p>
-                    </Dragger>
+                    <div className="mb-4 text-center">
+                        <Radio.Group 
+                            value={uploadMode} 
+                            onChange={e => setUploadMode(e.target.value)} 
+                            disabled={uploading}
+                            buttonStyle="solid"
+                        >
+                            <Radio.Button value="ZIP">Tải file nén (.ZIP)</Radio.Button>
+                            <Radio.Button value="XML">Tải nhiều file (.XML lẻ)</Radio.Button>
+                        </Radio.Group>
+                    </div>
+
+                    {uploadMode === 'ZIP' ? (
+                        <Dragger {...uploadProps} disabled={uploading}>
+                            <p className="ant-upload-drag-icon">
+                                <InboxOutlined className="text-blue-500" />
+                            </p>
+                            <p className="ant-upload-text font-semibold">Click hoặc kéo thả file ZIP chứa XML vào đây</p>
+                            <p className="ant-upload-hint text-slate-500">
+                                Hỗ trợ upload hàng ngàn file XML thông qua chuẩn nén .zip. Hệ thống sẽ xử lý siêu tốc ở Background.
+                            </p>
+                        </Dragger>
+                    ) : (
+                        <Dragger {...uploadXmlProps} disabled={uploading}>
+                            <p className="ant-upload-drag-icon">
+                                <FileTextOutlined className="text-orange-500" />
+                            </p>
+                            <p className="ant-upload-text font-semibold">Click hoặc kéo thả nhiều file XML vào đây</p>
+                            <p className="ant-upload-hint text-slate-500">
+                                Phù hợp khi file ZIP quá lớn. Trình duyệt sẽ tự động chia nhỏ (50 file/lô) để gửi dần lên máy chủ an toàn.
+                            </p>
+                        </Dragger>
+                    )}
+
                     {uploading && (
                         <div className="mt-4">
                             <Progress percent={uploadProgress} status="active" />
-                            <p className="text-center text-sm text-slate-500 mt-2">Đang xử lý dữ liệu và kiểm tra Checksum...</p>
+                            <p className="text-center text-sm text-slate-500 mt-2">
+                                {uploadMode === 'ZIP' ? 'Đang xử lý dữ liệu và kiểm tra Checksum...' : (uploadMessage || 'Đang đẩy từng lô XML lên máy chủ...')}
+                            </p>
                         </div>
                     )}
                 </div>
