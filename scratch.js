@@ -1,1 +1,12 @@
-﻿const xlsx = require('xlsx'); const workbook = xlsx.readFile('mau/phụluc1tt25.xlsx'); workbook.SheetNames.forEach(sheetName => { console.log('--- Sheet: ' + sheetName + ' ---'); const sheet = workbook.Sheets[sheetName]; const data = xlsx.utils.sheet_to_json(sheet, { header: 1 }); console.log('Total rows:', data.length); if (data.length > 0) { console.log('Header:', data[0]); console.log('Sample rows:'); for (let i = 1; i < Math.min(10, data.length); i++) { console.log(data[i]); } } });
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+async function main() {
+    const cats = await prisma.systemCategory.findMany({
+        where: { type: 'CHUC_DANH' },
+        select: { code: true, name: true }
+    });
+    console.log(cats);
+}
+
+main().finally(() => prisma.$disconnect());

@@ -415,6 +415,11 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         <ul className="list-disc pl-4 space-y-1">
                             <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('PracticingCertificate.so_cchn', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ (CCHN) không có trên hệ thống.</li>
                             <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('Department.ma_khoa', MA_KHOA)</code> : Báo lỗi nếu Mã Khoa không có trên hệ thống.</li>
+                            <li className="mt-2 pt-2 border-t border-gray-100">
+                                <div className="text-orange-700 font-semibold text-[13px] mb-1">🔥 NÂNG CAO: Kiểm tra Mã Bác sĩ + Mã Chức danh:</div>
+                                Báo lỗi nếu Mã Bác sĩ không có CCHN, HOẶC nhân viên mang CCHN này không có chức danh nghề nghiệp khớp với danh sách mã bạn chỉ định. <br/>
+                                Cú pháp: <code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('Staff_CCHN_By_ChucDanh:MA_CD_1,MA_CD_2', MA_BAC_SI)</code>
+                            </li>
                             <li><span className="text-gray-500 italic">Mẹo: Bạn có thể đổi 'PracticingCertificate.so_cchn' bằng bất kỳ Tên_Bảng.Tên_Cột nào có trong Database sau này. Nó sẽ tự động hiểu!</span></li>
                         </ul>
                     </div>

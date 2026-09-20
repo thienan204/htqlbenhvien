@@ -50,6 +50,34 @@ export async function fetchMasterDataForRules(rules: ValidationRule[]): Promise<
             } catch (e) {}
             continue;
         }
+        if (ref.startsWith('Staff_CCHN_By_ChucDanh:')) {
+            try {
+                const codesStr = ref.split(':')[1];
+                if (!codesStr) continue;
+                
+                const codes = codesStr.split(',').map(c => c.trim()).filter(Boolean);
+                
+                const data = await prisma.practicingCertificate.findMany({
+                    select: {
+                        so_cchn: true,
+                        staff: {
+                            select: {
+                                chuc_danh_ref: {
+                                    select: { code: true }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                const validCCHNs = data
+                    .filter((d: any) => d.staff && d.staff.chuc_danh_ref && codes.includes(d.staff.chuc_danh_ref.code))
+                    .map((d: any) => d.so_cchn);
+                result[ref] = new Set(validCCHNs);
+            } catch (e) {}
+            continue;
+        }
+
 
         const [table, column] = ref.split('.');
         if (!table || !column) continue;
