@@ -540,8 +540,8 @@ export default function XmlReader() {
 
         const fetchDynamicMaster = async () => {
             try {
-                const params = Array.from(refs).join(',');
-                const res = await fetch(`${getBasePath()}/api/dynamic-master?refs=${params}`);
+                const params = Array.from(refs).join('|');
+                const res = await fetch(`${getBasePath()}/api/dynamic-master?refs=${encodeURIComponent(params)}`);
                 if (res.ok) {
                     const data = await res.json();
                     const parsedData: Record<string, Set<string>> = {};
