@@ -71,6 +71,36 @@ export async function GET(request: Request) {
                 continue;
             }
 
+            if (ref.startsWith('Staff_CCHN_By_TrinhDo:')) {
+                try {
+                    const codesStr = ref.split(':')[1];
+                    if (!codesStr) continue;
+                    
+                    const codes = codesStr.split(/[,|]/).map(c => c.trim()).filter(Boolean);
+                    
+                    const data = await prisma.practicingCertificate.findMany({
+                        select: {
+                            so_cchn: true,
+                            staff: {
+                                select: {
+                                    trinh_do_ref: {
+                                        select: { code: true }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    const validCCHNs = data
+                        .filter((d: any) => d.staff && d.staff.trinh_do_ref && codes.includes(d.staff.trinh_do_ref.code))
+                        .map((d: any) => d.so_cchn);
+                    result[ref] = validCCHNs;
+                } catch (err: any) {
+                    console.error('Error fetching Staff_CCHN_By_TrinhDo:', err.message);
+                }
+                continue;
+            }
+
             const [table, column] = ref.split('.');
             if (!table || !column) continue;
 
