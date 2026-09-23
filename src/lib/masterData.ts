@@ -55,7 +55,7 @@ export async function fetchMasterDataForRules(rules: ValidationRule[]): Promise<
                 const codesStr = ref.split(':')[1];
                 if (!codesStr) continue;
                 
-                const codes = codesStr.split(',').map(c => c.trim()).filter(Boolean);
+                const codes = codesStr.split(/[,|]/).map(c => c.trim()).filter(Boolean);
                 
                 const data = await prisma.practicingCertificate.findMany({
                     select: {
