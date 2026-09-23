@@ -85,7 +85,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
         }
     }, [editingRule, form, isEditModalOpen]);
 
-    const handleTestLogic = () => {
+    const handleTestLogic = async () => {
         const currentRule = form.getFieldsValue(true) as ValidationRule; // Get current form values
         // We need to merge with existing ID if editing, or mock one if new, but primarily we need the code and xmlType
 
@@ -94,7 +94,32 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
             return;
         }
 
-        const validator = new ValidationEngine([], masterData);
+        let localMasterData = { ...masterData };
+        if (currentRule.code) {
+            const refs = new Set<string>();
+            const matches = currentRule.code.matchAll(/EXISTS_IN\(\s*['"]([^'"]+)['"]/g);
+            for (const match of matches) {
+                if (match[1] && !localMasterData[match[1]]) {
+                    refs.add(match[1]);
+                }
+            }
+            if (refs.size > 0) {
+                try {
+                    const params = Array.from(refs).map(r => `refs=${encodeURIComponent(r)}`).join('&');
+                    const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        Object.keys(data).forEach(key => {
+                            localMasterData[key] = new Set(data[key]);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Lỗi khi fetch masterData bổ sung', e);
+                }
+            }
+        }
+
+        const validator = new ValidationEngine([], localMasterData);
         let matchCount = 0;
         const errors: string[] = [];
 

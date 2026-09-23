@@ -6,10 +6,13 @@ const prisma = new PrismaClient();
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const refsParam = searchParams.get('refs');
-        if (!refsParam) return NextResponse.json({});
-
-        const refs = refsParam.split('|').filter(Boolean);
+        let refs = searchParams.getAll('refs').filter(Boolean);
+        // Fallback for older clients that might still send delimited string
+        if (refs.length === 1 && (refs[0].includes('|') || refs[0].includes(',')) && !refs[0].startsWith('Staff_CCHN_By_')) {
+            // Only split if it's not a Staff_CCHN pattern that legitimately contains commas/pipes
+            refs = refs[0].split(/[|,]/).filter(Boolean);
+        }
+        
         const result: Record<string, string[]> = {};
 
         for (const ref of refs) {
