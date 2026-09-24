@@ -742,6 +742,10 @@ export default function XmlReader() {
         accept: '.xml',
         showUploadList: false,
         beforeUpload: (file, fileList) => {
+            if (!isMasterDataLoaded) {
+                if (file === fileList[0]) message.warning("Đang nạp bộ từ khóa tự động... Vui lòng kéo thả lại file sau vài giây.");
+                return false;
+            }
             // Antd calls beforeUpload for EACH file. We only want to run ONCE per batch.
             if (fileList.length > 0 && file === fileList[0]) {
                 handleFileUpload(fileList);
@@ -2046,6 +2050,7 @@ export default function XmlReader() {
                                     onClick={fetchDataFromDB} 
                                     className="bg-green-600 hover:bg-green-700 w-full"
                                     loading={isLoadingDB}
+                                    disabled={!isMasterDataLoaded}
                                 >
                                     Tải dữ liệu
                                 </Button>
