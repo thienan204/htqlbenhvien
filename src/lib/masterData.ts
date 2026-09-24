@@ -78,6 +78,23 @@ export async function fetchMasterDataForRules(rules: ValidationRule[]): Promise<
             continue;
         }
 
+        if (ref === 'Staff_All_Codes') {
+            try {
+                const staff = await prisma.staff.findMany({ select: { ma_nv: true } });
+                const cchn = await prisma.practicingCertificate.findMany({ select: { so_cchn: true } });
+                
+                const codes = new Set([
+                    ...staff.map(s => s.ma_nv),
+                    ...cchn.map(c => c.so_cchn)
+                ].filter(Boolean));
+                
+                result[ref] = codes;
+            } catch (err: any) {
+                console.error('Error fetching Staff_All_Codes:', err.message);
+            }
+            continue;
+        }
+
         if (ref.startsWith('Staff_CCHN_By_TrinhDo:')) {
             try {
                 const codesStr = ref.split(':')[1];
