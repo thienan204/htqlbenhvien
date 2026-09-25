@@ -60,7 +60,12 @@ export async function GET(request: Request) {
 
         const requests = await prisma.iTRequest.findMany({
             where: whereClause,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            include: {
+                _count: {
+                    select: { messages: true }
+                }
+            }
         });
 
         // Lấy danh sách tên người xử lý để map ID -> Tên và SĐT
@@ -89,7 +94,8 @@ export async function GET(request: Request) {
             ...req,
             assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
             assigneePhone: req.assigneeId ? assigneeMap[req.assigneeId]?.phone : null,
-            transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null
+            transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null,
+            messageCount: req._count?.messages || 0
         }));
 
         return NextResponse.json(enrichedRequests);

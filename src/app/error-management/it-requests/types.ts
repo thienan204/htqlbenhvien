@@ -12,6 +12,7 @@ export interface Ticket {
     transferToName?: string | null;
     dynamicFields: any;
     it_note: string | null;
+    messageCount?: number;
     createdAt: string;
     updatedAt: string;
 }

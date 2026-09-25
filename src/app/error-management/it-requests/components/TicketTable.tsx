@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage } from 'antd';
+import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
 import { DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
@@ -242,7 +242,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         )}
                         
                         {onChatClick && (
-                            <Button size="small" type="dashed" onClick={() => onChatClick(record)}>💬 Thảo luận</Button>
+                            <Badge count={record.messageCount} size="small" offset={[-5, 5]}>
+                                <Button size="small" type="dashed" onClick={() => onChatClick(record)}>💬 Thảo luận</Button>
+                            </Badge>
                         )}
 
                         {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && (
