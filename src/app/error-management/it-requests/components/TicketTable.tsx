@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
-import { DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -190,7 +190,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
         {
             title: 'Thao tác',
             key: 'action',
-            width: 130,
+            width: 100,
             fixed: 'right',
             render: (_: any, record: Ticket) => {
                 return (
@@ -233,9 +233,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                 icon={<FileTextOutlined />}
                                 title="Xem hồ sơ XML gốc"
                                 onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')}
-                            >
-                                XML
-                            </Button>
+                            />
                         )}
 
                         {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
@@ -244,7 +242,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         
                         {onChatClick && (
                             <Badge count={record.messageCount} size="small" offset={[-5, 5]}>
-                                <Button size="small" type="dashed" onClick={() => onChatClick(record)}>💬 Thảo luận</Button>
+                                <Button size="small" type="dashed" icon={<MessageOutlined />} title="Thảo luận" onClick={() => onChatClick(record)} />
                             </Badge>
                         )}
 
