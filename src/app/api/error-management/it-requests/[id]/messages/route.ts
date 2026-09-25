@@ -6,13 +6,14 @@ import { emitEvent } from '@/lib/notificationService';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: any) {
     try {
+        const { id } = context.params;
         const user = await getCurrentUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const messages = await prisma.requestMessage.findMany({
-            where: { itRequestId: params.id },
+            where: { itRequestId: id },
             orderBy: { createdAt: 'asc' }
         });
 
@@ -23,8 +24,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: any) {
     try {
+        const { id } = context.params;
         const user = await getCurrentUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -32,15 +34,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
         const { content, imageUrl } = body;
 
         const ticket = await prisma.iTRequest.findUnique({
-            where: { id: params.id },
-            include: { assignee: true }
+            where: { id: id }
         });
 
         if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
 
         const newMessage = await prisma.requestMessage.create({
             data: {
-                itRequestId: params.id,
+                itRequestId: id,
                 senderId: user.id,
                 senderName: user.name || user.username,
                 content: content || '',
@@ -54,8 +55,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
         
         if (isFromIT) {
             // IT replied -> Notify creator (Khoa)
-            if (ticket.nguoi_bao_id && ticket.nguoi_bao_id !== user.id) {
-                notifyUserIds.push(ticket.nguoi_bao_id);
+            // nguoi_bao_id is stored in dynamicFields if available
+            const dynamicFields: any = ticket.dynamicFields || {};
+            const nguoi_bao_id = dynamicFields.nguoi_bao_id;
+            
+            if (nguoi_bao_id && nguoi_bao_id !== user.id) {
+                notifyUserIds.push(nguoi_bao_id);
             }
         } else {
             // Khoa replied -> Notify Assignee
