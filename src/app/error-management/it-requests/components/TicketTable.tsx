@@ -16,6 +16,7 @@ interface TicketTableProps {
     onDeleteTicket: (id: string) => void;
     onProcessClick: (ticket: Ticket) => void;
     onEditClick?: (ticket: Ticket) => void;
+    onChatClick?: (ticket: Ticket) => void;
     targetDepartment?: string;
 }
 
@@ -30,6 +31,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     onDeleteTicket,
     onProcessClick,
     onEditClick,
+    onChatClick,
     targetDepartment = 'CNTT'
 }) => {
     
@@ -237,6 +239,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
                         {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
                             <Button size="small" type="primary" ghost onClick={() => onProcessClick(record)}>Xử lý</Button>
+                        )}
+                        
+                        {onChatClick && (
+                            <Button size="small" type="dashed" onClick={() => onChatClick(record)}>💬 Thảo luận</Button>
                         )}
 
                         {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && (

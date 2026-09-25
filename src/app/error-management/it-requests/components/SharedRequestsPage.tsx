@@ -9,6 +9,7 @@ import { TicketHeader } from './TicketHeader';
 import { TicketTable } from './TicketTable';
 import { TicketActionModal } from './TicketActionModal';
 import { EditTicketModal } from './EditTicketModal';
+import { TicketChatModal } from './TicketChatModal';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import { useITMasterData } from '../hooks/useITMasterData';
 import { useTickets } from '../hooks/useTickets';
@@ -26,6 +27,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
     const [isActionModalVisible, setIsActionModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [isChatVisible, setIsChatVisible] = useState(false);
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('MINE');
@@ -163,6 +165,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         setSelectedTicket(ticket);
                         setIsActionModalVisible(true);
                     }}
+                    onChatClick={(ticket) => {
+                        setSelectedTicket(ticket);
+                        setIsChatVisible(true);
+                    }}
                     onEditClick={(ticket) => {
                         setSelectedTicket(ticket);
                         setIsEditModalVisible(true);
@@ -190,6 +196,13 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     fetchTickets();
                 }}
                 targetDepartment={targetDepartment}
+            />
+
+            <TicketChatModal
+                visible={isChatVisible}
+                ticket={selectedTicket}
+                user={user}
+                onClose={() => setIsChatVisible(false)}
             />
 
             <NotificationSettingsModal 
