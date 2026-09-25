@@ -9,6 +9,7 @@ interface TicketChatModalProps {
     ticket: Ticket | null;
     user: any;
     onClose: () => void;
+    onMessageSent?: () => void;
 }
 
 interface ChatMessage {
@@ -20,7 +21,7 @@ interface ChatMessage {
     createdAt: string;
 }
 
-export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticket, user, onClose }) => {
+export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticket, user, onClose, onMessageSent }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [text, setText] = useState('');
@@ -75,6 +76,7 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                 setMessages(prev => [...prev, newMsg]);
                 setText('');
                 setTimeout(scrollToBottom, 100);
+                if (onMessageSent) onMessageSent();
             } else {
                 message.error('Lỗi khi gửi tin nhắn');
             }

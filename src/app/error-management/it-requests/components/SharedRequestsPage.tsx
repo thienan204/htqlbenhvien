@@ -203,6 +203,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 ticket={selectedTicket}
                 user={user}
                 onClose={() => setIsChatVisible(false)}
+                onMessageSent={() => fetchTickets(true)}
             />
 
             <NotificationSettingsModal 
