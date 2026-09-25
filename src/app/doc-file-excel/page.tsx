@@ -806,7 +806,7 @@ export default function ExcelReaderPage() {
     }
 
     return (
-        <div className="space-y-6 p-6 max-w-[1600px] mx-auto">
+        <div className="space-y-6 p-6 max-w-[98%] mx-auto">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-black text-slate-800 tracking-tight">Đọc dữ liệu Excel</h1>

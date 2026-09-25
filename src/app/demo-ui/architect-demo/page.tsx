@@ -277,7 +277,7 @@ export default function ArchitectDemoPage() {
             <TopHeader />
 
             <div className="pl-[280px] pt-[60px]">
-                <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+                <div className="p-8 max-w-[98%] mx-auto space-y-8">
 
                     {/* Page Title Header */}
                     <div className="bg-white/50 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">

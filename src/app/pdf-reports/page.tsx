@@ -144,7 +144,7 @@ export default function PdfReportsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 pt-12">
-            <div className="max-w-[1200px] mx-auto space-y-6">
+            <div className="max-w-[98%] mx-auto space-y-6">
                 <Breadcrumb
                     items={[
                         { title: <Link href="/">Trang chủ</Link> },

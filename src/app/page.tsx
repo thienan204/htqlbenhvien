@@ -76,7 +76,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-[80vh]">
+    <div className="p-8 max-w-[98%] mx-auto min-h-[80vh]">
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Hệ thống Quản lý Bệnh viện ĐKLS</h1>
         <p className="text-slate-500">Lựa chọn module chức năng bên dưới để bắt đầu làm việc.</p>

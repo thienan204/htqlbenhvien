@@ -118,7 +118,7 @@ export default function SchemaViewerPage() {
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-8 max-w-[98%] mx-auto">
       <div className="mb-8 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl p-8 text-white shadow-lg">
         <Title level={2} className="!text-white !mb-2 flex items-center gap-3">
           <DatabaseOutlined /> Từ Điển Dữ Liệu Hệ Thống (Schema)

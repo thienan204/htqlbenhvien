@@ -473,7 +473,7 @@ export default function KiemTraChuyenDeXml3Group15Page() {
     };
 
     return (
-        <div className="space-y-6 p-6 max-w-[1600px] mx-auto">
+        <div className="space-y-6 p-6 max-w-[98%] mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <Breadcrumb

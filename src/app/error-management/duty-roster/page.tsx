@@ -182,7 +182,7 @@ export default function DutyRosterPage() {
     if (activeTab === 'HCQT') title = 'Quản lý Hành chính Quản trị';
 
     return (
-        <div className="w-full max-w-[1200px] mx-auto px-[30px] py-6 space-y-6">
+        <div className="w-full max-w-[98%] mx-auto px-[30px] py-6 space-y-6">
             {tabItems.length > 1 && (
                 <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: '16px 24px 0 24px' } }}>
                     <Tabs type="card" activeKey={activeTab} onChange={setActiveTab} items={tabItems} />

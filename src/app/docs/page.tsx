@@ -77,7 +77,7 @@ export default function DocsPage() {
                             <Spin size="large" />
                         </div>
                     ) : (
-                        <div className="prose prose-slate prose-blue max-w-4xl mx-auto">
+                        <div className="prose prose-slate prose-blue max-w-[98%] mx-auto">
                             <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{

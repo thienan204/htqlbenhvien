@@ -3,7 +3,7 @@ import { Card } from 'antd';
 
 export default function KiemTraChuyenDePage() {
     return (
-        <div className="p-6 max-w-[1600px] mx-auto">
+        <div className="p-6 max-w-[98%] mx-auto">
             <div className="mb-6">
                 <h1 className="text-3xl font-black text-slate-800 tracking-tight">Kiểm tra chuyên đề</h1>
                 <p className="text-slate-500 font-medium">Các báo cáo và kiểm tra chuyên sâu (Đang phát triển)</p>

@@ -762,7 +762,7 @@ export default function HoSoDaGuiPage() {
     );
 
     const importContent = (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-[98%] mx-auto">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
                 <div 
                     {...getRootProps()} 
@@ -1517,7 +1517,7 @@ export default function HoSoDaGuiPage() {
                 />
             </div>
 
-            <div className="flex gap-2 mb-4 max-w-2xl flex-wrap">
+            <div className="flex gap-2 mb-4 max-w-[98%] flex-wrap">
                 <DatePicker.RangePicker 
                     format="DD/MM/YYYY"
                     placeholder={['Ngày ra từ', 'Ngày ra đến']}

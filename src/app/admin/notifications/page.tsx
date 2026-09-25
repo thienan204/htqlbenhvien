@@ -304,7 +304,7 @@ export default function NotificationConfigPage() {
           <p className="mb-6 text-gray-500">
             Sử dụng form dưới đây để gửi thông báo khẩn cấp hoặc tin nhắn trực tiếp xuống các máy tính khoa phòng đang chạy Desktop Client.
           </p>
-          <div className="max-w-2xl">
+          <div className="max-w-[98%]">
             <Form form={manualForm} layout="vertical" onFinish={async (values) => {
               try {
                 const res = await fetch('/api/notifications/webhook', {

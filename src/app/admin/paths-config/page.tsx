@@ -109,7 +109,7 @@ export default function PathsConfigPage() {
 
     return (
         <Layout className="min-h-screen bg-slate-50">
-            <Content className="p-6 max-w-4xl mx-auto w-full">
+            <Content className="p-6 max-w-[98%] mx-auto w-full">
                 <Breadcrumb className="mb-4" items={[{ title: 'Quản trị' }, { title: 'Cấu hình hệ thống' }]} />
                 
                 <Card 

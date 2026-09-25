@@ -106,7 +106,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     };
 
     return (
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-[30px] py-4 sm:py-6 space-y-4 sm:space-y-6">
+        <div className="w-full max-w-[98%] mx-auto px-4 sm:px-[30px] py-4 sm:py-6 space-y-4 sm:space-y-6">
             <TicketHeader 
                 user={user}
                 isAdmin={isAdmin}

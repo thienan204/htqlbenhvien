@@ -8,7 +8,7 @@ const { Title, Paragraph } = Typography;
 
 export default function KskNhapLieuPage() {
     return (
-        <div className="p-6 max-w-5xl mx-auto">
+        <div className="p-6 max-w-[98%] mx-auto">
             <div className="mb-6">
                 <Title level={2}><FormOutlined className="mr-2" /> Nhập Hồ Sơ Khám Sức Khỏe Toàn Dân</Title>
                 <Paragraph className="text-gray-500">

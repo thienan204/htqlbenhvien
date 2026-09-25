@@ -45,7 +45,7 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
     const categories = Object.keys(groupedEndpoints).sort();
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-6 max-w-[98%] mx-auto space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                 <div>
                     <Title level={2} className="!mb-1 text-slate-800 flex items-center gap-3">

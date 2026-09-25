@@ -198,7 +198,7 @@ export default function RolesPage() {
     ];
 
     return (
-        <div className="w-full max-w-[1200px] mx-auto px-[30px] py-6 space-y-6">
+        <div className="w-full max-w-[98%] mx-auto px-[30px] py-6 space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-2xl">

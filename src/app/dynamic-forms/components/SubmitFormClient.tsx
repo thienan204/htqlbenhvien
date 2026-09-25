@@ -280,7 +280,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
     if (isSubmitted) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-6 pb-12 px-2 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
-                <div className="max-w-4xl w-full">
+                <div className="max-w-[98%] w-full">
                     <Tabs
                         type="card"
                         items={[
@@ -379,7 +379,7 @@ export default function SubmitFormClient({ formId }: { formId: string }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-6 pb-12 px-2 sm:px-6 lg:px-8 flex flex-col items-center justify-start font-sans">
-            <div className="max-w-4xl w-full">
+            <div className="max-w-[98%] w-full">
                 <Tabs
                     type="card"
                     items={[

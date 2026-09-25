@@ -292,7 +292,7 @@ export default function Icd10Page() {
                             setSearchText(e.target.value);
                             setPage(1);
                         }}
-                        className="max-w-2xl rounded-lg"
+                        className="max-w-[98%] rounded-lg"
                         allowClear
                     />
 

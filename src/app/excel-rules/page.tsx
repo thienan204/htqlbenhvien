@@ -232,7 +232,7 @@ export default function ExcelRulesPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 md:p-12">
-            <div className="max-w-6xl mx-auto space-y-8">
+            <div className="max-w-[98%] mx-auto space-y-8">
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-black text-slate-800 tracking-tight">Cấu hình Quy tắc Excel</h1>
