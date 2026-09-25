@@ -87,7 +87,7 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
 
     return (
         <Drawer
-            title={ticket ? `Thảo luận Yêu cầu: ${ticket.ma_ba}` : 'Thảo luận'}
+            title={ticket ? `Thảo luận: ${ticket.ma_ba || ticket.ten_loi}` : 'Thảo luận'}
             placement="right"
             onClose={onClose}
             open={visible}

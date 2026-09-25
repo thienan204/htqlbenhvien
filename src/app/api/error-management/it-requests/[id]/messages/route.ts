@@ -8,9 +8,13 @@ const prisma = new PrismaClient();
 
 export async function GET(request: Request, context: any) {
     try {
-        const { id } = context.params;
+        const params = await context.params;
+        const id = params.id;
+        
         const user = await getCurrentUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        if (!id) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
         const messages = await prisma.requestMessage.findMany({
             where: { itRequestId: id },
@@ -26,9 +30,13 @@ export async function GET(request: Request, context: any) {
 
 export async function POST(request: Request, context: any) {
     try {
-        const { id } = context.params;
+        const params = await context.params;
+        const id = params.id;
+        
         const user = await getCurrentUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        if (!id) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
         const body = await request.json();
         const { content, imageUrl } = body;
