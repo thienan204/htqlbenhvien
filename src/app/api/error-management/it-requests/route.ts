@@ -63,20 +63,33 @@ export async function GET(request: Request) {
             orderBy: { createdAt: 'desc' }
         });
 
-        // Lấy danh sách tên người xử lý để map ID -> Tên
+        // Lấy danh sách tên người xử lý để map ID -> Tên và SĐT
         const assignees = await prisma.user.findMany({
             where: { role: { in: ['CNTT', 'VTYT', 'HCQT', 'ADMIN'] } },
-            select: { id: true, name: true, username: true }
+            select: { 
+                id: true, 
+                name: true, 
+                username: true,
+                staff: {
+                    select: {
+                        so_dien_thoai: true
+                    }
+                }
+            }
         });
         const assigneeMap = assignees.reduce((acc: any, curr) => {
-            acc[curr.id] = curr.name || curr.username;
+            acc[curr.id] = {
+                name: curr.name || curr.username,
+                phone: curr.staff?.so_dien_thoai || null
+            };
             return acc;
         }, {});
 
         const enrichedRequests = requests.map(req => ({
             ...req,
-            assigneeName: req.assigneeId ? assigneeMap[req.assigneeId] : 'Chưa phân công',
-            transferToName: req.transferToId ? assigneeMap[req.transferToId] : null
+            assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
+            assigneePhone: req.assigneeId ? assigneeMap[req.assigneeId]?.phone : null,
+            transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null
         }));
 
         return NextResponse.json(enrichedRequests);

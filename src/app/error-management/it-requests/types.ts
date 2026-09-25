@@ -7,6 +7,7 @@ export interface Ticket {
     status: string;
     assigneeId: string | null;
     assigneeName: string;
+    assigneePhone?: string | null;
     transferToId?: string | null;
     transferToName?: string | null;
     dynamicFields: any;

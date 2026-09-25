@@ -128,7 +128,16 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 if (record.status === 'TRANSFERRING' && record.transferToName) {
                     return <Tag color="warning" className="whitespace-normal leading-tight py-1">{record.assigneeName} ➜ {record.transferToName}</Tag>
                 }
-                return <Tag color="purple">{record.assigneeName}</Tag>
+                return (
+                    <div className="flex flex-col items-start gap-1">
+                        <Tag color="purple">{record.assigneeName}</Tag>
+                        {record.assigneePhone && (
+                            <div className="text-[11px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-sm">
+                                📞 {record.assigneePhone}
+                            </div>
+                        )}
+                    </div>
+                );
             }
         },
         {
