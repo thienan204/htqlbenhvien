@@ -92,7 +92,7 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
             onClose={onClose}
             open={visible}
             width={400}
-            bodyStyle={{ display: 'flex', flexDirection: 'column', padding: 0 }}
+            styles={{ body: { display: 'flex', flexDirection: 'column', padding: 0 } }}
         >
             <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
                 {loading && messages.length === 0 ? (
