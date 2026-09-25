@@ -226,7 +226,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             </>
                         )}
                         
-                        {record.ma_ba && (
+                        {record.ma_ba && record.hasXml && (
                             <Button 
                                 size="small" 
                                 type="default"

@@ -13,6 +13,7 @@ export interface Ticket {
     dynamicFields: any;
     it_note: string | null;
     messageCount?: number;
+    hasXml?: boolean;
     createdAt: string;
     updatedAt: string;
 }

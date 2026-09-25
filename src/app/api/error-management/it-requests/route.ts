@@ -90,12 +90,21 @@ export async function GET(request: Request) {
             return acc;
         }, {});
 
+        const maBaList = requests.map(req => req.ma_ba).filter(Boolean) as string[];
+        const existingXmls = await prisma.xml1.findMany({
+            where: { MA_LK: { in: maBaList } },
+            select: { MA_LK: true },
+            distinct: ['MA_LK']
+        });
+        const existingXmlSet = new Set(existingXmls.map(xml => xml.MA_LK));
+
         const enrichedRequests = requests.map(req => ({
             ...req,
             assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
             assigneePhone: req.assigneeId ? assigneeMap[req.assigneeId]?.phone : null,
             transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null,
-            messageCount: req._count?.messages || 0
+            messageCount: req._count?.messages || 0,
+            hasXml: req.ma_ba ? existingXmlSet.has(req.ma_ba) : false
         }));
 
         return NextResponse.json(enrichedRequests);
