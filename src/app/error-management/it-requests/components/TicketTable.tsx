@@ -191,6 +191,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             title: 'Thao tác',
             key: 'action',
             width: 130,
+            fixed: 'right',
             render: (_: any, record: Ticket) => {
                 return (
                     <Space>
