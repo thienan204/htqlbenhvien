@@ -438,7 +438,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         <div className="font-bold text-blue-700">1. Kiểm tra danh mục hệ thống (EXISTS_IN)</div>
                         <div className="text-gray-600 mb-1">Dùng để đối chiếu MÃ của File XML với danh sách trong Database hệ thống.</div>
                         <ul className="list-disc pl-4 space-y-1">
-                            <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('PracticingCertificate.so_cchn', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ (CCHN) không có trên hệ thống.</li>
+                            <li><code className="bg-white px-1 border rounded text-red-600">MA_BAC_SI != '' && !EXISTS_IN('Staff_All_Codes', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ có dữ liệu nhưng lại KHÔNG có trên hệ thống Nhân sự (kiểm tra cả CCHN và Mã NV).</li>
+                            <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('PracticingCertificate.so_cchn', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ không tồn tại trong danh sách CCHN.</li>
                             <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('Department.ma_khoa', MA_KHOA)</code> : Báo lỗi nếu Mã Khoa không có trên hệ thống.</li>
                             <li className="mt-2 pt-2 border-t border-gray-100">
                                 <div className="text-orange-700 font-semibold text-[13px] mb-1">🔥 NÂNG CAO: Kiểm tra Mã Bác sĩ + Mã Chức danh / Mã Trình độ:</div>
