@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Drawer, Input, Button, Spin, message } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
