@@ -53,6 +53,12 @@ export default function XmlViewerPage() {
 
     const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
     const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
+    
+    // Scan Special Chars State
+    const [isSpecialCharModalVisible, setIsSpecialCharModalVisible] = useState(false);
+    const [specialCharMaLk, setSpecialCharMaLk] = useState('');
+    const [specialCharLoading, setSpecialCharLoading] = useState(false);
+    const [specialCharResults, setSpecialCharResults] = useState<{ path: string, value: string, char: string }[] | null>(null);
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -201,6 +207,31 @@ export default function XmlViewerPage() {
             message.error('Lỗi hệ thống khi giám định');
         } finally {
             setIsValidating(false);
+        }
+    };
+
+    const handleScanSpecialChars = async () => {
+        if (!specialCharMaLk.trim()) {
+            message.warning('Vui lòng nhập Mã Liên Kết (MA_LK)');
+            return;
+        }
+        setSpecialCharLoading(true);
+        setSpecialCharResults(null);
+        try {
+            const res = await fetch(`/api/debug-validation/special-chars?maLk=${specialCharMaLk.trim()}`);
+            const json = await res.json();
+            if (json.success) {
+                setSpecialCharResults(json.results);
+                if (json.results.length === 0) {
+                    message.success('Tuyệt vời! Không phát hiện ký tự đặc biệt nào trong hồ sơ này.');
+                }
+            } else {
+                message.error('Lỗi: ' + json.error);
+            }
+        } catch (error) {
+            message.error('Lỗi hệ thống khi quét ký tự đặc biệt');
+        } finally {
+            setSpecialCharLoading(false);
         }
     };
 
@@ -644,6 +675,9 @@ export default function XmlViewerPage() {
                             <Button icon={<FileTextOutlined />} onClick={handleViewReport}>
                                 Xem báo cáo
                             </Button>
+                            <Button icon={<ToolOutlined />} onClick={() => setIsSpecialCharModalVisible(true)} style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none' }}>
+                                Quét ký tự đặc biệt
+                            </Button>
                             <Button icon={<PlayCircleOutlined />} onClick={handleRunValidation} loading={isValidating}>
                                 {selectedRowKeys.length > 0 ? 'Chạy kiểm tra đã chọn' : 'Chạy lại kiểm tra'}
                             </Button>
@@ -941,6 +975,83 @@ export default function XmlViewerPage() {
                             className="mt-4"
                         />
                     </div>
+                </div>
+            </Modal>
+
+            {/* Modal Quét Ký Tự Đặc Biệt */}
+            <Modal
+                title={<div><ToolOutlined className="text-orange-500 mr-2" /> Quét Ký tự Đặc biệt toàn bộ Hồ sơ (Deep Scan)</div>}
+                open={isSpecialCharModalVisible}
+                onCancel={() => { setIsSpecialCharModalVisible(false); setSpecialCharResults(null); setSpecialCharMaLk(''); }}
+                footer={null}
+                width={800}
+                destroyOnHidden
+            >
+                <div className="p-2">
+                    <p className="text-slate-600 mb-4">Nhập <b>Mã Liên Kết (MA_LK)</b> của hồ sơ để hệ thống quét sâu vào toàn bộ 15 bảng XML, tìm kiếm các ký tự lạ hoặc ký tự không thể in được (non-printable).</p>
+                    
+                    <div className="flex gap-2 mb-6">
+                        <Input 
+                            size="large"
+                            placeholder="Nhập MA_LK (Ví dụ: 12345678)"
+                            value={specialCharMaLk}
+                            onChange={e => setSpecialCharMaLk(e.target.value)}
+                            onPressEnter={handleScanSpecialChars}
+                            prefix={<SearchOutlined className="text-slate-400" />}
+                        />
+                        <Button 
+                            type="primary" 
+                            size="large" 
+                            icon={<ExperimentOutlined />} 
+                            onClick={handleScanSpecialChars}
+                            loading={specialCharLoading}
+                        >
+                            Quét ngay
+                        </Button>
+                    </div>
+
+                    {specialCharResults && (
+                        <div className="mt-4">
+                            <h3 className="font-bold text-lg mb-3">Kết quả ({specialCharResults.length} phát hiện):</h3>
+                            
+                            {specialCharResults.length === 0 ? (
+                                <Alert 
+                                    type="success" 
+                                    showIcon 
+                                    message="Hồ sơ Sạch" 
+                                    description="Không tìm thấy bất kỳ ký tự đặc biệt/ký tự ẩn nào trong toàn bộ các bảng XML của MA_LK này." 
+                                />
+                            ) : (
+                                <div className="max-h-96 overflow-y-auto pr-2">
+                                    <div className="flex flex-col gap-3">
+                                        {specialCharResults.map((res, idx) => {
+                                            // Extract XML type if possible (e.g. XML2[0].TEN_THUOC)
+                                            const xmlTypeMatch = res.path.match(/^(XML\d+)/);
+                                            const xmlType = xmlTypeMatch ? xmlTypeMatch[1] : 'XML?';
+                                            
+                                            return (
+                                                <div key={idx} className="p-3 bg-red-50 rounded border border-red-200">
+                                                    <div className="flex items-center mb-1">
+                                                        <Tag color="volcano" className="font-bold">{xmlType}</Tag>
+                                                        <span className="font-mono text-sm text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 break-all">{res.path}</span>
+                                                    </div>
+                                                    <div className="mt-2 text-slate-800">
+                                                        <span>Phát hiện ký tự lạ: </span>
+                                                        <Tag color="red" className="font-bold text-base px-3 py-1">
+                                                            {res.char === ' ' ? '(Space)' : (res.char.charCodeAt(0) < 32 ? `(Mã ASCII: ${res.char.charCodeAt(0)})` : res.char)}
+                                                        </Tag>
+                                                    </div>
+                                                    <div className="mt-2 text-xs text-slate-500 truncate" title={res.value}>
+                                                        Giá trị gốc: "{res.value}"
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </Modal>
         </div>

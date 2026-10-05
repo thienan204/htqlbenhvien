@@ -80,13 +80,19 @@ export function getXmlDataList(group: XMLGroup | undefined | null): any[] {
 
     // XML9 - Giay Chung Sinh
     if (type === 'XML9') {
-        // Variant 1: Standard naming
+        // Variant from screenshot: CHI_TIEU_DU_LIEU_GIAY_CHUNG_SINH -> DSACH_GIAYCHUNGSINH -> DU_LIEU_GIAY_CHUNG_SINH
+        if (group.data.CHI_TIEU_DU_LIEU_GIAY_CHUNG_SINH?.DSACH_GIAYCHUNGSINH?.DU_LIEU_GIAY_CHUNG_SINH)
+            return Array.isArray(group.data.CHI_TIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.DU_LIEU_GIAY_CHUNG_SINH)
+                ? group.data.CHI_TIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.DU_LIEU_GIAY_CHUNG_SINH
+                : [group.data.CHI_TIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.DU_LIEU_GIAY_CHUNG_SINH];
+
+        // Variant 1: Standard naming with wrapper
         if (group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH?.DSACH_GIAY_CHUNG_SINH?.GIAY_CHUNG_SINH)
             return Array.isArray(group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAY_CHUNG_SINH.GIAY_CHUNG_SINH)
                 ? group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAY_CHUNG_SINH.GIAY_CHUNG_SINH
                 : [group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAY_CHUNG_SINH.GIAY_CHUNG_SINH];
 
-        // Variant 2: Compact naming (DSACH_GIAYCHUNGSINH as seen in UI)
+        // Variant 2: Compact naming with wrapper
         if (group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH?.DSACH_GIAYCHUNGSINH?.GIAY_CHUNG_SINH)
             return Array.isArray(group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.GIAY_CHUNG_SINH)
                 ? group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.GIAY_CHUNG_SINH
@@ -96,6 +102,22 @@ export function getXmlDataList(group: XMLGroup | undefined | null): any[] {
             return Array.isArray(group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.GIAYCHUNGSINH)
                 ? group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.GIAYCHUNGSINH
                 : [group.data.CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.GIAYCHUNGSINH];
+
+        // Variant 3: No wrapper, direct DSACH_GIAYCHUNGSINH or DSACH_GIAY_CHUNG_SINH
+        if (group.data.DSACH_GIAYCHUNGSINH?.GIAYCHUNGSINH)
+            return Array.isArray(group.data.DSACH_GIAYCHUNGSINH.GIAYCHUNGSINH)
+                ? group.data.DSACH_GIAYCHUNGSINH.GIAYCHUNGSINH
+                : [group.data.DSACH_GIAYCHUNGSINH.GIAYCHUNGSINH];
+
+        if (group.data.DSACH_GIAYCHUNGSINH?.GIAY_CHUNG_SINH)
+            return Array.isArray(group.data.DSACH_GIAYCHUNGSINH.GIAY_CHUNG_SINH)
+                ? group.data.DSACH_GIAYCHUNGSINH.GIAY_CHUNG_SINH
+                : [group.data.DSACH_GIAYCHUNGSINH.GIAY_CHUNG_SINH];
+
+        if (group.data.DSACH_GIAY_CHUNG_SINH?.GIAY_CHUNG_SINH)
+            return Array.isArray(group.data.DSACH_GIAY_CHUNG_SINH.GIAY_CHUNG_SINH)
+                ? group.data.DSACH_GIAY_CHUNG_SINH.GIAY_CHUNG_SINH
+                : [group.data.DSACH_GIAY_CHUNG_SINH.GIAY_CHUNG_SINH];
     }
 
     // Generic fallback: if data is an object, return it as a single-item list

@@ -43,6 +43,12 @@ const XML_LIST_PATHS: Record<string, string> = {
     'XML4': 'CHITIEU_CHITIET_DICHVUCANLAMSANG.DSACH_CHI_TIET_CLS.CHI_TIET_CLS',
     'XML5': 'CHITIEU_CHITIET_DIENBIENLAMSANG.DSACH_CHI_TIET_DIEN_BIEN_BENH.CHI_TIET_DIEN_BIEN_BENH',
     'XML7': 'CHITIEU_DU_LIEU_GIAY_RA_VIEN.GIAY_RA_VIEN',
+    'XML9': 'CHITIEU_DU_LIEU_GIAY_CHUNG_SINH.DSACH_GIAYCHUNGSINH.DU_LIEU_GIAY_CHUNG_SINH',
+    'XML10': 'TRUE',
+    'XML11': 'TRUE',
+    'XML13': 'TRUE',
+    'XML14': 'TRUE',
+    'XML15': 'TRUE'
 };
 
 /**
@@ -1000,6 +1006,15 @@ export class ValidationEngine {
                 for (const part of parts) {
                     if (current === undefined || current === null) return null;
 
+                    // Unwrap __cdata or #text if the property exists on string (like .length)
+                    if (current && typeof current === 'object') {
+                        if (current.__cdata !== undefined && String(current.__cdata)[part as any] !== undefined) {
+                            current = String(current.__cdata);
+                        } else if (current['#text'] !== undefined && String(current['#text'])[part as any] !== undefined) {
+                            current = String(current['#text']);
+                        }
+                    }
+
                     if (current[part] !== undefined) {
                         current = current[part];
                     } else {
@@ -1015,6 +1030,9 @@ export class ValidationEngine {
                 }
                 if (current && typeof current === 'object' && current.__cdata !== undefined) {
                     return current.__cdata;
+                }
+                if (current && typeof current === 'object' && current['#text'] !== undefined) {
+                    return current['#text'];
                 }
                 return current;
             };
@@ -1325,18 +1343,61 @@ export class ValidationEngine {
                 return !hasMatch ? "true" : "false";
             });
 
-            // 1. Handle LOGICAL OR (||)
-            // Split by || but respect parentheses (naive implementation for now, assuming simple logic)
-            if (cleanCode.includes('||')) {
-                const parts = cleanCode.split('||');
-                return parts.some(part => this.evaluateRuleCode(part, context, throwError));
+            // 1. Handle PARENTHESES (Basic support for wrapping single expression)
+            // Remove fully wrapping parentheses first
+            while (cleanCode.startsWith('(') && cleanCode.endsWith(')')) {
+                // Verify that this pair actually wraps the ENTIRE expression
+                let depth = 0;
+                let isWrapped = true;
+                for (let i = 0; i < cleanCode.length - 1; i++) {
+                    if (cleanCode[i] === '(') depth++;
+                    if (cleanCode[i] === ')') depth--;
+                    if (depth === 0) {
+                        isWrapped = false;
+                        break;
+                    }
+                }
+                if (isWrapped) {
+                    cleanCode = cleanCode.substring(1, cleanCode.length - 1).trim();
+                } else {
+                    break;
+                }
             }
 
-            // 2. Handle LOGICAL AND (&&)
-            if (cleanCode.includes('&&')) {
-                const parts = cleanCode.split('&&');
+            if (cleanCode === 'true') return true;
+            if (cleanCode === 'false') return false;
+
+            const splitRespectingParentheses = (str: string, delimiter: string) => {
+                const result = [];
+                let current = '';
+                let depth = 0;
+                for (let i = 0; i < str.length; i++) {
+                    if (str[i] === '(') depth++;
+                    if (str[i] === ')') depth--;
+                    
+                    if (depth === 0 && str.substring(i, i + delimiter.length) === delimiter) {
+                        result.push(current);
+                        current = '';
+                        i += delimiter.length - 1; // Skip the rest of the delimiter
+                    } else {
+                        current += str[i];
+                    }
+                }
+                result.push(current);
+                return result.map(s => s.trim());
+            };
+
+            // 2. Handle LOGICAL OR (||)
+            const orParts = splitRespectingParentheses(cleanCode, '||');
+            if (orParts.length > 1) {
+                return orParts.some(part => this.evaluateRuleCode(part, context, throwError));
+            }
+
+            // 3. Handle LOGICAL AND (&&)
+            const andParts = splitRespectingParentheses(cleanCode, '&&');
+            if (andParts.length > 1) {
                 // All parts must be true
-                const result = parts.every(part => {
+                const result = andParts.every(part => {
                     const partResult = this.evaluateRuleCode(part, context, throwError);
                     console.log(`[EVAL &&] part="${part}" => ${partResult}`);
                     return partResult;
@@ -1344,14 +1405,6 @@ export class ValidationEngine {
                 console.log(`[EVAL &&] final result for "${cleanCode}" => ${result}`);
                 return result;
             }
-
-            // 3. Handle PARENTHESES (Basic support for wrapping single expression)
-            if (cleanCode.startsWith('(') && cleanCode.endsWith(')')) {
-                return this.evaluateRuleCode(cleanCode.substring(1, cleanCode.length - 1), context, throwError);
-            }
-
-            if (cleanCode === 'true') return true;
-            if (cleanCode === 'false') return false;
 
             // 4. Comparison operations
             const ops = ['<=', '>=', '==', '!=', '===', '!==', '<', '>'];

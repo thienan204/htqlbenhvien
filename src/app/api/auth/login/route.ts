@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
+// Trigger nextjs hot reload
 
 export async function POST(request: Request) {
     try {

@@ -25,7 +25,7 @@ import {
 import {
     InboxOutlined, UploadOutlined, FileExcelOutlined, SearchOutlined,
     CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, DeleteOutlined,
-    CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined
+    CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined, ToolOutlined, ExperimentOutlined
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -297,6 +297,15 @@ export default function XmlReader() {
     const [activeTab, setActiveTab] = useState<string>('XML1');
     const [user, setUser] = useState<any>(null);
     const [processingProgress, setProcessingProgress] = useState<{ current: number, total: number } | null>(null);
+    
+    // Special char scanner states
+    const [isSpecialCharModalVisible, setIsSpecialCharModalVisible] = useState(false);
+    const [specialCharMaLk, setSpecialCharMaLk] = useState('');
+    const [specialCharLoading, setSpecialCharLoading] = useState(false);
+    const [specialCharResults, setSpecialCharResults] = useState<any[] | null>(null);
+    const [specialCharFilterXml, setSpecialCharFilterXml] = useState<string | null>(null);
+    const [specialCharFilterField, setSpecialCharFilterField] = useState<string | null>(null);
+
     const { rules, saveRules, isLoaded: isRulesLoaded, reloadRules } = useRules();
     const [mainFilter, setMainFilter] = useState<string>('ERROR');
     const [searchText, setSearchText] = useState('');
@@ -1526,6 +1535,55 @@ export default function XmlReader() {
         return result;
     };
 
+    const handleScanSpecialChars = () => {
+        if (!specialCharMaLk.trim()) {
+            message.warning('Vui lòng nhập Mã Liên Kết (MA_LK)');
+            return;
+        }
+        
+        setSpecialCharLoading(true);
+        const malk = specialCharMaLk.trim();
+        const targetRecord = records.find(r => renderValue(r.summary?.MA_LK) === malk);
+        
+        if (!targetRecord) {
+            message.error(`Không tìm thấy hồ sơ có MA_LK = ${malk} trong danh sách hiện tại! Vui lòng tải file hoặc lấy từ DB trước.`);
+            setSpecialCharLoading(false);
+            return;
+        }
+
+        const results: any[] = [];
+        const scanObj = (obj: any, path: string) => {
+            if (!obj) return;
+            if (typeof obj === 'string') {
+                const regex = /[@#$^~{}|<>\\]|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
+                let match;
+                while ((match = regex.exec(obj)) !== null) {
+                    results.push({ path, value: obj, char: match[0] });
+                    break;
+                }
+            } else if (Array.isArray(obj)) {
+                obj.forEach((item, idx) => scanObj(item, `${path}[${idx}]`));
+            } else if (typeof obj === 'object') {
+                for (const [key, value] of Object.entries(obj)) {
+                    if (key.startsWith('__')) continue;
+                    scanObj(value, path ? `${path}.${key}` : key);
+                }
+            }
+        };
+
+        scanObj(targetRecord.summary, 'XML1');
+        targetRecord.groups.forEach(group => {
+            const list = getXmlDataList(group);
+            scanObj(list, group.type);
+        });
+
+        setSpecialCharResults(results);
+        if (results.length === 0) {
+            message.success('Hồ sơ sạch! Không phát hiện ký tự đặc biệt.');
+        }
+        setSpecialCharLoading(false);
+    };
+
     const handleExportExcel = async () => {
         // Logic same as before, adapting to getFilteredRecords()
         const targetRecords = getFilteredRecords();
@@ -2086,6 +2144,9 @@ export default function XmlReader() {
                                                     Lưu DB (XML Viewer)
                                                 </Button>
                                             )}
+                                            <Button icon={<ToolOutlined />} onClick={() => setIsSpecialCharModalVisible(true)} style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none' }}>
+                                                Quét ký tự đặc biệt
+                                            </Button>
                                             <Button
                                                 icon={<FileExcelOutlined />}
                                                 onClick={() => router.push(`/report?filter=${mainFilter}`)}
@@ -2303,7 +2364,7 @@ export default function XmlReader() {
             >
                 <div className="flex flex-col gap-4 py-4">
                     <Alert 
-                        message="Hạn sửa bệnh án được tính từ Ngày Ra Viện cộng thêm số ngày quy định (không tính Thứ 7, Chủ Nhật)."
+                        title="Hạn sửa bệnh án được tính từ Ngày Ra Viện cộng thêm số ngày quy định (không tính Thứ 7, Chủ Nhật)."
                         type="info" 
                         showIcon 
                     />
@@ -2316,6 +2377,145 @@ export default function XmlReader() {
                             onChange={(val) => setEditDeadlineDays(val || 0)}
                         />
                     </div>
+                </div>
+            </Modal>
+
+            {/* Modal Quét Ký Tự Đặc Biệt */}
+            <Modal
+                title={<div><ToolOutlined className="text-orange-500 mr-2" /> Quét Ký tự Đặc biệt toàn bộ Hồ sơ (Deep Scan)</div>}
+                open={isSpecialCharModalVisible}
+                onCancel={() => { 
+                    setIsSpecialCharModalVisible(false); 
+                    setSpecialCharResults(null); 
+                    setSpecialCharMaLk(''); 
+                    setSpecialCharFilterXml(null);
+                    setSpecialCharFilterField(null);
+                }}
+                footer={null}
+                width={800}
+                destroyOnHidden
+            >
+                <div className="p-2">
+                    <p className="text-slate-600 mb-4">Nhập <b>Mã Liên Kết (MA_LK)</b> của hồ sơ để hệ thống quét sâu vào toàn bộ 15 bảng XML, tìm kiếm các ký tự lạ hoặc ký tự không thể in được (non-printable).</p>
+                    
+                    <div className="flex gap-2 mb-6">
+                        <Input 
+                            size="large"
+                            placeholder="Nhập MA_LK (Ví dụ: 12345678)"
+                            value={specialCharMaLk}
+                            onChange={e => setSpecialCharMaLk(e.target.value)}
+                            onPressEnter={handleScanSpecialChars}
+                            prefix={<SearchOutlined className="text-slate-400" />}
+                        />
+                        <Button 
+                            type="primary" 
+                            size="large" 
+                            icon={<ExperimentOutlined />} 
+                            onClick={() => {
+                                setSpecialCharFilterXml(null);
+                                setSpecialCharFilterField(null);
+                                handleScanSpecialChars();
+                            }}
+                            loading={specialCharLoading}
+                        >
+                            Quét ngay
+                        </Button>
+                    </div>
+
+                    {specialCharResults && (
+                        <div className="mt-4">
+                            <div className="flex justify-between items-center mb-3">
+                                <h3 className="font-bold text-lg">Kết quả ({specialCharResults.length} phát hiện):</h3>
+                                
+                                {specialCharResults.length > 0 && (
+                                    <Space>
+                                        <Select
+                                            placeholder="Lọc XML"
+                                            allowClear
+                                            style={{ width: 120 }}
+                                            value={specialCharFilterXml}
+                                            onChange={(val) => {
+                                                setSpecialCharFilterXml(val);
+                                                setSpecialCharFilterField(null);
+                                            }}
+                                            options={Array.from(new Set(specialCharResults.map(r => r.path.match(/^(XML\d+)/)?.[1] || 'XML?'))).sort().map(x => ({ label: x, value: x }))}
+                                        />
+                                        <Select
+                                            placeholder="Lọc Field"
+                                            allowClear
+                                            style={{ width: 180 }}
+                                            value={specialCharFilterField}
+                                            onChange={(val) => setSpecialCharFilterField(val)}
+                                            disabled={!specialCharFilterXml}
+                                            options={
+                                                specialCharFilterXml 
+                                                    ? Array.from(new Set(
+                                                        specialCharResults
+                                                            .filter(r => (r.path.match(/^(XML\d+)/)?.[1] || 'XML?') === specialCharFilterXml)
+                                                            .map(r => r.path.split('.').pop() || 'Unknown')
+                                                    )).sort().map(f => ({ label: f, value: f }))
+                                                    : []
+                                            }
+                                        />
+                                    </Space>
+                                )}
+                            </div>
+                            
+                            {specialCharResults.length === 0 ? (
+                                <Alert 
+                                    type="success" 
+                                    showIcon 
+                                    title="Hồ sơ Sạch" 
+                                    description="Không tìm thấy bất kỳ ký tự đặc biệt/ký tự ẩn nào trong toàn bộ các bảng XML của MA_LK này." 
+                                />
+                            ) : (() => {
+                                const displayResults = specialCharResults.filter(r => {
+                                    const xmlType = r.path.match(/^(XML\d+)/)?.[1] || 'XML?';
+                                    if (specialCharFilterXml && xmlType !== specialCharFilterXml) return false;
+                                    const field = r.path.split('.').pop() || 'Unknown';
+                                    if (specialCharFilterField && field !== specialCharFilterField) return false;
+                                    return true;
+                                });
+
+                                if (displayResults.length === 0) {
+                                    return (
+                                        <div className="text-center p-8 text-slate-500 border border-dashed rounded bg-slate-50">
+                                            Không có kết quả nào phù hợp với bộ lọc hiện tại.
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="max-h-96 overflow-y-auto pr-2">
+                                        <div className="flex flex-col gap-3">
+                                            {displayResults.map((res, idx) => {
+                                                const xmlTypeMatch = res.path.match(/^(XML\d+)/);
+                                                const xmlType = xmlTypeMatch ? xmlTypeMatch[1] : 'XML?';
+                                                
+                                                return (
+                                                    <div key={idx} className="p-3 bg-red-50 rounded border border-red-200">
+                                                        <div className="flex items-center mb-1">
+                                                            <Tag color="volcano" className="font-bold">{xmlType}</Tag>
+                                                            <span className="font-mono text-sm text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 break-all">{res.path}</span>
+                                                        </div>
+                                                        <div className="mt-2 text-slate-800">
+                                                            <span>Phát hiện ký tự lạ: </span>
+                                                            <Tag color="red" className="font-bold text-base px-3 py-1">
+                                                                {res.char === ' ' ? '(Space)' : (res.char.charCodeAt(0) < 32 ? `(Mã ASCII: ${res.char.charCodeAt(0)})` : res.char)}
+                                                            </Tag>
+                                                        </div>
+                                                        <div className="mt-2 text-xs text-slate-500 truncate" title={res.value}>
+                                                            Giá trị gốc: "{res.value}"
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
                 </div>
             </Modal>
         </div>

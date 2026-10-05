@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Tag, message, Card, Breadcrumb, Select, Space, Tooltip, Modal, Input } from 'antd';
+import { Table, Button, Tag, message, Card, Breadcrumb, Select, Space, Tooltip, Modal, Input, AutoComplete } from 'antd';
 import { FileExcelOutlined, ArrowLeftOutlined, FilterOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -62,6 +62,8 @@ interface ReportRow {
     ma_doituong_kcb: string;
     ma_giuong: string;
     pp_vo_cam: string;
+    ma_bac_si: string;
+    nguoi_thuc_hien: string;
     isError: boolean;
 }
 
@@ -73,7 +75,9 @@ export default function DetailedReport() {
     const [loading, setLoading] = useState(true);
     const [fullDataSource, setFullDataSource] = useState<ReportRow[]>([]);
     const [departments, setDepartments] = useState<Record<string, string>>({});
+    const [staffList, setStaffList] = useState<Record<string, string>>({});
     const [filterType, setFilterType] = useState<string>(initialFilter);
+    const [searchErrorText, setSearchErrorText] = useState('');
     const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
     const [isSaving, setIsSaving] = useState(false);
     const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
@@ -103,6 +107,23 @@ export default function DetailedReport() {
             }
         };
         fetchDepts();
+
+        const fetchStaff = async () => {
+            try {
+                const res = await fetch(`${getBasePath()}/api/staff`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const map: Record<string, string> = {};
+                    data.forEach((s: any) => {
+                        if (s.ma_nhan_vien) map[s.ma_nhan_vien] = s.ho_ten;
+                    });
+                    setStaffList(map);
+                }
+            } catch (e) {
+                console.error("Error fetching staff", e);
+            }
+        };
+        fetchStaff();
 
         const fetchData = async () => {
             try {
@@ -159,7 +180,9 @@ export default function DetailedReport() {
                             isError: false,
                             ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
                             ma_giuong: '',
-                            pp_vo_cam: ''
+                            pp_vo_cam: '',
+                            ma_bac_si: renderValue(record.summary?.MA_BAC_SI),
+                            nguoi_thuc_hien: ''
                         });
                     } else {
                         errors.forEach((err, errIdx) => {
@@ -172,6 +195,8 @@ export default function DetailedReport() {
                             let maKhoa = renderValue(record.summary?.MA_KHOA);
                             let maGiuong = '';
                             let ppVoCam = '';
+                            let maBacSi = renderValue(record.summary?.MA_BAC_SI);
+                            let nguoiThucHien = '';
 
                             if (err.xmlType && err.index !== undefined) {
                                 const group = record.groups.find(g => g.type === err.xmlType);
@@ -188,6 +213,8 @@ export default function DetailedReport() {
                                         if (item.MA_KHOA) maKhoa = renderValue(item.MA_KHOA);
                                         if (item.MA_GIUONG) maGiuong = renderValue(item.MA_GIUONG);
                                         if (item.PP_VO_CAM) ppVoCam = renderValue(item.PP_VO_CAM);
+                                        if (item.MA_BAC_SI) maBacSi = renderValue(item.MA_BAC_SI);
+                                        if (item.NGUOI_THUC_HIEN) nguoiThucHien = renderValue(item.NGUOI_THUC_HIEN);
                                     }
                                 }
                             }
@@ -217,7 +244,9 @@ export default function DetailedReport() {
                                 isError: true,
                                 ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
                                 ma_giuong: maGiuong,
-                                pp_vo_cam: ppVoCam
+                                pp_vo_cam: ppVoCam,
+                                ma_bac_si: maBacSi,
+                                nguoi_thuc_hien: nguoiThucHien
                             });
                         });
                     }
@@ -243,20 +272,41 @@ export default function DetailedReport() {
     }, []);
 
     // Filter Logic
+    const uniqueErrors = useMemo(() => {
+        const errorSet = new Set<string>();
+        fullDataSource.forEach(r => {
+            if (r.chi_tiet_loi) {
+                errorSet.add(r.chi_tiet_loi);
+            }
+        });
+        return Array.from(errorSet)
+            .sort()
+            .map(err => ({ value: err }));
+    }, [fullDataSource]);
+
     const filteredDataSource = useMemo(() => {
+        let base = fullDataSource;
+        
         switch (filterType) {
-            case 'ALL': return fullDataSource;
-            case 'ALL_SENT': return fullDataSource.filter(r => sentRecordsSet.has(r.ma_lk));
-            case 'ALL_UNSENT': return fullDataSource.filter(r => !sentRecordsSet.has(r.ma_lk));
-            case 'ERROR': return fullDataSource.filter(r => r.isError);
-            case 'ERROR_SENT': return fullDataSource.filter(r => r.isError && sentRecordsSet.has(r.ma_lk));
-            case 'ERROR_UNSENT': return fullDataSource.filter(r => r.isError && !sentRecordsSet.has(r.ma_lk));
-            case 'VALID': return fullDataSource.filter(r => !r.isError);
-            case 'VALID_SENT': return fullDataSource.filter(r => !r.isError && sentRecordsSet.has(r.ma_lk));
-            case 'VALID_UNSENT': return fullDataSource.filter(r => !r.isError && !sentRecordsSet.has(r.ma_lk));
-            default: return fullDataSource;
+            case 'ALL': break;
+            case 'ALL_SENT': base = fullDataSource.filter(r => sentRecordsSet.has(r.ma_lk)); break;
+            case 'ALL_UNSENT': base = fullDataSource.filter(r => !sentRecordsSet.has(r.ma_lk)); break;
+            case 'ERROR': base = fullDataSource.filter(r => r.isError); break;
+            case 'ERROR_SENT': base = fullDataSource.filter(r => r.isError && sentRecordsSet.has(r.ma_lk)); break;
+            case 'ERROR_UNSENT': base = fullDataSource.filter(r => r.isError && !sentRecordsSet.has(r.ma_lk)); break;
+            case 'VALID': base = fullDataSource.filter(r => !r.isError); break;
+            case 'VALID_SENT': base = fullDataSource.filter(r => !r.isError && sentRecordsSet.has(r.ma_lk)); break;
+            case 'VALID_UNSENT': base = fullDataSource.filter(r => !r.isError && !sentRecordsSet.has(r.ma_lk)); break;
+            default: break;
         }
-    }, [fullDataSource, filterType, sentRecordsSet]);
+
+        if (searchErrorText) {
+            const lowerSearch = searchErrorText.toLowerCase();
+            base = base.filter(r => (r.chi_tiet_loi || '').toLowerCase().includes(lowerSearch));
+        }
+
+        return base;
+    }, [fullDataSource, filterType, sentRecordsSet, searchErrorText]);
 
     // Update URL when filter changes
     const handleFilterChange = (value: string) => {
@@ -284,6 +334,10 @@ export default function DetailedReport() {
             { header: 'Mã Bệnh YHCT', key: 'ma_benh_yhct', width: 15 },
             { header: 'Ngày vào', key: 'ngay_vao', width: 16 },
             { header: 'Ngày ra', key: 'ngay_ra', width: 16 },
+            { header: 'Mã Bác sĩ', key: 'ma_bac_si', width: 12 },
+            { header: 'Tên Bác sĩ', key: 'ten_bac_si', width: 25 },
+            { header: 'Mã NTH', key: 'nguoi_thuc_hien', width: 12 },
+            { header: 'Tên NTH', key: 'ten_nguoi_thuc_hien', width: 25 },
             { header: 'Ngày YL', key: 'ngay_yl', width: 16 },
             { header: 'Ngày TH YL', key: 'ngay_th_yl', width: 16 },
             { header: 'Ngày KQ', key: 'ngay_kq', width: 16 },
@@ -305,7 +359,9 @@ export default function DetailedReport() {
             worksheet.addRow({
                 ...row,
                 stt: idx + 1,
-                ten_khoa: resolveTenKhoa(row.ma_khoa)
+                ten_khoa: resolveTenKhoa(row.ma_khoa),
+                ten_bac_si: staffList[row.ma_bac_si] || '',
+                ten_nguoi_thuc_hien: staffList[row.nguoi_thuc_hien] || ''
             });
         });
 
@@ -412,6 +468,10 @@ export default function DetailedReport() {
                 { header: 'Mã Bệnh YHCT', key: 'ma_benh_yhct', width: 15 },
                 { header: 'Ngày vào', key: 'ngay_vao', width: 16 },
                 { header: 'Ngày ra', key: 'ngay_ra', width: 16 },
+                { header: 'Mã Bác sĩ', key: 'ma_bac_si', width: 12 },
+                { header: 'Tên Bác sĩ', key: 'ten_bac_si', width: 25 },
+                { header: 'Mã NTH', key: 'nguoi_thuc_hien', width: 12 },
+                { header: 'Tên NTH', key: 'ten_nguoi_thuc_hien', width: 25 },
                 { header: 'Ngày YL', key: 'ngay_yl', width: 16 },
                 { header: 'Ngày TH YL', key: 'ngay_th_yl', width: 16 },
                 { header: 'Ngày KQ', key: 'ngay_kq', width: 16 },
@@ -432,7 +492,9 @@ export default function DetailedReport() {
                 worksheet.addRow({
                     ...row,
                     stt: idx + 1,
-                    ten_khoa: resolveTenKhoa(row.ma_khoa)
+                    ten_khoa: resolveTenKhoa(row.ma_khoa),
+                    ten_bac_si: staffList[row.ma_bac_si] || '',
+                    ten_nguoi_thuc_hien: staffList[row.nguoi_thuc_hien] || ''
                 });
             });
 
@@ -521,6 +583,22 @@ export default function DetailedReport() {
         { title: 'Mã Bệnh YHCT', dataIndex: 'ma_benh_yhct', key: 'ma_benh_yhct', width: 120, onCell: createOnCell('ma_benh_yhct') },
         { title: 'Ngày vào', dataIndex: 'ngay_vao', key: 'ngay_vao', width: 140, onCell: createOnCell('ngay_vao') },
         { title: 'Ngày ra', dataIndex: 'ngay_ra', key: 'ngay_ra', width: 140, onCell: createOnCell('ngay_ra') },
+        { title: 'Mã Bác sĩ', dataIndex: 'ma_bac_si', key: 'ma_bac_si', width: 120, onCell: createOnCell('ma_bac_si') },
+        { 
+            title: 'Tên Bác sĩ', 
+            dataIndex: 'ten_bac_si', 
+            key: 'ten_bac_si', 
+            width: 180, 
+            render: (_: any, record: ReportRow) => <span className="text-slate-600 truncate block">{staffList[record.ma_bac_si] || ''}</span>
+        },
+        { title: 'Mã NTH', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: 120, onCell: createOnCell('nguoi_thuc_hien') },
+        { 
+            title: 'Tên NTH', 
+            dataIndex: 'ten_nguoi_thuc_hien', 
+            key: 'ten_nguoi_thuc_hien', 
+            width: 180, 
+            render: (_: any, record: ReportRow) => <span className="text-slate-600 truncate block">{staffList[record.nguoi_thuc_hien] || ''}</span>
+        },
         { title: 'Ngày TH YL', dataIndex: 'ngay_th_yl', key: 'ngay_th_yl', width: 140, onCell: createOnCell('ngay_th_yl') },
         { title: 'Ngày KQ', dataIndex: 'ngay_kq', key: 'ngay_kq', width: 140, onCell: createOnCell('ngay_kq') },
         { title: 'Ngày Vào NT', dataIndex: 'ngay_vao_noi_tru', key: 'ngay_vao_noi_tru', width: 140, onCell: createOnCell('ngay_vao_noi_tru') },
@@ -602,6 +680,17 @@ export default function DetailedReport() {
                     }
                     extra={
                         <Space>
+                            <AutoComplete
+                                placeholder="Tìm hoặc chọn mã lỗi..."
+                                allowClear
+                                style={{ width: 280 }}
+                                options={uniqueErrors}
+                                value={searchErrorText}
+                                onChange={(val) => setSearchErrorText(val)}
+                                filterOption={(inputValue, option) =>
+                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                                }
+                            />
                             <Select
                                 value={filterType}
                                 onChange={handleFilterChange}
