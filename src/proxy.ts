@@ -4,7 +4,7 @@ import * as jose from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     // 1. Check if route is protected
     // Protected routes: /kiem-tra-loi-bhxh/*, /admin/*
     // Public routes: /login, /api/auth/*, /_next/*, /favicon.ico, /images/*

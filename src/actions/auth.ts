@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
+import prisma from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
@@ -43,8 +44,6 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             isManager = true;
             finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
         } else {
-            const { PrismaClient } = await import('@prisma/client');
-            const prisma = new PrismaClient();
             try {
                 const roleRecord = await prisma.role.findUnique({
                     where: { code: payload.role as string }
@@ -84,8 +83,6 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 }
             } catch (err) {
                 console.error('Error fetching fresh permissions:', err);
-            } finally {
-                await prisma.$disconnect();
             }
         }
 
@@ -147,8 +144,6 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
             isManager = true;
             finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
         } else {
-            const { PrismaClient } = await import('@prisma/client');
-            const prisma = new PrismaClient();
             try {
                 const roleRecord = await prisma.role.findUnique({
                     where: { code: payload.role as string }
@@ -188,8 +183,6 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                 }
             } catch (err) {
                 console.error('Error fetching fresh permissions in mobile API:', err);
-            } finally {
-                await prisma.$disconnect();
             }
         }
 

@@ -1233,18 +1233,10 @@ export default function HoSoDaGuiPage() {
                                                 width: 60,
                                                 align: 'center',
                                                 fixed: 'left',
-                                                render: (_, record) => {
-                                                    const obj = {
-                                                        children: record._idx + 1,
-                                                        props: {} as any,
-                                                    };
-                                                    if (record._type === 'Mẫu 01/BH-C79') {
-                                                        obj.props.rowSpan = 2;
-                                                    } else {
-                                                        obj.props.rowSpan = 0;
-                                                    }
-                                                    return obj;
-                                                }
+                                                onCell: (record: any) => ({
+                                                    rowSpan: record._type === 'Mẫu 01/BH-C79' ? 2 : 0,
+                                                }),
+                                                render: (_, record) => record._idx + 1
                                             },
                                             { 
                                                 title: 'Nguồn', 
