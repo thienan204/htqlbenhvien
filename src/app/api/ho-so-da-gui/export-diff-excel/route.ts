@@ -201,16 +201,30 @@ export async function POST(request: Request) {
             // Merge ô STT 2 dòng
             sheet.mergeCells(`A${currentRowIndex}:A${currentRowIndex + 1}`);
 
-            // Kiểm tra và bôi đỏ các ô sai lệch trên dòng DB
+            // Kiểm tra và bôi đỏ các ô sai lệch trên dòng DB và dòng Excel (nếu là text/date)
             const diff = m.diff || {};
+            applyDiffStyle(r1.getCell('maBN'), m.excel.maBN, diff.maBNDiff);
             applyDiffStyle(r2.getCell('maBN'), m.db.maBN, diff.maBNDiff);
+            
+            applyDiffStyle(r1.getCell('hoTen'), m.excel.hoTen, diff.hoTenDiff);
             applyDiffStyle(r2.getCell('hoTen'), m.db.hoTen, diff.hoTenDiff);
+            
+            applyDiffStyle(r1.getCell('ngaySinh'), m.excel.ngaySinh, diff.ngaySinhDiff);
             applyDiffStyle(r2.getCell('ngaySinh'), m.db.ngaySinh, diff.ngaySinhDiff);
+            
+            applyDiffStyle(r1.getCell('gioiTinh'), m.excel.gioiTinh, diff.gioiTinhDiff);
             applyDiffStyle(r2.getCell('gioiTinh'), m.db.gioiTinh, diff.gioiTinhDiff);
+            
+            applyDiffStyle(r1.getCell('maBenh'), m.excel.chanDoan, diff.chanDoanDiff);
             applyDiffStyle(r2.getCell('maBenh'), m.db.chanDoan, diff.chanDoanDiff);
+            
+            applyDiffStyle(r1.getCell('ngayVao'), m.excel.ngayVao, diff.ngayVaoDiff);
             applyDiffStyle(r2.getCell('ngayVao'), m.db.ngayVao, diff.ngayVaoDiff);
+            
+            applyDiffStyle(r1.getCell('ngayRa'), m.excel.ngayRa, diff.ngayRaDiff);
             applyDiffStyle(r2.getCell('ngayRa'), m.db.ngayRa, diff.ngayRaDiff);
             
+            // Số tiền chỉ bôi đỏ ở dòng DB (kèm theo mức chênh lệch)
             applyDiffStyle(r2.getCell('tongChi'), m.db.tongChi, diff.tongChi);
             applyDiffStyle(r2.getCell('tongChiBH'), m.db.tongChiBH, diff.tongChiBH);
             applyDiffStyle(r2.getCell('baoHiemTT'), m.db.baoHiemTT, diff.baoHiemTT);
