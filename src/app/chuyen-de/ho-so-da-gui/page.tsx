@@ -46,11 +46,20 @@ export default function HoSoDaGuiPage() {
                 throw new Error(err.error || 'Lỗi xuất file');
             }
 
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = 'HoSoLechChiPhi.xlsx';
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (match && match[1]) {
+                    filename = match[1];
+                }
+            }
+
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'HoSoLechChiPhi.xlsx';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             a.remove();
