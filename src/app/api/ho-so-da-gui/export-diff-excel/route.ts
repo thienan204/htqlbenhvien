@@ -10,8 +10,39 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Không có dữ liệu để xuất' }, { status: 400 });
         }
 
+        let monthStr = '';
+        let yearStr = '';
+        
+        const extractMonthYear = (val: any) => {
+            if (!val || typeof val !== 'string') return null;
+            const clean = val.trim();
+            if (/^\d{8,12}$/.test(clean)) {
+                return { year: clean.substring(0, 4), month: clean.substring(4, 6) };
+            }
+            if (clean.includes('/')) {
+                const parts = clean.split(/[^\d]/);
+                if (parts.length >= 3 && parts[2].length === 4) {
+                    return { year: parts[2], month: parts[1] };
+                }
+            }
+            return null;
+        };
+
+        if (diffMatches.length > 0) {
+            const first = diffMatches[0];
+            const dateInfo = extractMonthYear(first.db?.ngayRa) || extractMonthYear(first.excel?.ngayRa);
+            if (dateInfo) {
+                yearStr = dateInfo.year;
+                monthStr = dateInfo.month;
+            }
+        }
+
+        const mNum = monthStr ? parseInt(monthStr, 10) : '';
+        const sheetName = mNum ? `Thang_${mNum}` : 'Lech_Chi_Phi';
+        const filename = mNum ? `HoSoLechChiPhi_Thang_${mNum}${yearStr ? '_' + yearStr : ''}.xlsx` : 'HoSoLechChiPhi.xlsx';
+
         const workbook = new exceljs.Workbook();
-        const sheet = workbook.addWorksheet('Lech_Chi_Phi', {
+        const sheet = workbook.addWorksheet(sheetName, {
             views: [{ showGridLines: false }]
         });
 
@@ -74,6 +105,16 @@ export async function POST(request: Request) {
         };
 
         let currentRowIndex = 2;
+        if (mNum) {
+            sheet.spliceRows(1, 0, []);
+            sheet.mergeCells('A1:N1');
+            const titleCell = sheet.getCell('A1');
+            titleCell.value = `HỒ SƠ LỆCH CHI PHÍ THÁNG ${mNum} NĂM ${yearStr}`;
+            titleCell.font = { bold: true, size: 14, color: { argb: 'FFB91C1C' } };
+            titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            sheet.getRow(1).height = 35;
+            currentRowIndex = 3;
+        }
 
         const formatYYYYMMDD = (val: any) => {
             if (!val || typeof val !== 'string') return val;
@@ -184,7 +225,7 @@ export async function POST(request: Request) {
             status: 200,
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition': 'attachment; filename="HoSoLechChiPhi.xlsx"',
+                'Content-Disposition': `attachment; filename="${filename}"`,
             },
         });
 
