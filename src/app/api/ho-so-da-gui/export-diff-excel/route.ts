@@ -203,18 +203,22 @@ export async function POST(request: Request) {
 
             // Kiểm tra và bôi đỏ các ô sai lệch trên dòng DB
             const diff = m.diff || {};
-            applyDiffStyle(r2.getCell('hoTen'), m.db.hoTen, diff.hoTen);
-            applyDiffStyle(r2.getCell('ngaySinh'), m.db.ngaySinh, diff.ngaySinh);
-            applyDiffStyle(r2.getCell('gioiTinh'), m.db.gioiTinh, diff.gioiTinh);
-            applyDiffStyle(r2.getCell('maBenh'), m.db.chanDoan, diff.chanDoan);
-            applyDiffStyle(r2.getCell('ngayVao'), m.db.ngayVao, diff.ngayVao);
-            applyDiffStyle(r2.getCell('ngayRa'), m.db.ngayRa, diff.ngayRa);
+            applyDiffStyle(r2.getCell('maBN'), m.db.maBN, diff.maBNDiff);
+            applyDiffStyle(r2.getCell('hoTen'), m.db.hoTen, diff.hoTenDiff);
+            applyDiffStyle(r2.getCell('ngaySinh'), m.db.ngaySinh, diff.ngaySinhDiff);
+            applyDiffStyle(r2.getCell('gioiTinh'), m.db.gioiTinh, diff.gioiTinhDiff);
+            applyDiffStyle(r2.getCell('maBenh'), m.db.chanDoan, diff.chanDoanDiff);
+            applyDiffStyle(r2.getCell('ngayVao'), m.db.ngayVao, diff.ngayVaoDiff);
+            applyDiffStyle(r2.getCell('ngayRa'), m.db.ngayRa, diff.ngayRaDiff);
             
             applyDiffStyle(r2.getCell('tongChi'), m.db.tongChi, diff.tongChi);
             applyDiffStyle(r2.getCell('tongChiBH'), m.db.tongChiBH, diff.tongChiBH);
             applyDiffStyle(r2.getCell('baoHiemTT'), m.db.baoHiemTT, diff.baoHiemTT);
             applyDiffStyle(r2.getCell('benhNhanCCT'), m.db.benhNhanCCT, diff.benhNhanCCT);
             applyDiffStyle(r2.getCell('benhNhanTT'), m.db.benhNhanTT, diff.benhNhanTT);
+            if (r2.getCell('nguonKhac')) {
+                applyDiffStyle(r2.getCell('nguonKhac'), m.db.nguonKhac, diff.nguonKhac);
+            }
 
             currentRowIndex += 2;
         });
