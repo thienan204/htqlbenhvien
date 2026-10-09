@@ -134,9 +134,9 @@ const API_DOCS_DB: Record<string, Record<string, ApiDoc>> = {
     },
     '/api/patients/historyHenkham': {
         'GET': {
-            description: 'Lấy lịch sử khám bệnh của bệnh nhân dựa trên số thẻ BHYT (Hỗ trợ thẻ có dấu ;). Hỗ trợ lọc theo số giấy hẹn khám lại (hasGiayHen=true) và điều chỉnh độ dài thẻ hợp lệ (validLengths=15,10 mặc định 15). Trả về MA_BN, NGAY_VAO, NGAY_RA và SO_GIAYHEN_KL.',
+            description: 'Lấy lịch sử khám bệnh của bệnh nhân dựa trên số thẻ BHYT (Hỗ trợ thẻ có dấu ;). Hỗ trợ lọc theo số giấy hẹn khám lại (hasGiayHen=true). Trả về MA_BN, NGAY_VAO, NGAY_RA và SO_GIAYHEN_KL. Nếu truyền validLengths (vd: 15,17), API sẽ báo lỗi 400 nếu độ dài mã thẻ không khớp.',
             headers: { 'Content-Type': 'application/json' },
-            postmanSnippet: 'Gắn URL http://localhost:3000/api/patients/historyHenkham?maTheBHYT=HT2201503003346&limit=10&hasGiayHen=true&validLengths=15 vào Postman và chọn GET.'
+            postmanSnippet: 'Gắn URL http://localhost:3000/api/patients/historyHenkham?maTheBHYT=HT2201503003346&limit=10&hasGiayHen=true vào Postman và chọn GET.'
         }
     }
 };

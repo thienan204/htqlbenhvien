@@ -22,17 +22,16 @@ export async function GET(req: NextRequest) {
         // Có thể truyền qua query parameter (ví dụ: validLengths=10,15)
         const validLengthsParam = searchParams.get('validLengths');
         
-        let validLengths = [15]; // Mặc định là 15
         if (validLengthsParam) {
             // Tách bằng dấu phẩy và chuyển thành mảng số nguyên
-            validLengths = validLengthsParam.split(',').map(l => parseInt(l.trim())).filter(l => !isNaN(l));
-        }
-
-        if (!validLengths.includes(maTheBHYT.length)) {
-            return NextResponse.json({
-                success: true,
-                data: []
-            });
+            const validLengths = validLengthsParam.split(',').map(l => parseInt(l.trim())).filter(l => !isNaN(l));
+            
+            if (!validLengths.includes(maTheBHYT.length)) {
+                return NextResponse.json(
+                    { success: false, error: `Độ dài mã BHYT không hợp lệ. Yêu cầu: ${validLengths.join(', ')} ký tự.` },
+                    { status: 400 }
+                );
+            }
         }
 
         const whereClause: any = {
