@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
         for (const file of files) {
             const buffer = await file.arrayBuffer();
-            const workbook = xlsx.read(buffer, { type: 'buffer' });
+            const workbook = xlsx.read(buffer, { type: 'buffer', cellDates: true });
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             
@@ -134,7 +134,15 @@ export async function POST(request: Request) {
                 };
 
                 const getStringOrNull = (val: any) => {
-                    if (val === null) return null;
+                    if (val === null || val === undefined || val === '') return null;
+                    if (val instanceof Date) {
+                        const yyyy = val.getFullYear();
+                        const mm = String(val.getMonth() + 1).padStart(2, '0');
+                        const dd = String(val.getDate()).padStart(2, '0');
+                        const hh = String(val.getHours()).padStart(2, '0');
+                        const mn = String(val.getMinutes()).padStart(2, '0');
+                        return `${yyyy}${mm}${dd}${hh}${mn}`;
+                    }
                     return norm(val);
                 };
 
@@ -145,6 +153,7 @@ export async function POST(request: Request) {
 
                 excelRecords.push({
                     stt: row['STT'] || getValue('stt', ['STT']),
+                    maBN: getStringOrNull(getValue('maBN', ['MA_BN', 'Mã BN', 'Mã Bệnh Nhân'])),
                     hoTen: getStringOrNull(getValue('hoTen', ['HO_TEN', 'Họ tên'])),
                     maThe: maThe,
                     ngaySinh: getStringOrNull(getValue('ngaySinh', ['NGAY_SINH', 'Ngày sinh', 'Năm sinh'])),
@@ -350,12 +359,13 @@ export async function POST(request: Request) {
                 const dbGioiTinh = normalizeGioiTinh(matchedDbRec.gioiTinh);
                 const exGioiTinh = normalizeGioiTinh(exRec.gioiTinh);
 
+                const maBNDiff = exRec.maBN !== null && norm(matchedDbRec.maBN).toUpperCase() !== norm(exRec.maBN).toUpperCase();
                 const hoTenDiff = exRec.hoTen !== null && norm(matchedDbRec.hoTen).toUpperCase() !== norm(exRec.hoTen).toUpperCase();
                 const ngaySinhDiff = exRec.ngaySinh !== null && dbNgaySinh !== exNgaySinh;
                 const gioiTinhDiff = exRec.gioiTinh !== null && dbGioiTinh !== exGioiTinh;
                 const chanDoanDiff = exRec.chanDoan !== null && !!(norm(exRec.chanDoan) && norm(matchedDbRec.chanDoan) !== norm(exRec.chanDoan));
 
-                const isInfoDiff = hoTenDiff || ngaySinhDiff || gioiTinhDiff || chanDoanDiff;
+                const isInfoDiff = maBNDiff || hoTenDiff || ngaySinhDiff || gioiTinhDiff || chanDoanDiff;
 
                 const checkCost = (dbVal: any, exVal: any) => {
                     if (exVal === null) return false;
@@ -370,7 +380,8 @@ export async function POST(request: Request) {
                     checkCost(dbTongChiBH, exRec.tongChiBH) ||
                     checkCost(matchedDbRec.baoHiemTT, exRec.baoHiemTT) ||
                     checkCost(matchedDbRec.benhNhanCCT, exRec.benhNhanCCT) ||
-                    checkCost(matchedDbRec.benhNhanTT, exRec.benhNhanTT);
+                    checkCost(matchedDbRec.benhNhanTT, exRec.benhNhanTT) ||
+                    checkCost(matchedDbRec.nguonKhac, exRec.nguonKhac);
                 
                 const ngayVaoDiff = exRec.ngayVao !== null && dbNgayVao !== exNgayVao;
                 const ngayRaDiff = exRec.ngayRa !== null && dbNgayRa !== exNgayRa;
@@ -384,6 +395,7 @@ export async function POST(request: Request) {
                             isDateDiff,
                             isCostDiff,
                             isInfoDiff,
+                            maBNDiff,
                             ngayVaoDiff,
                             ngayRaDiff,
                             hoTenDiff,
