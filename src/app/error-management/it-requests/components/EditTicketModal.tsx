@@ -118,7 +118,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                 }
                 destroyOnHidden
             >
-                <Form form={form} layout="vertical" className="mt-4">
+                <Form form={form} preserve={false} layout="vertical" className="mt-4">
                     {targetDepartment === 'CNTT' && (
                         <Form.Item
                             name="category"

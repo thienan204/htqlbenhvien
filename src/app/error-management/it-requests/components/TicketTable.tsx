@@ -124,12 +124,6 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             }
         },
         {
-            title: 'Khoa gửi',
-            dataIndex: 'ma_khoa',
-            key: 'ma_khoa',
-            width: 120,
-        },
-        {
             title: 'Tên khoa',
             key: 'ten_khoa',
             width: 200,
@@ -211,7 +205,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             render: (_: any, record: Ticket) => {
                 return (
                     <Space>
-                        {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && assignmentMode === 'A' && !record.assigneeId && (
+                        {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (
+                            (assignmentMode === 'A' && !record.assigneeId) ||
+                            (record.assigneeId === user?.id && record.status === 'PENDING')
+                        ) && (
                             <Button 
                                 size="small" 
                                 type="primary" 
@@ -300,6 +297,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
     return (
         <Table 
+            bordered
             dataSource={tickets} 
             columns={columns}
             rowKey="id" 

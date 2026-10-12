@@ -54,6 +54,9 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 setSoftwareErrors(configData.softwareErrors || []);
                 setHardwareErrors(configData.hardwareErrors || []);
                 setAssignmentMode(configData.assignmentMode || 'A');
+                if (configData.notificationSound) {
+                    localStorage.setItem(`${targetDepartment}_department_notification_sound`, JSON.stringify(configData.notificationSound));
+                }
             }
         } catch (error) {
             console.warn('Fetch config warning:', error);

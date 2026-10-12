@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, Segmented, message, Select } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,13 +43,63 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         fetchITUsers
     } = useITMasterData(user, targetDepartment);
 
+    const handleSelectTicket = (ticket: Ticket) => {
+        setFilterMode('MINE');
+        setStatusFilter('ALL');
+        setSelectedTicket(ticket);
+        setIsActionModalVisible(true);
+    };
+
+    const handleNavigateToMyTickets = () => {
+        setFilterMode('MINE');
+        setStatusFilter('PENDING');
+        setIsActionModalVisible(false);
+    };
+
     const {
         tickets,
         loading,
         fetchTickets,
         handleUpdateTicket,
         handleDeleteTicket
-    } = useTickets(user, isAdmin, targetDepartment);
+    } = useTickets(user, isAdmin, targetDepartment, {
+        onSelectTicket: handleSelectTicket,
+        onNavigateToMyTickets: handleNavigateToMyTickets
+    });
+
+    // Lắng nghe URL params tab/status từ thông báo Windows (chuyển sang danh sách việc của tôi chờ xử lý, không mở modal)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        const status = params.get('status');
+        if (tab === 'MINE') setFilterMode('MINE');
+        if (status) setStatusFilter(status);
+        if (tab || status) {
+            setIsActionModalVisible(false);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('tab');
+            url.searchParams.delete('status');
+            window.history.replaceState({}, '', url.toString());
+        }
+    }, []);
+
+    // Tự động mở modal xử lý nếu URL có param ticketId hoặc highlight cụ thể
+    useEffect(() => {
+        if (typeof window === 'undefined' || tickets.length === 0) return;
+        const params = new URLSearchParams(window.location.search);
+        const ticketId = params.get('ticketId') || params.get('highlight');
+        if (ticketId) {
+            const found = tickets.find(t => t.id === ticketId);
+            if (found) {
+                handleSelectTicket(found);
+                const url = new URL(window.location.href);
+                url.searchParams.delete('ticketId');
+                url.searchParams.delete('highlight');
+                window.history.replaceState({}, '', url.toString());
+            }
+        }
+    }, [tickets]);
 
     const filteredTickets = useMemo(() => {
         let result = tickets;
@@ -179,26 +229,30 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 />
             </Card>
 
-            <TicketActionModal 
-                visible={isActionModalVisible}
-                ticket={selectedTicket}
-                itUsers={itUsers}
-                user={user}
-                onCancel={() => setIsActionModalVisible(false)}
-                onOk={(values) => handleUpdateTicket(values, selectedTicket, () => setIsActionModalVisible(false))}
-                targetDepartment={targetDepartment}
-            />
+            {isActionModalVisible && (
+                <TicketActionModal 
+                    visible={isActionModalVisible}
+                    ticket={selectedTicket}
+                    itUsers={itUsers}
+                    user={user}
+                    onCancel={() => setIsActionModalVisible(false)}
+                    onOk={(values) => handleUpdateTicket(values, selectedTicket, () => setIsActionModalVisible(false))}
+                    targetDepartment={targetDepartment}
+                />
+            )}
 
-            <EditTicketModal
-                visible={isEditModalVisible}
-                ticket={selectedTicket}
-                onCancel={() => setIsEditModalVisible(false)}
-                onSuccess={() => {
-                    setIsEditModalVisible(false);
-                    fetchTickets();
-                }}
-                targetDepartment={targetDepartment}
-            />
+            {isEditModalVisible && (
+                <EditTicketModal
+                    visible={isEditModalVisible}
+                    ticket={selectedTicket}
+                    onCancel={() => setIsEditModalVisible(false)}
+                    onSuccess={() => {
+                        setIsEditModalVisible(false);
+                        fetchTickets();
+                    }}
+                    targetDepartment={targetDepartment}
+                />
+            )}
 
             <TicketChatModal
                 visible={isChatVisible}
@@ -212,6 +266,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 visible={isSettingsVisible}
                 onCancel={() => setIsSettingsVisible(false)}
                 targetDepartment={targetDepartment}
+                user={user}
             />
         </div>
     );

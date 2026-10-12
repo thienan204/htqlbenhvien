@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
 import { loginAction } from '@/actions/auth';
 
-export default function LoginPage() {
+function LoginForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnUrl = searchParams.get('returnUrl');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,6 +23,18 @@ export default function LoginPage() {
             const res = await loginAction(username, password);
 
             if (res.success) {
+                // Nếu có returnUrl thì chuyển hướng thẳng đến đó
+                if (returnUrl) {
+                    const decoded = decodeURIComponent(returnUrl);
+                    const basePath = getBasePath();
+                    let target = decoded;
+                    if (!target.startsWith(basePath)) {
+                        if (!target.startsWith('/')) target = '/' + target;
+                        target = basePath + target;
+                    }
+                    window.location.href = target;
+                    return;
+                }
                 // Force a hard reload to ensure layout and context are fully updated
                 window.location.href = getBasePath() + '/';
                 return;

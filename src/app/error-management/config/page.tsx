@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined } from '@ant-design/icons';
+import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio, Upload, Alert } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, YoutubeOutlined, LinkOutlined } from '@ant-design/icons';
+import { SoundConfig, playSoundByConfig, stopAllNotificationSounds, extractYouTubeId } from '@/utils/audioUtils';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,13 @@ export default function ITConfigPage() {
     const [maBaLength, setMaBaLength] = useState<number>(11);
     const [telegramBotToken, setTelegramBotToken] = useState<string>('');
     const [telegramChatId, setTelegramChatId] = useState<string>('');
+    const [notificationSound, setNotificationSound] = useState<SoundConfig>({
+        type: 'DEFAULT',
+        url: '',
+        duration: 7,
+        name: ''
+    });
+    const [isPlayingSound, setIsPlayingSound] = useState(false);
 
     const searchParams = useSearchParams();
     const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
@@ -59,6 +67,9 @@ export default function ITConfigPage() {
                 setMaBaLength(data.maBaLength || 11);
                 setTelegramBotToken(data.telegramBotToken || '');
                 setTelegramChatId(data.telegramChatId || '');
+                if (data.notificationSound) {
+                    setNotificationSound(data.notificationSound);
+                }
             } else {
                 message.error('Lỗi tải cấu hình');
             }
@@ -78,10 +89,10 @@ export default function ITConfigPage() {
             
             if (editingError) {
                 // Update
-                updatedErrors = updatedErrors.map(e => e.id === editingError.id ? { ...e, name: cleanName } : e);
+                updatedErrors = updatedErrors.map((e: any) => e.id === editingError.id ? { ...e, name: cleanName } : e);
             } else {
                 // Check duplicate
-                if (updatedErrors.some(e => e.name.toLowerCase() === cleanName.toLowerCase())) {
+                if (updatedErrors.some((e: any) => e.name.toLowerCase() === cleanName.toLowerCase())) {
                     message.error('Lỗi này đã tồn tại!');
                     return;
                 }
@@ -92,10 +103,10 @@ export default function ITConfigPage() {
                 });
             }
 
-            const stringArray = updatedErrors.map(e => e.name);
+            const stringArray = updatedErrors.map((e: any) => e.name);
             const payload = isSoftware 
-                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map(e => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
-                : { softwareErrors: softwareErrors.map(e => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
+                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map((e: any) => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
+                : { softwareErrors: softwareErrors.map((e: any) => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
 
             const res = await fetch(`/api/error-management/it-request-config`, {
                 method: 'POST',
@@ -121,12 +132,12 @@ export default function ITConfigPage() {
         try {
             const isSoftware = activeTab === 'SOFTWARE';
             const currentErrors = isSoftware ? softwareErrors : hardwareErrors;
-            const updatedErrors = currentErrors.filter(e => e.id !== id);
-            const stringArray = updatedErrors.map(e => e.name);
+            const updatedErrors = currentErrors.filter((e: any) => e.id !== id);
+            const stringArray = updatedErrors.map((e: any) => e.name);
 
             const payload = isSoftware 
-                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map(e => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
-                : { softwareErrors: softwareErrors.map(e => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
+                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map((e: any) => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
+                : { softwareErrors: softwareErrors.map((e: any) => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
 
             const res = await fetch(`/api/error-management/it-request-config`, {
                 method: 'POST',
@@ -145,31 +156,76 @@ export default function ITConfigPage() {
         }
     };
 
-    const handleSaveGeneralConfig = async () => {
+    const handleSaveGeneralConfig = async (soundToSave?: any) => {
         try {
+            const currentSound = (soundToSave && typeof soundToSave === 'object' && 'type' in soundToSave) ? soundToSave : notificationSound;
             const payload = {
-                softwareErrors: softwareErrors.map(e => e.name),
-                hardwareErrors: hardwareErrors.map(e => e.name),
+                softwareErrors: softwareErrors.map((e: any) => e.name),
+                hardwareErrors: hardwareErrors.map((e: any) => e.name),
                 assignmentMode,
                 maxImageSizeMB,
                 maBaLength,
                 targetDepartment,
                 telegramBotToken,
-                telegramChatId
+                telegramChatId,
+                notificationSound: currentSound
             };
-            const res = await fetch(`/api/error-management/it-request-config`, {
+            const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
             if (res.ok) {
-                message.success('Đã lưu cấu hình chung');
+                localStorage.setItem(`${targetDepartment}_department_notification_sound`, JSON.stringify(currentSound));
+                message.success('Đã lưu cấu hình chung thành công!');
             } else {
                 message.error('Lỗi khi lưu');
             }
         } catch (error) {
             message.error('Lỗi kết nối');
         }
+    };
+
+    const handleUploadDeptSound = (file: File) => {
+        const isAudio = file.type.startsWith('audio/') || file.name.endsWith('.mp3') || file.name.endsWith('.wav');
+        if (!isAudio) {
+            message.error('Chỉ hỗ trợ file âm thanh (MP3, WAV)!');
+            return false;
+        }
+        if (file.size / 1024 / 1024 > 3) {
+            message.error('Dung lượng file tối đa là 3MB!');
+            return false;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target?.result as string;
+            setNotificationSound((prev: SoundConfig) => ({
+                ...prev,
+                type: 'UPLOAD',
+                url: base64,
+                name: file.name
+            }));
+            message.success(`Đã chọn file: ${file.name}`);
+        };
+        reader.readAsDataURL(file);
+        return false;
+    };
+
+    const handleTestSound = () => {
+        if (isPlayingSound) {
+            stopAllNotificationSounds();
+            setIsPlayingSound(false);
+            return;
+        }
+        if (notificationSound.type === 'YOUTUBE' && notificationSound.url && !extractYouTubeId(notificationSound.url)) {
+            message.error('Link YouTube không hợp lệ!');
+            return;
+        }
+        setIsPlayingSound(true);
+        playSoundByConfig(notificationSound);
+        setTimeout(() => {
+            setIsPlayingSound(false);
+        }, (notificationSound.duration || 7) * 1000);
     };
 
     const columns = [
@@ -277,7 +333,7 @@ export default function ITConfigPage() {
                                 </Radio>
                             </Radio.Group>
                             {user?.role === 'ADMIN' && (
-                                <Button type="primary" onClick={handleSaveGeneralConfig} className="w-fit mt-2">Lưu cấu hình</Button>
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit mt-2">Lưu cấu hình</Button>
                             )}
                         </div>
                     </Card>
@@ -293,7 +349,7 @@ export default function ITConfigPage() {
                             />
                             <span className="text-slate-500 font-medium">MB</span>
                             {user?.role === 'ADMIN' && (
-                                <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
+                                <Button type="default" onClick={() => handleSaveGeneralConfig()}>Lưu thay đổi</Button>
                             )}
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Dung lượng tối đa (MB) cho mỗi ảnh khi tải lên. Khuyến nghị 10MB để tránh treo trình duyệt. Hệ thống sẽ tự nén lại sau khi chọn.</div>
@@ -310,7 +366,7 @@ export default function ITConfigPage() {
                             />
                             <span className="text-slate-500 font-medium">ký tự</span>
                             {user?.role === 'ADMIN' && (
-                                <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
+                                <Button type="default" onClick={() => handleSaveGeneralConfig()}>Lưu thay đổi</Button>
                             )}
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Độ dài chuẩn của mã bệnh án (Ví dụ: <code>BA001028282</code> là 11 ký tự). Sau này khi bệnh viện tăng độ dài mã BA (12, 13 ký tự...), bạn có thể điều chỉnh tại đây để hệ thống tự động nhận diện và kiểm soát độ dài phù hợp.</div>
@@ -337,7 +393,118 @@ export default function ITConfigPage() {
                                 />
                             </div>
                             {user?.role === 'ADMIN' && (
-                                <Button type="default" onClick={handleSaveGeneralConfig} className="w-fit">Lưu cấu hình Bot</Button>
+                                <Button type="default" onClick={() => handleSaveGeneralConfig()} className="w-fit">Lưu cấu hình Bot</Button>
+                            )}
+                        </div>
+                    </Card>
+                </div>
+            )
+        },
+        {
+            key: 'SOUND',
+            label: 'Nhạc chuông chung (Khoa/Phòng)',
+            children: (
+                <div className="space-y-6 max-w-xl mt-4">
+                    <Alert 
+                        type="info" 
+                        showIcon 
+                        title="Nhạc chuông cảnh báo chung cho toàn phòng" 
+                        description="Đây là âm thanh mặc định khi có yêu cầu mới hoặc nhắc nhở chưa nhận việc. Tất cả tài khoản trong khoa/phòng sẽ nghe chuông này trừ khi cá nhân tự cài chuông riêng."
+                        className="mb-4"
+                    />
+
+                    <Card size="small" title="Chọn loại âm thanh chung" className="border border-slate-200">
+                        <Radio.Group 
+                            value={notificationSound.type} 
+                            onChange={e => setNotificationSound((prev: SoundConfig) => ({ ...prev, type: e.target.value }))}
+                            className="flex flex-col gap-3"
+                            disabled={user?.role !== 'ADMIN' && user?.role !== targetDepartment}
+                        >
+                            <Radio value="DEFAULT">
+                                <span className="font-medium text-slate-700">Âm thanh "Ting" mặc định của hệ thống</span>
+                                <div className="text-xs text-slate-500">Phát âm thanh tổng hợp trực tiếp bằng Web Audio API nhẹ nhàng, nhanh chóng.</div>
+                            </Radio>
+                            <Radio value="UPLOAD">
+                                <span className="font-medium text-slate-700">Tải lên tệp âm thanh (MP3, WAV)</span>
+                                <div className="text-xs text-slate-500">Tải file âm thanh chuông báo riêng của phòng ban (Tối đa 3MB).</div>
+                            </Radio>
+                            <Radio value="DIRECT_URL">
+                                <span className="font-medium text-slate-700">Link âm thanh trực tiếp (Direct Audio URL)</span>
+                                <div className="text-xs text-slate-500">Dán đường link chứa file .mp3 / .wav trực tuyến.</div>
+                            </Radio>
+                            <Radio value="YOUTUBE">
+                                <span className="font-medium text-slate-700">Link YouTube (Nhạc chuông từ YouTube)</span>
+                                <div className="text-xs text-slate-500">Dán link video/bài hát YouTube. Hệ thống sẽ phát âm thanh và tự ngắt sau số giây cài đặt.</div>
+                            </Radio>
+                        </Radio.Group>
+
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                            {notificationSound.type === 'UPLOAD' && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <Upload beforeUpload={handleUploadDeptSound} showUploadList={false} accept="audio/*">
+                                            <Button icon={<UploadOutlined />}>Chọn tệp âm thanh</Button>
+                                        </Upload>
+                                        {notificationSound.name && (
+                                            <span className="text-sm text-green-600 font-medium">Đã chọn: {notificationSound.name}</span>
+                                        )}
+                                    </div>
+                                    <div className="text-xs text-slate-400">Hỗ trợ định dạng MP3, WAV. Dung lượng tối đa 3MB.</div>
+                                </div>
+                            )}
+
+                            {notificationSound.type === 'DIRECT_URL' && (
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium text-slate-700">Đường dẫn file MP3/WAV:</div>
+                                    <Input 
+                                        prefix={<LinkOutlined className="text-slate-400" />}
+                                        placeholder="https://example.com/sound.mp3"
+                                        value={notificationSound.url}
+                                        onChange={e => setNotificationSound((prev: SoundConfig) => ({ ...prev, url: e.target.value }))}
+                                    />
+                                    <div className="text-xs text-slate-400">Ví dụ: đường link âm thanh từ host nội bộ hoặc các trang cung cấp chuông online.</div>
+                                </div>
+                            )}
+
+                            {notificationSound.type === 'YOUTUBE' && (
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium text-slate-700">Đường dẫn YouTube:</div>
+                                    <Input 
+                                        prefix={<YoutubeOutlined className="text-red-500" />}
+                                        placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..."
+                                        value={notificationSound.url}
+                                        onChange={e => setNotificationSound((prev: SoundConfig) => ({ ...prev, url: e.target.value }))}
+                                    />
+                                    <div className="text-xs text-slate-400">Hỗ trợ link máy tính, link rút gọn youtu.be, Shorts. Hệ thống tự động trích xuất video để phát ngầm.</div>
+                                </div>
+                            )}
+
+                            {notificationSound.type !== 'DEFAULT' && (
+                                <div className="mt-4 flex items-center gap-3">
+                                    <span className="text-sm text-slate-700 font-medium">Thời lượng phát chuông:</span>
+                                    <InputNumber 
+                                        min={3} 
+                                        max={30} 
+                                        value={notificationSound.duration || 7} 
+                                        onChange={val => setNotificationSound((prev: SoundConfig) => ({ ...prev, duration: val || 7 }))}
+                                    />
+                                    <span className="text-sm text-slate-500">giây (tự dừng sau số giây này)</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 flex items-center gap-3">
+                            <Button 
+                                icon={isPlayingSound ? <StopOutlined /> : <PlayCircleOutlined />} 
+                                onClick={handleTestSound}
+                                danger={isPlayingSound}
+                            >
+                                {isPlayingSound ? 'Dừng nghe thử' : 'Nghe thử âm thanh'}
+                            </Button>
+                            {(user?.role === 'ADMIN' || user?.role === targetDepartment) && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()}>
+                                    Lưu nhạc chuông chung
+                                </Button>
                             )}
                         </div>
                     </Card>

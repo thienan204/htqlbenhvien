@@ -3,6 +3,8 @@ import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switc
 import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
+import { useCheckBa } from '../hooks/useCheckBa';
+import { BaPaymentStatusAlert } from './BaPaymentStatusAlert';
 
 interface ChatTabProps {
     user: any;
@@ -52,41 +54,7 @@ export function ChatTab({
     const isITStaff = user?.role === targetDepartment || user?.role === 'ADMIN';
     const searchRecognitionRef = useRef<any>(null);
 
-    const [checkedBaInfo, setCheckedBaInfo] = useState<any>(null);
-    const checkBaTimeoutRef = useRef<any>(null);
-
-    useEffect(() => {
-        const match = chatText.match(/\b(BA\d+|\d{6,15})\b/i);
-        const code = match ? match[0] : null;
-
-        if (!code) {
-            setCheckedBaInfo(null);
-            return;
-        }
-
-        if (checkBaTimeoutRef.current) clearTimeout(checkBaTimeoutRef.current);
-        checkBaTimeoutRef.current = setTimeout(async () => {
-            try {
-                const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-ba?code=${encodeURIComponent(code)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.exists && data.data) {
-                        setCheckedBaInfo(data.data);
-                    } else {
-                        setCheckedBaInfo(null);
-                    }
-                } else {
-                    setCheckedBaInfo(null);
-                }
-            } catch (e) {
-                setCheckedBaInfo(null);
-            }
-        }, 400);
-
-        return () => {
-            if (checkBaTimeoutRef.current) clearTimeout(checkBaTimeoutRef.current);
-        };
-    }, [chatText]);
+    const { baCode, baInfo, hasPaymentRequest, isChecking, isFound } = useCheckBa(chatText, { isChatText: true });
 
     // Normalize vietnamese string for better search
     const normalizeString = (str: string) => {
@@ -373,28 +341,14 @@ export function ChatTab({
                 ))}
             </div>
 
-            {checkedBaInfo && (
-                <div className="mb-2">
-                    <Alert
-                        type="warning"
-                        showIcon
-                        className="rounded-xl border border-amber-300 bg-amber-50/95 shadow-xs"
-                        title={
-                            <div className="font-bold text-amber-900 text-[13px] sm:text-[14px]">
-                                ⚠️ Mã BA ({checkedBaInfo.maLienKet || checkedBaInfo.maBN}) đã được đề nghị thanh toán BHXH!
-                            </div>
-                        }
-                        description={
-                            <div className="text-[12px] sm:text-[13px] text-slate-700 flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 items-center">
-                                <span><b>BN:</b> <b className="text-blue-700">{checkedBaInfo.hoTen}</b></span>
-                                {checkedBaInfo.ngayRa && <span>• Ra viện: {checkedBaInfo.ngayRa}</span>}
-                                {checkedBaInfo.ngayDeNghiTT && <span>• Ngày đề nghị TT: <b className="text-amber-800">{checkedBaInfo.ngayDeNghiTT}</b></span>}
-                                {checkedBaInfo.trangThaiTT && <Tag color="orange" className="mr-0 text-[11px] py-0 px-1">{checkedBaInfo.trangThaiTT}</Tag>}
-                            </div>
-                        }
-                    />
-                </div>
-            )}
+            <BaPaymentStatusAlert
+                baCode={baCode}
+                baInfo={baInfo}
+                hasPaymentRequest={hasPaymentRequest}
+                isChecking={isChecking}
+                isFound={isFound}
+                className="mb-2"
+            />
 
             <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                 {fileList.length > 0 && (

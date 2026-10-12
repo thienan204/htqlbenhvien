@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Form, Input, Select, Radio, Button, Card, Upload, Switch, Alert, Tag, Segmented } from 'antd';
 import { PictureOutlined, CameraOutlined, LoadingOutlined, FileTextOutlined, DesktopOutlined } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
+import { useCheckBa } from '../hooks/useCheckBa';
+import { BaPaymentStatusAlert } from './BaPaymentStatusAlert';
 
 interface FormTabProps {
     form: any;
@@ -48,9 +50,8 @@ export function FormTab({
     maBaLength = 11,
     activeCategory
 }: FormTabProps) {
-    const [checkedBaInfo, setCheckedBaInfo] = useState<any>(null);
-    const [isCheckingBa, setIsCheckingBa] = useState(false);
-    const checkTimeoutRef = useRef<any>(null);
+    const [inputMaBa, setInputMaBa] = useState<string>('');
+    const { baCode, baInfo, hasPaymentRequest, isChecking, isFound, triggerCheck } = useCheckBa(inputMaBa);
 
     useEffect(() => {
         if (savedStaffId && !form.getFieldValue('nguoi_bao_id')) {
@@ -58,36 +59,14 @@ export function FormTab({
         }
     }, [savedStaffId]);
 
-    const handleCheckBa = async (code: string) => {
-        const trimmed = (code || '').trim();
-        if (!trimmed) {
-            setCheckedBaInfo(null);
-            return;
-        }
-        setIsCheckingBa(true);
-        try {
-            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-ba?code=${encodeURIComponent(trimmed)}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.exists && data.data) {
-                    setCheckedBaInfo(data.data);
-                    // Nếu hồ sơ đã có ngày ra viện và đã gửi BHXH, tự động cập nhật trạng thái "Đã ra viện" nếu đang là "Đang điều trị"
-                    if (form.getFieldValue('trang_thai_ba') === 'Đang điều trị') {
-                        form.setFieldsValue({ trang_thai_ba: 'Đã ra viện' });
-                    }
-                } else {
-                    setCheckedBaInfo(null);
-                }
-            } else {
-                setCheckedBaInfo(null);
+    // Tự động chuyển trạng thái "Đã ra viện" nếu hồ sơ đã có ngày ra viện
+    useEffect(() => {
+        if (baInfo && baInfo.ngayRa) {
+            if (form.getFieldValue('trang_thai_ba') === 'Đang điều trị') {
+                form.setFieldsValue({ trang_thai_ba: 'Đã ra viện' });
             }
-        } catch (err) {
-            console.error("Lỗi kiểm tra BA:", err);
-            setCheckedBaInfo(null);
-        } finally {
-            setIsCheckingBa(false);
         }
-    };
+    }, [baInfo]);
 
     const normalizeString = (str: string) => {
         return (str || '')
@@ -111,10 +90,7 @@ export function FormTab({
             val = 'BA' + val.slice(2);
             form.setFieldsValue({ ma_ba: val });
         }
-        if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
-        checkTimeoutRef.current = setTimeout(() => {
-            handleCheckBa(val);
-        }, 400);
+        setInputMaBa(val);
     };
 
     return (
@@ -159,7 +135,7 @@ export function FormTab({
                                                     label={
                                                         <span className="font-semibold text-slate-800 flex items-center gap-2">
                                                             <FileTextOutlined className="text-blue-600" /> Mã Bệnh Án
-                                                            {isCheckingBa && <LoadingOutlined className="text-blue-500 text-xs ml-1" />}
+                                                            {isChecking && <LoadingOutlined className="text-blue-500 text-xs ml-1" />}
                                                         </span>
                                                     } 
                                                     rules={[{ required: true, message: 'Vui lòng nhập mã bệnh án' }]} 
@@ -171,7 +147,7 @@ export function FormTab({
                                                         maxLength={maBaLength || 11}
                                                         className="!rounded-xl font-mono text-[15px] font-semibold tracking-wide !h-11 border-slate-300 shadow-2xs"
                                                         onChange={onMaBaChange}
-                                                        onBlur={(e) => handleCheckBa(e.target.value)}
+                                                        onBlur={(e) => triggerCheck(e.target.value)}
                                                         allowClear
                                                     />
                                                 </Form.Item>
@@ -195,32 +171,13 @@ export function FormTab({
                                             </div>
                                         </div>
 
-                                        {checkedBaInfo && (
-                                            <Alert
-                                                type="warning"
-                                                showIcon
-                                                className="rounded-xl border border-amber-300 bg-amber-50/95 shadow-xs"
-                                                title={
-                                                    <div className="font-bold text-amber-900 text-[14px] flex items-center gap-1.5">
-                                                        <span>⚠️ Mã BA đã được đề nghị thanh toán BHXH</span>
-                                                    </div>
-                                                }
-                                                description={
-                                                    <div className="mt-1 text-[13px] text-slate-700 space-y-1">
-                                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                                            <div><b>Bệnh nhân:</b> <span className="text-blue-700 font-semibold">{checkedBaInfo.hoTen || 'Chưa rõ'}</span></div>
-                                                            {checkedBaInfo.maBN && <div><b>Mã BN:</b> <span className="font-mono text-slate-800">{checkedBaInfo.maBN}</span></div>}
-                                                            {checkedBaInfo.maLienKet && <div><b>Mã LK:</b> <span className="font-mono text-slate-800">{checkedBaInfo.maLienKet}</span></div>}
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-x-4 gap-y-1 items-center">
-                                                            {checkedBaInfo.ngayRa && <div><b>Ngày ra viện:</b> <span>{checkedBaInfo.ngayRa}</span></div>}
-                                                            {checkedBaInfo.ngayDeNghiTT && <div><b>Ngày đề nghị TT:</b> <span className="text-amber-800 font-medium">{checkedBaInfo.ngayDeNghiTT}</span></div>}
-                                                            {checkedBaInfo.trangThaiTT && <div><b>Trạng thái:</b> <Tag color="orange" className="mr-0 font-medium">{checkedBaInfo.trangThaiTT}</Tag></div>}
-                                                        </div>
-                                                    </div>
-                                                }
-                                            />
-                                        )}
+                                        <BaPaymentStatusAlert
+                                            baCode={baCode || inputMaBa}
+                                            baInfo={baInfo}
+                                            hasPaymentRequest={hasPaymentRequest}
+                                            isChecking={isChecking}
+                                            isFound={isFound}
+                                        />
                                         
                                         <Form.Item 
                                             name="ten_loi_software" 

@@ -37,11 +37,13 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
 
     useEffect(() => {
         if (visible && ticket) {
-            actionForm.setFieldsValue({
-                status: ticket.status,
-                it_note: ticket.it_note,
-                assigneeId: ticket.assigneeId
-            });
+            setTimeout(() => {
+                actionForm.setFieldsValue({
+                    status: ticket.status,
+                    it_note: ticket.it_note,
+                    assigneeId: ticket.assigneeId
+                });
+            }, 0);
         }
     }, [visible, ticket, actionForm]);
 
@@ -59,7 +61,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
             cancelText="Hủy"
             destroyOnHidden
         >
-            <Form form={actionForm} layout="vertical" onFinish={onOk}>
+            <Form form={actionForm} preserve={false} layout="vertical" onFinish={onOk}>
                 <Form.Item name="status" label="Trạng thái">
                     <Select>
                         <Select.Option value="PENDING">Chờ xử lý</Select.Option>

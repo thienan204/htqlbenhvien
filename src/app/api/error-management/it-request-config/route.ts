@@ -44,7 +44,8 @@ export async function GET(request: Request) {
             maxImageSizeMB: config.maxImageSizeMB || 10,
             maBaLength: config.maBaLength || 11,
             telegramBotToken: config.telegramBotToken || '',
-            telegramChatId: config.telegramChatId || ''
+            telegramChatId: config.telegramChatId || '',
+            notificationSound: config.notificationSound || { type: 'DEFAULT', url: '', duration: 7 }
         });
     } catch (error: any) {
         console.error('GET it-request-config error:', error);
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
         else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
 
         const body = await request.json();
-        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB, maBaLength, telegramBotToken, telegramChatId } = body;
+        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB, maBaLength, telegramBotToken, telegramChatId, notificationSound } = body;
 
         if (softwareErrors && !Array.isArray(softwareErrors)) {
             return NextResponse.json({ error: 'Dữ liệu softwareErrors không hợp lệ, phải là mảng string' }, { status: 400 });
@@ -88,7 +89,8 @@ export async function POST(request: Request) {
             maxImageSizeMB: maxImageSizeMB !== undefined ? maxImageSizeMB : (existingConfig.maxImageSizeMB || 10),
             maBaLength: maBaLength !== undefined ? Number(maBaLength) : (existingConfig.maBaLength || 11),
             telegramBotToken: telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
-            telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId
+            telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId,
+            notificationSound: notificationSound !== undefined ? notificationSound : (existingConfig.notificationSound || { type: 'DEFAULT', url: '', duration: 7 })
         };
 
         const configRule = await prisma.specializedRule.upsert({

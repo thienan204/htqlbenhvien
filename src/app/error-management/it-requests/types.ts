@@ -14,6 +14,8 @@ export interface Ticket {
     it_note: string | null;
     messageCount?: number;
     hasXml?: boolean;
+    ten_khoa?: string;
+    nguoi_bao?: string;
     createdAt: string;
     updatedAt: string;
 }

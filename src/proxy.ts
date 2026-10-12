@@ -91,7 +91,8 @@ export async function proxy(request: NextRequest) {
             if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
             return NextResponse.next();
         }
-        return NextResponse.redirect(new URL(`${bp}/login`, request.url));
+        const returnUrl = encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search);
+        return NextResponse.redirect(new URL(`${bp}/login?returnUrl=${returnUrl}`, request.url));
     }
 
     // We have a token, verify it
@@ -127,7 +128,8 @@ export async function proxy(request: NextRequest) {
             if (targetPathForRewrite) return NextResponse.rewrite(new URL(`${bp}${targetPathForRewrite}`, request.url));
             return NextResponse.next();
         }
-        return NextResponse.redirect(new URL(`${bp}/login`, request.url));
+        const returnUrl = encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search);
+        return NextResponse.redirect(new URL(`${bp}/login?returnUrl=${returnUrl}`, request.url));
     }
 }
 
