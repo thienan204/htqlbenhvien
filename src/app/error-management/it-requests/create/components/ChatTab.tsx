@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message } from 'antd';
+import React, { useState, useRef, useEffect } from 'react';
+import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switch, Alert, Tag } from 'antd';
 import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { getBasePath } from '@/utils/config';
 
 interface ChatTabProps {
     user: any;
@@ -18,6 +19,7 @@ interface ChatTabProps {
     form: any;
     setActiveTab: (tab: string) => void;
     targetDepartment?: string;
+    maBaLength?: number;
 }
 
 export function ChatTab({
@@ -34,7 +36,8 @@ export function ChatTab({
     handleFileChange,
     setActiveTab,
     form,
-    targetDepartment = 'CNTT'
+    targetDepartment = 'CNTT',
+    maBaLength = 11
 }: ChatTabProps) {
     const router = useRouter();
     const [chatText, setChatText] = useState('');
@@ -45,7 +48,45 @@ export function ChatTab({
     const [staffSearchValue, setStaffSearchValue] = useState('');
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const [isSearchListening, setIsSearchListening] = useState(false);
+    const [selfAssign, setSelfAssign] = useState(false);
+    const isITStaff = user?.role === targetDepartment || user?.role === 'ADMIN';
     const searchRecognitionRef = useRef<any>(null);
+
+    const [checkedBaInfo, setCheckedBaInfo] = useState<any>(null);
+    const checkBaTimeoutRef = useRef<any>(null);
+
+    useEffect(() => {
+        const match = chatText.match(/\b(BA\d+|\d{6,15})\b/i);
+        const code = match ? match[0] : null;
+
+        if (!code) {
+            setCheckedBaInfo(null);
+            return;
+        }
+
+        if (checkBaTimeoutRef.current) clearTimeout(checkBaTimeoutRef.current);
+        checkBaTimeoutRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-ba?code=${encodeURIComponent(code)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.exists && data.data) {
+                        setCheckedBaInfo(data.data);
+                    } else {
+                        setCheckedBaInfo(null);
+                    }
+                } else {
+                    setCheckedBaInfo(null);
+                }
+            } catch (e) {
+                setCheckedBaInfo(null);
+            }
+        }, 400);
+
+        return () => {
+            if (checkBaTimeoutRef.current) clearTimeout(checkBaTimeoutRef.current);
+        };
+    }, [chatText]);
 
     // Normalize vietnamese string for better search
     const normalizeString = (str: string) => {
@@ -164,9 +205,9 @@ export function ChatTab({
 
         let category = chatCategory;
 
-        // Extract patientCode (8-10 digits)
-        const patientMatch = chatText.match(/\b\d{8,10}\b/);
-        const ma_ba = patientMatch ? patientMatch[0] : null;
+        // Extract patientCode (Hỗ trợ cả mã có tiền tố BA hoặc dãy 6-15 chữ số)
+        const patientMatch = chatText.match(/\b(BA\d+|\d{6,15})\b/i);
+        const ma_ba = patientMatch ? patientMatch[0].toUpperCase() : null;
 
         const staff = departmentStaff.find(s => s.id === staffId);
         
@@ -181,7 +222,7 @@ export function ChatTab({
         }
 
         try {
-            const res = await fetch('/api/error-management/it-requests', {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -189,7 +230,7 @@ export function ChatTab({
                     category: category,
                     ten_loi: chatText,
                     ma_khoa: isAdmin ? (staff?.ma_khoa || user?.ma_khoa || departments[0]?.ma_khoa) : 'KHOA_HIENTAI', 
-                    assigneeId: null, // Auto assign
+                    assigneeId: (isITStaff && selfAssign) ? user?.id : null,
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: staffId,
                     sdt: staff?.so_dien_thoai || '',
@@ -216,10 +257,10 @@ export function ChatTab({
     return (
         <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-inner flex flex-col min-h-[400px]">
             {/* Thanh thông tin người báo trong Chat Tab */}
-            <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm mb-4 gap-2">
                 <div className="text-sm font-medium text-slate-600 flex items-center gap-2">
                     <span>👤 Người báo:</span>
-                    {user?.staffId && !isAdmin ? (
+                    {user?.staffId && !isAdmin && user?.role !== 'KHOA' ? (
                         <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
                             {departmentStaff.find((s: any) => s.id === user.staffId)?.ho_ten || 'Tài khoản cá nhân'}
                         </span>
@@ -250,7 +291,9 @@ export function ChatTab({
                                 virtual={false}
                                 options={departmentStaff.map((s: any) => ({
                                     value: s.id,
-                                    label: isAdmin ? `${s.ho_ten} - ${s.department?.ten_khoa || s.ma_khoa}` : s.ho_ten
+                                    label: isAdmin 
+                                        ? `${s.ho_ten}${s.chuc_danh ? ` (${s.chuc_danh})` : ''} - ${s.department?.ten_khoa || s.ma_khoa}` 
+                                        : `${s.ho_ten}${s.chuc_danh ? ` (${s.chuc_danh})` : ''}`
                                 }))}
                                 showSearch
                                 filterOption={(input, option) => {
@@ -273,6 +316,16 @@ export function ChatTab({
                         </div>
                     )}
                 </div>
+                {isITStaff && (
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-3 py-1.5 rounded-lg text-blue-900 shadow-xs">
+                        <Switch 
+                            size="small" 
+                            checked={selfAssign} 
+                            onChange={setSelfAssign} 
+                        />
+                        <span className="text-xs font-bold text-blue-800">⚡ Tôi trực tiếp xử lý</span>
+                    </div>
+                )}
             </div>
 
             {/* Category Selection for Chat Tab */}
@@ -319,6 +372,29 @@ export function ChatTab({
                     </div>
                 ))}
             </div>
+
+            {checkedBaInfo && (
+                <div className="mb-2">
+                    <Alert
+                        type="warning"
+                        showIcon
+                        className="rounded-xl border border-amber-300 bg-amber-50/95 shadow-xs"
+                        title={
+                            <div className="font-bold text-amber-900 text-[13px] sm:text-[14px]">
+                                ⚠️ Mã BA ({checkedBaInfo.maLienKet || checkedBaInfo.maBN}) đã được đề nghị thanh toán BHXH!
+                            </div>
+                        }
+                        description={
+                            <div className="text-[12px] sm:text-[13px] text-slate-700 flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 items-center">
+                                <span><b>BN:</b> <b className="text-blue-700">{checkedBaInfo.hoTen}</b></span>
+                                {checkedBaInfo.ngayRa && <span>• Ra viện: {checkedBaInfo.ngayRa}</span>}
+                                {checkedBaInfo.ngayDeNghiTT && <span>• Ngày đề nghị TT: <b className="text-amber-800">{checkedBaInfo.ngayDeNghiTT}</b></span>}
+                                {checkedBaInfo.trangThaiTT && <Tag color="orange" className="mr-0 text-[11px] py-0 px-1">{checkedBaInfo.trangThaiTT}</Tag>}
+                            </div>
+                        }
+                    />
+                </div>
+            )}
 
             <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                 {fileList.length > 0 && (

@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
 import { sendPushNotification } from '@/lib/firebase-admin';
 import { emitEvent } from '@/lib/notificationService';
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request, context: any) {
     try {
@@ -15,6 +13,16 @@ export async function GET(request: Request, context: any) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         if (!id) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+
+        const ticket = await prisma.iTRequest.findUnique({
+            where: { id: id }
+        });
+        if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
+
+        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
+        if (isDepartmentUser && ticket.ma_khoa !== user.ma_khoa) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
         const messages = await prisma.requestMessage.findMany({
             where: { itRequestId: id },
@@ -46,6 +54,11 @@ export async function POST(request: Request, context: any) {
         });
 
         if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
+
+        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
+        if (isDepartmentUser && ticket.ma_khoa !== user.ma_khoa) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
         const newMessage = await prisma.requestMessage.create({
             data: {

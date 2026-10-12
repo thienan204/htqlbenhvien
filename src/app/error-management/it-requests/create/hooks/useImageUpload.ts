@@ -64,7 +64,7 @@ export function useImageUpload(maxImageSizeMB: number) {
                 const formData = new FormData();
                 formData.append('file', resizedBlob, file.name || 'upload.jpg');
 
-                const res = await fetch('/api/upload', {
+                const res = await fetch(`${getBasePath()}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });

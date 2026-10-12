@@ -56,6 +56,8 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         if (isAdmin) {
             if (filterMode === 'MINE') result = result.filter(t => t.assigneeId === user?.id || t.transferToId === user?.id);
             if (filterMode === 'UNASSIGNED') result = result.filter(t => !t.assigneeId);
+        } else if (user?.ma_khoa) {
+            result = result.filter(t => t.ma_khoa === user.ma_khoa);
         }
         if (statusFilter !== 'ALL') {
             result = result.filter(t => t.status === statusFilter);

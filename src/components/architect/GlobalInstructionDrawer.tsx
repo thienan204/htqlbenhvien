@@ -13,6 +13,7 @@ export default function GlobalInstructionDrawer() {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
+        let isMounted = true;
         let path = pathname || '';
         
         // Remove basePath if it's there
@@ -24,7 +25,7 @@ export default function GlobalInstructionDrawer() {
         // like the instruction reader itself or admin pages where it might conflict
         if (path.startsWith('/huong-dan/') || path.startsWith('/admin/instructions')) {
             setHasInstruction(false);
-            return;
+            return () => { isMounted = false; };
         }
 
         // Sử dụng trực tiếp đường dẫn làm slug (ví dụ: /users, /chuyen-de/abc)
@@ -33,7 +34,7 @@ export default function GlobalInstructionDrawer() {
         
         if (!generatedSlug || generatedSlug === '/') {
             setHasInstruction(false);
-            return;
+            return () => { isMounted = false; };
         }
 
         const checkInstruction = async () => {
@@ -41,8 +42,11 @@ export default function GlobalInstructionDrawer() {
                 const bPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/htqlbenhvien') ? '/htqlbenhvien' : '';
                 
                 const res = await fetch(`${bPath}/api/page-instructions?pageId=${generatedSlug}`);
+                if (!isMounted) return;
+
                 if (res.ok) {
                     const data = await res.json();
+                    if (!isMounted) return;
                     if (data.success && data.data) {
                         const showOnPage = data.data.showOnPage !== false;
                         if (showOnPage) {
@@ -58,11 +62,17 @@ export default function GlobalInstructionDrawer() {
                     setHasInstruction(false);
                 }
             } catch (error) {
-                setHasInstruction(false);
+                if (isMounted) {
+                    setHasInstruction(false);
+                }
             }
         };
 
         checkInstruction();
+
+        return () => {
+            isMounted = false;
+        };
     }, [pathname]);
 
     if (!hasInstruction) return null;

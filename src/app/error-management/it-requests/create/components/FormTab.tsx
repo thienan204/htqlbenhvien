@@ -1,6 +1,7 @@
-import React from 'react';
-import { Form, Input, Select, Radio, Button, Card, Upload } from 'antd';
-import { PictureOutlined, CameraOutlined } from '@ant-design/icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { Form, Input, Select, Radio, Button, Card, Upload, Switch, Alert, Tag, Segmented } from 'antd';
+import { PictureOutlined, CameraOutlined, LoadingOutlined, FileTextOutlined, DesktopOutlined } from '@ant-design/icons';
+import { getBasePath } from '@/utils/config';
 
 interface FormTabProps {
     form: any;
@@ -15,11 +16,14 @@ interface FormTabProps {
     allStaffs: any[];
     itUsers: any[];
     user: any;
+    savedStaffId?: string | null;
     setSavedStaffId: (id: string | null) => void;
     fileList: any[];
     uploadProps: any;
     loading: boolean;
     targetDepartment?: string;
+    maBaLength?: number;
+    activeCategory?: 'SOFTWARE' | 'HARDWARE';
 }
 
 export function FormTab({
@@ -35,73 +39,246 @@ export function FormTab({
     allStaffs,
     itUsers,
     user,
+    savedStaffId,
     setSavedStaffId,
     fileList,
     uploadProps,
     loading,
-    targetDepartment = 'CNTT'
+    targetDepartment = 'CNTT',
+    maBaLength = 11,
+    activeCategory
 }: FormTabProps) {
+    const [checkedBaInfo, setCheckedBaInfo] = useState<any>(null);
+    const [isCheckingBa, setIsCheckingBa] = useState(false);
+    const checkTimeoutRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (savedStaffId && !form.getFieldValue('nguoi_bao_id')) {
+            form.setFieldsValue({ nguoi_bao_id: savedStaffId });
+        }
+    }, [savedStaffId]);
+
+    const handleCheckBa = async (code: string) => {
+        const trimmed = (code || '').trim();
+        if (!trimmed) {
+            setCheckedBaInfo(null);
+            return;
+        }
+        setIsCheckingBa(true);
+        try {
+            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-ba?code=${encodeURIComponent(trimmed)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.exists && data.data) {
+                    setCheckedBaInfo(data.data);
+                    // Nếu hồ sơ đã có ngày ra viện và đã gửi BHXH, tự động cập nhật trạng thái "Đã ra viện" nếu đang là "Đang điều trị"
+                    if (form.getFieldValue('trang_thai_ba') === 'Đang điều trị') {
+                        form.setFieldsValue({ trang_thai_ba: 'Đã ra viện' });
+                    }
+                } else {
+                    setCheckedBaInfo(null);
+                }
+            } else {
+                setCheckedBaInfo(null);
+            }
+        } catch (err) {
+            console.error("Lỗi kiểm tra BA:", err);
+            setCheckedBaInfo(null);
+        } finally {
+            setIsCheckingBa(false);
+        }
+    };
+
+    const normalizeString = (str: string) => {
+        return (str || '')
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLowerCase()
+            .trim();
+    };
+
+    const getInitials = (str: string) => {
+        const normalized = normalizeString(str);
+        return normalized.replace(/[^a-z0-9\s]/gi, '').split(/\s+/).filter(Boolean).map(w => w[0]).join('');
+    };
+
+    const onMaBaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let val = e.target.value;
+        // Tự động viết hoa 2 ký tự đầu 'ba' hoặc 'Ba' thành 'BA'
+        if (/^ba/i.test(val)) {
+            val = 'BA' + val.slice(2);
+            form.setFieldsValue({ ma_ba: val });
+        }
+        if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+        checkTimeoutRef.current = setTimeout(() => {
+            handleCheckBa(val);
+        }, 400);
+    };
+
     return (
         <Card className="shadow-sm rounded-b-2xl rounded-tr-2xl border-slate-200 border-t-0">
-            <Form form={form} layout="vertical" onFinish={handleCreateTicket}>
-                {targetDepartment === 'CNTT' ? (
-                    <Form.Item name="category" noStyle>
-                        <Radio.Group className="w-full mb-6 flex rounded-lg p-1 bg-slate-100" optionType="button" buttonStyle="solid">
-                            <Radio.Button value="SOFTWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
-                                Bệnh án
-                            </Radio.Button>
-                            <Radio.Button value="HARDWARE" className="flex-1 text-center border-none shadow-none bg-transparent font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1">
-                                Thiết bị/Sửa chữa
-                            </Radio.Button>
-                        </Radio.Group>
-                    </Form.Item>
-                ) : (
-                    <Form.Item name="category" initialValue="HARDWARE" hidden><Input /></Form.Item>
-                )}
+            <Form 
+                form={form} 
+                layout="vertical" 
+                onFinish={(vals) => handleCreateTicket({ ...vals, category: activeCategory || vals.category || (targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE') })}
+                initialValues={{ 
+                    category: activeCategory || (targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE'),
+                    trang_thai_ba: 'Đang điều trị',
+                    nguoi_bao_id: savedStaffId || undefined,
+                    selfAssign: false
+                }}
+            >
+                <Form.Item name="category" hidden>
+                    <Input />
+                </Form.Item>
 
                 <Form.Item noStyle shouldUpdate={(prev, curr) => prev.category !== curr.category}>
                     {({ getFieldValue }) => {
-                        const isSoftware = targetDepartment === 'CNTT' ? getFieldValue('category') === 'SOFTWARE' : false;
+                        const isSoftware = activeCategory ? activeCategory === 'SOFTWARE' : (targetDepartment === 'CNTT' ? getFieldValue('category') === 'SOFTWARE' : false);
+                        const isITStaff = user?.role === targetDepartment || user?.role === 'ADMIN';
                         return (
                             <>
                                 {isSoftware && (
-                                    <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 space-y-4">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <Form.Item name="ma_ba" label={<span className="font-semibold">Mã Bệnh Án</span>} rules={[{ required: true, message: 'Vui lòng nhập mã bệnh án' }]} className="mb-0">
-                                                <Input placeholder="Nhập mã BA" />
-                                            </Form.Item>
-                                            <Form.Item name="trang_thai_ba" label={<span className="font-semibold">Trạng thái bệnh án</span>} className="mb-0">
-                                                <Radio.Group className="flex pt-2">
-                                                    <Radio value="Đang điều trị">Đang điều trị</Radio>
-                                                    <Radio value="Đã ra viện">Đã ra viện</Radio>
-                                                </Radio.Group>
-                                            </Form.Item>
+                                    <div className="bg-gradient-to-br from-blue-50/80 via-indigo-50/40 to-white p-5 sm:p-6 rounded-2xl border border-blue-200/80 shadow-xs mb-6 space-y-5">
+                                        <div className="flex items-center justify-between pb-3 border-b border-blue-100/90">
+                                            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm tracking-wide uppercase">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+                                                Thông tin Bệnh Án & Sự cố phần mềm
+                                            </div>
+                                            <span className="text-xs text-blue-700 font-medium bg-blue-100/80 px-2.5 py-0.5 rounded-full border border-blue-200/60">
+                                                HIS / EMR / BHYT
+                                            </span>
                                         </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+                                            <div className="lg:col-span-4 sm:col-span-1">
+                                                <Form.Item 
+                                                    name="ma_ba" 
+                                                    label={
+                                                        <span className="font-semibold text-slate-800 flex items-center gap-2">
+                                                            <FileTextOutlined className="text-blue-600" /> Mã Bệnh Án
+                                                            {isCheckingBa && <LoadingOutlined className="text-blue-500 text-xs ml-1" />}
+                                                        </span>
+                                                    } 
+                                                    rules={[{ required: true, message: 'Vui lòng nhập mã bệnh án' }]} 
+                                                    className="mb-0"
+                                                >
+                                                    <Input 
+                                                        size="large"
+                                                        placeholder="VD: BA001028282" 
+                                                        maxLength={maBaLength || 11}
+                                                        className="!rounded-xl font-mono text-[15px] font-semibold tracking-wide !h-11 border-slate-300 shadow-2xs"
+                                                        onChange={onMaBaChange}
+                                                        onBlur={(e) => handleCheckBa(e.target.value)}
+                                                        allowClear
+                                                    />
+                                                </Form.Item>
+                                            </div>
+                                            <div className="lg:col-span-4 sm:col-span-1">
+                                                <Form.Item 
+                                                    name="trang_thai_ba" 
+                                                    label={<span className="font-semibold text-slate-800">Trạng thái bệnh án</span>} 
+                                                    className="mb-0"
+                                                >
+                                                    <Segmented 
+                                                        block
+                                                        size="large"
+                                                        className="w-full !h-11 p-1 bg-slate-200/80 rounded-xl font-medium text-[13px] border border-slate-200 flex items-center"
+                                                        options={[
+                                                            { label: '🏥 Đang điều trị', value: 'Đang điều trị' },
+                                                            { label: '📋 Đã ra viện', value: 'Đã ra viện' }
+                                                        ]}
+                                                    />
+                                                </Form.Item>
+                                            </div>
+                                        </div>
+
+                                        {checkedBaInfo && (
+                                            <Alert
+                                                type="warning"
+                                                showIcon
+                                                className="rounded-xl border border-amber-300 bg-amber-50/95 shadow-xs"
+                                                title={
+                                                    <div className="font-bold text-amber-900 text-[14px] flex items-center gap-1.5">
+                                                        <span>⚠️ Mã BA đã được đề nghị thanh toán BHXH</span>
+                                                    </div>
+                                                }
+                                                description={
+                                                    <div className="mt-1 text-[13px] text-slate-700 space-y-1">
+                                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                            <div><b>Bệnh nhân:</b> <span className="text-blue-700 font-semibold">{checkedBaInfo.hoTen || 'Chưa rõ'}</span></div>
+                                                            {checkedBaInfo.maBN && <div><b>Mã BN:</b> <span className="font-mono text-slate-800">{checkedBaInfo.maBN}</span></div>}
+                                                            {checkedBaInfo.maLienKet && <div><b>Mã LK:</b> <span className="font-mono text-slate-800">{checkedBaInfo.maLienKet}</span></div>}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-x-4 gap-y-1 items-center">
+                                                            {checkedBaInfo.ngayRa && <div><b>Ngày ra viện:</b> <span>{checkedBaInfo.ngayRa}</span></div>}
+                                                            {checkedBaInfo.ngayDeNghiTT && <div><b>Ngày đề nghị TT:</b> <span className="text-amber-800 font-medium">{checkedBaInfo.ngayDeNghiTT}</span></div>}
+                                                            {checkedBaInfo.trangThaiTT && <div><b>Trạng thái:</b> <Tag color="orange" className="mr-0 font-medium">{checkedBaInfo.trangThaiTT}</Tag></div>}
+                                                        </div>
+                                                    </div>
+                                                }
+                                            />
+                                        )}
                                         
-                                        <Form.Item name="ten_loi_software" label={<span className="font-semibold">Vấn đề cần hỗ trợ (Lỗi nghiệp vụ)</span>} rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập vấn đề' }]} className="mb-0">
-                                            <Select mode="tags" placeholder="Chọn hoặc gõ thêm lỗi..." options={softwareErrors.map(e => ({ label: e, value: e }))} />
+                                        <Form.Item 
+                                            name="ten_loi_software" 
+                                            label={<span className="font-semibold text-slate-800">Vấn đề cần hỗ trợ (Lỗi nghiệp vụ)</span>} 
+                                            rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập vấn đề' }]} 
+                                            className="mb-0"
+                                        >
+                                            <Select 
+                                                mode="tags" 
+                                                size="large"
+                                                className="!rounded-xl"
+                                                placeholder="Chọn trong danh sách hoặc gõ thêm lỗi cần hỗ trợ..." 
+                                                options={softwareErrors.map(e => ({ label: e, value: e }))} 
+                                            />
                                         </Form.Item>
                                     </div>
                                 )}
 
                                 {!isSoftware && (
-                                    <div className="bg-orange-50/50 p-6 rounded-xl border border-orange-100 mb-6">
-                                        <Form.Item name="ten_loi_hardware" label={<span className="font-semibold">Vấn đề cần hỗ trợ (Sửa chữa)</span>} rules={[{ required: true, message: 'Vui lòng chọn sự cố' }]} className="mb-0">
-                                            <Radio.Group className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+                                    <div className="bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-white p-5 sm:p-6 rounded-2xl border border-amber-200/80 shadow-xs mb-6 space-y-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-amber-100/90">
+                                            <div className="flex items-center gap-2 text-amber-900 font-bold text-sm tracking-wide uppercase">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+                                                Sự cố Thiết bị & Phần cứng
+                                            </div>
+                                            <span className="text-xs text-amber-800 font-medium bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-200/60">
+                                                Máy in / Máy tính / Mạng
+                                            </span>
+                                        </div>
+                                        <Form.Item name="ten_loi_hardware" label={<span className="font-semibold text-slate-800">Chọn sự cố cần sửa chữa</span>} rules={[{ required: true, message: 'Vui lòng chọn sự cố' }]} className="mb-0">
+                                            <Radio.Group className="!flex !flex-wrap gap-2 sm:gap-3 items-center">
                                                 {hardwareErrors.map((t: string) => (
-                                                    <Radio.Button key={t} value={t} className="rounded-xl sm:rounded-full h-10 sm:h-auto flex items-center justify-center sm:inline-flex px-4 !text-[14px]">{t}</Radio.Button>
+                                                    <Radio.Button 
+                                                        key={t} 
+                                                        value={t} 
+                                                        className="!inline-flex !items-center !justify-center !rounded-xl !h-11 px-5 !text-[13px] font-medium transition-all shadow-2xs hover:border-amber-400"
+                                                    >
+                                                        {t}
+                                                    </Radio.Button>
                                                 ))}
                                             </Radio.Group>
                                         </Form.Item>
                                     </div>
                                 )}
 
-                                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 space-y-6">
-                                    <Form.Item name="ghi_chu" label={<span className="font-semibold">Ghi chú thêm / Mô tả chi tiết (Tuỳ chọn)</span>} className="mb-0">
-                                        <Input.TextArea rows={3} placeholder="Mô tả cụ thể hoặc cho biết vị trí máy bị lỗi..." />
+                                <div className="bg-gradient-to-br from-slate-50 to-slate-100/60 p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
+                                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                                        <div className="flex items-center gap-2 text-slate-800 font-bold text-sm tracking-wide uppercase">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                                            Chi tiết yêu cầu & Thông tin người gửi
+                                        </div>
+                                    </div>
+
+                                    <Form.Item name="ghi_chu" label={<span className="font-semibold text-slate-800">Ghi chú thêm / Mô tả chi tiết (Tuỳ chọn)</span>} className="mb-0">
+                                        <Input.TextArea rows={3} className="!rounded-xl" placeholder="Mô tả cụ thể hoặc cho biết vị trí máy bị lỗi..." />
                                     </Form.Item>
 
-                                    <Form.Item label={<span className="font-semibold">Đính kèm hình ảnh (Bắt lỗi màn hình, thiết bị)</span>} className="mb-0">
+                                    <Form.Item label={<span className="font-semibold text-slate-800">Đính kèm hình ảnh (Bắt lỗi màn hình, thiết bị)</span>} className="mb-0">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <div className="hidden sm:block">
                                                 <Upload {...uploadProps}>
@@ -145,48 +322,117 @@ export function FormTab({
                                         </div>
                                     </Form.Item>
 
-                                    {isAdmin && (
-                                        <Form.Item name="ma_khoa" label={<span className="font-semibold">Khoa phòng yêu cầu</span>} rules={[{ required: true, message: 'Vui lòng chọn khoa' }]} className="mb-0">
-                                            <Select
-                                                showSearch
-                                                placeholder="Chọn khoa phòng"
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                                        {isAdmin && (
+                                            <Form.Item name="ma_khoa" label={<span className="font-semibold text-slate-800">Khoa phòng yêu cầu</span>} rules={[{ required: true, message: 'Vui lòng chọn khoa' }]} className="mb-0">
+                                                <Select
+                                                    showSearch
+                                                    size="large"
+                                                    className="!rounded-xl"
+                                                    placeholder="Chọn khoa phòng (hoặc gõ tắt ví dụ: knth)"
+                                                    virtual={false}
+                                                    filterOption={(input, option) => {
+                                                        if (!input) return true;
+                                                        const search = normalizeString(input);
+                                                        const label = String((option as any)?.searchtext || (option as any)?.children || '');
+                                                        const normLabel = normalizeString(label);
+                                                        const initials = getInitials(label);
+                                                        return normLabel.includes(search) || initials.includes(search);
+                                                    }}
+                                                    onChange={(val) => {
+                                                        setDepartmentStaff(allStaffs.filter((s: any) => s.ma_khoa === val));
+                                                        form.setFieldsValue({ nguoi_bao_id: undefined });
+                                                    }}
+                                                >
+                                                    {departments.map((d: any) => (
+                                                        <Select.Option key={d.ma_khoa} value={d.ma_khoa} searchtext={d.ten_khoa}>
+                                                            {d.ten_khoa}
+                                                        </Select.Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                        )}
+
+                                        <Form.Item name="nguoi_bao_id" label={<span className="font-semibold text-slate-800">Người báo</span>} rules={[{ required: true, message: 'Vui lòng chọn tên' }]} className="mb-0">
+                                            <Select 
+                                                showSearch 
+                                                size="large"
+                                                className="!rounded-xl"
+                                                placeholder="Tìm tên nhân viên (hoặc gõ tắt ví dụ: btq)..." 
                                                 virtual={false}
-                                                optionFilterProp="children"
+                                                disabled={!!user?.staffId && !isAdmin && user?.role !== 'KHOA'}
+                                                filterOption={(input, option) => {
+                                                    if (!input) return true;
+                                                    const search = normalizeString(input);
+                                                    const optVal = String(option?.value || '').toLowerCase();
+                                                    if (optVal === search || optVal.includes(search)) return true;
+
+                                                    const fullText = String((option as any)?.searchtext || (option as any)?.children || '');
+                                                    const staffName = String((option as any)?.staffname || '');
+                                                    
+                                                    const normFull = normalizeString(fullText);
+                                                    if (normFull.includes(search)) return true;
+
+                                                    const fullInitials = getInitials(fullText);
+                                                    if (fullInitials.includes(search)) return true;
+
+                                                    if (staffName) {
+                                                        const nameInitials = getInitials(staffName);
+                                                        if (nameInitials.includes(search)) return true;
+                                                    }
+
+                                                    return false;
+                                                }}
                                                 onChange={(val) => {
-                                                    setDepartmentStaff(allStaffs.filter((s: any) => s.ma_khoa === val));
-                                                    form.setFieldsValue({ nguoi_bao_id: undefined });
+                                                    if (!user?.staffId || isAdmin || user?.role === 'KHOA') {
+                                                        localStorage.setItem('last_it_request_staff_id', val);
+                                                        setSavedStaffId(val);
+                                                    }
                                                 }}
                                             >
-                                                {departments.map((d: any) => (
-                                                    <Select.Option key={d.ma_khoa} value={d.ma_khoa}>{d.ten_khoa}</Select.Option>
-                                                ))}
+                                                {departmentStaff.map((s: any) => {
+                                                    const labelText = `${s.ho_ten}${s.chuc_danh ? ` (${s.chuc_danh})` : ''}${isAdmin ? ` - ${s.department?.ten_khoa || s.ma_khoa}` : ''}`;
+                                                    return (
+                                                        <Select.Option key={s.id} value={s.id} searchtext={labelText} staffname={s.ho_ten}>
+                                                            {labelText}
+                                                        </Select.Option>
+                                                    );
+                                                })}
                                             </Select>
                                         </Form.Item>
-                                    )}
-
-                                    <Form.Item name="nguoi_bao_id" label={<span className="font-semibold">{isAdmin ? "Người báo" : "Người báo"}</span>} rules={[{ required: true, message: 'Vui lòng chọn tên' }]} className="mb-0">
-                                        <Select 
-                                            showSearch 
-                                            placeholder="Tìm tên nhân viên..." 
-                                            virtual={false}
-                                            disabled={!!user?.staffId && !isAdmin}
-                                            optionFilterProp="children"
-                                            onChange={(val) => {
-                                                if (!user?.staffId || isAdmin) {
-                                                    localStorage.setItem('last_it_request_staff_id', val);
-                                                    setSavedStaffId(val);
-                                                }
-                                            }}
-                                        >
-                                            {departmentStaff.map((s: any) => (
-                                                <Select.Option key={s.id} value={s.id}>
-                                                    {s.ho_ten} {s.chuc_danh ? `(${s.chuc_danh})` : ''} {isAdmin ? `- ${s.department?.ten_khoa || s.ma_khoa}` : ''}
-                                                </Select.Option>
-                                            ))}
-                                        </Select>
-                                    </Form.Item>
+                                    </div>
                                 </div>
                                 
+                                {isITStaff && (
+                                    <div className="mt-6 p-4 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/90 to-indigo-50/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-200 shrink-0">
+                                                ⚡
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-blue-950 text-[14px]">Tôi trực tiếp xử lý yêu cầu này (Tự nhận việc)</div>
+                                                <div className="text-xs text-slate-500 mt-0.5">
+                                                    Hệ thống sẽ gán ngay cho bạn <b>({user?.name || user?.username})</b> để chạy trước tính năng, không phân phối ngẫu nhiên.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Form.Item name="selfAssign" valuePropName="checked" noStyle>
+                                            <Switch 
+                                                checkedChildren="Tôi xử lý" 
+                                                unCheckedChildren="Chưa nhận"
+                                                className="bg-slate-300"
+                                                onChange={(checked) => {
+                                                    if (checked) {
+                                                        form.setFieldsValue({ assigneeId: user?.id });
+                                                    } else if (!isManager) {
+                                                        form.setFieldsValue({ assigneeId: undefined });
+                                                    }
+                                                }}
+                                            />
+                                        </Form.Item>
+                                    </div>
+                                )}
+
                                 {isManager && (
                                     <div className="mt-6 bg-purple-50/50 p-6 rounded-xl border border-purple-100">
                                         <div className="font-bold text-purple-800 mb-4 uppercase text-sm">Khu vực dành cho Quản lý / Trưởng phòng</div>
@@ -206,7 +452,13 @@ export function FormTab({
                                 )}
 
                                 <div className="mt-8 flex justify-end">
-                                    <Button type="primary" htmlType="submit" size="large" className="px-8 font-semibold bg-blue-600 hover:bg-blue-500" loading={loading}>
+                                    <Button 
+                                        type="primary" 
+                                        htmlType="submit" 
+                                        size="large" 
+                                        className="px-10 !h-12 !rounded-xl font-bold text-[15px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/20 transition-all" 
+                                        loading={loading}
+                                    >
                                         Gửi Yêu Cầu Hỗ Trợ
                                     </Button>
                                 </div>

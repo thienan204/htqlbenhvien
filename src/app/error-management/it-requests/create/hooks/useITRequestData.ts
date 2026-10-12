@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getBasePath } from '@/utils/config';
 
 export function useITRequestData(isAdmin: boolean, userRole: string | undefined, userMaKhoa: string | undefined, userStaffId: string | undefined, form: any, targetDepartment: string = 'CNTT') {
     const [softwareErrors, setSoftwareErrors] = useState<string[]>([]);
@@ -8,18 +9,22 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
     const [departmentStaff, setDepartmentStaff] = useState<any[]>([]);
     const [itUsers, setItUsers] = useState<any[]>([]);
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(10);
+    const [maBaLength, setMaBaLength] = useState<number>(11);
     const [savedStaffId, setSavedStaffId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchConfiguredFields = async () => {
             try {
-                const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
+                const res = await fetch(`${getBasePath()}/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
                 if (res.ok) {
                     const configData = await res.json();
                     setSoftwareErrors(configData.softwareErrors || []);
                     setHardwareErrors(configData.hardwareErrors || []);
                     if (configData.maxImageSizeMB) {
                         setMaxImageSizeMB(configData.maxImageSizeMB);
+                    }
+                    if (configData.maBaLength) {
+                        setMaBaLength(configData.maBaLength);
                     }
                 }
             } catch (error) {
@@ -29,7 +34,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
 
         const fetchDepartments = async () => {
             try {
-                const res = await fetch('/api/departments');
+                const res = await fetch(`${getBasePath()}/api/departments`);
                 if (res.ok) {
                     const data = await res.json();
                     setDepartments(data);
@@ -41,7 +46,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
 
         const fetchStaffs = async () => {
             try {
-                const res = await fetch('/api/staff');
+                const res = await fetch(`${getBasePath()}/api/staff`);
                 if (res.ok) {
                     const data = await res.json();
                     setAllStaffs(data);
@@ -51,10 +56,21 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
                     }
                     setDepartmentStaff(currentStaffList);
 
-                    // Verify if the saved staff ID is still valid
-                    const lastId = form.getFieldValue('nguoi_bao_id');
-                    if (lastId && !currentStaffList.some((s: any) => s.id === lastId)) {
-                        form.setFieldsValue({ nguoi_bao_id: undefined });
+                    // Xác định nhân viên được chọn mặc định cho Khoa
+                    const storedLastId = localStorage.getItem('last_it_request_staff_id');
+                    let chosenId: string | null = null;
+
+                    if (userStaffId && currentStaffList.some((s: any) => s.id === userStaffId)) {
+                        chosenId = userStaffId;
+                    } else if (storedLastId && currentStaffList.some((s: any) => s.id === storedLastId)) {
+                        chosenId = storedLastId;
+                    } else if (currentStaffList.length > 0) {
+                        chosenId = currentStaffList[0].id;
+                    }
+
+                    if (chosenId) {
+                        setSavedStaffId(chosenId);
+                    } else {
                         setSavedStaffId(null);
                         localStorage.removeItem('last_it_request_staff_id');
                     }
@@ -66,7 +82,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
 
         const fetchITUsers = async () => {
             try {
-                const res = await fetch(`/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
+                const res = await fetch(`${getBasePath()}/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
                 if (res.ok) {
                     const data = await res.json();
                     setItUsers(data.filter((u: any) => u.isAvailable));
@@ -92,12 +108,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
         
         const lastStaffId = userStaffId || localStorage.getItem('last_it_request_staff_id');
         setSavedStaffId(lastStaffId);
-        form.setFieldsValue({
-            category: targetDepartment === 'CNTT' ? 'SOFTWARE' : 'HARDWARE',
-            trang_thai_ba: 'Đang điều trị',
-            nguoi_bao_id: lastStaffId || undefined
-        });
-    }, [form, isAdmin, userRole, userMaKhoa, userStaffId, targetDepartment]);
+    }, [isAdmin, userRole, userMaKhoa, userStaffId, targetDepartment]);
 
     return {
         softwareErrors,
@@ -108,6 +119,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
         setDepartmentStaff,
         itUsers,
         maxImageSizeMB,
+        maBaLength,
         savedStaffId,
         setSavedStaffId
     };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ITUser } from '../types';
+import { getBasePath } from '@/utils/config';
 
 export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') => {
     const [itUsers, setItUsers] = useState<ITUser[]>([]);
@@ -12,22 +13,26 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
     const [isAvailable, setIsAvailable] = useState<boolean>(false);
 
     useEffect(() => {
+        let isMounted = true;
         const initData = async () => {
             try {
-                fetchITUsers();
-                fetchConfiguredFields();
-                fetchStaffs();
-                fetchDepartments();
+                await Promise.allSettled([
+                    fetchITUsers(),
+                    fetchConfiguredFields(),
+                    fetchStaffs(),
+                    fetchDepartments()
+                ]);
             } catch (e) {
-                console.error(e);
+                console.warn('Init master data warning:', e);
             }
         };
         initData();
-    }, [user]);
+        return () => { isMounted = false; };
+    }, [user, targetDepartment]);
 
     const fetchITUsers = async () => {
         try {
-            const res = await fetch(`/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
+            const res = await fetch(`${getBasePath()}/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const data = await res.json();
                 setItUsers(data.filter((u: ITUser) => u.isAvailable));
@@ -37,13 +42,13 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 }
             }
         } catch (error) {
-            console.error(error);
+            console.warn('Fetch IT users warning:', error);
         }
     };
 
     const fetchConfiguredFields = async () => {
         try {
-            const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
+            const res = await fetch(`${getBasePath()}/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const configData = await res.json();
                 setSoftwareErrors(configData.softwareErrors || []);
@@ -51,36 +56,37 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 setAssignmentMode(configData.assignmentMode || 'A');
             }
         } catch (error) {
-            console.error('Failed to fetch config', error);
+            console.warn('Fetch config warning:', error);
         }
     };
 
     const fetchDepartments = async () => {
         try {
-            const res = await fetch('/api/departments');
+            const res = await fetch(`${getBasePath()}/api/departments`);
             if (res.ok) {
                 const data = await res.json();
                 setDepartments(data);
             }
         } catch (error) {
-            console.error('Failed to fetch departments', error);
+            console.warn('Fetch departments warning:', error);
         }
     };
 
     const fetchStaffs = async () => {
         try {
-            const res = await fetch('/api/staff');
+            const res = await fetch(`${getBasePath()}/api/staff`);
             if (res.ok) {
                 const data = await res.json();
                 setAllStaffs(data);
-                if (user && user.role === 'KHOA') {
+                const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user?.role) || user?.role === 'KHOA' || user?.role === 'KHOA_PHONG';
+                if (user && isDepartmentUser && user.ma_khoa) {
                     setDepartmentStaff(data.filter((s: any) => s.ma_khoa === user.ma_khoa));
                 } else {
                     setDepartmentStaff(data);
                 }
             }
         } catch (error) {
-            console.error('Failed to fetch staffs', error);
+            console.warn('Fetch staffs warning:', error);
         }
     };
 

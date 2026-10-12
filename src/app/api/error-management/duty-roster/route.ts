@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // Lấy danh sách nhân viên CNTT
 export async function GET(request: Request) {

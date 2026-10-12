@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { sendPushNotification } from '@/lib/firebase-admin';
 import { emitEvent } from '@/lib/notificationService';
-
-const prisma = new PrismaClient();
 
 // Telegram Bot details (nên để ở .env)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -48,8 +46,9 @@ export async function GET(request: Request) {
         else if (user.role === 'HCQT') whereClause.targetDepartment = 'HCQT';
         else if (targetDepartment) whereClause.targetDepartment = targetDepartment;
 
-        // Phân quyền: KHOA chỉ thấy phiếu của mình
-        if (user.role === 'KHOA') {
+        // Phân quyền: Người dùng khoa/phòng chỉ thấy phiếu của khoa mình
+        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
+        if (isDepartmentUser) {
             if (!user.ma_khoa) return NextResponse.json({ error: 'Tài khoản chưa gán khoa' }, { status: 403 });
             whereClause.ma_khoa = user.ma_khoa;
         }
@@ -205,10 +204,16 @@ export async function POST(request: Request) {
         }
 
         const isManager = (user as any).isManager || user.role === 'ADMIN';
+        const isITStaff = user.role === targetDepartment || user.role === 'ADMIN';
 
         let finalAssignee = assigneeId || null;
-        if (!isManager && assigneeId) {
-            finalAssignee = null; // Từ chối assign ngay lúc tạo nếu không phải manager
+        if (!isManager) {
+            // Nếu không phải Manager, chỉ cho phép nếu là nhân viên phòng kỹ thuật (CNTT/targetDepartment) và tự chọn chính mình
+            if (isITStaff && assigneeId === user.id) {
+                finalAssignee = user.id;
+            } else {
+                finalAssignee = null; // Khoa phòng tuyệt đối không được tự gán người xử lý
+            }
         }
 
         // Tự động cập nhật số điện thoại vào bảng Staff
@@ -282,7 +287,7 @@ export async function POST(request: Request) {
                 ma_khoa,
                 assigneeId: finalAssignee,
                 dynamicFields: dynamicFields || {},
-                status: 'PENDING',
+                status: finalAssignee ? 'IN_PROGRESS' : 'PENDING',
                 messages: {
                     create: [
                         {
@@ -425,7 +430,8 @@ export async function PUT(request: Request) {
         const ticket = await prisma.iTRequest.findUnique({ where: { id } });
         if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        if (user.role === 'KHOA' && ticket.ma_khoa !== user.ma_khoa) {
+        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
+        if (isDepartmentUser && ticket.ma_khoa !== user.ma_khoa) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -611,7 +617,8 @@ export async function DELETE(request: Request) {
         const ticket = await prisma.iTRequest.findUnique({ where: { id } });
         if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        if (user.role === 'KHOA' && ticket.ma_khoa !== user.ma_khoa) {
+        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
+        if (isDepartmentUser && ticket.ma_khoa !== user.ma_khoa) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

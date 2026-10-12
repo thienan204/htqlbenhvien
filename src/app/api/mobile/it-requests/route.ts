@@ -46,14 +46,15 @@ export async function GET(request: Request) {
             whereClause.targetDepartment = targetDepartment;
         }
         
-        if (user.role === 'KHOA') {
+        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
+        if (isDepartmentUser) {
             if (!user.ma_khoa) return NextResponse.json({ error: 'Tài khoản chưa gán khoa' }, { status: 403 });
             whereClause.ma_khoa = user.ma_khoa;
         }
 
         if (statusFilter) whereClause.status = statusFilter;
         if (assigneeId) whereClause.assigneeId = assigneeId; // Dành cho tab "Việc của tôi" trên Mobile
-        if (maKhoaFilter && user.role !== 'KHOA') whereClause.ma_khoa = maKhoaFilter; // Cho phép filter theo khoa nếu không phải role KHOA
+        if (maKhoaFilter && !isDepartmentUser) whereClause.ma_khoa = maKhoaFilter; // Cho phép filter theo khoa nếu không phải role khoa phòng
 
         const requests = await prisma.iTRequest.findMany({
             where: whereClause,

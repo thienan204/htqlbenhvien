@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
-
-const prisma = new PrismaClient();
 const CONFIG_SLUG = 'it-request-fields-config';
 const RULE_TYPE = 'SYSTEM_CONFIG';
 
@@ -29,12 +27,12 @@ export async function GET(request: Request) {
 
         // Nếu chưa có, trả về mặc định
         if (!configRule || !configRule.logicConfig) {
-            return NextResponse.json({ fields: [], assignmentMode: 'A', hardwareErrors: defaultHardwareErrors });
+            return NextResponse.json({ fields: [], assignmentMode: 'A', hardwareErrors: defaultHardwareErrors, maBaLength: 11 });
         }
 
         // Handle legacy array format
         if (Array.isArray(configRule.logicConfig)) {
-            return NextResponse.json({ fields: configRule.logicConfig, assignmentMode: 'A', maxImageSizeMB: 10 });
+            return NextResponse.json({ fields: configRule.logicConfig, assignmentMode: 'A', maxImageSizeMB: 10, maBaLength: 11 });
         }
 
         // Handle object format
@@ -44,6 +42,7 @@ export async function GET(request: Request) {
             hardwareErrors: config.hardwareErrors && config.hardwareErrors.length > 0 ? config.hardwareErrors : defaultHardwareErrors,
             assignmentMode: config.assignmentMode || 'A',
             maxImageSizeMB: config.maxImageSizeMB || 10,
+            maBaLength: config.maBaLength || 11,
             telegramBotToken: config.telegramBotToken || '',
             telegramChatId: config.telegramChatId || ''
         });
@@ -68,7 +67,7 @@ export async function POST(request: Request) {
         else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
 
         const body = await request.json();
-        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB, telegramBotToken, telegramChatId } = body;
+        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB, maBaLength, telegramBotToken, telegramChatId } = body;
 
         if (softwareErrors && !Array.isArray(softwareErrors)) {
             return NextResponse.json({ error: 'Dữ liệu softwareErrors không hợp lệ, phải là mảng string' }, { status: 400 });
@@ -87,6 +86,7 @@ export async function POST(request: Request) {
             hardwareErrors: hardwareErrors || existingConfig.hardwareErrors || [],
             assignmentMode: assignmentMode || existingConfig.assignmentMode || 'A',
             maxImageSizeMB: maxImageSizeMB !== undefined ? maxImageSizeMB : (existingConfig.maxImageSizeMB || 10),
+            maBaLength: maBaLength !== undefined ? Number(maBaLength) : (existingConfig.maBaLength || 11),
             telegramBotToken: telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
             telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId
         };

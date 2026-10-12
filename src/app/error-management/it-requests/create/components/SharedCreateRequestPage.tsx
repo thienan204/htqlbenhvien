@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Form, Button, Tabs, Modal, message } from 'antd';
-import { ArrowLeftOutlined, BugOutlined, MessageOutlined, FormOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, BugOutlined, MessageOutlined, FormOutlined, FileTextOutlined, DesktopOutlined, ToolOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -37,6 +37,7 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         setDepartmentStaff,
         itUsers,
         maxImageSizeMB,
+        maBaLength,
         savedStaffId,
         setSavedStaffId
     } = useITRequestData(isAdmin, user?.role, user?.ma_khoa, user?.staffId, form, targetDepartment);
@@ -55,8 +56,9 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         const dynamicObj: any = {};
         
         let finalTenLoi = '';
+        const currentCategory = values.category || (activeTab === 'hardware' ? 'HARDWARE' : 'SOFTWARE');
 
-        if (values.category === 'SOFTWARE') {
+        if (currentCategory === 'SOFTWARE') {
             dynamicObj['Trạng thái BA'] = values.trang_thai_ba;
             dynamicObj['Ghi chú'] = values.ghi_chu;
             finalTenLoi = Array.isArray(values.ten_loi_software) ? values.ten_loi_software.join(', ') : (values.ten_loi_software || '');
@@ -84,15 +86,15 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         }
 
         try {
-            const res = await fetch('/api/error-management/it-requests', {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ma_ba: values.category === 'SOFTWARE' ? values.ma_ba : null,
-                    category: values.category || 'SOFTWARE',
+                    ma_ba: currentCategory === 'SOFTWARE' ? values.ma_ba : null,
+                    category: currentCategory,
                     ten_loi: finalTenLoi,
                     ma_khoa: isAdmin ? values.ma_khoa : 'KHOA_HIENTAI', 
-                    assigneeId: values.assigneeId,
+                    assigneeId: values.selfAssign ? user?.id : values.assigneeId,
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: values.nguoi_bao_id,
                     sdt: autoSdt,
@@ -119,6 +121,123 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
     if (targetDepartment === 'VTYT') description = 'Điền thông tin sự cố để gửi cho phòng Vật tư Y tế';
     if (targetDepartment === 'HCQT') description = 'Điền thông tin sự cố để gửi cho phòng Hành chính Quản trị';
 
+    const handleTabChange = (key: string) => {
+        setActiveTab(key);
+    };
+
+    const tabItems = [
+        {
+            key: 'chat',
+            label: <span className="font-medium px-2 py-1 flex items-center gap-2"><MessageOutlined /> Tạo Nhanh (Khuyên dùng)</span>,
+            children: (
+                <ChatTab 
+                    user={user}
+                    isAdmin={isAdmin}
+                    softwareErrors={softwareErrors}
+                    hardwareErrors={hardwareErrors}
+                    departmentStaff={departmentStaff}
+                    departments={departments}
+                    savedStaffId={savedStaffId}
+                    setSavedStaffId={setSavedStaffId}
+                    fileList={fileList}
+                    uploadProps={uploadProps}
+                    handleFileChange={handleFileChange}
+                    setActiveTab={handleTabChange}
+                    form={form}
+                    targetDepartment={targetDepartment}
+                    maBaLength={maBaLength}
+                />
+            )
+        },
+        ...(targetDepartment === 'CNTT' ? [
+            {
+                key: 'software',
+                label: <span className="font-medium px-2 py-1 flex items-center gap-2"><FileTextOutlined /> Hỗ trợ Bệnh án (Phần mềm)</span>,
+                children: (
+                    <FormTab 
+                        form={form}
+                        handleCreateTicket={handleCreateTicket}
+                        isAdmin={isAdmin}
+                        isManager={isManager}
+                        softwareErrors={softwareErrors}
+                        hardwareErrors={hardwareErrors}
+                        departments={departments}
+                        departmentStaff={departmentStaff}
+                        setDepartmentStaff={setDepartmentStaff}
+                        allStaffs={allStaffs}
+                        itUsers={itUsers}
+                        user={user}
+                        savedStaffId={savedStaffId}
+                        setSavedStaffId={setSavedStaffId}
+                        fileList={fileList}
+                        uploadProps={uploadProps}
+                        loading={loading}
+                        targetDepartment={targetDepartment}
+                        maBaLength={maBaLength}
+                        activeCategory="SOFTWARE"
+                    />
+                )
+            },
+            {
+                key: 'hardware',
+                label: <span className="font-medium px-2 py-1 flex items-center gap-2"><DesktopOutlined /> Sửa chữa Thiết bị (Phần cứng)</span>,
+                children: (
+                    <FormTab 
+                        form={form}
+                        handleCreateTicket={handleCreateTicket}
+                        isAdmin={isAdmin}
+                        isManager={isManager}
+                        softwareErrors={softwareErrors}
+                        hardwareErrors={hardwareErrors}
+                        departments={departments}
+                        departmentStaff={departmentStaff}
+                        setDepartmentStaff={setDepartmentStaff}
+                        allStaffs={allStaffs}
+                        itUsers={itUsers}
+                        user={user}
+                        savedStaffId={savedStaffId}
+                        setSavedStaffId={setSavedStaffId}
+                        fileList={fileList}
+                        uploadProps={uploadProps}
+                        loading={loading}
+                        targetDepartment={targetDepartment}
+                        maBaLength={maBaLength}
+                        activeCategory="HARDWARE"
+                    />
+                )
+            }
+        ] : [
+            {
+                key: 'hardware',
+                label: <span className="font-medium px-2 py-1 flex items-center gap-2"><ToolOutlined /> Điền Form Yêu cầu</span>,
+                children: (
+                    <FormTab 
+                        form={form}
+                        handleCreateTicket={handleCreateTicket}
+                        isAdmin={isAdmin}
+                        isManager={isManager}
+                        softwareErrors={softwareErrors}
+                        hardwareErrors={hardwareErrors}
+                        departments={departments}
+                        departmentStaff={departmentStaff}
+                        setDepartmentStaff={setDepartmentStaff}
+                        allStaffs={allStaffs}
+                        itUsers={itUsers}
+                        user={user}
+                        savedStaffId={savedStaffId}
+                        setSavedStaffId={setSavedStaffId}
+                        fileList={fileList}
+                        uploadProps={uploadProps}
+                        loading={loading}
+                        targetDepartment={targetDepartment}
+                        maBaLength={maBaLength}
+                        activeCategory="HARDWARE"
+                    />
+                )
+            }
+        ])
+    ];
+
     return (
         <div className="w-full max-w-[98%] mx-auto px-4 sm:px-[30px] py-4 sm:py-6 space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
@@ -140,59 +259,11 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
 
             <Tabs 
                 activeKey={activeTab} 
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 type="card" 
                 className="mt-2"
-                items={[
-                    {
-                        key: 'chat',
-                        label: <span className="font-medium px-2 py-1 flex items-center gap-2"><MessageOutlined /> Tạo Nhanh (Khuyên dùng)</span>,
-                        children: (
-                            <ChatTab 
-                                user={user}
-                                isAdmin={isAdmin}
-                                softwareErrors={softwareErrors}
-                                hardwareErrors={hardwareErrors}
-                                departmentStaff={departmentStaff}
-                                departments={departments}
-                                savedStaffId={savedStaffId}
-                                setSavedStaffId={setSavedStaffId}
-                                fileList={fileList}
-                                uploadProps={uploadProps}
-                                handleFileChange={handleFileChange}
-                                setActiveTab={setActiveTab}
-                                form={form}
-                                targetDepartment={targetDepartment}
-                            />
-                        )
-                    },
-                    {
-                        key: 'form',
-                        label: <span className="font-medium px-2 py-1 flex items-center gap-2"><FormOutlined /> Điền Form (Truyền thống)</span>,
-                        forceRender: true,
-                        children: (
-                            <FormTab 
-                                form={form}
-                                handleCreateTicket={handleCreateTicket}
-                                isAdmin={isAdmin}
-                                isManager={isManager}
-                                softwareErrors={softwareErrors}
-                                hardwareErrors={hardwareErrors}
-                                departments={departments}
-                                departmentStaff={departmentStaff}
-                                setDepartmentStaff={setDepartmentStaff}
-                                allStaffs={allStaffs}
-                                itUsers={itUsers}
-                                user={user}
-                                setSavedStaffId={setSavedStaffId}
-                                fileList={fileList}
-                                uploadProps={uploadProps}
-                                loading={loading}
-                                targetDepartment={targetDepartment}
-                            />
-                        )
-                    }
-                ]}
+                items={tabItems}
+                destroyOnHidden
             />
 
             <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>

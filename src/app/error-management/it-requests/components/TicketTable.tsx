@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
 import { DeleteOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -34,6 +34,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     onChatClick,
     targetDepartment = 'CNTT'
 }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     
     const handleReceiveTicket = async (id: string) => {
         try {
@@ -69,43 +71,57 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
     const columns = [
         {
-            title: 'Mã BA',
-            dataIndex: 'ma_ba',
-            key: 'ma_ba',
-            width: 120,
-            render: (text: string) => <span className="font-bold text-blue-600">{text}</span>
+            title: 'STT',
+            key: 'stt',
+            width: 65,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => (
+                <span className="text-slate-500 font-medium font-mono text-[13px]">
+                    {(currentPage - 1) * pageSize + index + 1}
+                </span>
+            )
         },
         {
             title: 'Lỗi yêu cầu',
             dataIndex: 'ten_loi',
             key: 'ten_loi',
             width: 250,
-            render: (text: string, record: Ticket) => (
-                <div>
-                    <div className="font-medium">{text}</div>
-                    {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 && (
-                        <div className="mt-1 flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-1">
-                                {Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm').map(([k, v]) => {
-                                    if (k === 'SĐT') {
-                                        return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
+            render: (text: string, record: Ticket) => {
+                const hasDetails = !!record.ma_ba || (record.dynamicFields && Object.keys(record.dynamicFields).length > 0);
+                return (
+                    <div>
+                        <div className="font-medium text-slate-800">{text}</div>
+                        {hasDetails && (
+                            <div className="mt-1.5 flex flex-col gap-2">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    {record.ma_ba && (
+                                        <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50/90 border border-blue-200 rounded px-2 py-0.5 inline-flex items-center gap-1 shadow-2xs">
+                                            📄 Mã BA: {record.ma_ba}
+                                        </span>
+                                    )}
+                                    {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 &&
+                                        Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm').map(([k, v]) => {
+                                            if (k === 'SĐT') {
+                                                return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
+                                            }
+                                            return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
+                                        })
                                     }
-                                    return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
-                                })}
-                            </div>
-                            {record.dynamicFields['Hình ảnh đính kèm'] && Array.isArray(record.dynamicFields['Hình ảnh đính kèm']) && (
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                    <AntImage.PreviewGroup>
-                                        {record.dynamicFields['Hình ảnh đính kèm'].map((url: string, idx: number) => (
-                                            <TicketImage key={idx} url={url} />
-                                        ))}
-                                    </AntImage.PreviewGroup>
                                 </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )
+                                {record.dynamicFields?.['Hình ảnh đính kèm'] && Array.isArray(record.dynamicFields['Hình ảnh đính kèm']) && (
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                        <AntImage.PreviewGroup>
+                                            {record.dynamicFields['Hình ảnh đính kèm'].map((url: string, idx: number) => (
+                                                <TicketImage key={idx} url={url} />
+                                            ))}
+                                        </AntImage.PreviewGroup>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             title: 'Khoa gửi',
@@ -288,7 +304,17 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             columns={columns}
             rowKey="id" 
             loading={loading}
-            pagination={{ defaultPageSize: 10 }}
+            pagination={{ 
+                current: currentPage,
+                pageSize: pageSize,
+                defaultPageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                onChange: (page, size) => {
+                    setCurrentPage(page);
+                    setPageSize(size);
+                }
+            }}
             scroll={{ x: 1000 }}
             rowClassName={(record) => record.status === 'RESOLVED' ? 'bg-green-50/50' : ''}
         />

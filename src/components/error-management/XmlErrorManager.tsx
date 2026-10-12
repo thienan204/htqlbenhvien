@@ -827,7 +827,7 @@ export default function XmlErrorManager() {
                             showSearch
                             placeholder="Chọn tên nhân viên..."
                             optionFilterProp="children"
-                            disabled={!!user?.staffId && !isAdmin}
+                            disabled={!!user?.staffId && !isAdmin && user?.role !== 'KHOA'}
                         >
                             {staffList.filter(s => s.ma_khoa === selectedErrorForIT?.ma_khoa || s.id === user?.staffId).map(staff => (
                                 <Select.Option key={staff.id} value={staff.id}>

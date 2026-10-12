@@ -25,6 +25,7 @@ export default function ITConfigPage() {
     // We also need to preserve the assignmentMode
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(10);
+    const [maBaLength, setMaBaLength] = useState<number>(11);
     const [telegramBotToken, setTelegramBotToken] = useState<string>('');
     const [telegramChatId, setTelegramChatId] = useState<string>('');
 
@@ -55,6 +56,7 @@ export default function ITConfigPage() {
                 setHardwareErrors(mappedHardwareErrors);
                 setAssignmentMode(data.assignmentMode || 'A');
                 setMaxImageSizeMB(data.maxImageSizeMB || 10);
+                setMaBaLength(data.maBaLength || 11);
                 setTelegramBotToken(data.telegramBotToken || '');
                 setTelegramChatId(data.telegramChatId || '');
             } else {
@@ -150,6 +152,7 @@ export default function ITConfigPage() {
                 hardwareErrors: hardwareErrors.map(e => e.name),
                 assignmentMode,
                 maxImageSizeMB,
+                maBaLength,
                 targetDepartment,
                 telegramBotToken,
                 telegramChatId
@@ -294,6 +297,23 @@ export default function ITConfigPage() {
                             )}
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Dung lượng tối đa (MB) cho mỗi ảnh khi tải lên. Khuyến nghị 10MB để tránh treo trình duyệt. Hệ thống sẽ tự nén lại sau khi chọn.</div>
+                    </Card>
+
+                    <Card size="small" title="Độ dài Mã Bệnh Án (BA)" className="border border-slate-200">
+                        <div className="flex gap-2 items-center">
+                            <InputNumber 
+                                min={6} 
+                                max={30} 
+                                value={maBaLength} 
+                                onChange={val => setMaBaLength(val || 11)} 
+                                disabled={user?.role !== 'ADMIN'}
+                            />
+                            <span className="text-slate-500 font-medium">ký tự</span>
+                            {user?.role === 'ADMIN' && (
+                                <Button type="default" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
+                            )}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-2">Độ dài chuẩn của mã bệnh án (Ví dụ: <code>BA001028282</code> là 11 ký tự). Sau này khi bệnh viện tăng độ dài mã BA (12, 13 ký tự...), bạn có thể điều chỉnh tại đây để hệ thống tự động nhận diện và kiểm soát độ dài phù hợp.</div>
                     </Card>
 
                     <Card size="small" title="Cấu hình Thông báo Telegram" className="border border-slate-200">

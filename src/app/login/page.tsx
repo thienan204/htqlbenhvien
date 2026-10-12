@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
+import { loginAction } from '@/actions/auth';
 
 export default function LoginPage() {
     const [username, setUsername] = useState('');
@@ -17,29 +18,19 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await fetch(`${getBasePath()}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            });
+            const res = await loginAction(username, password);
 
-            if (res.ok) {
+            if (res.success) {
                 // Force a hard reload to ensure layout and context are fully updated
                 window.location.href = getBasePath() + '/';
+                return;
             } else {
-                let errorMsg = 'Đăng nhập thất bại';
-                try {
-                    const data = await res.json();
-                    errorMsg = data.error || errorMsg;
-                } catch (e) {
-                    errorMsg = `Server error (${res.status}): ${res.statusText}`;
-                }
-                setError(errorMsg);
+                setError(res.error || 'Đăng nhập thất bại');
+                setLoading(false);
             }
         } catch (err: any) {
             console.error("Login fetch error:", err);
             setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
-        } finally {
             setLoading(false);
         }
     };

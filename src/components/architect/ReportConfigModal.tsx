@@ -50,11 +50,13 @@ export default function ReportConfigModal({ isOpen, onClose, rawHeaders, data, m
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    form.setFieldsValue({
-                        department: parsed.department || '',
-                        fromDate: parsed.fromDate || '',
-                        toDate: parsed.toDate || ''
-                    });
+                    setTimeout(() => {
+                        form.setFieldsValue({
+                            department: parsed.department || '',
+                            fromDate: parsed.fromDate || '',
+                            toDate: parsed.toDate || ''
+                        });
+                    }, 0);
                     setColumnMappings(parsed.columnMappings || {});
                 } catch (e) {
                     console.error("Lỗi parse config", e);
