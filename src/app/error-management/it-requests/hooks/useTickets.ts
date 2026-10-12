@@ -90,18 +90,52 @@ const showNativeNotification = (
         });
         
         notif.onclick = () => {
-            window.focus();
-            if (onOpenTicket) {
-                onOpenTicket();
-            } else if (onClickUrl && typeof window !== 'undefined') {
-                window.location.href = onClickUrl;
-            }
             notif.close();
+            
+            // Lấy basePath từ next.config (/htqlbenhvien)
+            const basePath = '/htqlbenhvien';
+            const baseUrl = `${window.location.protocol}//${window.location.host}`;
+            
+            // Tạo URL tuyệt đối đích
+            let targetUrl: string;
+            if (onClickUrl) {
+                if (onClickUrl.startsWith('http')) {
+                    targetUrl = onClickUrl;
+                } else {
+                    // Đảm bảo URL có basePath
+                    const path = onClickUrl.startsWith('/') ? onClickUrl : '/' + onClickUrl;
+                    const needsBasePath = !path.startsWith(basePath);
+                    targetUrl = `${baseUrl}${needsBasePath ? basePath : ''}${path}`;
+                }
+            } else {
+                targetUrl = `${baseUrl}${basePath}/error-management/it-requests`;
+            }
+
+            // Focus browser window trước (hoạt động khi trình duyệt bị thu nhỏ)
+            window.focus();
+            
+            // Kiểm tra xem đang ở đúng trang chưa
+            // Nếu đang ở đúng trang: dùng callback (không reload) để scroll/filter
+            // Nếu đang ở trang khác: navigate đến URL đích (proxy.ts sẽ redirect về login nếu cần)
+            const currentFullUrl = `${window.location.origin}${window.location.pathname}`;
+            const targetPathOnly = new URL(targetUrl).pathname;
+            const isOnTargetPage = window.location.pathname === targetPathOnly;
+
+            if (isOnTargetPage && onOpenTicket) {
+                // Đã ở đúng trang → dùng callback để điều hướng trong app (không reload)
+                onOpenTicket();
+            } else {
+                // Đang ở trang khác hoặc chưa vào → navigate đến URL đích
+                // proxy.ts sẽ tự redirect về login nếu chưa đăng nhập, 
+                // và sau khi login sẽ quay lại đúng trang
+                window.location.href = targetUrl;
+            }
         };
         
         activeNativeNotification = notif;
     }
 };
+
 
 const closeNativeNotification = () => {
     if (activeNativeNotification) {
@@ -212,8 +246,8 @@ export const useTickets = (
                 );
 
                 if (unacceptedTickets.length > 0) {
-                    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/error-management/it-requests';
-                    const targetUrl = `${currentPath}?tab=MINE&status=PENDING`;
+                    // Dùng path cố định KHÔNG có basePath, vì showNativeNotification sẽ tự thêm basePath
+                    const targetUrl = `/error-management/it-requests?tab=MINE&status=PENDING`;
 
                     // 1. Nhấp nháy tiêu đề Tab của trình duyệt (thấy được ngay trên thanh tab khi ở tab khác)
                     startTitleBlink(`🚨 (${unacceptedTickets.length}) Việc chưa tiếp nhận!`);
