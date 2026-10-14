@@ -18,6 +18,8 @@ export interface Ticket {
     nguoi_bao?: string;
     createdAt: string;
     updatedAt: string;
+    startedAt?: string | null;
+    resolvedAt?: string | null;
 }
 
 export interface ITUser {

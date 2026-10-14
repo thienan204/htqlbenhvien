@@ -1275,8 +1275,15 @@ export default function HoSoDaGuiPage() {
                                             { 
                                                 title: 'Giới Tính', 
                                                 dataIndex: 'gioiTinh', 
-                                                width: 80, 
-                                                render: (val, record: any) => renderTextDiff(val, record, 'gioiTinhDiff')
+                                                width: 90, 
+                                                render: (val, record: any) => {
+                                                    let displayVal = val;
+                                                    const clean = String(val || '').trim();
+                                                    if (clean === '1' || clean === '01') displayVal = 'Nam';
+                                                    else if (clean === '2' || clean === '02') displayVal = 'Nữ';
+                                                    else if (clean === '3' || clean === '03') displayVal = 'Chưa xác định';
+                                                    return renderTextDiff(displayVal, record, 'gioiTinhDiff');
+                                                }
                                             },
                                             { 
                                                 title: 'Mã Bệnh', 

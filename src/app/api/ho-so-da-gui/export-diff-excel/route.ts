@@ -128,6 +128,15 @@ export async function POST(request: Request) {
             return val;
         };
 
+        const formatGioiTinh = (val: any) => {
+            if (!val) return '';
+            const clean = String(val).trim();
+            if (clean === '1' || clean === '01') return 'Nam';
+            if (clean === '2' || clean === '02') return 'Nữ';
+            if (clean === '3' || clean === '03') return 'Chưa xác định';
+            return clean;
+        };
+
         diffMatches.forEach((m: any, idx: number) => {
             const stt = idx + 1;
 
@@ -138,7 +147,7 @@ export async function POST(request: Request) {
                 maBN: m.excel.maBN || '',
                 hoTen: m.excel.hoTen,
                 ngaySinh: formatYYYYMMDD(m.excel.ngaySinh),
-                gioiTinh: m.excel.gioiTinh,
+                gioiTinh: formatGioiTinh(m.excel.gioiTinh),
                 maBenh: m.excel.chanDoan,
                 ngayVao: formatYYYYMMDD(m.excel.ngayVao),
                 ngayRa: formatYYYYMMDD(m.excel.ngayRa),
@@ -173,7 +182,7 @@ export async function POST(request: Request) {
                 maBN: m.db.maBN || '',
                 hoTen: m.db.hoTen,
                 ngaySinh: m.db.ngaySinh,
-                gioiTinh: m.db.gioiTinh,
+                gioiTinh: formatGioiTinh(m.db.gioiTinh),
                 maBenh: m.db.chanDoan,
                 ngayVao: m.db.ngayVao,
                 ngayRa: m.db.ngayRa,

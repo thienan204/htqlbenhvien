@@ -61,7 +61,8 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         loading,
         fetchTickets,
         handleUpdateTicket,
-        handleDeleteTicket
+        handleDeleteTicket,
+        handleReceiveTicketById
     } = useTickets(user, isAdmin, targetDepartment, {
         onSelectTicket: handleSelectTicket,
         onNavigateToMyTickets: handleNavigateToMyTickets
@@ -182,7 +183,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 ...(assignmentMode !== 'C' ? [{ label: 'Chờ nhận việc (Trống)', value: 'UNASSIGNED' }] : [])
                             ]}
                             value={filterMode}
-                            onChange={(val: any) => setFilterMode(val)}
+                            onChange={(val: any) => {
+                                setFilterMode(val);
+                                setStatusFilter('ALL');
+                            }}
                         />
                     </div>
                 )}
@@ -212,6 +216,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     hasPermission={hasPermission}
                     assignmentMode={assignmentMode}
                     onFetchTickets={fetchTickets}
+                    onReceiveTicket={handleReceiveTicketById}
                     onDeleteTicket={handleDeleteTicket}
                     onProcessClick={(ticket) => {
                         setSelectedTicket(ticket);

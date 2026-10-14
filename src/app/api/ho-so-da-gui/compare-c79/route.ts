@@ -347,10 +347,11 @@ export async function POST(request: Request) {
 
                 // Helper cho giới tính
                 const normalizeGioiTinh = (gt: string | null) => {
-                    if (gt === null) return '';
+                    if (gt === null || gt === undefined) return '';
                     const clean = norm(gt).toUpperCase();
                     if (clean === '1' || clean === '01' || clean === 'NAM') return 'NAM';
                     if (clean === '2' || clean === '02' || clean === 'NỮ' || clean === 'NU') return 'NỮ';
+                    if (clean === '3' || clean === '03' || clean === 'CHƯA XÁC ĐỊNH' || clean === 'CHUA XAC DINH' || clean === 'KHÔNG XÁC ĐỊNH' || clean === 'KHONG XAC DINH') return 'CHƯA XÁC ĐỊNH';
                     return clean;
                 };
 

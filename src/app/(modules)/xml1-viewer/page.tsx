@@ -441,7 +441,7 @@ export default function XmlViewerPage() {
         // Ensure hasError is explicitly placed at the beginning
         const orderedKeys = keys.filter(k => k !== 'hasError' && k !== 'errorCount');
         
-        return ['hasError', '__edit_status', '__remaining_time', ...orderedKeys.filter(k => !metadataKeys.includes(k)), ...metadataKeys].filter(k => keys.includes(k) || ['hasError', '__edit_status', '__remaining_time'].includes(k)).map(k => {
+        return ['hasError', '__pre_edit_tag', '__edit_status', '__remaining_time', ...orderedKeys.filter(k => !metadataKeys.includes(k) && k !== 'isPreEdit'), ...metadataKeys].filter(k => keys.includes(k) || ['hasError', '__pre_edit_tag', '__edit_status', '__remaining_time'].includes(k)).map(k => {
             if (k === 'version') {
                 return { title: 'VERSION', dataIndex: 'version', key: 'version', render: (v: any) => <Tag color="blue">v{v}</Tag> };
             }
@@ -458,6 +458,25 @@ export default function XmlViewerPage() {
                     render: (v: boolean, record: any) => v 
                         ? <Tag color="error" icon={<WarningOutlined />}>Lỗi ({record.errorCount || 0})</Tag> 
                         : <Tag color="success">Hợp lệ</Tag>
+                };
+            }
+            if (k === '__pre_edit_tag') {
+                return {
+                    title: 'LOẠI BẢN',
+                    key: '__pre_edit_tag',
+                    width: 130,
+                    align: 'center',
+                    fixed: 'left',
+                    render: (_: any, record: any) => {
+                        if (record.isPreEdit) {
+                            return (
+                                <Tooltip title={`Bản gốc trước sửa | Lý do: ${record.editReason || 'Không rõ'} | Người lưu: ${record.preEditSavedBy || 'Admin'}`}>
+                                    <Tag color="purple" className="font-semibold m-0">Bản trước sửa</Tag>
+                                </Tooltip>
+                            );
+                        }
+                        return <Tag color="default" className="m-0 text-slate-500">Bản thường</Tag>;
+                    }
                 };
             }
             if (k === '__edit_status') {

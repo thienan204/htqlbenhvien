@@ -184,6 +184,20 @@ export const useTickets = (
             if (res.ok) {
                 message.success('Đã nhận việc thành công!');
                 notification.destroy('unaccepted-ticket-warning');
+                // Cập nhật ngay lập tức state (Optimistic UI)
+                setTickets(prev => prev.map(t => {
+                    if (t.id === ticket.id) {
+                        return {
+                            ...t,
+                            status: 'IN_PROGRESS',
+                            assigneeId: user?.id,
+                            assigneeName: user?.name || user?.username,
+                            assigneePhone: user?.phone || user?.staff?.so_dien_thoai || t.assigneePhone,
+                            startedAt: t.startedAt || new Date().toISOString()
+                        };
+                    }
+                    return t;
+                }));
                 fetchTickets(true);
             } else {
                 message.error('Lỗi khi nhận việc');
@@ -193,10 +207,51 @@ export const useTickets = (
         }
     };
 
+    const handleReceiveTicketById = async (id: string) => {
+        const found = tickets.find(t => t.id === id);
+        if (found) {
+            await quickReceiveTicket(found);
+        } else {
+            try {
+                const res = await fetch('/api/error-management/it-requests', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id,
+                        assigneeId: user?.id,
+                        status: 'IN_PROGRESS'
+                    })
+                });
+                if (res.ok) {
+                    message.success('Đã nhận việc thành công!');
+                    notification.destroy('unaccepted-ticket-warning');
+                    setTickets(prev => prev.map(t => t.id === id ? {
+                        ...t,
+                        status: 'IN_PROGRESS',
+                        assigneeId: user?.id,
+                        assigneeName: user?.name || user?.username,
+                        startedAt: t.startedAt || new Date().toISOString()
+                    } : t));
+                    fetchTickets(true);
+                } else {
+                    message.error('Lỗi khi nhận việc');
+                }
+            } catch (err) {
+                message.error('Lỗi kết nối khi nhận việc');
+            }
+        }
+    };
+
     const fetchTickets = async (isPolling = false) => {
         if (!isPolling) setLoading(true);
         try {
-            const res = await fetch(`/api/error-management/it-requests?targetDepartment=${targetDepartment}`);
+            const res = await fetch(`/api/error-management/it-requests?targetDepartment=${targetDepartment}&_t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setTickets(data);
@@ -398,6 +453,7 @@ export const useTickets = (
         fetchTickets,
         handleUpdateTicket,
         handleDeleteTicket,
-        quickReceiveTicket
+        quickReceiveTicket,
+        handleReceiveTicketById
     };
 };

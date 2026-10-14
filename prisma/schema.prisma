@@ -1069,8 +1069,18 @@ model Xml1 {
   DU_PHONG         String?
   XmlStatus        XmlStatus[]
 
+  // Pre-edit backup fields
+  isPreEdit        Boolean  @default(false)
+  daDeNghiTT       Boolean  @default(false)
+  ngayDeNghiTT     String?
+  trangThaiTT      String?
+  editReason       String?
+  editDept         String?
+  preEditSavedBy   String?
+
   @@index([MA_LK])
   @@index([importBatchId])
+  @@index([isPreEdit])
 }
 
 model Xml2 {

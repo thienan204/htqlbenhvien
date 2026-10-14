@@ -66,6 +66,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     <Select>
                         <Select.Option value="PENDING">Chờ xử lý</Select.Option>
                         <Select.Option value="IN_PROGRESS">Đang xử lý</Select.Option>
+                        <Select.Option value="TRANSFERRING">Chờ chuyển giao</Select.Option>
                         <Select.Option value="RESOLVED">Hoàn thành</Select.Option>
                     </Select>
                 </Form.Item>

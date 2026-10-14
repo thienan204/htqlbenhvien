@@ -138,13 +138,69 @@ const API_DOCS_DB: Record<string, Record<string, ApiDoc>> = {
             headers: { 'Content-Type': 'application/json' },
             postmanSnippet: 'Gắn URL http://localhost:3000/api/patients/historyHenkham?maTheBHYT=HT2201503003346&limit=10&hasGiayHen=true vào Postman và chọn GET.'
         }
+    },
+    '/api/extension/check-payment': {
+        'GET': {
+            description: 'Kiểm tra trạng thái Đề nghị thanh toán (ĐNTT) BHYT của bệnh án dựa trên mã bệnh án (MA_BA) hoặc mã liên kết (MA_LK). Tra cứu trực tiếp từ bảng HoSoDaGui (/chuyen-de/ho-so-da-gui). Hỗ trợ CORS và in-memory cache cho Chrome Extension trên HIS phản hồi siêu tốc 1-3ms.',
+            headers: { 'Content-Type': 'application/json' },
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/extension/check-payment?code=BA001031236 vào Postman và chọn Method GET.',
+            extensionSnippet: `/**
+ * Hàm kiểm tra trạng thái Đề nghị thanh toán trực tiếp trên Extension HIS
+ * @param {string} maBA - Mã bệnh án hoặc mã liên kết (VD: "BA001031236", "1824699")
+ */
+async function checkPaymentStatusHIS(maBA) {
+  try {
+    const url = \`http://localhost:3000/htqlbenhvien/api/extension/check-payment?code=\${encodeURIComponent(maBA)}\`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const result = await response.json();
+
+    if (result.exists) {
+      if (result.isDaDeNghiTT) {
+        // Cảnh báo: Hồ sơ ĐÃ ĐỀ NGHỊ THANH TOÁN
+        console.warn('CẢNH BÁO BHYT:', result.message);
+        // Hiển thị popup hoặc banner trên giao diện HIS
+        alert(result.message);
+      } else {
+        // Hồ sơ CHƯA đề nghị thanh toán
+        console.log('THÔNG BÁO BHYT:', result.message);
+      }
+    } else {
+      console.log('Chưa có thông tin hồ sơ trên Cổng BHYT');
+    }
+    return result;
+  } catch (error) {
+    console.error('Lỗi khi gọi API kiểm tra ĐNTT:', error);
+  }
+}`
+        },
+        'POST': {
+            description: 'Kiểm tra trạng thái ĐNTT qua JSON Body. Hỗ trợ kiểm tra 1 mã hoặc kiểm tra danh sách hàng loạt mã bệnh án (Batch check).',
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                code: "BA001031236"
+            },
+            postmanSnippet: 'Gắn URL http://localhost:3000/htqlbenhvien/api/extension/check-payment vào Postman, chọn Method POST, chọn tab Body -> raw -> JSON và dán body mẫu vào.',
+            extensionSnippet: `// Kiểm tra danh sách hàng loạt mã bệnh án cùng lúc:
+async function checkBatchPaymentStatusHIS(codesArray) {
+  const response = await fetch('http://localhost:3000/htqlbenhvien/api/extension/check-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codes: codesArray })
+  });
+  return await response.json();
+}`
+        }
     }
 };
 
 export async function discoverApiEndpoints(): Promise<ApiEndpoint[]> {
     const apiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'mobile');
     const hisApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'his-services');
-    const extApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'extension-config');
+    const extApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'extension');
+    const extConfigApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'extension-config');
     const bedsApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'beds');
     const patientsApiDirectory = path.join(process.cwd(), 'src', 'app', 'api', 'patients');
     
@@ -159,7 +215,11 @@ export async function discoverApiEndpoints(): Promise<ApiEndpoint[]> {
     }
 
     if (fs.existsSync(extApiDirectory)) {
-        endpoints = endpoints.concat(scanDirectory(extApiDirectory, '/api/extension-config'));
+        endpoints = endpoints.concat(scanDirectory(extApiDirectory, '/api/extension'));
+    }
+
+    if (fs.existsSync(extConfigApiDirectory)) {
+        endpoints = endpoints.concat(scanDirectory(extConfigApiDirectory, '/api/extension-config'));
     }
 
     if (fs.existsSync(bedsApiDirectory)) {
@@ -203,7 +263,7 @@ function scanDirectory(dir: string, baseRoute: string): ApiEndpoint[] {
                     category = 'HIS INTEGRATION APIS';
                 } else if (baseRoute.includes('/api/patients')) {
                     category = 'PATIENT APIS';
-                } else if (baseRoute.includes('/api/extension-config') || baseRoute.includes('/api/beds')) {
+                } else if (baseRoute.includes('/api/extension') || baseRoute.includes('/api/beds')) {
                     category = 'EXTENSION APIS';
                 }
 

@@ -6,26 +6,40 @@ import { join } from 'path';
 import { sendPushNotification } from '@/lib/firebase-admin';
 import { emitEvent } from '@/lib/notificationService';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Telegram Bot details (nên để ở .env)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-async function sendTelegramMessage(message: string, chatId?: string, botToken?: string) {
+async function sendTelegramMessage(message: string, chatId?: string, botToken?: string, replyMarkup?: any) {
     const targetBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
     const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
-    if (!targetBotToken || !targetChatId) return;
+    if (!targetBotToken || !targetChatId) return { success: false, error: 'Thiếu Bot Token hoặc Chat ID' };
     try {
-        await fetch(`https://api.telegram.org/bot${targetBotToken}/sendMessage`, {
+        const payload: any = {
+            chat_id: targetChatId,
+            text: message,
+            parse_mode: 'HTML'
+        };
+        if (replyMarkup) {
+            payload.reply_markup = replyMarkup;
+        }
+        const res = await fetch(`https://api.telegram.org/bot${targetBotToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: targetChatId,
-                text: message,
-                parse_mode: 'HTML'
-            })
+            body: JSON.stringify(payload)
         });
-    } catch (err) {
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            console.error('Lỗi Telegram API:', data);
+            return { success: false, error: data.description || 'Lỗi gửi tin nhắn Telegram' };
+        }
+        return { success: true, data };
+    } catch (err: any) {
         console.error('Lỗi gửi Telegram:', err);
+        return { success: false, error: err.message };
     }
 }
 
@@ -106,7 +120,13 @@ export async function GET(request: Request) {
             hasXml: req.ma_ba ? existingXmlSet.has(req.ma_ba) : false
         }));
 
-        return NextResponse.json(enrichedRequests);
+        return NextResponse.json(enrichedRequests, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            }
+        });
     } catch (error) {
         console.error('Error GET it-requests:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -115,6 +135,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const urlObj = new URL(request.url);
         const user = await getCurrentUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -146,6 +167,35 @@ export async function POST(request: Request) {
                 if (config.telegramBotToken) targetBotToken = config.telegramBotToken;
                 if (config.telegramChatId) targetChatId = config.telegramChatId;
             }
+        }
+
+        if (action === 'TEST_TELEGRAM') {
+            const { testBotToken, testChatId } = body;
+            const token = testBotToken || targetBotToken;
+            const chat = testChatId || targetChatId;
+            if (!token || !chat) {
+                return NextResponse.json({ error: 'Vui lòng nhập đầy đủ Bot Token và Chat ID để kiểm tra' }, { status: 400 });
+            }
+            const origin = process.env.APP_URL || request.headers.get('origin') || `${urlObj.protocol}//${request.headers.get('host') || urlObj.host}`;
+            const testUrl = `${origin}/htqlbenhvien/error-management/it-requests`;
+            const testMsg = `🔔 <b>THÔNG BÁO THỬ NGHIỆM TỪ HỆ THỐNG BVĐK LẠNG SƠN</b>\n\n` +
+                `✅ Kết nối Bot Telegram thành công!\n` +
+                `📅 Thời gian: ${new Date().toLocaleString('vi-VN')}\n\n` +
+                `🔗 <a href="${testUrl}">👉 Bấm vào đây để mở hệ thống Quản lý Yêu cầu</a>`;
+            
+            const replyMarkup = {
+                inline_keyboard: [
+                    [
+                        { text: '⚡ Mở Quản lý Yêu cầu', url: testUrl }
+                    ]
+                ]
+            };
+            
+            const result = await sendTelegramMessage(testMsg, chat, token, replyMarkup);
+            if (!result.success) {
+                return NextResponse.json({ error: result.error || 'Gửi tin nhắn Telegram thất bại' }, { status: 400 });
+            }
+            return NextResponse.json({ success: true, message: 'Đã gửi tin nhắn thử nghiệm thành công vào Telegram!' });
         }
 
         if (action === 'PING' && xmlErrorId) {
@@ -183,6 +233,9 @@ export async function POST(request: Request) {
             // Gửi Telegram ping
             const dept = await prisma.department.findUnique({ where: { ma_khoa } });
             const tenKhoa = dept?.ten_khoa || ma_khoa;
+            const origin = process.env.APP_URL || request.headers.get('origin') || `${urlObj.protocol}//${request.headers.get('host') || urlObj.host}`;
+            const ticketUrl = `${origin}/htqlbenhvien/error-management/it-requests?highlight=${errorRecord.itRequestId}`;
+
             let telegramMsg = `🔴 <b>HỐI THÚC XỬ LÝ (Lần ${newPingCount})</b>\n\n`;
             telegramMsg += `🏢 <b>Khoa:</b> ${tenKhoa}\n`;
             telegramMsg += `👤 <b>Người báo:</b> ${nguoiBaoName}\n`;
@@ -191,9 +244,18 @@ export async function POST(request: Request) {
             if (dynamicFields?.['Ghi chú']) {
                 telegramMsg += `🗒 <b>Ghi chú gửi lại:</b> ${dynamicFields['Ghi chú']}\n`;
             }
+            telegramMsg += `\n🔗 <a href="${ticketUrl}">👉 Bấm vào đây để mở và xử lý yêu cầu</a>`;
+
+            const replyMarkup = {
+                inline_keyboard: [
+                    [
+                        { text: '⚡ Mở xử lý yêu cầu ngay', url: ticketUrl }
+                    ]
+                ]
+            };
 
             if (targetChatId) {
-                await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken);
+                await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken, replyMarkup);
             }
 
             return NextResponse.json({ success: true, pingCount: newPingCount });
@@ -358,17 +420,30 @@ export async function POST(request: Request) {
             telegramMsg += `🗒 <b>Ghi chú:</b> ${dynamicFields['Ghi chú']}\n`;
         }
 
-        telegramMsg += `\n🧑‍💻 <b>Người nhận:</b> ${assigneeInfo}`;
+        // Tạo link mở trực tiếp yêu cầu
+        const origin = process.env.APP_URL || request.headers.get('origin') || `${urlObj.protocol}//${request.headers.get('host') || urlObj.host}`;
+        const ticketUrl = `${origin}/htqlbenhvien/error-management/it-requests?highlight=${newRequest.id}`;
+
+        telegramMsg += `\n🧑‍💻 <b>Người nhận:</b> ${assigneeInfo}\n`;
+        telegramMsg += `\n🔗 <a href="${ticketUrl}">👉 Bấm vào đây để mở và tiếp nhận yêu cầu</a>`;
+
+        const replyMarkup = {
+            inline_keyboard: [
+                [
+                    { text: '⚡ Mở xử lý yêu cầu', url: ticketUrl }
+                ]
+            ]
+        };
 
         // Bắn Telegram vào Group chung
         if (targetChatId) {
-            await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken);
+            await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken, replyMarkup);
         }
 
         // Bắn Telegram trực tiếp (Direct Message) cho Nhân viên CNTT nếu họ có điền ID Telegram dạng số
         if (assigneeUser && assigneeUser.telegram_id && /^-?\d+$/.test(assigneeUser.telegram_id)) {
             const dmMsg = `🔔 <b>BẠN VỪA ĐƯỢC GIAO MỘT VIỆC MỚI:</b>\n\n${telegramMsg}`;
-            await sendTelegramMessage(dmMsg, assigneeUser.telegram_id, targetBotToken);
+            await sendTelegramMessage(dmMsg, assigneeUser.telegram_id, targetBotToken, replyMarkup);
         }
 
         // Bắn Push Notification qua Firebase

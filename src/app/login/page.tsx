@@ -118,10 +118,17 @@ function LoginForm() {
                         )}
                         {loading ? 'Đang xử lý...' : 'Đăng nhập'}
                     </button>
-
-
                 </form>
             </div>
         </div>
     );
 }
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-medium text-slate-500">Đang tải...</div>}>
+            <LoginForm />
+        </Suspense>
+    );
+}
+

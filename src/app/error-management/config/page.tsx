@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio, Upload, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, YoutubeOutlined, LinkOutlined } from '@ant-design/icons';
+import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio, Upload, Alert, Popover, Tooltip } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, YoutubeOutlined, LinkOutlined, SendOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { SoundConfig, playSoundByConfig, stopAllNotificationSounds, extractYouTubeId } from '@/utils/audioUtils';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -29,6 +29,7 @@ export default function ITConfigPage() {
     const [maBaLength, setMaBaLength] = useState<number>(11);
     const [telegramBotToken, setTelegramBotToken] = useState<string>('');
     const [telegramChatId, setTelegramChatId] = useState<string>('');
+    const [testingTelegram, setTestingTelegram] = useState(false);
     const [notificationSound, setNotificationSound] = useState<SoundConfig>({
         type: 'DEFAULT',
         url: '',
@@ -183,6 +184,36 @@ export default function ITConfigPage() {
             }
         } catch (error) {
             message.error('Lỗi kết nối');
+        }
+    };
+
+    const handleTestTelegram = async () => {
+        if (!telegramBotToken?.trim() || !telegramChatId?.trim()) {
+            message.warning('Vui lòng nhập Bot Token và Chat ID trước khi kiểm tra');
+            return;
+        }
+        setTestingTelegram(true);
+        try {
+            const res = await fetch('/api/error-management/it-requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'TEST_TELEGRAM',
+                    testBotToken: telegramBotToken.trim(),
+                    testChatId: telegramChatId.trim(),
+                    targetDepartment
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                message.success(data.message || 'Đã gửi tin nhắn thử nghiệm thành công! Hãy kiểm tra nhóm Telegram.');
+            } else {
+                message.error(data.error || 'Gửi thử nghiệm thất bại. Vui lòng kiểm tra lại Token hoặc Chat ID.');
+            }
+        } catch (e: any) {
+            message.error('Lỗi kết nối khi gửi thử Telegram');
+        } finally {
+            setTestingTelegram(false);
         }
     };
 
@@ -372,28 +403,129 @@ export default function ITConfigPage() {
                         <div className="text-xs text-slate-500 mt-2">Độ dài chuẩn của mã bệnh án (Ví dụ: <code>BA001028282</code> là 11 ký tự). Sau này khi bệnh viện tăng độ dài mã BA (12, 13 ký tự...), bạn có thể điều chỉnh tại đây để hệ thống tự động nhận diện và kiểm soát độ dài phù hợp.</div>
                     </Card>
 
-                    <Card size="small" title="Cấu hình Thông báo Telegram" className="border border-slate-200">
-                        <div className="flex flex-col gap-3">
+                    <Card 
+                        size="small" 
+                        title={
+                            <div className="flex items-center justify-between">
+                                <span className="font-semibold text-slate-800">Cấu hình Thông báo Telegram</span>
+                                <Popover 
+                                    trigger="click"
+                                    placement="bottomRight"
+                                    title={<span className="font-bold text-blue-700">📘 Hướng dẫn thiết lập Bot Telegram</span>}
+                                    content={
+                                        <div className="max-w-[480px] max-h-[70vh] overflow-y-auto space-y-3 text-xs text-slate-700 leading-relaxed pr-1">
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1">
+                                                    1️⃣ Bước 1: Tạo Bot Telegram & lấy <code className="text-blue-600 bg-blue-50 px-1 py-0.5 rounded">Bot Token</code>
+                                                </div>
+                                                <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                                                    <li>Mở Telegram, tìm tài khoản: <b>@BotFather</b> (có tích xanh).</li>
+                                                    <li>Bấm <b>Start</b> và gửi lệnh: <code>/newbot</code></li>
+                                                    <li>Nhập tên hiển thị (VD: <code>Bot CNTT BV Đa Khoa Lạng Sơn</code>).</li>
+                                                    <li>Nhập username cho Bot (phải kết thúc bằng chữ <code>bot</code>, VD: <code>bvdkls_it_bot</code>).</li>
+                                                    <li>Sao chép mã <b>HTTP API Token</b> (dạng <code>8587756206:AAHYxJXL3...</code>) và dán vào ô <b>Bot Token</b>.</li>
+                                                </ul>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1">
+                                                    2️⃣ Bước 2: Lấy <code className="text-purple-600 bg-purple-50 px-1 py-0.5 rounded">Chat ID</code> của Nhóm CNTT
+                                                </div>
+                                                <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                                                    <li>Tạo nhóm Telegram cho phòng CNTT (hoặc dùng nhóm hiện có).</li>
+                                                    <li>Thêm Bot vừa tạo vào nhóm và cấp quyền Quản trị viên (Admin).</li>
+                                                    <li>Thêm bot <b>@getmyid_bot</b> vào nhóm để lấy ID.</li>
+                                                    <li>Nhìn dòng <b>Current chat ID</b> (thường có dấu trừ ở đầu, VD: <code>-1002345678901</code>).</li>
+                                                    <li>Sao chép toàn bộ ID này (kể cả dấu <code>-</code>) và dán vào ô <b>Chat ID</b>. Sau đó có thể xóa <code>@getmyid_bot</code> ra khỏi nhóm.</li>
+                                                </ul>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1">
+                                                    3️⃣ Bước 3: Lấy Telegram ID cá nhân cho nhân viên (để nhận tin riêng 1-1)
+                                                </div>
+                                                <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                                                    <li>Từng nhân viên mở Telegram, tìm <b>@getmyid_bot</b> và bấm <b>Start</b> để lấy <b>Your user ID</b> (VD: <code>123456789</code>).</li>
+                                                    <li>Vào mục <b>Quản lý tài khoản</b> trên web, điền số ID này vào ô <b>Telegram ID</b> của nhân viên.</li>
+                                                    <li><i>Lưu ý:</i> Nhân viên cần mở Bot ở Bước 1 và bấm <b>Start</b> ít nhất 1 lần để Bot có quyền gửi tin riêng.</li>
+                                                </ul>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1">
+                                                    4️⃣ Bước 4: Kiểm tra gửi thử nghiệm
+                                                </div>
+                                                <div className="text-slate-600">
+                                                    Bấm nút <b>"Lưu cấu hình Bot"</b> rồi bấm <b>"🧪 Gửi tin nhắn thử nghiệm (Test Bot)"</b>. Bot sẽ gửi một tin nhắn mẫu kèm nút bấm link trực tiếp vào nhóm Telegram để bạn kiểm tra!
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                >
+                                    <Button 
+                                        type="link" 
+                                        size="small" 
+                                        icon={<QuestionCircleOutlined />} 
+                                        className="text-blue-600 hover:text-blue-500 font-medium p-0 h-auto flex items-center gap-1"
+                                    >
+                                        Hướng dẫn thiết lập
+                                    </Button>
+                                </Popover>
+                            </div>
+                        }
+                        className="border border-slate-200"
+                    >
+                        <div className="flex flex-col gap-4">
                             <div>
-                                <div className="text-sm font-medium text-slate-700 mb-1">Bot Token</div>
+                                <div className="text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <span>Bot Token</span>
+                                        <Tooltip title="Mã Token nhận được từ @BotFather sau khi tạo bot">
+                                            <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
+                                        </Tooltip>
+                                    </div>
+                                    <span className="text-xs text-slate-400 font-normal">Từ @BotFather</span>
+                                </div>
                                 <Input 
-                                    placeholder="Ví dụ: 123456789:ABCdefGHIjklmNOPqrsTUVwxyz..." 
+                                    placeholder="Ví dụ: 8587756206:AAHYxJXL37jmpJfPu1mVupK1AYDxeUOsLr8" 
                                     value={telegramBotToken} 
                                     onChange={e => setTelegramBotToken(e.target.value)} 
                                     disabled={user?.role !== 'ADMIN'}
                                 />
                             </div>
                             <div>
-                                <div className="text-sm font-medium text-slate-700 mb-1">Chat ID (Nhóm nhận thông báo)</div>
+                                <div className="text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <span>Chat ID (Nhóm hoặc Cá nhân)</span>
+                                        <Tooltip title="ID nhóm Telegram lấy từ @getmyid_bot (thường bắt đầu bằng dấu trừ -)">
+                                            <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
+                                        </Tooltip>
+                                    </div>
+                                    <span className="text-xs text-slate-400 font-normal">ID nhóm có dấu âm (-)</span>
+                                </div>
                                 <Input 
-                                    placeholder="Ví dụ: -100123456789" 
+                                    placeholder="Ví dụ: -1002345678901 hoặc 123456789" 
                                     value={telegramChatId} 
                                     onChange={e => setTelegramChatId(e.target.value)} 
                                     disabled={user?.role !== 'ADMIN'}
                                 />
                             </div>
+
                             {user?.role === 'ADMIN' && (
-                                <Button type="default" onClick={() => handleSaveGeneralConfig()} className="w-fit">Lưu cấu hình Bot</Button>
+                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="bg-blue-600 hover:bg-blue-500">
+                                        Lưu cấu hình Bot
+                                    </Button>
+                                    <Button 
+                                        type="default" 
+                                        icon={<SendOutlined />}
+                                        loading={testingTelegram}
+                                        onClick={handleTestTelegram}
+                                        className="border-green-600 text-green-700 hover:text-green-800 hover:border-green-700 bg-green-50"
+                                    >
+                                        🧪 Gửi tin nhắn thử nghiệm (Test Bot)
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     </Card>

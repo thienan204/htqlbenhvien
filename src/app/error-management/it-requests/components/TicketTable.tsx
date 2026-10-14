@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
 import { DeleteOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
@@ -14,6 +16,7 @@ interface TicketTableProps {
     assignmentMode: string;
     onFetchTickets: () => void;
     onDeleteTicket: (id: string) => void;
+    onReceiveTicket?: (id: string) => Promise<void>;
     onProcessClick: (ticket: Ticket) => void;
     onEditClick?: (ticket: Ticket) => void;
     onChatClick?: (ticket: Ticket) => void;
@@ -29,6 +32,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     assignmentMode,
     onFetchTickets,
     onDeleteTicket,
+    onReceiveTicket,
     onProcessClick,
     onEditClick,
     onChatClick,
@@ -38,6 +42,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     const [pageSize, setPageSize] = useState(10);
     
     const handleReceiveTicket = async (id: string) => {
+        if (onReceiveTicket) {
+            await onReceiveTicket(id);
+            return;
+        }
         try {
             const res = await fetch('/api/error-management/it-requests', {
                 method: 'PUT',
@@ -200,96 +208,117 @@ export const TicketTable: React.FC<TicketTableProps> = ({
         {
             title: 'Thao tác',
             key: 'action',
-            width: 60,
+            width: 110,
             fixed: 'right' as const,
+            align: 'center' as const,
+            onCell: () => ({
+                style: { paddingLeft: 6, paddingRight: 6 }
+            }),
+            onHeaderCell: () => ({
+                style: { paddingLeft: 6, paddingRight: 6 }
+            }),
             render: (_: any, record: Ticket) => {
+                const canReceive = hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (
+                    (assignmentMode === 'A' && !record.assigneeId) ||
+                    (record.assigneeId === user?.id && record.status === 'PENDING')
+                );
+                const isTransferringToMe = record.status === 'TRANSFERRING' && record.transferToId === user?.id;
+
                 return (
-                    <Space>
-                        {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (
-                            (assignmentMode === 'A' && !record.assigneeId) ||
-                            (record.assigneeId === user?.id && record.status === 'PENDING')
-                        ) && (
-                            <Button 
-                                size="small" 
-                                type="primary" 
-                                className="bg-green-600 hover:bg-green-500"
-                                onClick={() => handleReceiveTicket(record.id)}
-                            >
-                                Nhận việc
-                            </Button>
-                        )}
-
-                        {record.status === 'TRANSFERRING' && record.transferToId === user?.id && (
-                            <>
-                                <Button 
-                                    size="small" 
-                                    type="primary" 
-                                    className="bg-green-600 hover:bg-green-500"
-                                    onClick={() => handleTransferResponse(record.id, 'ACCEPT_TRANSFER')}
-                                >
-                                    Đồng ý
-                                </Button>
-                                <Button 
-                                    size="small" 
-                                    danger
-                                    onClick={() => handleTransferResponse(record.id, 'REJECT_TRANSFER')}
-                                >
-                                    Từ chối
-                                </Button>
-                            </>
-                        )}
-                        
-                        {record.ma_ba && record.hasXml && (
-                            <Button 
-                                size="small" 
-                                type="default"
-                                icon={<FileTextOutlined />}
-                                title="Xem hồ sơ XML gốc"
-                                onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')}
-                            />
-                        )}
-
-                        {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
-                            <Button size="small" type="primary" ghost onClick={() => onProcessClick(record)}>Xử lý</Button>
-                        )}
-                        
-                        {onChatClick && (
-                            <Badge count={record.messageCount} size="small" offset={[-5, 5]}>
-                                <Button size="small" type="dashed" icon={<MessageOutlined />} title="Thảo luận" onClick={() => onChatClick(record)} />
-                            </Badge>
-                        )}
-
-                        {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && (
-                            <Space size="small">
-                                {record.status === 'PENDING' && onEditClick && (
+                    <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                        {/* Hàng trên: Nhận việc hoặc Đồng ý/Từ chối chuyển giao */}
+                        {(canReceive || isTransferringToMe) && (
+                            <div className="w-full flex justify-center">
+                                {canReceive && (
                                     <Button 
                                         size="small" 
                                         type="primary" 
-                                        className="bg-blue-600 hover:bg-blue-500"
-                                        onClick={() => onEditClick(record)}
+                                        className="bg-green-600 hover:bg-green-500 whitespace-nowrap font-medium text-xs px-2.5"
+                                        onClick={() => handleReceiveTicket(record.id)}
                                     >
-                                        Sửa
+                                        Nhận việc
                                     </Button>
                                 )}
-                                <Popconfirm 
-                                    title="Xóa yêu cầu?" 
-                                    description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
-                                    onConfirm={() => onDeleteTicket(record.id)}
-                                    disabled={record.status !== 'PENDING'}
-                                    okText="Xóa"
-                                    cancelText="Hủy"
-                                >
-                                    <Button 
-                                        size="small" 
-                                        danger 
-                                        icon={<DeleteOutlined />} 
-                                        disabled={record.status !== 'PENDING'}
-                                        title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : ''}
-                                    />
-                                </Popconfirm>
-                            </Space>
+
+                                {isTransferringToMe && (
+                                    <div className="flex items-center justify-center gap-1 w-full">
+                                        <Button 
+                                            size="small" 
+                                            type="primary" 
+                                            className="bg-green-600 hover:bg-green-500 whitespace-nowrap text-xs px-2"
+                                            onClick={() => handleTransferResponse(record.id, 'ACCEPT_TRANSFER')}
+                                        >
+                                            Đồng ý
+                                        </Button>
+                                        <Button 
+                                            size="small" 
+                                            danger
+                                            className="whitespace-nowrap text-xs px-2"
+                                            onClick={() => handleTransferResponse(record.id, 'REJECT_TRANSFER')}
+                                        >
+                                            Từ chối
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         )}
-                    </Space>
+
+                        {/* Hàng dưới: Xử lý, Thảo luận, XML, Sửa, Xóa */}
+                        <div className="flex items-center justify-center gap-1.5 flex-nowrap">
+                            {record.ma_ba && record.hasXml && (
+                                <Button 
+                                    size="small" 
+                                    type="default"
+                                    icon={<FileTextOutlined />}
+                                    title="Xem hồ sơ XML gốc"
+                                    onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')}
+                                />
+                            )}
+
+                            {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
+                                <Button size="small" type="primary" ghost className="whitespace-nowrap" onClick={() => onProcessClick(record)}>
+                                    Xử lý
+                                </Button>
+                            )}
+                            
+                            {onChatClick && (
+                                <Badge count={record.messageCount} size="small" offset={[-4, 4]}>
+                                    <Button size="small" type="dashed" icon={<MessageOutlined />} title="Thảo luận" onClick={() => onChatClick(record)} />
+                                </Badge>
+                            )}
+
+                            {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && (
+                                <>
+                                    {record.status === 'PENDING' && onEditClick && (
+                                        <Button 
+                                            size="small" 
+                                            type="primary" 
+                                            className="bg-blue-600 hover:bg-blue-500 whitespace-nowrap"
+                                            onClick={() => onEditClick(record)}
+                                        >
+                                            Sửa
+                                        </Button>
+                                    )}
+                                    <Popconfirm 
+                                        title="Xóa yêu cầu?" 
+                                        description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
+                                        onConfirm={() => onDeleteTicket(record.id)}
+                                        disabled={record.status !== 'PENDING'}
+                                        okText="Xóa"
+                                        cancelText="Hủy"
+                                    >
+                                        <Button 
+                                            size="small" 
+                                            danger 
+                                            icon={<DeleteOutlined />} 
+                                            disabled={record.status !== 'PENDING'}
+                                            title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : ''}
+                                        />
+                                    </Popconfirm>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 );
             }
         }
@@ -313,7 +342,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                     setPageSize(size);
                 }
             }}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 1390 }}
+            sticky
             rowClassName={(record) => record.status === 'RESOLVED' ? 'bg-green-50/50' : ''}
         />
     );
