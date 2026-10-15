@@ -1,6 +1,6 @@
-import React from 'react';
-import { Button, Switch, Popconfirm } from 'antd';
-import { PlusOutlined, BugOutlined, SettingOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Button, Switch, Popconfirm, Popover, Input } from 'antd';
+import { PlusOutlined, BugOutlined, SettingOutlined, DeleteOutlined, AimOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
 interface TicketHeaderProps {
@@ -13,6 +13,10 @@ interface TicketHeaderProps {
     onOpenSettings: () => void;
     onDeleteAll?: () => void;
     targetDepartment?: string;
+    autoAssignDisabled?: boolean;
+    focusReason?: string;
+    togglingFocusMode?: boolean;
+    onToggleFocusMode?: (disabled: boolean, reason?: string) => void;
 }
 
 export const TicketHeader: React.FC<TicketHeaderProps> = ({
@@ -24,8 +28,18 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
     onCreateRequest,
     onOpenSettings,
     onDeleteAll,
-    targetDepartment = 'CNTT'
+    targetDepartment = 'CNTT',
+    autoAssignDisabled = false,
+    focusReason = '',
+    togglingFocusMode = false,
+    onToggleFocusMode
 }) => {
+    const [focusPopoverOpen, setFocusPopoverOpen] = useState(false);
+    const [reasonInput, setReasonInput] = useState(focusReason);
+
+    useEffect(() => {
+        setReasonInput(focusReason);
+    }, [focusReason]);
     const isVTYT = targetDepartment === 'VTYT';
     const isHCQT = targetDepartment === 'HCQT';
     
@@ -48,8 +62,8 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                 </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-stretch sm:items-center mt-4 sm:mt-0">
-                {user?.role === targetDepartment && (
-                    <div className="flex items-center gap-2">
+                {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
+                    <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-50 px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg border border-slate-200 w-full sm:w-auto">
                             <span className="text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
                             <Switch 
@@ -60,6 +74,88 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                 unCheckedChildren="Tắt"
                             />
                         </div>
+
+                        {/* Chế độ tập trung (Sếp giao việc riêng - Miễn chia việc tự động) */}
+                        {isAvailable && onToggleFocusMode && (
+                            <Popover
+                                trigger="click"
+                                open={focusPopoverOpen}
+                                onOpenChange={setFocusPopoverOpen}
+                                placement="bottomRight"
+                                title={
+                                    <div className="font-semibold text-slate-800 flex items-center gap-1.5 pb-1 border-b border-slate-100">
+                                        <AimOutlined className="text-amber-500 text-base" /> Chế độ tập trung (Sếp giao việc)
+                                    </div>
+                                }
+                                content={
+                                    <div className="w-80 space-y-3 py-1">
+                                        <p className="text-xs text-slate-500 m-0 leading-relaxed">
+                                            Khi bật, bạn vẫn đi làm nhưng hệ thống sẽ <strong>miễn phân công tự động</strong> việc mới từ các khoa phòng (dành cho khi bạn đang làm việc riêng do Lãnh đạo giao).
+                                        </p>
+                                        <div>
+                                            <label className="text-xs font-medium text-slate-700 block mb-1">Nhiệm vụ / Lý do cụ thể:</label>
+                                            <Input 
+                                                placeholder="Ví dụ: Triển khai EMR, Cài máy chủ..." 
+                                                value={reasonInput}
+                                                onChange={(e) => setReasonInput(e.target.value)}
+                                                maxLength={100}
+                                                size="middle"
+                                                className="rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                                            <Button size="small" onClick={() => setFocusPopoverOpen(false)}>Đóng</Button>
+                                            {autoAssignDisabled ? (
+                                                <Button 
+                                                    size="small" 
+                                                    type="primary" 
+                                                    danger
+                                                    loading={togglingFocusMode}
+                                                    onClick={() => {
+                                                        onToggleFocusMode?.(false, '');
+                                                        setFocusPopoverOpen(false);
+                                                    }}
+                                                >
+                                                    Tắt & Nhận việc lại
+                                                </Button>
+                                            ) : (
+                                                <Button 
+                                                    size="small" 
+                                                    type="primary"
+                                                    loading={togglingFocusMode}
+                                                    className="bg-amber-500 hover:bg-amber-600 border-amber-500 text-white"
+                                                    onClick={() => {
+                                                        onToggleFocusMode?.(true, reasonInput);
+                                                        setFocusPopoverOpen(false);
+                                                    }}
+                                                >
+                                                    Bật tập trung
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                }
+                            >
+                                <button
+                                    type="button"
+                                    className={`px-3 py-1.5 rounded-xl sm:rounded-lg border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-all shadow-sm ${
+                                        autoAssignDisabled
+                                            ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100 ring-2 ring-amber-400/20'
+                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
+                                    }`}
+                                    title="Chế độ tập trung (Sếp giao việc) - Miễn nhận việc tự động"
+                                >
+                                    <AimOutlined className={autoAssignDisabled ? 'text-amber-600 text-base animate-pulse' : 'text-slate-400 text-base'} />
+                                    <span>
+                                        {autoAssignDisabled 
+                                            ? (focusReason ? `🎯 Bận: ${focusReason}` : '🎯 Tập trung việc riêng')
+                                            : '🎯 Sếp giao việc'
+                                        }
+                                    </span>
+                                </button>
+                            </Popover>
+                        )}
+
                         <Button 
                             icon={<SettingOutlined />} 
                             onClick={onOpenSettings} 

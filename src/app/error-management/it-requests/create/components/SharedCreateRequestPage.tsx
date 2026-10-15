@@ -95,10 +95,14 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
                     ten_loi: finalTenLoi,
                     ma_khoa: isAdmin ? values.ma_khoa : 'KHOA_HIENTAI', 
                     assigneeId: values.selfAssign ? user?.id : values.assigneeId,
+                    selfAssign: Boolean(values.selfAssign),
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: values.nguoi_bao_id,
                     sdt: autoSdt,
-                    targetDepartment
+                    targetDepartment,
+                    isFocusTask: Boolean(values.isFocusTask),
+                    focusReason: values.focusReason,
+                    status: values.status
                 })
             });
 

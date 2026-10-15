@@ -20,6 +20,7 @@ export interface Ticket {
     updatedAt: string;
     startedAt?: string | null;
     resolvedAt?: string | null;
+    isFocusTask?: boolean;
 }
 
 export interface ITUser {
@@ -27,4 +28,6 @@ export interface ITUser {
     username: string;
     name: string;
     isAvailable: boolean;
+    autoAssignDisabled?: boolean;
+    focusReason?: string | null;
 }

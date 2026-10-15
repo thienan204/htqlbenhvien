@@ -11,6 +11,8 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
     const [departmentStaff, setDepartmentStaff] = useState<any[]>([]);
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
     const [isAvailable, setIsAvailable] = useState<boolean>(false);
+    const [autoAssignDisabled, setAutoAssignDisabled] = useState<boolean>(false);
+    const [focusReason, setFocusReason] = useState<string>('');
 
     useEffect(() => {
         let isMounted = true;
@@ -38,7 +40,11 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 setItUsers(data.filter((u: ITUser) => u.isAvailable));
                 if (user) {
                     const me = data.find((u: ITUser) => u.id === user.id);
-                    if (me) setIsAvailable(me.isAvailable);
+                    if (me) {
+                        setIsAvailable(me.isAvailable);
+                        setAutoAssignDisabled(Boolean(me.autoAssignDisabled));
+                        setFocusReason(me.focusReason || '');
+                    }
                 }
             }
         } catch (error) {
@@ -103,6 +109,10 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
         assignmentMode,
         isAvailable,
         setIsAvailable,
+        autoAssignDisabled,
+        setAutoAssignDisabled,
+        focusReason,
+        setFocusReason,
         fetchITUsers
     };
 };

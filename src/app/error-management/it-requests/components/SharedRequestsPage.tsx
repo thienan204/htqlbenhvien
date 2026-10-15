@@ -34,12 +34,18 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [togglingAvailability, setTogglingAvailability] = useState(false);
 
+    const [togglingFocusMode, setTogglingFocusMode] = useState(false);
+
     const {
         itUsers,
         departments,
         assignmentMode,
         isAvailable,
         setIsAvailable,
+        autoAssignDisabled,
+        setAutoAssignDisabled,
+        focusReason,
+        setFocusReason,
         fetchITUsers
     } = useITMasterData(user, targetDepartment);
 
@@ -141,6 +147,40 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         }
     };
 
+    const handleToggleFocusMode = async (disabled: boolean, reason?: string) => {
+        if (!user) return;
+        setTogglingFocusMode(true);
+        try {
+            const res = await fetch('/api/error-management/duty-roster', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    users: [{ 
+                        id: user.id, 
+                        autoAssignDisabled: disabled,
+                        focusReason: disabled ? (reason || 'Sếp giao việc riêng') : null
+                    }]
+                })
+            });
+            if (res.ok) {
+                setAutoAssignDisabled(disabled);
+                setFocusReason(disabled ? (reason || 'Sếp giao việc riêng') : '');
+                message.success(
+                    disabled 
+                        ? 'Đã bật chế độ tập trung việc riêng (Miễn chia việc tự động)!'
+                        : 'Đã tắt chế độ tập trung, bạn sẽ tiếp tục nhận việc tự động từ khoa phòng!'
+                );
+                fetchITUsers();
+            } else {
+                message.error('Lỗi khi cập nhật trạng thái');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối');
+        } finally {
+            setTogglingFocusMode(false);
+        }
+    };
+
     const handleDeleteAllTickets = async () => {
         try {
             const res = await fetch(`/api/error-management/it-requests?action=delete_all&targetDepartment=${targetDepartment}`, {
@@ -166,6 +206,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 isAvailable={isAvailable}
                 togglingAvailability={togglingAvailability}
                 onToggleAvailability={handleToggleAvailability}
+                autoAssignDisabled={autoAssignDisabled}
+                focusReason={focusReason}
+                togglingFocusMode={togglingFocusMode}
+                onToggleFocusMode={handleToggleFocusMode}
                 onCreateRequest={() => router.push(createPath)}
                 onOpenSettings={() => setIsSettingsVisible(true)}
                 onDeleteAll={isAdmin ? handleDeleteAllTickets : undefined}

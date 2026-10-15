@@ -20,7 +20,9 @@ export async function GET(request: Request) {
                 name: true,
                 role: true,
                 isAvailable: true,
-                dutyOrder: true
+                dutyOrder: true,
+                autoAssignDisabled: true,
+                focusReason: true
             }
         });
         return NextResponse.json(users);
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { users } = body; // Mảng user: { id, isAvailable, dutyOrder }
+        const { users } = body; // Mảng user: { id, isAvailable, dutyOrder, autoAssignDisabled, focusReason }
 
         if (!Array.isArray(users)) {
             return NextResponse.json({ error: 'Invalid data format' }, { status: 400 });
@@ -45,8 +47,10 @@ export async function PUT(request: Request) {
             prisma.user.update({
                 where: { id: user.id },
                 data: {
-                    isAvailable: user.isAvailable,
-                    dutyOrder: user.dutyOrder
+                    ...(user.isAvailable !== undefined && { isAvailable: user.isAvailable }),
+                    ...(user.dutyOrder !== undefined && { dutyOrder: user.dutyOrder }),
+                    ...(user.autoAssignDisabled !== undefined && { autoAssignDisabled: user.autoAssignDisabled }),
+                    ...(user.focusReason !== undefined && { focusReason: user.focusReason })
                 }
             })
         );

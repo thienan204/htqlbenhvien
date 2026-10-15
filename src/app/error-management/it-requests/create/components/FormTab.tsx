@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Form, Input, Select, Radio, Button, Card, Upload, Switch, Alert, Tag, Segmented } from 'antd';
-import { PictureOutlined, CameraOutlined, LoadingOutlined, FileTextOutlined, DesktopOutlined } from '@ant-design/icons';
+import { PictureOutlined, CameraOutlined, LoadingOutlined, FileTextOutlined, DesktopOutlined, AimOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
 import { useCheckBa } from '../hooks/useCheckBa';
 import { BaPaymentStatusAlert } from './BaPaymentStatusAlert';
@@ -391,18 +391,87 @@ export function FormTab({
                                 )}
 
                                 {isManager && (
-                                    <div className="mt-6 bg-purple-50/50 p-6 rounded-xl border border-purple-100">
-                                        <div className="font-bold text-purple-800 mb-4 uppercase text-sm">Khu vực dành cho Quản lý / Trưởng phòng</div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <Form.Item name="assigneeId" label={<span className="font-semibold text-purple-700">Chỉ định người xử lý (Giao việc)</span>} className="mb-0">
-                                                <Select placeholder="Để trống hệ thống tự chia việc" allowClear>
+                                    <div className="mt-6 bg-purple-50/50 p-5 sm:p-6 rounded-2xl border border-purple-100 shadow-sm space-y-4">
+                                        <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+                                            <div className="font-bold text-purple-900 uppercase text-sm flex items-center gap-2">
+                                                <span>👑</span> Khu vực dành cho Quản lý / Trưởng phòng
+                                            </div>
+                                            <Tag color="purple" className="m-0 font-medium">Chỉ đạo & Giao việc</Tag>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                            <Form.Item name="assigneeId" label={<span className="font-semibold text-purple-800">Chỉ định người xử lý (Giao việc)</span>} className="mb-0">
+                                                <Select 
+                                                    placeholder="Chọn nhân viên hoặc để trống hệ thống tự chia" 
+                                                    allowClear
+                                                    size="large"
+                                                    className="!rounded-xl"
+                                                >
                                                     {itUsers.map((u: any) => (
-                                                        <Select.Option key={u.id} value={u.id}>{u.name || u.username}</Select.Option>
+                                                        <Select.Option key={u.id} value={u.id}>
+                                                            {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Đang bận: ${u.focusReason || 'Việc sếp giao'})` : ''}
+                                                        </Select.Option>
                                                     ))}
                                                 </Select>
                                             </Form.Item>
-                                            <Form.Item name="ke_hoach" label={<span className="font-semibold text-purple-700">Kế hoạch / Chỉ đạo thực hiện</span>} className="mb-0">
-                                                <Input.TextArea rows={2} placeholder="Nhập yêu cầu, thời hạn hoặc hướng dẫn xử lý..." />
+                                            <Form.Item name="ke_hoach" label={<span className="font-semibold text-purple-800">Kế hoạch / Chỉ đạo thực hiện</span>} className="mb-0">
+                                                <Input.TextArea rows={2} placeholder="Nhập yêu cầu, thời hạn hoặc hướng dẫn xử lý..." className="!rounded-xl" />
+                                            </Form.Item>
+                                        </div>
+
+                                        {/* Tùy chọn Giao việc làm tập trung (Miễn chia việc tự động) */}
+                                        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60 transition-all">
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                                                        <AimOutlined />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-amber-950 text-sm">
+                                                            Giao việc dưới dạng &quot;Nhiệm vụ tập trung&quot;
+                                                        </div>
+                                                        <div className="text-xs text-amber-800/80 mt-0.5">
+                                                            Tự động khóa nhận việc tự động từ khoa phòng cho nhân viên này cho đến khi hoàn thành nhiệm vụ.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <Form.Item name="isFocusTask" valuePropName="checked" noStyle>
+                                                    <Switch 
+                                                        checkedChildren="Bật" 
+                                                        unCheckedChildren="Tắt"
+                                                        className="bg-slate-300"
+                                                    />
+                                                </Form.Item>
+                                            </div>
+
+                                            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.isFocusTask !== cur.isFocusTask}>
+                                                {({ getFieldValue }) => {
+                                                    const isFocus = getFieldValue('isFocusTask');
+                                                    if (!isFocus) return null;
+                                                    return (
+                                                        <div className="mt-3 pt-3 border-t border-amber-200/80 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <Form.Item 
+                                                                name="focusReason" 
+                                                                label={<span className="text-xs font-semibold text-amber-900">Lý do / Tên nhiệm vụ hiển thị trên trạng thái</span>} 
+                                                                className="mb-0"
+                                                                extra={<span className="text-[11px] text-amber-700">Để trống hệ thống sẽ tự lấy theo tên lỗi/công việc</span>}
+                                                            >
+                                                                <Input placeholder="Ví dụ: Triển khai EMR, Cài máy chủ..." size="small" className="!rounded-lg text-xs" />
+                                                            </Form.Item>
+                                                            <Form.Item 
+                                                                name="status" 
+                                                                label={<span className="text-xs font-semibold text-amber-900">Trạng thái phiếu bắt đầu</span>} 
+                                                                className="mb-0"
+                                                                initialValue="IN_PROGRESS"
+                                                            >
+                                                                <Select size="small" className="!rounded-lg text-xs">
+                                                                    <Select.Option value="IN_PROGRESS">Đang xử lý (Vào việc ngay)</Select.Option>
+                                                                    <Select.Option value="PENDING">Chờ xử lý (Chờ nhân viên tiếp nhận)</Select.Option>
+                                                                </Select>
+                                                            </Form.Item>
+                                                        </div>
+                                                    );
+                                                }}
                                             </Form.Item>
                                         </div>
                                     </div>

@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action, targetDepartment = 'CNTT' } = body;
+        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action, targetDepartment = 'CNTT', selfAssign, isFocusTask, focusReason } = body;
 
         let ma_khoa = body.ma_khoa;
         if (!['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
@@ -268,14 +268,27 @@ export async function POST(request: Request) {
         const isManager = (user as any).isManager || user.role === 'ADMIN';
         const isITStaff = user.role === targetDepartment || user.role === 'ADMIN';
 
+        // CHỈ ĐƯỢC Ở TRẠNG THÁI 'IN_PROGRESS' (Đang xử lý) khi:
+        // 1. Người tạo là nhân viên phòng kỹ thuật/CNTT hoặc ADMIN (isITStaff = true)
+        // 2. VÀ người đó CHỦ ĐỘNG BẬT công tắc "⚡ Tôi trực tiếp xử lý" (selfAssign = true)
+        // 3. HOẶC là sếp giao việc tập trung và chọn trạng thái IN_PROGRESS
+        const isFocusAssignment = Boolean(isFocusTask) && isManager && Boolean(assigneeId);
+        const isSelfHandling = isITStaff && Boolean(selfAssign);
+
+        let initialStatus = isSelfHandling ? 'IN_PROGRESS' : 'PENDING';
+        if (isFocusAssignment && body.status) {
+            initialStatus = body.status;
+        } else if (isFocusAssignment && !body.status) {
+            initialStatus = 'IN_PROGRESS'; // Mặc định việc sếp giao tập trung thì vào việc xử lý luôn
+        }
+
+        const newStartedAt = (initialStatus === 'IN_PROGRESS') ? new Date() : null;
+
         let finalAssignee = assigneeId || null;
-        if (!isManager) {
-            // Nếu không phải Manager, chỉ cho phép nếu là nhân viên phòng kỹ thuật (CNTT/targetDepartment) và tự chọn chính mình
-            if (isITStaff && assigneeId === user.id) {
-                finalAssignee = user.id;
-            } else {
-                finalAssignee = null; // Khoa phòng tuyệt đối không được tự gán người xử lý
-            }
+        if (isSelfHandling) {
+            finalAssignee = user.id;
+        } else if (!isManager) {
+            finalAssignee = null; // Khoa phòng tuyệt đối không được tự gán người xử lý
         }
 
         // Tự động cập nhật số điện thoại vào bảng Staff
@@ -303,13 +316,14 @@ export async function POST(request: Request) {
         }
 
         // Nếu Khoa không chọn ai (Khoa không có quyền chọn, nên luôn là null)
-        if (!finalAssignee) {
+        if (!finalAssignee && !isSelfHandling) {
             if (assignmentMode === 'C') {
                 // Cách C: Chia việc tự động cho người online rảnh nhất
                 const availableUsers = await prisma.user.findMany({
                     where: {
                         role: targetDepartment,
                         isAvailable: true,
+                        autoAssignDisabled: false, // Bỏ qua người đang bật chế độ tập trung việc riêng / sếp giao việc
                         id: { not: user.id } // Chốt chặn: KHÔNG tự giao việc cho chính người đang bấm nút tạo
                     }
                 });
@@ -349,7 +363,9 @@ export async function POST(request: Request) {
                 ma_khoa,
                 assigneeId: finalAssignee,
                 dynamicFields: dynamicFields || {},
-                status: finalAssignee ? 'IN_PROGRESS' : 'PENDING',
+                status: initialStatus,
+                startedAt: newStartedAt,
+                isFocusTask: Boolean(isFocusAssignment),
                 messages: {
                     create: [
                         {
@@ -362,6 +378,22 @@ export async function POST(request: Request) {
                 }
             }
         });
+
+        // Nếu là nhiệm vụ tập trung do sếp giao -> Tự động đưa nhân viên vào trạng thái "Tập trung việc riêng" (Miễn chia việc tự động)
+        if (isFocusAssignment && finalAssignee) {
+            const taskReason = focusReason || (dynamicFields && dynamicFields['Lý do tập trung']) || `Sếp giao: ${ten_loi.slice(0, 80)}`;
+            try {
+                await prisma.user.update({
+                    where: { id: finalAssignee },
+                    data: {
+                        autoAssignDisabled: true,
+                        focusReason: taskReason
+                    }
+                });
+            } catch (err) {
+                console.error("Lỗi tự động kích hoạt chế độ tập trung cho nhân viên:", err);
+            }
+        }
 
         // Trigger SSE Notification (Chỉ gửi về máy có maKhoa tương ứng)
         try {
@@ -404,7 +436,9 @@ export async function POST(request: Request) {
         }
 
         // Tạo thông điệp Telegram
-        let telegramMsg = `🚨 <b>YÊU CẦU HỖ TRỢ MỚI</b>\n\n`;
+        let telegramMsg = isFocusAssignment 
+            ? `👑 <b>NHIỆM VỤ TẬP TRUNG DO LÃNH ĐẠO GIAO</b>\n\n`
+            : `🚨 <b>YÊU CẦU HỖ TRỢ MỚI</b>\n\n`;
         telegramMsg += `🏢 <b>Khoa:</b> ${tenKhoa}\n`;
         telegramMsg += `👤 <b>Người báo:</b> ${dynamicFields['Người báo'] || 'Không rõ'} - <b>SĐT:</b> ${finalSdt || 'Không có'}\n`;
         telegramMsg += `📌 <b>Loại sự cố:</b> ${category === 'SOFTWARE' ? 'Phần Mềm / Nghiệp Vụ' : 'Phần Cứng / Sửa Chữa'}\n`;
@@ -626,6 +660,34 @@ export async function PUT(request: Request) {
                         adminNote: it_note !== undefined ? `[CNTT] ${it_note}` : (ticket.it_note ? `[CNTT] ${ticket.it_note}` : 'CNTT đã xử lý')
                     }
                 });
+            }
+
+            // Nếu phiếu này là nhiệm vụ tập trung (isFocusTask: true)
+            // Kiểm tra xem nhân viên này còn phiếu nhiệm vụ tập trung nào chưa hoàn thành không:
+            const targetAssigneeId = updated.assigneeId;
+            if (ticket.isFocusTask && targetAssigneeId) {
+                try {
+                    const remainingFocusTasks = await prisma.iTRequest.count({
+                        where: {
+                            assigneeId: targetAssigneeId,
+                            isFocusTask: true,
+                            status: { in: ['PENDING', 'IN_PROGRESS', 'TRANSFERRING'] },
+                            id: { not: id }
+                        }
+                    });
+                    if (remainingFocusTasks === 0) {
+                        // Tự động mở lại trạng thái nhận việc bình thường cho nhân viên
+                        await prisma.user.update({
+                            where: { id: targetAssigneeId },
+                            data: {
+                                autoAssignDisabled: false,
+                                focusReason: null
+                            }
+                        });
+                    }
+                } catch (focusErr) {
+                    console.error("Lỗi tự động mở khóa trạng thái nhận việc cho nhân viên:", focusErr);
+                }
             }
         }
 

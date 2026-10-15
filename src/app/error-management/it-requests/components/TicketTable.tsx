@@ -98,7 +98,14 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 const hasDetails = !!record.ma_ba || (record.dynamicFields && Object.keys(record.dynamicFields).length > 0);
                 return (
                     <div>
-                        <div className="font-medium text-slate-800">{text}</div>
+                        <div className="font-medium text-slate-800 flex items-center gap-1.5 flex-wrap">
+                            {record.isFocusTask && (
+                                <Tag color="purple" className="m-0 font-bold border-purple-300 bg-purple-50 text-purple-700 shadow-2xs">
+                                    🎯 Việc tập trung (Sếp giao)
+                                </Tag>
+                            )}
+                            <span>{text}</span>
+                        </div>
                         {hasDetails && (
                             <div className="mt-1.5 flex flex-col gap-2">
                                 <div className="flex flex-wrap items-center gap-1.5">

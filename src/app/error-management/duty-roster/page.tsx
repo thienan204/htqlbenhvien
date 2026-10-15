@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Switch, Button, message, Card, Space, Tag, Tabs } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined, SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Table, Switch, Button, message, Card, Space, Tag, Tabs, Input, Tooltip } from 'antd';
+import { ArrowUpOutlined, ArrowDownOutlined, SaveOutlined, ReloadOutlined, AimOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ITUser {
@@ -12,6 +12,8 @@ interface ITUser {
     role: string;
     isAvailable: boolean;
     dutyOrder: number;
+    autoAssignDisabled?: boolean;
+    focusReason?: string | null;
 }
 
 export default function DutyRosterPage() {
@@ -98,11 +100,26 @@ export default function DutyRosterPage() {
         setUsers(newUsers);
     };
 
+    const toggleAutoAssignDisabled = (index: number, checked: boolean) => {
+        const newUsers = [...users];
+        newUsers[index].autoAssignDisabled = checked;
+        if (!checked) {
+            newUsers[index].focusReason = null;
+        }
+        setUsers(newUsers);
+    };
+
+    const updateFocusReason = (index: number, reason: string) => {
+        const newUsers = [...users];
+        newUsers[index].focusReason = reason;
+        setUsers(newUsers);
+    };
+
     const columns = [
         {
             title: 'Thứ tự ưu tiên',
             key: 'order',
-            width: 150,
+            width: 140,
             align: 'center' as const,
             render: (_: any, __: any, index: number) => (
                 <div className="flex items-center justify-center gap-2">
@@ -130,7 +147,7 @@ export default function DutyRosterPage() {
             title: 'Tài khoản',
             dataIndex: 'username',
             key: 'username',
-            render: (text: string) => <span className="font-semibold">{text}</span>
+            render: (text: string) => <span className="font-semibold text-slate-800">{text}</span>
         },
         {
             title: 'Họ tên',
@@ -157,11 +174,47 @@ export default function DutyRosterPage() {
                         unCheckedChildren="Nghỉ"
                     />
                     {record.isAvailable ? (
-                        <span className="text-green-600 font-medium ml-2">Sẵn sàng nhận việc</span>
+                        <span className="text-green-600 font-medium ml-1">Sẵn sàng</span>
                     ) : (
-                        <span className="text-slate-400 font-medium ml-2">Đang nghỉ / Bận</span>
+                        <span className="text-slate-400 font-medium ml-1">Nghỉ / Vắng</span>
                     )}
                 </Space>
+            )
+        },
+        {
+            title: 'Miễn chia việc tự động (Sếp giao việc riêng)',
+            key: 'autoAssignDisabled',
+            align: 'center' as const,
+            width: 290,
+            render: (_: any, record: ITUser, index: number) => (
+                <div className="flex flex-col items-center gap-1.5 py-1">
+                    <Space>
+                        <Switch 
+                            checked={Boolean(record.autoAssignDisabled)} 
+                            disabled={!record.isAvailable}
+                            onChange={(checked) => toggleAutoAssignDisabled(index, checked)}
+                            checkedChildren="Miễn"
+                            unCheckedChildren="Nhận"
+                            className={record.autoAssignDisabled ? 'bg-amber-500' : ''}
+                        />
+                        {record.autoAssignDisabled ? (
+                            <Tag color="warning" className="m-0 font-medium flex items-center gap-1">
+                                <AimOutlined /> Đang bận việc riêng
+                            </Tag>
+                        ) : (
+                            <span className="text-slate-400 text-xs">Tự động nhận việc</span>
+                        )}
+                    </Space>
+                    {record.autoAssignDisabled && (
+                        <Input 
+                            size="small"
+                            placeholder="Lý do / Nhiệm vụ sếp giao..."
+                            value={record.focusReason || ''}
+                            onChange={(e) => updateFocusReason(index, e.target.value)}
+                            className="max-w-[220px] text-xs text-amber-900 bg-amber-50/70 border-amber-200"
+                        />
+                    )}
+                </div>
             )
         }
     ];

@@ -6,6 +6,7 @@ import SidebarClient from './SidebarClient';
 import TopHeader from './TopHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import GlobalInstructionDrawer from './GlobalInstructionDrawer';
+import GlobalTicketNotification from '@/components/notifications/GlobalTicketNotification';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -136,6 +137,7 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
             </div>
             
             <GlobalInstructionDrawer />
+            <GlobalTicketNotification />
         </>
     );
 }

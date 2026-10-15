@@ -199,6 +199,7 @@ export function ChatTab({
                     ten_loi: chatText,
                     ma_khoa: isAdmin ? (staff?.ma_khoa || user?.ma_khoa || departments[0]?.ma_khoa) : 'KHOA_HIENTAI', 
                     assigneeId: (isITStaff && selfAssign) ? user?.id : null,
+                    selfAssign: Boolean(isITStaff && selfAssign),
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: staffId,
                     sdt: staff?.so_dien_thoai || '',

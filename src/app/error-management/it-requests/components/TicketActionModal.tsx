@@ -74,7 +74,9 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                 <Form.Item name="assigneeId" label="Người xử lý" extra="Nếu bạn chọn người khác, phiếu sẽ vào trạng thái Chờ chuyển giao cho đến khi người đó xác nhận.">
                     <Select allowClear disabled={!canChangeAssignee}>
                         {availableUsers.map(u => (
-                            <Select.Option key={u.id} value={u.id}>{u.name || u.username}</Select.Option>
+                            <Select.Option key={u.id} value={u.id}>
+                                {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Bận: ${u.focusReason || 'Việc sếp giao'})` : ''}
+                            </Select.Option>
                         ))}
                     </Select>
                 </Form.Item>

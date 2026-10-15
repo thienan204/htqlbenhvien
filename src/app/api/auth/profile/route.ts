@@ -18,6 +18,8 @@ export async function GET(request: Request) {
                 role: true,
                 telegram_id: true,
                 isAvailable: true,
+                autoAssignDisabled: true,
+                focusReason: true,
                 staffId: true,
                 staff: {
                     select: {
@@ -54,7 +56,7 @@ export async function PUT(request: Request) {
 
         const body = await request.json();
         const { 
-            name, telegram_id, isAvailable, 
+            name, telegram_id, isAvailable, autoAssignDisabled, focusReason,
             ho_ten, so_dien_thoai, dia_chi,
             ma_nv, ngay_sinh, gioi_tinh_id, ma_khoa,
             loai_hop_dong_id, chuc_vu_id, vi_tri_viec_lam_id, chuc_danh_id, trinh_do_id
@@ -66,8 +68,14 @@ export async function PUT(request: Request) {
         });
 
         const updateData: any = { name, telegram_id };
-        if (currentUser?.role === 'CNTT' && isAvailable !== undefined) {
+        if (isAvailable !== undefined) {
             updateData.isAvailable = isAvailable;
+        }
+        if (autoAssignDisabled !== undefined) {
+            updateData.autoAssignDisabled = autoAssignDisabled;
+        }
+        if (focusReason !== undefined) {
+            updateData.focusReason = focusReason;
         }
 
         const updatedUser = await prisma.$transaction(async (tx) => {
