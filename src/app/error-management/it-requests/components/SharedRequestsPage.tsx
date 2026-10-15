@@ -14,6 +14,7 @@ import { NotificationSettingsModal } from './NotificationSettingsModal';
 import { useITMasterData } from '../hooks/useITMasterData';
 import { useTickets } from '../hooks/useTickets';
 import { Ticket } from '../types';
+import { getBasePath } from '@/utils/config';
 
 interface SharedRequestsPageProps {
     targetDepartment: string;
@@ -30,7 +31,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [isChatVisible, setIsChatVisible] = useState(false);
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-    const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('MINE');
+    const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [togglingAvailability, setTogglingAvailability] = useState(false);
 
@@ -126,7 +127,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         if (!user) return;
         setTogglingAvailability(true);
         try {
-            const res = await fetch('/api/error-management/duty-roster', {
+            const res = await fetch(`${getBasePath()}/api/error-management/duty-roster`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -151,7 +152,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         if (!user) return;
         setTogglingFocusMode(true);
         try {
-            const res = await fetch('/api/error-management/duty-roster', {
+            const res = await fetch(`${getBasePath()}/api/error-management/duty-roster`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -183,7 +184,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
     const handleDeleteAllTickets = async () => {
         try {
-            const res = await fetch(`/api/error-management/it-requests?action=delete_all&targetDepartment=${targetDepartment}`, {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests?action=delete_all&targetDepartment=${targetDepartment}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
@@ -244,6 +245,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                             { value: 'ALL', label: 'Tất cả trạng thái' },
                             { value: 'PENDING', label: 'Chờ xử lý' },
                             { value: 'IN_PROGRESS', label: 'Đang xử lý' },
+                            { value: 'WAITING_VENDOR', label: '🏢 Chờ đối tác xử lý' },
                             { value: 'TRANSFERRING', label: 'Chờ chuyển giao' },
                             { value: 'RESOLVED', label: 'Hoàn thành' }
                         ]}

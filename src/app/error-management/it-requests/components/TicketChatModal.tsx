@@ -5,6 +5,7 @@ import { Drawer, Input, Button, Spin, message } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Ticket } from '../types';
+import { getBasePath } from '@/utils/config';
 
 interface TicketChatModalProps {
     visible: boolean;
@@ -33,7 +34,7 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
     const fetchMessages = async () => {
         if (!ticket) return;
         try {
-            const res = await fetch(`/api/error-management/it-requests/${ticket.id}/messages`);
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests/${ticket.id}/messages`);
             if (res.ok) {
                 const data = await res.json();
                 setMessages(data);
@@ -68,7 +69,7 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
         if (!text.trim() || !ticket) return;
         try {
             setSending(true);
-            const res = await fetch(`/api/error-management/it-requests/${ticket.id}/messages`, {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests/${ticket.id}/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: text.trim() })

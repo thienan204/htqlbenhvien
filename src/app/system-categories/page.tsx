@@ -2,13 +2,14 @@
 // Force Next.js recompilation
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Table, Button, Card, Space, Tag, Popconfirm, message, Upload, Dropdown } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, TagsOutlined, PartitionOutlined, UserOutlined, IdcardOutlined, BookOutlined, UploadOutlined, DownloadOutlined, DownOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, TagsOutlined, PartitionOutlined, UserOutlined, IdcardOutlined, BookOutlined, UploadOutlined, DownloadOutlined, DownOutlined, ShopOutlined } from '@ant-design/icons';
 import DynamicForm, { FieldConfig } from '@/components/shared/DynamicForm';
 import * as XLSX from 'xlsx';
 
 const { Sider, Content } = Layout;
 
 const HARDCODED_TYPES = [
+    { key: 'DOI_TAC_NGOAI', label: 'Đối tác / Đơn vị ngoài (CNTT & Thiết bị)', icon: <ShopOutlined /> },
     { key: 'PROVINCE', label: 'Danh mục Tỉnh/Thành phố', icon: <PartitionOutlined /> },
     { key: 'WARD', label: 'Danh mục Xã/Phường', icon: <PartitionOutlined /> },
     { key: 'LOAI_HOP_DONG', label: 'Loại Hợp đồng', icon: <BookOutlined /> },

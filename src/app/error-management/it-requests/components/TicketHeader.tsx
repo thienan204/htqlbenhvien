@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Switch, Popconfirm, Popover, Input } from 'antd';
-import { PlusOutlined, BugOutlined, SettingOutlined, DeleteOutlined, AimOutlined } from '@ant-design/icons';
+import { PlusOutlined, BugOutlined, SettingOutlined, DeleteOutlined, AimOutlined, ShopOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
 interface TicketHeaderProps {
@@ -197,6 +197,18 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                             </Popconfirm>
                         )}
                     </div>
+                )}
+                {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
+                    <Link href={`/error-management/vendor-tasks?targetDepartment=${targetDepartment}`} className="w-full sm:w-auto">
+                        <Button 
+                            type="default"
+                            size="large"
+                            icon={<ShopOutlined />}
+                            className="w-full font-medium text-amber-700 bg-amber-50/80 border-amber-300 hover:bg-amber-100 hover:border-amber-400"
+                        >
+                            🏢 Việc gửi ngoài
+                        </Button>
+                    </Link>
                 )}
                 <Button className="w-full sm:w-auto" type="primary" size="large" icon={<PlusOutlined />} onClick={onCreateRequest}>
                     Tạo Yêu Cầu

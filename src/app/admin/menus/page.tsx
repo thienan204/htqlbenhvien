@@ -40,6 +40,7 @@ const AVAILABLE_PATHS = [
     { value: '/chuyen-de/quy-tac-chuyen-de', label: '/chuyen-de/quy-tac-chuyen-de' },
     { value: '/error-management/it-requests', label: '/error-management/it-requests' },
     { value: '/error-management/it-requests/create', label: '/error-management/it-requests/create (Tạo Yêu Cầu IT)' },
+    { value: '/error-management/vendor-tasks', label: '/error-management/vendor-tasks (Việc gửi Đối tác ngoài)' },
     { value: '/error-management/vtyt-requests', label: '/error-management/vtyt-requests' },
     { value: '/error-management/vtyt-requests/create', label: '/error-management/vtyt-requests/create (Tạo Yêu Cầu VTYT)' },
     { value: '/error-management/hcqt-requests', label: '/error-management/hcqt-requests' },

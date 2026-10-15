@@ -6,6 +6,7 @@ import {
     TicketNotificationTitle,
     TicketNotificationContent
 } from '../components/TicketNotification';
+import { getBasePath } from '@/utils/config';
 
 let activeNativeNotification: Notification | null = null;
 let originalDocTitle = '';
@@ -176,7 +177,7 @@ export const useTickets = (
                     status: 'IN_PROGRESS'
                 };
             }
-            const res = await fetch('/api/error-management/it-requests', {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -213,7 +214,7 @@ export const useTickets = (
             await quickReceiveTicket(found);
         } else {
             try {
-                const res = await fetch('/api/error-management/it-requests', {
+                const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -245,7 +246,7 @@ export const useTickets = (
     const fetchTickets = async (isPolling = false) => {
         if (!isPolling) setLoading(true);
         try {
-            const res = await fetch(`/api/error-management/it-requests?targetDepartment=${targetDepartment}&_t=${Date.now()}`, {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests?targetDepartment=${targetDepartment}&_t=${Date.now()}`, {
                 cache: 'no-store',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -399,7 +400,12 @@ export const useTickets = (
                 id: selectedTicket.id,
                 status: values.status,
                 it_note: values.it_note,
-                assigneeId: values.assigneeId || null
+                assigneeId: values.assigneeId || null,
+                vendorId: values.vendorId || null,
+                vendorName: values.vendorName || null,
+                vendorTicketCode: values.vendorTicketCode || null,
+                vendorExpectedReturnAt: values.vendorExpectedReturnAt || null,
+                it_images: values.it_images || []
             };
 
             if (selectedTicket.assigneeId && values.assigneeId && values.assigneeId !== selectedTicket.assigneeId) {
@@ -408,10 +414,15 @@ export const useTickets = (
                     action: 'TRANSFER',
                     transferToId: values.assigneeId,
                     it_note: values.it_note,
+                    vendorId: values.vendorId || null,
+                    vendorName: values.vendorName || null,
+                    vendorTicketCode: values.vendorTicketCode || null,
+                    vendorExpectedReturnAt: values.vendorExpectedReturnAt || null,
+                    it_images: values.it_images || []
                 };
             }
 
-            const res = await fetch('/api/error-management/it-requests', {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -431,7 +442,7 @@ export const useTickets = (
 
     const handleDeleteTicket = async (id: string) => {
         try {
-            const res = await fetch(`/api/error-management/it-requests?id=${id}`, {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests?id=${id}`, {
                 method: 'DELETE'
             });
 

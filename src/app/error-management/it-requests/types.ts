@@ -21,6 +21,21 @@ export interface Ticket {
     startedAt?: string | null;
     resolvedAt?: string | null;
     isFocusTask?: boolean;
+    vendorId?: string | null;
+    vendorName?: string | null;
+    vendorTicketCode?: string | null;
+    vendorSentAt?: string | null;
+    vendorExpectedReturnAt?: string | null;
+    it_images?: string[];
+}
+
+export interface VendorItem {
+    id: string;
+    code: string;
+    name: string;
+    description?: string | null;
+    bhyt_code?: string | null;
+    isActive: boolean;
 }
 
 export interface ITUser {

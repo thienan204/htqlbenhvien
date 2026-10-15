@@ -519,6 +519,12 @@ model ITRequest {
   startedAt        DateTime?
   targetDepartment String           @default("CNTT")
   isFocusTask      Boolean          @default(false)
+  vendorId               String?
+  vendorName             String?
+  vendorTicketCode       String?
+  vendorSentAt           DateTime?
+  vendorExpectedReturnAt DateTime?
+  it_images              String[]         @default([])
   messages         RequestMessage[]
 }
 

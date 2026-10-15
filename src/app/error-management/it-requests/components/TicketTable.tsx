@@ -6,6 +6,7 @@ import { DeleteOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/i
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
+import { getBasePath } from '@/utils/config';
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -47,7 +48,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             return;
         }
         try {
-            const res = await fetch('/api/error-management/it-requests', {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -66,7 +67,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     };
 
     const handleTransferResponse = async (id: string, action: 'ACCEPT_TRANSFER' | 'REJECT_TRANSFER') => {
-        const res = await fetch('/api/error-management/it-requests', {
+        const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
             method: 'PUT', 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, action })
@@ -171,8 +172,49 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             title: 'Trạng thái',
             dataIndex: 'status',
             key: 'status',
-            width: 120,
-            render: (status: string) => {
+            width: 140,
+            render: (status: string, record: Ticket) => {
+                if (status === 'WAITING_VENDOR') {
+                    let isOverdue = false;
+                    let overdueDays = 0;
+                    if (record.vendorExpectedReturnAt) {
+                        const expected = dayjs(record.vendorExpectedReturnAt).endOf('day');
+                        const now = dayjs();
+                        if (now.isAfter(expected)) {
+                            isOverdue = true;
+                            overdueDays = now.diff(expected, 'day') + 1;
+                        }
+                    }
+
+                    return (
+                        <div className="flex flex-col items-start gap-1">
+                            <Tag color="orange" className="font-semibold m-0 flex items-center gap-1 border-amber-300">
+                                🏢 Chờ đối tác
+                            </Tag>
+                            {record.vendorName && (
+                                <span className="text-[11px] font-medium text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded leading-tight max-w-[150px] truncate" title={record.vendorName}>
+                                    {record.vendorName}
+                                </span>
+                            )}
+                            {record.vendorExpectedReturnAt ? (
+                                isOverdue ? (
+                                    <Tag color="error" className="text-[10px] m-0 font-bold border-red-300 animate-pulse">
+                                        ⚠️ Quá hạn {overdueDays} ngày
+                                    </Tag>
+                                ) : (
+                                    <span className="text-[10px] text-slate-500 font-medium">
+                                        Hẹn: {dayjs(record.vendorExpectedReturnAt).format('DD/MM/YYYY')}
+                                    </span>
+                                )
+                            ) : (
+                                <span className="text-[10px] text-slate-400 italic">
+                                    Chưa hẹn ngày
+                                </span>
+                            )}
+                        </div>
+                    );
+                }
+
                 let color = 'default';
                 let label = 'Chờ xử lý';
                 if (status === 'IN_PROGRESS') { color = 'blue'; label = 'Đang xử lý'; }
@@ -186,7 +228,23 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             dataIndex: 'it_note',
             key: 'it_note',
             width: 300,
-            render: (text: string) => <div className="text-slate-600 italic whitespace-pre-wrap">{text || '-'}</div>
+            render: (text: string, record: Ticket) => {
+                const hasImages = Array.isArray(record.it_images) && record.it_images.length > 0;
+                return (
+                    <div className="space-y-1.5">
+                        <div className="text-slate-600 italic whitespace-pre-wrap">{text || '-'}</div>
+                        {hasImages && (
+                            <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+                                <AntImage.PreviewGroup>
+                                    {record.it_images!.map((url: string, idx: number) => (
+                                        <TicketImage key={idx} url={url} />
+                                    ))}
+                                </AntImage.PreviewGroup>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             title: 'Thời gian',

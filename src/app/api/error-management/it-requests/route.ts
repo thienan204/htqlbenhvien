@@ -531,7 +531,10 @@ export async function PUT(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields } = body;
+        const { 
+            id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields,
+            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images 
+        } = body;
 
         if (!id) return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
 
@@ -637,6 +640,11 @@ export async function PUT(request: Request) {
             newResolvedAt = new Date();
         }
 
+        let vendorSentAt = ticket.vendorSentAt;
+        if (newStatus === 'WAITING_VENDOR' && ticket.status !== 'WAITING_VENDOR') {
+            vendorSentAt = new Date();
+        }
+
         const updated = await prisma.iTRequest.update({
             where: { id },
             data: {
@@ -644,9 +652,38 @@ export async function PUT(request: Request) {
                 it_note: it_note !== undefined ? it_note : ticket.it_note,
                 assigneeId: assigneeId !== undefined ? assigneeId : ticket.assigneeId,
                 startedAt: newStartedAt,
-                resolvedAt: newResolvedAt
+                resolvedAt: newResolvedAt,
+                vendorId: vendorId !== undefined ? vendorId : ticket.vendorId,
+                vendorName: vendorName !== undefined ? vendorName : ticket.vendorName,
+                vendorTicketCode: vendorTicketCode !== undefined ? vendorTicketCode : ticket.vendorTicketCode,
+                vendorSentAt: vendorSentAt,
+                vendorExpectedReturnAt: vendorExpectedReturnAt !== undefined ? (vendorExpectedReturnAt ? new Date(vendorExpectedReturnAt) : null) : ticket.vendorExpectedReturnAt,
+                it_images: it_images !== undefined ? it_images : ticket.it_images,
             }
         });
+
+        // Tạo tin nhắn thông báo vào cuộc hội thoại khi chuyển trạng thái WAITING_VENDOR
+        if (newStatus === 'WAITING_VENDOR' && ticket.status !== 'WAITING_VENDOR') {
+            try {
+                const partnerName = vendorName || ticket.vendorName || 'Đối tác ngoài';
+                const formattedDate = vendorExpectedReturnAt ? new Date(vendorExpectedReturnAt).toLocaleDateString('vi-VN') : 'Chưa có ngày hẹn';
+                const notePart = it_note ? `\n- Ghi chú kỹ thuật: ${it_note}` : '';
+                const codePart = vendorTicketCode ? `\n- Mã phiếu/Ticket đối tác: ${vendorTicketCode}` : '';
+                const msgContent = `🏢 [CHUYỂN ĐỐI TÁC NGOÀI]\n- Đơn vị tiếp nhận: ${partnerName}\n- Hẹn trả dự kiến: ${formattedDate}${codePart}${notePart}`;
+                
+                await prisma.requestMessage.create({
+                    data: {
+                        itRequestId: id,
+                        senderId: user.id,
+                        senderName: user.name || user.username || 'Kỹ thuật viên',
+                        content: msgContent,
+                        imageUrl: (Array.isArray(it_images) && it_images.length > 0) ? it_images[0] : null
+                    }
+                });
+            } catch (msgErr) {
+                console.error('Lỗi tự động tạo tin nhắn chuyển đối tác:', msgErr);
+            }
+        }
 
         // Đồng bộ trạng thái về bảng XmlErrorRecord nếu IT đánh dấu Hoàn thành
         if (newStatus === 'RESOLVED' && ticket.status !== 'RESOLVED') {
