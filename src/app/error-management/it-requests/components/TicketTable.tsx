@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
-import { DeleteOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -41,6 +41,32 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [resolvingId, setResolvingId] = useState<string | null>(null);
+
+    const handleQuickResolve = async (id: string) => {
+        setResolvingId(id);
+        try {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: id,
+                    status: 'RESOLVED'
+                })
+            });
+            if (res.ok) {
+                message.success('Đã chuyển trạng thái Hoàn thành thành công!');
+                onFetchTickets();
+            } else {
+                const data = await res.json();
+                message.error(data.error || 'Lỗi khi cập nhật hoàn thành');
+            }
+        } catch (err) {
+            message.error('Lỗi kết nối khi cập nhật');
+        } finally {
+            setResolvingId(null);
+        }
+    };
     
     const handleReceiveTicket = async (id: string) => {
         if (onReceiveTicket) {
@@ -273,7 +299,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
         {
             title: 'Thao tác',
             key: 'action',
-            width: 110,
+            width: 120,
             fixed: 'right' as const,
             align: 'center' as const,
             onCell: () => ({
@@ -383,6 +409,20 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                 </>
                             )}
                         </div>
+
+                        {/* Nút Hoàn thành 1-Click (Click là chuyển hoàn thành ngay) */}
+                        {record.status !== 'RESOLVED' && hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment || record.assigneeId === user?.id) && (
+                            <Button 
+                                size="small" 
+                                type="primary"
+                                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-2 py-0.5 mt-0.5 border-emerald-600 flex items-center justify-center gap-1 shadow-2xs"
+                                icon={<CheckCircleOutlined />}
+                                loading={resolvingId === record.id}
+                                onClick={() => handleQuickResolve(record.id)}
+                            >
+                                Hoàn thành
+                            </Button>
+                        )}
                     </div>
                 );
             }
