@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
-import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -128,7 +128,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         <div className="font-medium text-slate-800 flex items-center gap-1.5 flex-wrap">
                             {record.isFocusTask && (
                                 <Tag color="purple" className="m-0 font-bold border-purple-300 bg-purple-50 text-purple-700 shadow-2xs">
-                                    🎯 Việc tập trung (Sếp giao)
+                                    🎯 Nhiệm vụ tập trung
                                 </Tag>
                             )}
                             <span>{text}</span>
@@ -309,11 +309,13 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 style: { paddingLeft: 6, paddingRight: 6 }
             }),
             render: (_: any, record: Ticket) => {
+                const isMyTask = Boolean(record.assigneeId) && record.assigneeId === user?.id;
                 const canReceive = hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (
                     (assignmentMode === 'A' && !record.assigneeId) ||
-                    (record.assigneeId === user?.id && record.status === 'PENDING')
+                    (isMyTask && record.status === 'PENDING')
                 );
                 const isTransferringToMe = record.status === 'TRANSFERRING' && record.transferToId === user?.id;
+                const canQuickResolve = record.status !== 'RESOLVED' && !canReceive && isMyTask;
 
                 return (
                     <div className="flex flex-col items-center justify-center gap-1.5 py-1">
@@ -410,18 +412,22 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             )}
                         </div>
 
-                        {/* Nút Hoàn thành 1-Click (Click là chuyển hoàn thành ngay) */}
-                        {record.status !== 'RESOLVED' && hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment || record.assigneeId === user?.id) && (
-                            <Button 
-                                size="small" 
-                                type="primary"
-                                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-2 py-0.5 mt-0.5 border-emerald-600 flex items-center justify-center gap-1 shadow-2xs"
-                                icon={<CheckCircleOutlined />}
-                                loading={resolvingId === record.id}
+                        {/* Nút Hoàn thành 1-Click (Nhiệm vụ của ai người đó mới được hoàn thành) */}
+                        {canQuickResolve && (
+                            <button
+                                type="button"
+                                disabled={resolvingId === record.id}
                                 onClick={() => handleQuickResolve(record.id)}
+                                className="inline-flex items-center justify-center gap-1.5 px-3 py-0.5 text-xs font-semibold rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-300 hover:border-emerald-600 shadow-2xs hover:shadow transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50 mt-1"
+                                title="Xác nhận hoàn thành nhiệm vụ này"
                             >
-                                Hoàn thành
-                            </Button>
+                                {resolvingId === record.id ? (
+                                    <LoadingOutlined className="text-xs animate-spin" />
+                                ) : (
+                                    <CheckCircleOutlined className="text-xs text-emerald-600 group-hover:text-white" />
+                                )}
+                                <span>Hoàn thành</span>
+                            </button>
                         )}
                     </div>
                 );

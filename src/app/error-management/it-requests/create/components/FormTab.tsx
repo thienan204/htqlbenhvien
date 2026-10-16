@@ -409,7 +409,7 @@ export function FormTab({
                                                 >
                                                     {itUsers.map((u: any) => (
                                                         <Select.Option key={u.id} value={u.id}>
-                                                            {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Đang bận: ${u.focusReason || 'Việc sếp giao'})` : ''}
+                                                            {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Đang bận: ${u.focusReason || 'Nhiệm vụ riêng'})` : ''}
                                                         </Select.Option>
                                                     ))}
                                                 </Select>

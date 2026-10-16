@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, Segmented, message, Select } from 'antd';
+import { Card, Segmented, message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -109,7 +109,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         }
     }, [tickets]);
 
-    const filteredTickets = useMemo(() => {
+    const baseTickets = useMemo(() => {
         let result = tickets;
         if (isAdmin) {
             if (filterMode === 'MINE') result = result.filter(t => t.assigneeId === user?.id || t.transferToId === user?.id);
@@ -117,11 +117,41 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         } else if (user?.ma_khoa) {
             result = result.filter(t => t.ma_khoa === user.ma_khoa);
         }
+        return result;
+    }, [tickets, filterMode, isAdmin, user]);
+
+    const statusCounts = useMemo(() => {
+        return {
+            ALL: baseTickets.length,
+            PENDING: baseTickets.filter(t => t.status === 'PENDING').length,
+            IN_PROGRESS: baseTickets.filter(t => t.status === 'IN_PROGRESS').length,
+            WAITING_VENDOR: baseTickets.filter(t => t.status === 'WAITING_VENDOR').length,
+            TRANSFERRING: baseTickets.filter(t => t.status === 'TRANSFERRING').length,
+            RESOLVED: baseTickets.filter(t => t.status === 'RESOLVED').length,
+        };
+    }, [baseTickets]);
+
+    const filterModeCounts = useMemo(() => {
+        let allTickets = tickets;
+        if (!isAdmin && user?.ma_khoa) {
+            allTickets = allTickets.filter(t => t.ma_khoa === user.ma_khoa);
+        }
+        const mineCount = allTickets.filter(t => t.assigneeId === user?.id || t.transferToId === user?.id).length;
+        const unassignedCount = allTickets.filter(t => !t.assigneeId).length;
+        return {
+            ALL: allTickets.length,
+            MINE: mineCount,
+            UNASSIGNED: unassignedCount
+        };
+    }, [tickets, isAdmin, user]);
+
+    const filteredTickets = useMemo(() => {
+        let result = baseTickets;
         if (statusFilter !== 'ALL') {
             result = result.filter(t => t.status === statusFilter);
         }
         return result;
-    }, [tickets, filterMode, isAdmin, user, statusFilter]);
+    }, [baseTickets, statusFilter]);
 
     const handleToggleAvailability = async (checked: boolean) => {
         if (!user) return;
@@ -152,25 +182,69 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         if (!user) return;
         setTogglingFocusMode(true);
         try {
+            const taskReason = reason?.trim() || 'Nhiệm vụ tập trung';
+
+            // 1. Cập nhật trạng thái miễn chia việc tự động trong duty-roster (bật luôn có mặt nếu đang tắt)
             const res = await fetch(`${getBasePath()}/api/error-management/duty-roster`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     users: [{ 
                         id: user.id, 
+                        isAvailable: disabled ? true : isAvailable,
                         autoAssignDisabled: disabled,
-                        focusReason: disabled ? (reason || 'Sếp giao việc riêng') : null
+                        focusReason: disabled ? taskReason : null
                     }]
                 })
             });
+
             if (res.ok) {
+                if (disabled && !isAvailable) {
+                    setIsAvailable(true);
+                }
                 setAutoAssignDisabled(disabled);
-                setFocusReason(disabled ? (reason || 'Sếp giao việc riêng') : '');
-                message.success(
-                    disabled 
-                        ? 'Đã bật chế độ tập trung việc riêng (Miễn chia việc tự động)!'
-                        : 'Đã tắt chế độ tập trung, bạn sẽ tiếp tục nhận việc tự động từ khoa phòng!'
-                );
+                setFocusReason(disabled ? taskReason : '');
+
+                // 2. NẾU BẬT TẬP TRUNG (disabled === true): Tự động tạo luôn một Phiếu Yêu cầu
+                if (disabled) {
+                    try {
+                        const createRes = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ten_loi: taskReason,
+                                category: 'SOFTWARE',
+                                targetDepartment: targetDepartment || 'CNTT',
+                                assigneeId: user.id,
+                                selfAssign: true,
+                                isFocusTask: true,
+                                focusReason: taskReason,
+                                status: 'IN_PROGRESS',
+                                ma_khoa: user.ma_khoa || targetDepartment || 'CNTT',
+                                nguoi_bao_id: (user as any).staff?.id || user.id,
+                                sdt: (user as any).staff?.so_dien_thoai || (user as any).phone || '',
+                                dynamicFields: {
+                                    'Loại yêu cầu': 'Nhiệm vụ tập trung',
+                                    'Người báo': user.name || user.username
+                                }
+                            })
+                        });
+
+                        if (createRes.ok) {
+                            message.success(`Đã bật Chế độ tập trung và tự động tạo Yêu cầu: "${taskReason}"!`);
+                            fetchTickets();
+                        } else {
+                            message.success('Đã bật Chế độ tập trung!');
+                        }
+                    } catch (createErr) {
+                        console.error('Lỗi tự động tạo yêu cầu tập trung:', createErr);
+                        message.success('Đã bật Chế độ tập trung!');
+                    }
+                } else {
+                    message.success('Đã tắt chế độ tập trung, bạn sẽ tiếp tục nhận việc tự động từ khoa phòng!');
+                    fetchTickets();
+                }
+
                 fetchITUsers();
             } else {
                 message.error('Lỗi khi cập nhật trạng thái');
@@ -217,15 +291,45 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 targetDepartment={targetDepartment}
             />
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex flex-col xl:flex-row gap-3 items-start xl:items-center w-full overflow-x-auto scrollbar-hide pb-0.5">
                 {isAdmin && (
-                    <div className="flex bg-white p-1 sm:p-2 rounded-xl border border-slate-100 shadow-sm w-full sm:w-fit overflow-x-auto scrollbar-hide">
+                    <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
                         <Segmented 
-                            className="w-full sm:w-auto min-w-max"
+                            className="min-w-max"
                             options={[
-                                { label: 'Tất cả Yêu cầu', value: 'ALL' },
-                                { label: 'Việc của tôi', value: 'MINE' },
-                                ...(assignmentMode !== 'C' ? [{ label: 'Chờ nhận việc (Trống)', value: 'UNASSIGNED' }] : [])
+                                {
+                                    label: (
+                                        <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                            <span>Tất cả Yêu cầu</span>
+                                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                                                {filterModeCounts.ALL}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'ALL'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                            <span>Việc của tôi</span>
+                                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.MINE > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {filterModeCounts.MINE}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'MINE'
+                                },
+                                ...(assignmentMode !== 'C' ? [{
+                                    label: (
+                                        <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                            <span>Chờ nhận việc (Trống)</span>
+                                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {filterModeCounts.UNASSIGNED}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'UNASSIGNED'
+                                }] : [])
                             ]}
                             value={filterMode}
                             onChange={(val: any) => {
@@ -235,19 +339,78 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         />
                     </div>
                 )}
-                <div className="flex bg-white p-1 sm:p-2 rounded-xl border border-slate-100 shadow-sm w-full sm:w-fit">
-                    <Select
+                <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
+                    <Segmented
+                        className="min-w-max"
                         value={statusFilter}
-                        onChange={setStatusFilter}
-                        variant="borderless"
-                        className="w-full sm:min-w-[180px]"
+                        onChange={(val: any) => setStatusFilter(val)}
                         options={[
-                            { value: 'ALL', label: 'Tất cả trạng thái' },
-                            { value: 'PENDING', label: 'Chờ xử lý' },
-                            { value: 'IN_PROGRESS', label: 'Đang xử lý' },
-                            { value: 'WAITING_VENDOR', label: '🏢 Chờ đối tác xử lý' },
-                            { value: 'TRANSFERRING', label: 'Chờ chuyển giao' },
-                            { value: 'RESOLVED', label: 'Hoàn thành' }
+                            {
+                                label: (
+                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                        <span>Tất cả</span>
+                                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                                            {statusCounts.ALL}
+                                        </span>
+                                    </div>
+                                ),
+                                value: 'ALL'
+                            },
+                            {
+                                label: (
+                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                        <span>Chờ xử lý</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.PENDING > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            {statusCounts.PENDING}
+                                        </span>
+                                    </div>
+                                ),
+                                value: 'PENDING'
+                            },
+                            {
+                                label: (
+                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                        <span>Đang xử lý</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.IN_PROGRESS > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            {statusCounts.IN_PROGRESS}
+                                        </span>
+                                    </div>
+                                ),
+                                value: 'IN_PROGRESS'
+                            },
+                            {
+                                label: (
+                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                        <span>🏢 Chờ đối tác</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.WAITING_VENDOR > 0 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            {statusCounts.WAITING_VENDOR}
+                                        </span>
+                                    </div>
+                                ),
+                                value: 'WAITING_VENDOR'
+                            },
+                            {
+                                label: (
+                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                        <span>Chờ chuyển giao</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.TRANSFERRING > 0 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            {statusCounts.TRANSFERRING}
+                                        </span>
+                                    </div>
+                                ),
+                                value: 'TRANSFERRING'
+                            },
+                            {
+                                label: (
+                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                        <span>Hoàn thành</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.RESOLVED > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            {statusCounts.RESOLVED}
+                                        </span>
+                                    </div>
+                                ),
+                                value: 'RESOLVED'
+                            }
                         ]}
                     />
                 </div>
@@ -261,7 +424,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     user={user}
                     hasPermission={hasPermission}
                     assignmentMode={assignmentMode}
-                    onFetchTickets={fetchTickets}
+                    onFetchTickets={() => {
+                        fetchTickets();
+                        fetchITUsers();
+                    }}
                     onReceiveTicket={handleReceiveTicketById}
                     onDeleteTicket={handleDeleteTicket}
                     onProcessClick={(ticket) => {
@@ -287,7 +453,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     itUsers={itUsers}
                     user={user}
                     onCancel={() => setIsActionModalVisible(false)}
-                    onOk={(values) => handleUpdateTicket(values, selectedTicket, () => setIsActionModalVisible(false))}
+                    onOk={(values) => handleUpdateTicket(values, selectedTicket, () => {
+                        setIsActionModalVisible(false);
+                        fetchITUsers();
+                    })}
                     targetDepartment={targetDepartment}
                 />
             )}

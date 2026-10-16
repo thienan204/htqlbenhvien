@@ -42,6 +42,7 @@ export interface ITUser {
     id: string;
     username: string;
     name: string;
+    role?: string | null;
     isAvailable: boolean;
     autoAssignDisabled?: boolean;
     focusReason?: string | null;

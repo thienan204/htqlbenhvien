@@ -220,7 +220,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     <Select allowClear disabled={!canChangeAssignee} className="!rounded-xl">
                         {availableUsers.map(u => (
                             <Select.Option key={u.id} value={u.id}>
-                                {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Bận: ${u.focusReason || 'Việc sếp giao'})` : ''}
+                                {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})` : ''}
                             </Select.Option>
                         ))}
                     </Select>

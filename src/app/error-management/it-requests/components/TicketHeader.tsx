@@ -75,8 +75,8 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                             />
                         </div>
 
-                        {/* Chế độ tập trung (Sếp giao việc riêng - Miễn chia việc tự động) */}
-                        {isAvailable && onToggleFocusMode && (
+                        {/* Chế độ tập trung (Tự động tạo phiếu và miễn chia việc tự động) */}
+                        {onToggleFocusMode && (
                             <Popover
                                 trigger="click"
                                 open={focusPopoverOpen}
@@ -84,18 +84,18 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                 placement="bottomRight"
                                 title={
                                     <div className="font-semibold text-slate-800 flex items-center gap-1.5 pb-1 border-b border-slate-100">
-                                        <AimOutlined className="text-amber-500 text-base" /> Chế độ tập trung (Sếp giao việc)
+                                        <AimOutlined className="text-amber-500 text-base" /> Chế độ tập trung
                                     </div>
                                 }
                                 content={
                                     <div className="w-80 space-y-3 py-1">
                                         <p className="text-xs text-slate-500 m-0 leading-relaxed">
-                                            Khi bật, bạn vẫn đi làm nhưng hệ thống sẽ <strong>miễn phân công tự động</strong> việc mới từ các khoa phòng (dành cho khi bạn đang làm việc riêng do Lãnh đạo giao).
+                                            Khi bật, hệ thống sẽ <strong>miễn phân công tự động</strong> việc mới từ khoa phòng và <strong>tự động tạo một Yêu cầu</strong> để bạn theo dõi tiến độ.
                                         </p>
                                         <div>
-                                            <label className="text-xs font-medium text-slate-700 block mb-1">Nhiệm vụ / Lý do cụ thể:</label>
+                                            <label className="text-xs font-medium text-slate-700 block mb-1">Nhiệm vụ / Công việc tập trung:</label>
                                             <Input 
-                                                placeholder="Ví dụ: Triển khai EMR, Cài máy chủ..." 
+                                                placeholder="Ví dụ: Triển khai EMR, Cài máy chủ PACS..." 
                                                 value={reasonInput}
                                                 onChange={(e) => setReasonInput(e.target.value)}
                                                 maxLength={100}
@@ -121,7 +121,7 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                             ) : (
                                                 <Button 
                                                     size="small" 
-                                                    type="primary"
+                                                    type="primary" 
                                                     loading={togglingFocusMode}
                                                     className="bg-amber-500 hover:bg-amber-600 border-amber-500 text-white"
                                                     onClick={() => {
@@ -129,7 +129,7 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                                         setFocusPopoverOpen(false);
                                                     }}
                                                 >
-                                                    Bật tập trung
+                                                    Bật tập trung & Tạo yêu cầu
                                                 </Button>
                                             )}
                                         </div>
@@ -143,13 +143,13 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                             ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100 ring-2 ring-amber-400/20'
                                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
                                     }`}
-                                    title="Chế độ tập trung (Sếp giao việc) - Miễn nhận việc tự động"
+                                    title="Chế độ tập trung - Miễn nhận việc tự động và tự tạo yêu cầu theo dõi"
                                 >
                                     <AimOutlined className={autoAssignDisabled ? 'text-amber-600 text-base animate-pulse' : 'text-slate-400 text-base'} />
                                     <span>
                                         {autoAssignDisabled 
-                                            ? (focusReason ? `🎯 Bận: ${focusReason}` : '🎯 Tập trung việc riêng')
-                                            : '🎯 Sếp giao việc'
+                                            ? (focusReason ? `🎯 Tập trung: ${focusReason}` : '🎯 Đang tập trung')
+                                            : '🎯 Chế độ tập trung'
                                         }
                                     </span>
                                 </button>

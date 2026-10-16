@@ -271,21 +271,21 @@ export async function POST(request: Request) {
         // CHỈ ĐƯỢC Ở TRẠNG THÁI 'IN_PROGRESS' (Đang xử lý) khi:
         // 1. Người tạo là nhân viên phòng kỹ thuật/CNTT hoặc ADMIN (isITStaff = true)
         // 2. VÀ người đó CHỦ ĐỘNG BẬT công tắc "⚡ Tôi trực tiếp xử lý" (selfAssign = true)
-        // 3. HOẶC là sếp giao việc tập trung và chọn trạng thái IN_PROGRESS
-        const isFocusAssignment = Boolean(isFocusTask) && isManager && Boolean(assigneeId);
+        // 3. HOẶC là nhiệm vụ tập trung và chọn trạng thái IN_PROGRESS
+        const isFocusAssignment = Boolean(isFocusTask) && Boolean(assigneeId);
         const isSelfHandling = isITStaff && Boolean(selfAssign);
 
         let initialStatus = isSelfHandling ? 'IN_PROGRESS' : 'PENDING';
         if (isFocusAssignment && body.status) {
             initialStatus = body.status;
         } else if (isFocusAssignment && !body.status) {
-            initialStatus = 'IN_PROGRESS'; // Mặc định việc sếp giao tập trung thì vào việc xử lý luôn
+            initialStatus = 'IN_PROGRESS'; // Mặc định nhiệm vụ tập trung thì vào việc xử lý luôn
         }
 
         const newStartedAt = (initialStatus === 'IN_PROGRESS') ? new Date() : null;
 
         let finalAssignee = assigneeId || null;
-        if (isSelfHandling) {
+        if (isSelfHandling || (isITStaff && Boolean(isFocusTask) && assigneeId === user.id)) {
             finalAssignee = user.id;
         } else if (!isManager) {
             finalAssignee = null; // Khoa phòng tuyệt đối không được tự gán người xử lý
@@ -379,9 +379,9 @@ export async function POST(request: Request) {
             }
         });
 
-        // Nếu là nhiệm vụ tập trung do sếp giao -> Tự động đưa nhân viên vào trạng thái "Tập trung việc riêng" (Miễn chia việc tự động)
+        // Nếu là nhiệm vụ tập trung -> Tự động đưa nhân viên vào trạng thái "Tập trung việc riêng" (Miễn chia việc tự động)
         if (isFocusAssignment && finalAssignee) {
-            const taskReason = focusReason || (dynamicFields && dynamicFields['Lý do tập trung']) || `Sếp giao: ${ten_loi.slice(0, 80)}`;
+            const taskReason = focusReason || (dynamicFields && dynamicFields['Lý do tập trung']) || `Tập trung: ${ten_loi.slice(0, 80)}`;
             try {
                 await prisma.user.update({
                     where: { id: finalAssignee },
@@ -631,6 +631,11 @@ export async function PUT(request: Request) {
                     return NextResponse.json({ error: 'Bạn không có quyền thay đổi người xử lý của phiếu này' }, { status: 403 });
                 }
             }
+        }
+
+        // Nhiệm vụ của ai người đó mới được hoàn thành (trừ Quản trị viên/Lãnh đạo khi cần can thiệp)
+        if (newStatus === 'RESOLVED' && ticket.status !== 'RESOLVED' && !isManager && ticket.assigneeId !== user.id) {
+            return NextResponse.json({ error: 'Nhiệm vụ của ai người đó mới được hoàn thành!' }, { status: 403 });
         }
 
         if (newStatus === 'IN_PROGRESS' && ticket.status !== 'IN_PROGRESS' && !newStartedAt) {

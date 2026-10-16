@@ -182,7 +182,7 @@ export default function DutyRosterPage() {
             )
         },
         {
-            title: 'Miễn chia việc tự động (Sếp giao việc riêng)',
+            title: 'Chế độ tập trung (Miễn chia việc tự động)',
             key: 'autoAssignDisabled',
             align: 'center' as const,
             width: 290,
@@ -193,13 +193,13 @@ export default function DutyRosterPage() {
                             checked={Boolean(record.autoAssignDisabled)} 
                             disabled={!record.isAvailable}
                             onChange={(checked) => toggleAutoAssignDisabled(index, checked)}
-                            checkedChildren="Miễn"
-                            unCheckedChildren="Nhận"
+                            checkedChildren="Bật"
+                            unCheckedChildren="Tắt"
                             className={record.autoAssignDisabled ? 'bg-amber-500' : ''}
                         />
                         {record.autoAssignDisabled ? (
                             <Tag color="warning" className="m-0 font-medium flex items-center gap-1">
-                                <AimOutlined /> Đang bận việc riêng
+                                <AimOutlined /> Đang tập trung
                             </Tag>
                         ) : (
                             <span className="text-slate-400 text-xs">Tự động nhận việc</span>
@@ -208,7 +208,7 @@ export default function DutyRosterPage() {
                     {record.autoAssignDisabled && (
                         <Input 
                             size="small"
-                            placeholder="Lý do / Nhiệm vụ sếp giao..."
+                            placeholder="Lý do / Nhiệm vụ tập trung..."
                             value={record.focusReason || ''}
                             onChange={(e) => updateFocusReason(index, e.target.value)}
                             className="max-w-[220px] text-xs text-amber-900 bg-amber-50/70 border-amber-200"
