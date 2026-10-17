@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Space, Tag, Popconfirm, Upload, AutoComplete, Checkbox, Radio, App } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Modal, Form, Input, Space, Tag, Popconfirm, Upload, AutoComplete, Checkbox, Radio, Tooltip, App } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, UploadOutlined, LockOutlined } from '@ant-design/icons';
+import { useAuth } from '@/contexts/AuthContext';
 import * as XLSX from 'xlsx';
 
 const DEFAULT_FIELDS = [
@@ -34,6 +35,7 @@ const OUTPUT_FIELDS = [
 
 export default function ExcelTemplateConfig() {
     const { message } = App.useApp();
+    const { user } = useAuth();
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -120,6 +122,8 @@ export default function ExcelTemplateConfig() {
             if (data.success) {
                 message.success('Đã xóa mẫu!');
                 fetchTemplates();
+            } else {
+                message.error(data.message || 'Lỗi khi xóa mẫu!');
             }
         } catch (error) {
             message.error('Có lỗi xảy ra!');
@@ -235,6 +239,33 @@ export default function ExcelTemplateConfig() {
             )
         },
         {
+            title: 'Khoa tạo / Người tạo',
+            key: 'creator_dept',
+            render: (_: any, r: any) => {
+                const tenKhoa = r.mappings?.find((m: any) => m.system_field === 'template_ten_khoa')?.excel_column;
+                const createdBy = r.mappings?.find((m: any) => m.system_field === 'template_created_by')?.excel_column;
+                
+                if (!tenKhoa && !createdBy) {
+                    return <Tag color="default">Hệ thống (Chung)</Tag>;
+                }
+                
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {tenKhoa && (
+                            <Tag color="cyan" style={{ width: 'fit-content', margin: 0, fontWeight: 500 }}>
+                                {tenKhoa}
+                            </Tag>
+                        )}
+                        {createdBy && (
+                            <span style={{ fontSize: 12, color: '#595959' }}>
+                                Tạo bởi: <strong>{createdBy}</strong>
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
             title: 'Số cột đã cấu hình',
             key: 'mappings',
             render: (_: any, r: any) => <Tag color="blue">{r.mappings?.length || 0} cột</Tag>
@@ -248,14 +279,40 @@ export default function ExcelTemplateConfig() {
         {
             title: 'Hành động',
             key: 'action',
-            render: (_: any, r: any) => (
-                <Space>
-                    <Button type="link" icon={<EditOutlined />} onClick={() => openEditModal(r)}>Sửa</Button>
-                    <Popconfirm title="Chắc chắn xóa mẫu này?" onConfirm={() => handleDelete(r.id)}>
-                        <Button type="link" danger icon={<DeleteOutlined />}>Xóa</Button>
-                    </Popconfirm>
-                </Space>
-            )
+            render: (_: any, r: any) => {
+                const templateMaKhoa = r.mappings?.find((m: any) => m.system_field === 'template_ma_khoa')?.excel_column;
+                const templateTenKhoa = r.mappings?.find((m: any) => m.system_field === 'template_ten_khoa')?.excel_column;
+
+                // Phân quyền: Admin sửa/xóa mọi mẫu; Tài khoản khoa chỉ sửa/xóa mẫu của chính khoa mình
+                const isAdmin = user?.role === 'ADMIN';
+                const isOwner = Boolean(user?.ma_khoa && templateMaKhoa && user.ma_khoa === templateMaKhoa);
+                const canManage = isAdmin || isOwner;
+
+                if (!canManage) {
+                    return (
+                        <Tooltip title={`Chỉ tài khoản thuộc ${templateTenKhoa || 'Khoa tạo mẫu'} hoặc Quản trị viên mới có quyền sửa/xóa.`}>
+                            <Tag color="default" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'not-allowed' }}>
+                                <LockOutlined /> Chỉ xem
+                            </Tag>
+                        </Tooltip>
+                    );
+                }
+
+                return (
+                    <Space>
+                        <Button type="link" icon={<EditOutlined />} onClick={() => openEditModal(r)}>Sửa</Button>
+                        <Popconfirm 
+                            title="Chắc chắn xóa mẫu này?" 
+                            description="Mẫu này sẽ bị xóa khỏi hệ thống."
+                            onConfirm={() => handleDelete(r.id)}
+                            okText="Xóa"
+                            cancelText="Hủy"
+                        >
+                            <Button type="link" danger icon={<DeleteOutlined />}>Xóa</Button>
+                        </Popconfirm>
+                    </Space>
+                );
+            }
         }
     ];
 
