@@ -51,7 +51,15 @@ export const TicketNotificationContent: React.FC<TicketNotificationProps> = ({
                             </div>
                             <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                 {deptText && <span>Khoa: <b className="text-slate-700">{deptText}</b></span>}
-                                {ticket.ma_ba && <span className="text-blue-600 font-mono font-medium">BA: {ticket.ma_ba}</span>}
+                                {ticket.ma_ba && (() => {
+                                    const isXml = Boolean(
+                                        ticket.ten_loi?.includes('[Hỗ trợ Lỗi Hồ sơ]') ||
+                                        ticket.dynamicFields?.['Loại lỗi']?.includes('Lỗi XML') ||
+                                        ticket.dynamicFields?.['Loại lỗi']?.includes('Lỗi Chuyên đề') ||
+                                        ticket.dynamicFields?.['Mã LK']
+                                    );
+                                    return <span className="text-blue-600 font-mono font-medium">{isXml ? 'LK' : 'BA'}: {ticket.ma_ba}</span>;
+                                })()}
                                 {reporterText && <span>Báo bởi: {reporterText}</span>}
                             </div>
                         </div>

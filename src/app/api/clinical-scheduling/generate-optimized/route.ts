@@ -29,10 +29,45 @@ function isSlotFree(tracker: { start: number, end: number }[], startSlot: number
     return true;
 }
 
+// Helper to normalize date to YYYY-MM-DD
+function extractDateString(val: any): string {
+    if (!val) return '';
+    if (val instanceof Date) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    if (typeof val === 'number') {
+        const d = new Date((val - 25569) * 86400 * 1000);
+        const y = d.getUTCFullYear();
+        const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    const str = String(val).trim();
+    if (!str) return '';
+    const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (dmyMatch) {
+        const day = dmyMatch[1].padStart(2, '0');
+        const month = dmyMatch[2].padStart(2, '0');
+        const year = dmyMatch[3];
+        return `${year}-${month}-${day}`;
+    }
+    const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (ymdMatch) {
+        const year = ymdMatch[1];
+        const month = ymdMatch[2].padStart(2, '0');
+        const day = ymdMatch[3].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    return '';
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, morningStaffs = [], afternoonStaffs = [], savedSchedules = [], heuristic = 'LPT' } = body;
+        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, morningStaffs = [], afternoonStaffs = [], savedSchedules = [], patientTimeConstraints = [], heuristic = 'LPT' } = body;
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
         if (!date || !maKhoa || !Array.isArray(services) || services.length === 0) {
@@ -177,6 +212,20 @@ export async function POST(request: Request) {
         const failedResults = [];
         const patientAssignedStaff: Record<string, Set<string>> = {};
 
+        // Bản đồ giới hạn thời gian riêng của từng bệnh nhân (hẹn giờ ra viện, chuyển khoa...)
+        const patientConstraintMap: Record<string, { startMinutes: number; endMinutes: number; note: string }> = {};
+        if (Array.isArray(patientTimeConstraints)) {
+            patientTimeConstraints.forEach((c: any) => {
+                if (c.ma_ba && c.endTime) {
+                    patientConstraintMap[String(c.ma_ba)] = {
+                        startMinutes: c.startTime ? parseTime(c.startTime) : mStart,
+                        endMinutes: parseTime(c.endTime),
+                        note: c.note || ''
+                    };
+                }
+            });
+        }
+
         // --- PRE-LOAD TRACKERS WITH ALL SAVED SCHEDULES ---
         // Block out all time slots that were previously saved, regardless of whether they appear in the new Excel file or not.
         savedSchedules.forEach((saved: any) => {
@@ -265,18 +314,28 @@ export async function POST(request: Request) {
             }
 
             let minStartMinutes = mStart;
+            const patientConstraint = patientConstraintMap[ma_ba];
+            if (patientConstraint && patientConstraint.startMinutes > minStartMinutes) {
+                minStartMinutes = patientConstraint.startMinutes;
+            }
+
             if (task.thoi_gian_chi_dinh) {
-                const timeStr = String(task.thoi_gian_chi_dinh).trim();
-                let hm = '';
-                if (timeStr.includes(' ')) {
-                    hm = timeStr.split(' ').find(p => p.includes(':')) || '';
-                } else {
-                    hm = timeStr;
-                }
-                if (hm) {
-                    const prescriptionMinutes = parseTime(hm.substring(0, 5));
-                    if (prescriptionMinutes > minStartMinutes) {
-                        minStartMinutes = prescriptionMinutes;
+                const chiDinhDate = extractDateString(task.thoi_gian_chi_dinh);
+                const isSameDay = !chiDinhDate || chiDinhDate === date;
+
+                if (isSameDay) {
+                    const timeStr = String(task.thoi_gian_chi_dinh).trim();
+                    let hm = '';
+                    if (timeStr.includes(' ')) {
+                        hm = timeStr.split(' ').find(p => p.includes(':')) || '';
+                    } else {
+                        hm = timeStr;
+                    }
+                    if (hm) {
+                        const prescriptionMinutes = parseTime(hm.substring(0, 5));
+                        if (prescriptionMinutes > minStartMinutes) {
+                            minStartMinutes = prescriptionMinutes;
+                        }
                     }
                 }
             }
@@ -324,6 +383,7 @@ export async function POST(request: Request) {
                 requiredMachineCode,
                 capableMachines,
                 minStartMinutes,
+                patientConstraint,
                 index: i
             });
 
@@ -371,6 +431,12 @@ export async function POST(request: Request) {
                     const candidates = [];
                     for (const u of unscheduled) {
                         const ma_ba = String(u.task.ma_ba);
+
+                        // Chặn theo khung giờ hẹn của Bệnh nhân (VD: Ra viện lúc 10h)
+                        if (u.patientConstraint) {
+                            if (currentTime < u.patientConstraint.startMinutes) continue;
+                            if (currentTime + u.requiredTime > u.patientConstraint.endMinutes) continue;
+                        }
 
                         // Chặn theo ca Bệnh nhân
                         const shiftPref = patientShifts[ma_ba];
@@ -425,6 +491,19 @@ export async function POST(request: Request) {
                                 const maBaA = String(a.task.ma_ba);
                                 const maBaB = String(b.task.ma_ba);
                                 
+                                // 0. Ưu tiên TUYỆT ĐỐI cho Bệnh nhân có giờ hẹn xong sớm (VD: ra viện sớm)
+                                const constraintA = a.patientConstraint;
+                                const constraintB = b.patientConstraint;
+                                if (constraintA && constraintB) {
+                                    if (constraintA.endMinutes !== constraintB.endMinutes) {
+                                        return constraintA.endMinutes - constraintB.endMinutes;
+                                    }
+                                } else if (constraintA) {
+                                    return -1;
+                                } else if (constraintB) {
+                                    return 1;
+                                }
+
                                 // 1. Ưu tiên Máy móc (Nút thắt cổ chai)
                                 const machineA = a.requiredMachineCode ? 1 : 0;
                                 const machineB = b.requiredMachineCode ? 1 : 0;
@@ -512,13 +591,20 @@ export async function POST(request: Request) {
         // 7. Nhặt những ca không thể xếp được (hết giờ)
         for (const u of unscheduled) {
             const ma_ba = String(u.task.ma_ba);
-            const shiftPref = patientShifts[ma_ba];
-            if (shiftPref === 'MORNING') {
-                failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
-            } else if (shiftPref === 'AFTERNOON') {
-                failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
+            if (u.patientConstraint) {
+                failedResults.push({
+                    ...u.task,
+                    error: `Không thể hoàn thành trước ${formatTime(u.patientConstraint.endMinutes)} theo yêu cầu (${u.patientConstraint.note || 'Hẹn giờ ra viện'}) do khung giờ trước ${formatTime(u.patientConstraint.endMinutes)} đã kín lịch hoặc không có nhân viên/máy phù hợp.`
+                });
             } else {
-                failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
+                const shiftPref = patientShifts[ma_ba];
+                if (shiftPref === 'MORNING') {
+                    failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
+                } else if (shiftPref === 'AFTERNOON') {
+                    failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
+                } else {
+                    failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
+                }
             }
         }
 

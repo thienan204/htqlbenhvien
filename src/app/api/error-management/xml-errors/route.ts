@@ -184,9 +184,11 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== 'ADMIN') {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const isAdmin = user.role === 'ADMIN';
 
         // Support passing ?id=123 or a body with { ids: ['123', '456'] }
         let idsToDelete: string[] = [];
@@ -205,9 +207,44 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'No IDs provided for deletion' }, { status: 400 });
         }
 
+        // Lấy thông tin các bản ghi muốn xóa để kiểm tra quyền
+        const targetRecords = await prisma.xmlErrorRecord.findMany({
+            where: { id: { in: idsToDelete } },
+            select: { id: true, ma_khoa: true, itRequestId: true, departmentNote: true }
+        });
+
+        if (targetRecords.length === 0) {
+            return NextResponse.json({ error: 'Không tìm thấy bản ghi cần xóa' }, { status: 404 });
+        }
+
+        // Nếu không phải ADMIN: Chỉ cho phép Khoa phòng xóa phiếu của khoa mình chưa gửi CNTT
+        if (!isAdmin) {
+            if (!user.ma_khoa) {
+                return NextResponse.json({ error: 'Tài khoản không thuộc khoa phòng nào, không có quyền xóa' }, { status: 403 });
+            }
+
+            // 1. Kiểm tra mã khoa: Chỉ được xóa phiếu của khoa mình
+            const foreignRecords = targetRecords.filter(r => r.ma_khoa !== user.ma_khoa);
+            if (foreignRecords.length > 0) {
+                return NextResponse.json({ 
+                    error: 'Bạn chỉ có quyền xóa các phiếu lỗi thuộc khoa phòng của mình!' 
+                }, { status: 403 });
+            }
+
+            // 2. Kiểm tra đã gửi CNTT chưa: Nếu đã gửi CNTT thì KHÔNG được xóa
+            const sentToITRecords = targetRecords.filter(r => 
+                Boolean(r.itRequestId) || Boolean(r.departmentNote?.includes('[Đã gửi Yêu cầu IT]'))
+            );
+            if (sentToITRecords.length > 0) {
+                return NextResponse.json({ 
+                    error: 'Không thể xóa các phiếu đã gửi yêu cầu lên phòng CNTT!' 
+                }, { status: 400 });
+            }
+        }
+
         const deleted = await prisma.xmlErrorRecord.deleteMany({
             where: {
-                id: { in: idsToDelete }
+                id: { in: targetRecords.map(r => r.id) }
             }
         });
 

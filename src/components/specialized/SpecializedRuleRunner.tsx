@@ -289,7 +289,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
         try {
             message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrorsLog' });
-            const res = await fetch('/api/error-management/xml-errors', {
+            const res = await fetch(`${getBasePath()}/api/error-management/xml-errors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ errors: errorsToSave })

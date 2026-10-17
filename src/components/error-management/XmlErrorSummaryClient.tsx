@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, message, Card } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -21,7 +22,7 @@ export default function XmlErrorSummaryClient() {
     useEffect(() => {
         const fetchDepts = async () => {
             try {
-                const res = await fetch('/api/departments');
+                const res = await fetch(`${getBasePath()}/api/departments`);
                 if (res.ok) {
                     const data = await res.json();
                     const map: Record<string, string> = {};
@@ -39,7 +40,7 @@ export default function XmlErrorSummaryClient() {
         setLoading(true);
         try {
             // Không truyền sourceType để lấy toàn bộ XML và CHUYEN_DE
-            const res = await fetch(`/api/error-management/xml-errors`);
+            const res = await fetch(`${getBasePath()}/api/error-management/xml-errors`);
             if (res.ok) {
                 let data = await res.json();
                 setErrors(data);

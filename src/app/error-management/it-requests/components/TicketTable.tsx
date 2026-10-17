@@ -136,13 +136,21 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         {hasDetails && (
                             <div className="mt-1.5 flex flex-col gap-2">
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                    {record.ma_ba && (
-                                        <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50/90 border border-blue-200 rounded px-2 py-0.5 inline-flex items-center gap-1 shadow-2xs">
-                                            📄 Mã BA: {record.ma_ba}
-                                        </span>
-                                    )}
+                                    {record.ma_ba && (() => {
+                                        const isXmlTicket = Boolean(
+                                            record.ten_loi?.includes('[Hỗ trợ Lỗi Hồ sơ]') ||
+                                            record.dynamicFields?.['Loại lỗi']?.includes('Lỗi XML') ||
+                                            record.dynamicFields?.['Loại lỗi']?.includes('Lỗi Chuyên đề') ||
+                                            record.dynamicFields?.['Mã LK']
+                                        );
+                                        return (
+                                            <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50/90 border border-blue-200 rounded px-2 py-0.5 inline-flex items-center gap-1 shadow-2xs">
+                                                📄 {isXmlTicket ? 'Mã LK' : 'Mã BA'}: {record.ma_ba}
+                                            </span>
+                                        );
+                                    })()}
                                     {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 &&
-                                        Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm').map(([k, v]) => {
+                                        Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm' && k !== 'Mã LK').map(([k, v]) => {
                                             if (k === 'SĐT') {
                                                 return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
                                             }

@@ -7,7 +7,8 @@ import * as XLSX from 'xlsx';
 const DEFAULT_FIELDS = [
     { code: 'ma_ba', name: 'Mã Bệnh Án / Hồ Sơ' },
     { code: 'ten_bn', name: 'Tên Bệnh Nhân' },
-    { code: 'thoi_gian_chi_dinh', name: 'Thời gian chỉ định' },
+    { code: 'thoi_gian_chi_dinh', name: 'Thời gian chỉ định (NGAYCHIDINH)' },
+    { code: 'ngay_du_kien', name: 'Thời gian dự kiến thực hiện (NGAYDUKIEN_THUCHIEN)' },
     { code: 'ma_dich_vu', name: 'Mã Dịch Vụ', required: true },
     { code: 'ten_dich_vu', name: 'Tên Dịch Vụ' },
     { code: 'ten_khoa', name: 'Tên Khoa' },
@@ -19,6 +20,7 @@ const OUTPUT_FIELDS = [
     { code: 'out_ma_ba', name: 'Mã Bệnh Án' },
     { code: 'out_ten_bn', name: 'Tên Bệnh Nhân' },
     { code: 'out_thoi_gian_chi_dinh', name: 'TG Chỉ định' },
+    { code: 'out_ngay_du_kien', name: 'TG Dự kiến thực hiện' },
     { code: 'out_ma_dich_vu', name: 'Mã Dịch Vụ' },
     { code: 'out_ten_dich_vu', name: 'Tên Dịch Vụ' },
     { code: 'out_nguoi_thuc_hien', name: 'Tên Người thực hiện' },
@@ -169,7 +171,8 @@ export default function ExcelTemplateConfig() {
                     const upper = h.toUpperCase();
                     if (!autoMap.ma_ba && (upper.includes('MÃ HS') || upper.includes('MÃ HỒ SƠ') || upper.includes('MAHOSO'))) { autoMap.ma_ba = h; hasMapped = true; }
                     if (!autoMap.ten_bn && (upper.includes('TÊN BN') || upper.includes('TÊN BỆNH NHÂN') || upper.includes('TENBENHNHAN'))) { autoMap.ten_bn = h; hasMapped = true; }
-                    if (!autoMap.thoi_gian_chi_dinh && (upper.includes('THỜI GIAN') || upper.includes('NGÀY Y LỆNH') || upper.includes('THOIGIAN'))) { autoMap.thoi_gian_chi_dinh = h; hasMapped = true; }
+                    if (!autoMap.ngay_du_kien && (upper.includes('NGAYDUKIEN') || upper.includes('DỰ KIẾN') || upper.includes('DUKIEN'))) { autoMap.ngay_du_kien = h; hasMapped = true; }
+                    if (!autoMap.thoi_gian_chi_dinh && (upper.includes('NGAYCHIDINH') || upper.includes('CHỈ ĐỊNH') || upper.includes('CHIDINH') || (upper.includes('THỜI GIAN') && !upper.includes('DỰ KIẾN')) || upper.includes('NGÀY Y LỆNH'))) { autoMap.thoi_gian_chi_dinh = h; hasMapped = true; }
                     if (!autoMap.ma_dich_vu && (upper.includes('MÃ DỊCH VỤ') || upper.includes('MÃ DV') || upper === 'MADICHVU')) { autoMap.ma_dich_vu = h; hasMapped = true; }
                     if (!autoMap.ten_dich_vu && (upper.includes('TÊN DỊCH VỤ') || upper.includes('TÊN DV') || upper === 'TENDICHVU')) { autoMap.ten_dich_vu = h; hasMapped = true; }
                     if (!autoMap.ten_khoa && (upper.includes('TÊN KHOA') || upper === 'TENKHOA')) { autoMap.ten_khoa = h; hasMapped = true; }

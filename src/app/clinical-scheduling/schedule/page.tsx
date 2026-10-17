@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Table, Select, Button, message, DatePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip } from 'antd';
-import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined, TableOutlined } from '@ant-design/icons';
+import { Card, Table, Select, Button, message, DatePicker, TimePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip } from 'antd';
+import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined, TableOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,33 @@ import PageInstruction from '@/components/shared/PageInstruction';
 import Mau05Config from '../components/Mau05Config';
 
 const { Option } = Select;
+
+const extractDateString = (val: any): string => {
+    if (!val) return '';
+    if (val instanceof Date) return dayjs(val).format('YYYY-MM-DD');
+    if (typeof val === 'number') {
+        const d = new Date((val - 25569) * 86400 * 1000);
+        return dayjs(d).format('YYYY-MM-DD');
+    }
+    const str = String(val).trim();
+    if (!str) return '';
+    const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (dmyMatch) {
+        const day = dmyMatch[1].padStart(2, '0');
+        const month = dmyMatch[2].padStart(2, '0');
+        const year = dmyMatch[3];
+        return `${year}-${month}-${day}`;
+    }
+    const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (ymdMatch) {
+        const year = ymdMatch[1];
+        const month = ymdMatch[2].padStart(2, '0');
+        const day = ymdMatch[3].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    const parsed = dayjs(str);
+    return parsed.isValid() ? parsed.format('YYYY-MM-DD') : '';
+};
 
 function SavedPdfReportsTab() {
     const { message } = App.useApp();
@@ -110,7 +137,7 @@ export default function ClinicalSchedulingPage() {
     const { message } = App.useApp();
     const { user } = useAuth();
     const [departments, setDepartments] = useState<any[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format('YYYY-MM-DD'));
     const [selectedDept, setSelectedDept] = useState<string | undefined>(undefined);
     const reportRef = useRef<HTMLDivElement>(null);
     const patientRef = useRef<HTMLDivElement>(null);
@@ -137,12 +164,63 @@ export default function ClinicalSchedulingPage() {
 
     const [morningPatients, setMorningPatients] = useState<string[]>([]);
     const [afternoonPatients, setAfternoonPatients] = useState<string[]>([]);
+    const [patientTimeConstraints, setPatientTimeConstraints] = useState<{
+        ma_ba: string;
+        startTime?: string;
+        endTime: string;
+        note?: string;
+    }[]>([]);
     
     const [morningStaffs, setMorningStaffs] = useState<string[]>([]);
     const [afternoonStaffs, setAfternoonStaffs] = useState<string[]>([]);
+
+    // Thống kê các ngày dự kiến thực hiện có trong file Excel
+    const availableDatesInFile = React.useMemo(() => {
+        if (!uploadedData.length) return [];
+        const map: Record<string, number> = {};
+        uploadedData.forEach(item => {
+            const raw = item.ngay_du_kien || item.thoi_gian_chi_dinh;
+            const d = extractDateString(raw);
+            if (d) {
+                map[d] = (map[d] || 0) + 1;
+            }
+        });
+        return Object.entries(map).map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
+    }, [uploadedData]);
+
+    // Lọc dữ liệu của ngày thực hiện đang chọn ở ô số 1
+    const currentDayData = React.useMemo(() => {
+        if (!uploadedData.length) return [];
+        if (!selectedDate) return uploadedData;
+        
+        return uploadedData.filter(item => {
+            const raw = item.ngay_du_kien || item.thoi_gian_chi_dinh;
+            const d = extractDateString(raw);
+            if (d) {
+                return d === selectedDate;
+            }
+            return true;
+        });
+    }, [uploadedData, selectedDate]);
+
+    // Tự động cập nhật danh sách dịch vụ khi ngày thực hiện hoặc dữ liệu thay đổi
+    useEffect(() => {
+        if (currentDayData.length > 0) {
+            const services = Array.from(new Set(currentDayData.map(d => d.ten_dich_vu).filter(Boolean)));
+            const serviceCodes = Array.from(new Set(currentDayData.map(d => d.ma_dich_vu).filter(Boolean)));
+            setUniqueServices(services as string[]);
+            setUniqueServiceCodes(serviceCodes as string[]);
+            setSelectedServices(services as string[]);
+        } else if (uploadedData.length > 0) {
+            setUniqueServices([]);
+            setUniqueServiceCodes([]);
+            setSelectedServices([]);
+        }
+    }, [currentDayData, uploadedData.length]);
+
     const uniquePatients = React.useMemo(() => {
         const map = new Map();
-        uploadedData.forEach(item => {
+        currentDayData.forEach(item => {
             if (item.ma_ba) {
                 map.set(item.ma_ba, item.ten_bn);
             }
@@ -151,11 +229,7 @@ export default function ClinicalSchedulingPage() {
             label: `${ma_ba} - ${ten_bn}`,
             value: ma_ba
         }));
-    }, [uploadedData]);
-
-    useEffect(() => {
-        setSelectedDate(dayjs().format('YYYY-MM-DD'));
-    }, []);
+    }, [currentDayData]);
 
     const staffStats = React.useMemo(() => {
         if (!scheduledData.length) return [];
@@ -402,6 +476,7 @@ export default function ClinicalSchedulingPage() {
         ma_dich_vu: string;
         ten_dich_vu: string;
         thoi_gian_chi_dinh: string;
+        ngay_du_kien?: string;
         ten_khoa?: string;
         ma_khoa?: string;
         phong_thuc_hien?: string;
@@ -410,7 +485,8 @@ export default function ClinicalSchedulingPage() {
         ten_bn: '',
         ma_dich_vu: '',
         ten_dich_vu: '',
-        thoi_gian_chi_dinh: ''
+        thoi_gian_chi_dinh: '',
+        ngay_du_kien: ''
     });
 
     const [externalLink, setExternalLink] = useState('');
@@ -774,7 +850,8 @@ export default function ClinicalSchedulingPage() {
                     const upper = h.toUpperCase();
                     if (upper.includes('MÃ HS') || upper.includes('MÃ HỒ SƠ') || upper.includes('MAHOSO')) autoMap.ma_ba = h;
                     if (upper.includes('TÊN BN') || upper.includes('TÊN BỆNH NHÂN') || upper.includes('TENBENHNHAN')) autoMap.ten_bn = h;
-                    if (upper.includes('THỜI GIAN') || upper.includes('NGÀY Y LỆNH') || upper.includes('THOIGIAN')) autoMap.thoi_gian_chi_dinh = h;
+                    if (upper.includes('THỜI GIAN') || upper.includes('NGÀY Y LỆNH') || upper.includes('THOIGIAN') || upper.includes('NGAYCHIDINH')) autoMap.thoi_gian_chi_dinh = h;
+                    if (upper.includes('DỰ KIẾN') || upper.includes('DUKIEN') || upper.includes('NGAYDUKIEN')) autoMap.ngay_du_kien = h;
                     if (upper.includes('MÃ DỊCH VỤ') || upper.includes('MÃ DV') || upper === 'MADICHVU') autoMap.ma_dich_vu = h;
                     if (upper.includes('TÊN DỊCH VỤ') || upper.includes('TÊN DV') || upper === 'TENDICHVU') autoMap.ten_dich_vu = h;
                     if (upper.includes('TÊN KHOA') || upper === 'TENKHOA') autoMap.ten_khoa = h;
@@ -803,6 +880,7 @@ export default function ClinicalSchedulingPage() {
             ma_ba: row[mapping.ma_ba] || '',
             ten_bn: row[mapping.ten_bn] || '',
             thoi_gian_chi_dinh: row[mapping.thoi_gian_chi_dinh] || '',
+            ngay_du_kien: row[mapping.ngay_du_kien] || '',
             ma_dich_vu: row[mapping.ma_dich_vu] || '',
             ten_dich_vu: row[mapping.ten_dich_vu] || '',
             ten_khoa: row[mapping.ten_khoa] || '',
@@ -860,7 +938,7 @@ export default function ClinicalSchedulingPage() {
             return;
         }
 
-        const filteredData = uploadedData.filter(d => selectedServices.includes(d.ten_dich_vu));
+        const filteredData = currentDayData.filter(d => selectedServices.includes(d.ten_dich_vu));
         
         if (filteredData.length === 0) {
             message.warning("Không có dịch vụ nào để xếp lịch");
@@ -870,6 +948,8 @@ export default function ClinicalSchedulingPage() {
         const patientShifts: Record<string, string> = {};
         morningPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'MORNING'; });
         afternoonPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'AFTERNOON'; });
+
+        const validConstraints = patientTimeConstraints.filter(c => c.ma_ba && c.endTime);
 
         const staffShifts: Record<string, string> = {};
         morningStaffs.forEach(staffId => { staffShifts[staffId] = 'MORNING'; });
@@ -885,6 +965,7 @@ export default function ClinicalSchedulingPage() {
                     maKhoa: selectedDept,
                     services: filteredData,
                     patientShifts,
+                    patientTimeConstraints: validConstraints,
                     staffShifts,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {}
@@ -913,7 +994,7 @@ export default function ClinicalSchedulingPage() {
             return;
         }
 
-        const filteredData = uploadedData.filter(d => selectedServices.includes(d.ten_dich_vu));
+        const filteredData = currentDayData.filter(d => selectedServices.includes(d.ten_dich_vu));
         
         if (filteredData.length === 0) {
             message.warning("Không có dịch vụ nào để xếp lịch");
@@ -923,6 +1004,8 @@ export default function ClinicalSchedulingPage() {
         const patientShifts: Record<string, string> = {};
         morningPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'MORNING'; });
         afternoonPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'AFTERNOON'; });
+
+        const validConstraints = patientTimeConstraints.filter(c => c.ma_ba && c.endTime);
 
         const staffShifts: Record<string, string> = {};
         morningStaffs.forEach(staffId => { staffShifts[staffId] = 'MORNING'; });
@@ -938,6 +1021,7 @@ export default function ClinicalSchedulingPage() {
                     maKhoa: selectedDept,
                     services: filteredData,
                     patientShifts,
+                    patientTimeConstraints: validConstraints,
                     staffShifts,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
@@ -1698,9 +1782,53 @@ export default function ClinicalSchedulingPage() {
                                         </div>
 
                                         <div style={{ marginTop: 24, textAlign: 'center', background: '#f6ffed', padding: 16, border: '1px solid #b7eb8f', borderRadius: 8 }}>
-                                            <h3 style={{ margin: 0, color: '#389e0d', marginBottom: 8 }}>✅ Đã tải thành công {uploadedData.length} chỉ định dịch vụ</h3>
+                                            <h3 style={{ margin: 0, color: '#389e0d', marginBottom: 6 }}>
+                                                ✅ Đã tải file: {uploadedData.length} chỉ định dịch vụ
+                                            </h3>
                                             
-                                            {unconfiguredCount > 0 && (
+                                            <div style={{ fontSize: 14, color: '#1f2937', marginBottom: 10 }}>
+                                                📅 Ngày đang chọn (<strong>{dayjs(selectedDate).format('DD/MM/YYYY')}</strong>): có <strong style={{ color: currentDayData.length > 0 ? '#16a34a' : '#d9363e', fontSize: 16 }}>{currentDayData.length}</strong> ca chờ xếp lịch.
+                                            </div>
+
+                                            {availableDatesInFile.length > 1 && (
+                                                <div style={{ marginTop: 8, marginBottom: 14, padding: '8px 12px', background: '#ffffff', borderRadius: 6, border: '1px dashed #b7eb8f', display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                                                    <span style={{ fontSize: 13, color: '#4b5563', fontWeight: 600 }}>File có {availableDatesInFile.length} ngày dự kiến (bấm để đổi nhanh):</span>
+                                                    {availableDatesInFile.map(({ date, count }) => {
+                                                        const isSelected = date === selectedDate;
+                                                        return (
+                                                            <Tag.CheckableTag
+                                                                key={date}
+                                                                checked={isSelected}
+                                                                onChange={() => setSelectedDate(date)}
+                                                                style={{
+                                                                    padding: '2px 8px',
+                                                                    fontSize: 13,
+                                                                    borderRadius: 4,
+                                                                    border: isSelected ? '1px solid #1677ff' : '1px solid #d9d9d9',
+                                                                    background: isSelected ? '#e6f4ff' : '#fafafa',
+                                                                    color: isSelected ? '#0958d9' : '#333',
+                                                                    fontWeight: isSelected ? 'bold' : 'normal',
+                                                                    cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                {dayjs(date).format('DD/MM/YYYY')} ({count} ca)
+                                                            </Tag.CheckableTag>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {currentDayData.length === 0 && (
+                                                <Alert 
+                                                    title={`Không có dịch vụ nào dự kiến thực hiện trong ngày ${dayjs(selectedDate).format('DD/MM/YYYY')}!`}
+                                                    description="Vui lòng bấm chọn một trong các ngày có dữ liệu ở phía trên hoặc thay đổi ngày ở ô '1. Chọn ngày thực hiện'."
+                                                    type="warning"
+                                                    showIcon
+                                                    style={{ marginBottom: 16, textAlign: 'left' }}
+                                                />
+                                            )}
+                                            
+                                            {unconfiguredCount > 0 && currentDayData.length > 0 && (
                                                 <Alert 
                                                     title={`Phát hiện ${unconfiguredCount} loại dịch vụ trong danh sách chưa được cấu hình (Chưa có thời gian thực hiện)!`}
                                                     description={
@@ -1735,7 +1863,7 @@ export default function ClinicalSchedulingPage() {
                                                         icon={<PlayCircleOutlined />} 
                                                         onClick={handleGenerateSchedule}
                                                         loading={loading}
-                                                        disabled={generatingOptimized}
+                                                        disabled={generatingOptimized || currentDayData.length === 0}
                                                     >
                                                         Xếp lịch thời gian thực hiện 1
                                                     </Button>
@@ -1749,7 +1877,7 @@ export default function ClinicalSchedulingPage() {
                                                         style={{ background: '#722ed1', borderColor: '#722ed1' }}
                                                         onClick={handleGenerateScheduleOptimized}
                                                         loading={generatingOptimized}
-                                                        disabled={loading}
+                                                        disabled={loading || currentDayData.length === 0}
                                                     >
                                                         Xếp lịch thời gian thực hiện 2
                                                     </Button>
@@ -1817,6 +1945,118 @@ export default function ClinicalSchedulingPage() {
                                                     />
                                                 </Col>
                                             </Row>
+
+                                            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px dashed #ffd591' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                                    <div>
+                                                        <strong style={{ color: '#d46b08', fontSize: 14 }}>⏱️ Khung giờ hẹn / Giờ xong trước cho Bệnh nhân (VD: Ra viện, Chuyển khoa):</strong>
+                                                        <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+                                                            Bệnh nhân cấu hình tại đây sẽ được ưu tiên cao nhất để xếp vào các khung giờ sớm nhất, đảm bảo xong trước giờ yêu cầu.
+                                                        </div>
+                                                    </div>
+                                                    <Button 
+                                                        type="dashed" 
+                                                        size="small" 
+                                                        icon={<PlusOutlined />} 
+                                                        style={{ color: '#d46b08', borderColor: '#ffd591' }}
+                                                        onClick={() => {
+                                                            setPatientTimeConstraints(prev => [
+                                                                ...prev, 
+                                                                { 
+                                                                    ma_ba: '', 
+                                                                    startTime: currentDeptHours.morningStart || '07:30', 
+                                                                    endTime: '10:00', 
+                                                                    note: 'Ra viện lúc 10h' 
+                                                                }
+                                                            ]);
+                                                        }}
+                                                    >
+                                                        Thêm Bệnh nhân hẹn giờ
+                                                    </Button>
+                                                </div>
+
+                                                {patientTimeConstraints.length === 0 ? (
+                                                    <div style={{ fontSize: 13, color: '#bfbfbf', fontStyle: 'italic', padding: '6px 0' }}>
+                                                        Chưa có bệnh nhân nào được cấu hình giờ hẹn riêng. Bấm "Thêm Bệnh nhân hẹn giờ" nếu có ca cần ra viện sớm hoặc làm xong trước giờ cụ thể.
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                        {patientTimeConstraints.map((item, idx) => (
+                                                            <Row key={idx} gutter={12} align="middle" style={{ background: '#fffbe6', padding: '10px 14px', borderRadius: 6, border: '1px solid #ffe58f' }}>
+                                                                <Col span={8}>
+                                                                    <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Bệnh nhân: <span style={{ color: 'red' }}>*</span></div>
+                                                                    <Select
+                                                                        showSearch
+                                                                        placeholder="Chọn Bệnh nhân..."
+                                                                        style={{ width: '100%' }}
+                                                                        value={item.ma_ba || undefined}
+                                                                        onChange={(val) => {
+                                                                            const next = [...patientTimeConstraints];
+                                                                            next[idx].ma_ba = val;
+                                                                            setPatientTimeConstraints(next);
+                                                                        }}
+                                                                        options={uniquePatients}
+                                                                        filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                                    />
+                                                                </Col>
+                                                                <Col span={4}>
+                                                                    <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Bắt đầu từ:</div>
+                                                                    <TimePicker 
+                                                                        format="HH:mm" 
+                                                                        minuteStep={5}
+                                                                        value={item.startTime ? dayjs(item.startTime, 'HH:mm') : null}
+                                                                        onChange={(time, timeStr) => {
+                                                                            const next = [...patientTimeConstraints];
+                                                                            next[idx].startTime = typeof timeStr === 'string' ? timeStr : (time ? time.format('HH:mm') : '');
+                                                                            setPatientTimeConstraints(next);
+                                                                        }}
+                                                                        style={{ width: '100%' }}
+                                                                        placeholder="HH:mm"
+                                                                    />
+                                                                </Col>
+                                                                <Col span={4}>
+                                                                    <div style={{ fontSize: 12, color: '#d46b08', marginBottom: 4, fontWeight: 'bold' }}>Xong trước giờ: <span style={{ color: 'red' }}>*</span></div>
+                                                                    <TimePicker 
+                                                                        format="HH:mm" 
+                                                                        minuteStep={5}
+                                                                        value={item.endTime ? dayjs(item.endTime, 'HH:mm') : null}
+                                                                        onChange={(time, timeStr) => {
+                                                                            const next = [...patientTimeConstraints];
+                                                                            next[idx].endTime = typeof timeStr === 'string' ? timeStr : (time ? time.format('HH:mm') : '');
+                                                                            setPatientTimeConstraints(next);
+                                                                        }}
+                                                                        style={{ width: '100%' }}
+                                                                        placeholder="HH:mm"
+                                                                    />
+                                                                </Col>
+                                                                <Col span={6}>
+                                                                    <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Lý do / Ghi chú:</div>
+                                                                    <Input
+                                                                        placeholder="VD: Ra viện lúc 10h"
+                                                                        value={item.note}
+                                                                        onChange={(e) => {
+                                                                            const next = [...patientTimeConstraints];
+                                                                            next[idx].note = e.target.value;
+                                                                            setPatientTimeConstraints(next);
+                                                                        }}
+                                                                    />
+                                                                </Col>
+                                                                <Col span={2} style={{ textAlign: 'center', paddingTop: 18 }}>
+                                                                    <Button 
+                                                                        type="text" 
+                                                                        danger 
+                                                                        icon={<DeleteOutlined />} 
+                                                                        onClick={() => {
+                                                                            setPatientTimeConstraints(patientTimeConstraints.filter((_, i) => i !== idx));
+                                                                        }} 
+                                                                    />
+                                                                </Col>
+                                                            </Row>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
                                                 * Lưu ý: Các bệnh nhân không được chọn sẽ được thuật toán tự động xếp vào bất kỳ thời gian rảnh nào trong ngày. Nếu buổi đã chọn kín lịch, sẽ báo lỗi thiếu thời gian.
                                             </div>
@@ -2283,7 +2523,19 @@ export default function ClinicalSchedulingPage() {
                             options={excelHeaders.map(h => ({ label: h, value: h }))}
                             showSearch
                             allowClear
-                            placeholder="Chọn cột Thời gian"
+                            placeholder="Chọn cột Thời gian chỉ định"
+                        />
+                    </Col>
+                    <Col span={12} style={{ marginBottom: 16 }}>
+                        <div style={{ marginBottom: 4 }}><strong>Ngày dự kiến thực hiện (Nếu có):</strong></div>
+                        <Select
+                            style={{ width: '100%' }}
+                            value={columnMapping.ngay_du_kien || undefined}
+                            onChange={v => setColumnMapping({...columnMapping, ngay_du_kien: v})}
+                            options={excelHeaders.map(h => ({ label: h, value: h }))}
+                            showSearch
+                            allowClear
+                            placeholder="Chọn cột Ngày dự kiến"
                         />
                     </Col>
                 </Row>

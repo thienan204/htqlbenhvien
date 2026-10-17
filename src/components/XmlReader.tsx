@@ -176,7 +176,7 @@ const fetchIcd10Map = async (recordsToValidate: ExtendedHosoRecord[]): Promise<R
     if (allCodes.size === 0) return {};
 
     try {
-        const icdRes = await fetch('/api/icd10/validate', {
+        const icdRes = await fetch(`${getBasePath()}/api/icd10/validate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ codes: Array.from(allCodes) })
@@ -187,6 +187,73 @@ const fetchIcd10Map = async (recordsToValidate: ExtendedHosoRecord[]): Promise<R
         }
     } catch (e) {
         console.error('Lỗi khi fetch ICD-10:', e);
+    }
+    return {};
+};
+
+const fetchMasterDataForRules = async (rulesToProcess: ValidationRule[]): Promise<Record<string, Set<string>>> => {
+    if (!rulesToProcess || rulesToProcess.length === 0) return {};
+    const refs = new Set<string>();
+    rulesToProcess.forEach(rule => {
+        if (!rule.active) return;
+        
+        if (rule.code) {
+            const matches = rule.code.matchAll(/EXISTS_IN\(\s*['"]([^'"]+)['"]/g);
+            for (const match of matches) {
+                if (match[1]) refs.add(match[1]);
+            }
+            
+            const mismatchMatches = rule.code.matchAll(/CHECK_MISMATCH\(\s*['"]([^'"]+)['"]/g);
+            for (const match of mismatchMatches) {
+                if (match[1]) refs.add(match[1]);
+            }
+            
+            const priceMismatchMatches = rule.code.matchAll(/CHECK_PRICE_MISMATCH_MAU03_04\(\s*['"]([^'"]+)['"]/g);
+            for (const match of priceMismatchMatches) {
+                if (match[1]) refs.add(match[1]);
+            }
+
+            if (rule.code.includes('CHECK_MAU05_PRICE_MISMATCH')) {
+                refs.add('Mau05_PRICE_MAP');
+            }
+        }
+        if (rule.mathExpression) {
+            const mathMatches = rule.mathExpression.matchAll(/EXISTS_IN\(\s*['"]([^'"]+)['"]/g);
+            for (const match of mathMatches) {
+                if (match[1]) refs.add(match[1]);
+            }
+            
+            const mathMismatchMatches = rule.mathExpression.matchAll(/CHECK_MISMATCH\(\s*['"]([^'"]+)['"]/g);
+            for (const match of mathMismatchMatches) {
+                if (match[1]) refs.add(match[1]);
+            }
+            
+            const mathPriceMismatchMatches = rule.mathExpression.matchAll(/CHECK_PRICE_MISMATCH_MAU03_04\(\s*['"]([^'"]+)['"]/g);
+            for (const match of mathPriceMismatchMatches) {
+                if (match[1]) refs.add(match[1]);
+            }
+
+            if (rule.mathExpression.includes('CHECK_MAU05_PRICE_MISMATCH')) {
+                refs.add('Mau05_PRICE_MAP');
+            }
+        }
+    });
+
+    if (refs.size === 0) return {};
+
+    try {
+        const params = Array.from(refs).map(r => `refs=${encodeURIComponent(r)}`).join('&');
+        const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}`);
+        if (res.ok) {
+            const data = await res.json();
+            const parsedData: Record<string, Set<string>> = {};
+            for (const key in data) {
+                parsedData[key] = new Set(data[key]);
+            }
+            return parsedData;
+        }
+    } catch (error) {
+        console.error("Error fetching dynamic master data:", error);
     }
     return {};
 };
@@ -296,7 +363,14 @@ export default function XmlReader() {
     const [isSpecializedChecking, setIsSpecializedChecking] = useState(false);
     const [activeTab, setActiveTab] = useState<string>('XML1');
     const [user, setUser] = useState<any>(null);
-    const [processingProgress, setProcessingProgress] = useState<{ current: number, total: number } | null>(null);
+    interface ProcessingProgressState {
+        current: number;
+        total: number;
+        stageText?: string;
+        percent?: number;
+    }
+    const [processingProgress, setProcessingProgress] = useState<ProcessingProgressState | null>(null);
+    const isUploadingRef = React.useRef(false);
     
     // Special char scanner states
     const [isSpecialCharModalVisible, setIsSpecialCharModalVisible] = useState(false);
@@ -319,10 +393,106 @@ export default function XmlReader() {
     const [tablePagination, setTablePagination] = useState({ current: 1, pageSize: 10 });
     const [initialDBLoadDone, setInitialDBLoadDone] = useState(false);
     const [masterData, setMasterData] = useState<Record<string, Set<string>>>({});
+    const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
+    const [sentMaBnSet, setSentMaBnSet] = useState<Set<string>>(new Set());
+    const [sentRecordsDetails, setSentRecordsDetails] = useState<Record<string, any>>({});
+    const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
+    const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
     
     // DB Fetching State
     const [dbDateRange, setDbDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
     const [isLoadingDB, setIsLoadingDB] = useState(false);
+
+    const checkSentRecordsStatus = async (recordsList: ExtendedHosoRecord[]) => {
+        try {
+            const maLienKetList = Array.from(new Set(recordsList.map(r => String(r.summary?.MA_LK)).filter(Boolean)));
+            const maBnList = Array.from(new Set(recordsList.map(r => String(r.summary?.MA_BN)).filter(Boolean)));
+
+            if (maLienKetList.length === 0 && maBnList.length === 0) return;
+
+            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ maLienKetList, maBnList })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setSentRecordsSet(prev => {
+                    const next = new Set(prev);
+                    (data.exists || []).forEach((m: string) => next.add(m));
+                    return next;
+                });
+                setSentMaBnSet(prev => {
+                    const next = new Set(prev);
+                    (data.existsMaBN || []).forEach((m: string) => next.add(m));
+                    return next;
+                });
+                if (data.details) {
+                    setSentRecordsDetails(prev => ({ ...prev, ...data.details }));
+                }
+            }
+        } catch (e) {
+            console.error('Error checking sent records status:', e);
+        }
+    };
+
+    const validateAllRecords = async (
+        targetRecords: ExtendedHosoRecord[], 
+        customRules?: ValidationRule[],
+        progressOptions?: { startPercent: number; endPercent: number; stagePrefix: string }
+    ): Promise<ExtendedHosoRecord[]> => {
+        if (!targetRecords || targetRecords.length === 0) return [];
+
+        const startPct = progressOptions?.startPercent ?? 0;
+        const endPct = progressOptions?.endPercent ?? 100;
+        const stagePrefix = progressOptions?.stagePrefix ?? 'Đang kiểm tra quy tắc bảo hiểm';
+
+        setProcessingProgress({ 
+            current: 0, 
+            total: targetRecords.length,
+            stageText: `${stagePrefix}: 0/${targetRecords.length} hồ sơ...`,
+            percent: startPct
+        });
+
+        try {
+            const latestRules = customRules || (await reloadRules());
+            const latestMaster = await fetchMasterDataForRules(latestRules);
+            setMasterData(latestMaster);
+
+            const currentRecords = targetRecords.map(r => ({ ...r }));
+            const validator = new ValidationEngine(latestRules, latestMaster);
+            validator.setContextRecords(currentRecords);
+
+            const icd10Map = await fetchIcd10Map(currentRecords);
+            validator.setExternalContext({ icd10Map });
+
+            const VALIDATION_CHUNK_SIZE = 50;
+            for (let i = 0; i < currentRecords.length; i += VALIDATION_CHUNK_SIZE) {
+                const chunk = currentRecords.slice(i, i + VALIDATION_CHUNK_SIZE);
+                chunk.forEach(r => {
+                    r.validationResults = validator.validate(r);
+                });
+                const processed = Math.min(i + chunk.length, currentRecords.length);
+                const subPct = processed / currentRecords.length;
+                const overallPct = Math.round(startPct + subPct * (endPct - startPct));
+
+                setProcessingProgress({ 
+                    current: processed, 
+                    total: currentRecords.length,
+                    stageText: `${stagePrefix}: ${processed}/${currentRecords.length} hồ sơ...`,
+                    percent: overallPct
+                });
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            return currentRecords;
+        } finally {
+            if (!progressOptions) {
+                setProcessingProgress(null);
+            }
+        }
+    };
 
     const fetchDataFromDB = async () => {
         if (!dbDateRange[0] || !dbDateRange[1]) {
@@ -337,32 +507,15 @@ export default function XmlReader() {
             
             if (res.ok) {
                 const data = await res.json();
-                const initializedData = data.map((r: any) => ({
-                    ...r,
-                    validationResults: r.validationResults || []
-                }));
-                setRecords(initializedData);
                 
-                // Set sent records map
-                try {
-                    const maLienKetList = Array.from(new Set(data.map((r: any) => String(r.summary?.MA_LK)).filter(Boolean)));
-                    if (maLienKetList.length > 0) {
-                        const sentRes = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ maLienKetList })
-                        });
-                        if (sentRes.ok) {
-                            const sentData = await sentRes.json();
-                            setSentRecordsSet(new Set(sentData.exists || []));
-                        }
-                    }
-                } catch (e) {
-                    console.error('Error checking sent records:', e);
-                }
+                // Kiểm tra trạng thái hồ sơ đã gửi cổng GĐ
+                checkSentRecordsStatus(data);
 
-                // Chạy kiểm tra lỗi mặc định sẽ tự động chạy qua useEffect khi records thay đổi
-                message.success(`Đã tải ${data.length} hồ sơ từ CSDL.`);
+                // Chạy kiểm tra lỗi toàn diện với bộ quy tắc mới nhất
+                const validatedData = await validateAllRecords(data);
+                setRecords(validatedData);
+                await addRecordsToDB(validatedData).catch(e => console.error(e));
+                message.success(`Đã tải và kiểm tra xong ${data.length} hồ sơ từ CSDL.`);
             } else {
                 const isJson = res.headers.get('content-type')?.includes('application/json');
                 if (isJson) {
@@ -382,9 +535,6 @@ export default function XmlReader() {
     };
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
     const isFirstRuleLoad = React.useRef(true);
-    const [sentRecordsSet, setSentRecordsSet] = useState<Set<string>>(new Set());
-    const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
-    const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
 
     // Load DB
     useEffect(() => {
@@ -459,22 +609,7 @@ export default function XmlReader() {
                 if (ignore) return;
                 if (saved.length > 0) {
                     setRecords(saved);
-                    try {
-                        const maLienKetList = Array.from(new Set(saved.map(r => String(r.summary?.MA_LK)).filter(Boolean)));
-                        if (maLienKetList.length > 0) {
-                            const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ maLienKetList })
-                            });
-                            if (res.ok) {
-                                const data = await res.json();
-                                setSentRecordsSet(new Set(data.exists || []));
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Error checking sent records cache:', e);
-                    }
+                    checkSentRecordsStatus(saved);
                 }
                 setInitialDBLoadDone(true);
             }
@@ -488,85 +623,24 @@ export default function XmlReader() {
 
     // Fetch dynamic master data required by rules
     useEffect(() => {
-        if (!isRulesLoaded || !rules || rules.length === 0) {
-            setIsMasterDataLoaded(true);
-            return;
-        }
+        if (!isRulesLoaded) return;
         
+        let ignore = false;
         setIsMasterDataLoaded(false);
 
-        const refs = new Set<string>();
-        rules.forEach(rule => {
-            if (!rule.active) return;
-            
-            if (rule.code) {
-                const matches = rule.code.matchAll(/EXISTS_IN\(\s*['"]([^'"]+)['"]/g);
-                for (const match of matches) {
-                    if (match[1]) refs.add(match[1]);
-                }
-                
-                const mismatchMatches = rule.code.matchAll(/CHECK_MISMATCH\(\s*['"]([^'"]+)['"]/g);
-                for (const match of mismatchMatches) {
-                    if (match[1]) refs.add(match[1]);
-                }
-                
-                const priceMismatchMatches = rule.code.matchAll(/CHECK_PRICE_MISMATCH_MAU03_04\(\s*['"]([^'"]+)['"]/g);
-                for (const match of priceMismatchMatches) {
-                    if (match[1]) refs.add(match[1]);
-                }
-
-                if (rule.code.includes('CHECK_MAU05_PRICE_MISMATCH')) {
-                    refs.add('Mau05_PRICE_MAP');
-                }
-            }
-            if (rule.mathExpression) {
-                const mathMatches = rule.mathExpression.matchAll(/EXISTS_IN\(\s*['"]([^'"]+)['"]/g);
-                for (const match of mathMatches) {
-                    if (match[1]) refs.add(match[1]);
-                }
-                
-                const mathMismatchMatches = rule.mathExpression.matchAll(/CHECK_MISMATCH\(\s*['"]([^'"]+)['"]/g);
-                for (const match of mathMismatchMatches) {
-                    if (match[1]) refs.add(match[1]);
-                }
-                
-                const mathPriceMismatchMatches = rule.mathExpression.matchAll(/CHECK_PRICE_MISMATCH_MAU03_04\(\s*['"]([^'"]+)['"]/g);
-                for (const match of mathPriceMismatchMatches) {
-                    if (match[1]) refs.add(match[1]);
-                }
-
-                if (rule.mathExpression.includes('CHECK_MAU05_PRICE_MISMATCH')) {
-                    refs.add('Mau05_PRICE_MAP');
-                }
-            }
-        });
-
-        if (refs.size === 0) {
-            setMasterData({});
-            setIsMasterDataLoaded(true);
-            return;
-        }
-
-        const fetchDynamicMaster = async () => {
-            try {
-                const params = Array.from(refs).map(r => `refs=${encodeURIComponent(r)}`).join('&');
-                const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    const parsedData: Record<string, Set<string>> = {};
-                    for (const key in data) {
-                        parsedData[key] = new Set(data[key]);
-                    }
-                    setMasterData(parsedData);
-                }
-            } catch (error) {
-                console.error("Error fetching dynamic master data:", error);
-            } finally {
+        fetchMasterDataForRules(rules).then(parsedData => {
+            if (!ignore) {
+                setMasterData(parsedData);
                 setIsMasterDataLoaded(true);
             }
-        };
+        }).catch(err => {
+            console.error("Error fetching dynamic master data:", err);
+            if (!ignore) setIsMasterDataLoaded(true);
+        });
 
-        fetchDynamicMaster();
+        return () => {
+            ignore = true;
+        };
     }, [rules, isRulesLoaded]);
 
 
@@ -639,46 +713,41 @@ export default function XmlReader() {
     // Handle File Upload
     const handleFileUpload = async (fileList: File[]) => {
         if (!fileList || fileList.length === 0) return;
-
-        // Clear existing data before processing new upload
-        setRecords([]);
-        await clearDB();
-
-        setProcessingProgress({ current: 0, total: fileList.length });
-        const validator = new ValidationEngine(rules, masterData);
-        // Load old records to support global duplicate checking
-        const existingRecords = records || [];
-        // Note: For large file uploads, we can construct the context combining existing and newly uploaded.
-        // But for performance, setting initial is enough. It will re-validate once all batches finish later if needed, 
-        // or we just set current known. 
-        validator.setContextRecords(existingRecords);
-
-        const BATCH_SIZE = 10;
-        let processedCount = 0;
-        const allUploadedMaLk = new Set<string>();
+        if (isUploadingRef.current) return;
+        isUploadingRef.current = true;
 
         try {
+            // Clear existing data before processing new upload
+            setRecords([]);
+            await clearDB();
+
+            const BATCH_SIZE = 10;
+            let processedFileCount = 0;
+            const allUploadedMaLk = new Set<string>();
+            const allParsedRecords: ExtendedHosoRecord[] = [];
+
+            setProcessingProgress({ 
+                current: 0, 
+                total: fileList.length,
+                stageText: `Bước 1/2: Đọc file XML: 0/${fileList.length} file...`,
+                percent: 0
+            });
+
+            // Bước 1: Parse tất cả file XML theo batch để UI không bị đơ (0% -> 40%)
             for (let i = 0; i < fileList.length; i += BATCH_SIZE) {
                 const batch = fileList.slice(i, i + BATCH_SIZE);
-                const batchRecords: ExtendedHosoRecord[] = [];
 
-                // Process batch concurrently
                 await Promise.all(batch.map(async (file) => {
                     try {
                         const text = await file.text();
                         const parsed = parseXmlContent(text);
                         parsed.records.forEach(r => {
-                            // Update context dynamically for current record if batch has new items
-                            // Ideally, we could re-merge batch records but this is a lightweight approach
-                            const newRecord = {
+                            const newRecord: ExtendedHosoRecord = {
                                 ...r,
                                 sourceFile: file.name,
                                 uuid: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
                             };
-                            
-                            // To support real cross-record during batch load, we might need all batch records
-                            // We push it to batchRecords first
-                            batchRecords.push(newRecord);
+                            allParsedRecords.push(newRecord);
                             if (newRecord.summary?.MA_LK) allUploadedMaLk.add(String(newRecord.summary.MA_LK));
                         });
                     } catch (error: any) {
@@ -686,62 +755,47 @@ export default function XmlReader() {
                     }
                 }));
 
-                // Update validator context dynamically with new batch items
-                validator.setContextRecords([...existingRecords, ...batchRecords]);
+                processedFileCount += batch.length;
+                const processed = Math.min(processedFileCount, fileList.length);
+                const step1Pct = Math.round((processed / fileList.length) * 40);
 
-                const icd10Map = await fetchIcd10Map(batchRecords);
-                validator.setExternalContext({ icd10Map });
-
-                // Validate in chunks to prevent blocking the main thread (for huge single XML files)
-                const VALIDATION_CHUNK_SIZE = 50;
-                for (let j = 0; j < batchRecords.length; j += VALIDATION_CHUNK_SIZE) {
-                    const chunk = batchRecords.slice(j, j + VALIDATION_CHUNK_SIZE);
-                    chunk.forEach(r => {
-                        r.validationResults = validator.validate(r);
-                    });
-                    // Yield to browser to keep UI responsive
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                }
-
-                // Save batch to DB and State
-                if (batchRecords.length > 0) {
-                    await addRecordsToDB(batchRecords);
-                    setRecords(prev => [...prev, ...batchRecords]);
-                }
-
-                processedCount += batch.length;
-                setProcessingProgress({ current: Math.min(processedCount, fileList.length), total: fileList.length });
-
-                // Yield to main thread to allow UI render
+                setProcessingProgress({ 
+                    current: processed, 
+                    total: fileList.length,
+                    stageText: `Bước 1/2: Đọc file XML: ${processed}/${fileList.length} file...`,
+                    percent: step1Pct
+                });
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
 
-            if (allUploadedMaLk.size > 0) {
-                try {
-                    const res = await fetch(`${getBasePath()}/api/ho-so-da-gui/check-exists`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ maLienKetList: Array.from(allUploadedMaLk) })
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        setSentRecordsSet(prev => {
-                            const next = new Set(prev);
-                            data.exists.forEach((m: string) => next.add(m));
-                            return next;
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error checking sent records:', e);
-                }
+            if (allParsedRecords.length === 0) {
+                message.warning("Không tìm thấy dữ liệu hồ sơ hợp lệ trong các file XML đã chọn.");
+                setProcessingProgress(null);
+                return;
             }
 
-            message.success(`Đã xử lý xong ${fileList.length} file.`);
+            // Bước 2: Chạy validation toàn diện với thang đo từ 40% -> 100%
+            const validatedRecords = await validateAllRecords(allParsedRecords, undefined, {
+                startPercent: 40,
+                endPercent: 100,
+                stagePrefix: 'Bước 2/2: Kiểm tra quy tắc bảo hiểm'
+            });
+
+            // Bước 3: Lưu toàn bộ hồ sơ đã kiểm tra xong vào IndexedDB và React State
+            await addRecordsToDB(validatedRecords);
+            setRecords(validatedRecords);
+
+            // Bước 4: Kiểm tra hồ sơ đã gửi cổng Giám định BHYT
+            checkSentRecordsStatus(validatedRecords);
+
+            message.success(`Đã xử lý xong ${fileList.length} file (${validatedRecords.length} hồ sơ).`);
 
         } catch (err: any) {
+            console.error('Lỗi khi tải và kiểm tra file XML:', err);
             message.error(err.message || 'Có lỗi xảy ra trong quá trình xử lý');
         } finally {
             setProcessingProgress(null);
+            isUploadingRef.current = false;
         }
     };
 
@@ -751,8 +805,15 @@ export default function XmlReader() {
         accept: '.xml',
         showUploadList: false,
         beforeUpload: (file, fileList) => {
+            if (isUploadingRef.current) {
+                return false;
+            }
+            if (!isRulesLoaded) {
+                if (file === fileList[0]) message.warning("Đang nạp bộ quy tắc kiểm tra... Vui lòng thử lại sau giây lát.");
+                return false;
+            }
             if (!isMasterDataLoaded) {
-                if (file === fileList[0]) message.warning("Đang nạp bộ từ khóa tự động... Vui lòng kéo thả lại file sau vài giây.");
+                if (file === fileList[0]) message.warning("Đang nạp bộ từ khóa tự động... Vui lòng kéo thả lại file sau giây lát.");
                 return false;
             }
             // Antd calls beforeUpload for EACH file. We only want to run ONCE per batch.
@@ -848,7 +909,7 @@ export default function XmlReader() {
 
         try {
             message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrors' });
-            const res = await fetch('/api/error-management/xml-errors', {
+            const res = await fetch(`${getBasePath()}/api/error-management/xml-errors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ errors: errorsToSave })
@@ -1037,7 +1098,7 @@ export default function XmlReader() {
             message.loading({ content: 'Đang kiểm tra trùng lặp...', key: 'saveXMLDB' });
             
             const maLkList = targetRecords.map(r => String(r.id || r.summary?.MA_LK)).filter(Boolean);
-            const checkRes = await fetch('/api/xml1/check-exists', {
+            const checkRes = await fetch(`${getBasePath()}/api/xml1/check-exists`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ maLkList })
@@ -1085,7 +1146,7 @@ export default function XmlReader() {
                 const formData = new FormData();
                 formData.append('file', blob, 'filtered_records.json');
 
-                const res = await fetch('/api/xml-import-json', {
+                const res = await fetch(`${getBasePath()}/api/xml-import-json`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1215,27 +1276,94 @@ export default function XmlReader() {
                 </div>
             ),
             key: 'edit_status',
-            width: 100,
+            width: 110,
             align: 'center',
-            render: (_, record) => {
+            filters: [
+                { text: 'Đã gửi GĐ', value: 'SENT_GD' },
+                { text: 'Chưa gửi GĐ', value: 'NOT_SENT_GD' },
+                { text: 'Còn hạn', value: 'VALID' },
+                { text: 'Hết hạn', value: 'EXPIRED' }
+            ],
+            onFilter: (value, record) => {
+                const maLk = String(record.summary?.MA_LK || '');
+                const maBn = String(record.summary?.MA_BN || '');
+                const isSent = sentRecordsSet.has(maLk) || sentMaBnSet.has(maBn);
+                
                 const ngayRaStr = String(record.summary?.NGAY_RA || '');
-                if (!ngayRaStr || ngayRaStr.length < 8) return <Tag>Không rõ</Tag>;
-                
-                const year = parseInt(ngayRaStr.substring(0, 4));
-                const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
-                const day = parseInt(ngayRaStr.substring(6, 8));
-                let hour = 0; let min = 0;
-                if (ngayRaStr.length >= 12) {
-                    hour = parseInt(ngayRaStr.substring(8, 10));
-                    min = parseInt(ngayRaStr.substring(10, 12));
+                let isExpired = false;
+                if (ngayRaStr && ngayRaStr.length >= 8) {
+                    const year = parseInt(ngayRaStr.substring(0, 4));
+                    const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                    const day = parseInt(ngayRaStr.substring(6, 8));
+                    let hour = 0; let min = 0;
+                    if (ngayRaStr.length >= 12) {
+                        hour = parseInt(ngayRaStr.substring(8, 10));
+                        min = parseInt(ngayRaStr.substring(10, 12));
+                    }
+                    const dateNgayRa = new Date(year, month, day, hour, min);
+                    const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                    isExpired = calculateRemainingTime(deadline).isExpired;
                 }
-                const dateNgayRa = new Date(year, month, day, hour, min);
-                const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
-                const timeInfo = calculateRemainingTime(deadline);
-                
-                return timeInfo.isExpired 
-                    ? <Tag color="error" className="m-0 border-red-300">Hết hạn</Tag> 
-                    : <Tag color="success" className="m-0 border-green-300">Còn hạn</Tag>;
+
+                if (value === 'SENT_GD') return isSent;
+                if (value === 'NOT_SENT_GD') return !isSent;
+                if (value === 'VALID') return !isExpired;
+                if (value === 'EXPIRED') return isExpired;
+                return true;
+            },
+            render: (_, record) => {
+                const maLk = String(record.summary?.MA_LK || '');
+                const maBn = String(record.summary?.MA_BN || '');
+                const isSent = sentRecordsSet.has(maLk) || sentMaBnSet.has(maBn);
+                const sentInfo = sentRecordsDetails[maLk] || sentRecordsDetails[maBn];
+
+                const ngayRaStr = String(record.summary?.NGAY_RA || '');
+                let timeInfo = null;
+                if (ngayRaStr && ngayRaStr.length >= 8) {
+                    const year = parseInt(ngayRaStr.substring(0, 4));
+                    const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                    const day = parseInt(ngayRaStr.substring(6, 8));
+                    let hour = 0; let min = 0;
+                    if (ngayRaStr.length >= 12) {
+                        hour = parseInt(ngayRaStr.substring(8, 10));
+                        min = parseInt(ngayRaStr.substring(10, 12));
+                    }
+                    const dateNgayRa = new Date(year, month, day, hour, min);
+                    const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                    timeInfo = calculateRemainingTime(deadline);
+                }
+
+                return (
+                    <div className="flex flex-col items-center justify-center gap-1 py-0.5">
+                        {isSent && (
+                            <Tooltip
+                                title={
+                                    <div className="text-xs space-y-1 p-0.5">
+                                        <div className="font-bold text-amber-300">Cảnh báo: Hồ sơ đã gửi Giám định BHYT</div>
+                                        {sentInfo?.maBN && <div>Mã BA: <span className="font-semibold text-white">{sentInfo.maBN}</span></div>}
+                                        {sentInfo?.maLienKet && <div>Mã LK: <span className="font-semibold text-white">{sentInfo.maLienKet}</span></div>}
+                                        {sentInfo?.ngayGuiHS && <div>Ngày gửi: <span className="text-white">{sentInfo.ngayGuiHS}</span></div>}
+                                        {sentInfo?.trangThaiHS && <div>Trạng thái HS: <span className="text-white">{sentInfo.trangThaiHS}</span></div>}
+                                        {sentInfo?.trangThaiTT && <div>Trạng thái TT: <span className="text-white">{sentInfo.trangThaiTT}</span></div>}
+                                    </div>
+                                }
+                            >
+                                <Tag color="warning" className="m-0 font-semibold border-amber-400 bg-amber-50 text-amber-700 shadow-xs cursor-pointer">
+                                    Đã gửi GĐ
+                                </Tag>
+                            </Tooltip>
+                        )}
+                        {timeInfo ? (
+                            timeInfo.isExpired ? (
+                                <Tag color="error" className="m-0 border-red-300">Hết hạn</Tag>
+                            ) : (
+                                <Tag color="success" className="m-0 border-green-300">Còn hạn</Tag>
+                            )
+                        ) : (
+                            <Tag className="m-0">Không rõ</Tag>
+                        )}
+                    </div>
+                );
             }
         },
         {
@@ -1293,8 +1421,10 @@ export default function XmlReader() {
             dataIndex: ['summary', 'MA_LK'],
             key: 'MA_LK',
             width: 100,
-            render: (text) => {
-                const isSent = sentRecordsSet.has(String(text));
+            render: (text, record) => {
+                const maLk = String(text || '');
+                const maBn = String(record.summary?.MA_BN || '');
+                const isSent = sentRecordsSet.has(maLk) || sentMaBnSet.has(maBn);
                 return (
                     <div className="flex items-center gap-1">
                         <span>{text}</span>
@@ -1447,7 +1577,7 @@ export default function XmlReader() {
     const getFilteredRecords = () => {
         let result = records.filter(r => {
             const isErr = r.validationResults.some(v => v.isError);
-            const isSent = sentRecordsSet.has(String(r.summary?.MA_LK));
+            const isSent = sentRecordsSet.has(String(r.summary?.MA_LK)) || sentMaBnSet.has(String(r.summary?.MA_BN));
             
             if (mainFilter === 'ALL_SENT') return isSent;
             if (mainFilter === 'ALL_UNSENT') return !isSent;
@@ -1693,7 +1823,7 @@ export default function XmlReader() {
     const renderDetailView = () => {
         if (!selectedRecord) return null;
 
-        const isSent = sentRecordsSet.has(String(selectedRecord.summary?.MA_LK));
+        const isSent = sentRecordsSet.has(String(selectedRecord.summary?.MA_LK)) || sentMaBnSet.has(String(selectedRecord.summary?.MA_BN));
         const hasError = selectedRecord.validationResults.some(v => v.isError);
 
         const items = selectedRecord.groups.map(group => {
@@ -2058,10 +2188,19 @@ export default function XmlReader() {
         <div className="w-full max-w-[1920px] mx-auto px-[30px] py-6 space-y-6">
             {processingProgress && (
                 <div className="fixed inset-0 bg-white/80 z-50 flex items-center justify-center backdrop-blur-sm">
-                    <div className="text-center">
+                    <div className="text-center p-6 bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full mx-4">
                         <Spin size="large" />
-                        <div className="mt-4 font-bold text-lg">Đang xử lý {processingProgress.current}/{processingProgress.total} file...</div>
-                        <Progress percent={Math.round((processingProgress.current / processingProgress.total) * 100)} status="active" style={{ width: 300 }} />
+                        <div className="mt-4 font-bold text-base text-slate-800">
+                            {processingProgress.stageText || `Đang xử lý ${processingProgress.current}/${processingProgress.total}...`}
+                        </div>
+                        <div className="mt-3">
+                            <Progress 
+                                percent={processingProgress.percent !== undefined 
+                                    ? processingProgress.percent 
+                                    : Math.min(100, Math.round((processingProgress.current / Math.max(1, processingProgress.total)) * 100))} 
+                                status="active" 
+                            />
+                        </div>
                     </div>
                 </div>
             )}
@@ -2165,42 +2304,23 @@ export default function XmlReader() {
                                             <Button
                                                 icon={<ReloadOutlined />}
                                                 onClick={async () => {
-                                                    const latestRules = await reloadRules();
                                                     if (records.length === 0) {
                                                         message.info('Không có hồ sơ nào để kiểm tra.');
                                                         return;
                                                     }
 
-                                                    setProcessingProgress({ current: 0, total: records.length });
-                                                    
                                                     // Run asynchronously to prevent browser freeze
                                                     setTimeout(async () => {
                                                         try {
-                                                            const currentRecords = [...records];
-                                                            const validator = new ValidationEngine(latestRules, masterData);
-                                                            validator.setContextRecords(currentRecords);
-                                                            
-                                                            const icd10Map = await fetchIcd10Map(currentRecords);
-                                                            validator.setExternalContext({ icd10Map });
-
-                                                            const VALIDATION_CHUNK_SIZE = 50;
-                                                            for (let i = 0; i < currentRecords.length; i += VALIDATION_CHUNK_SIZE) {
-                                                                const chunk = currentRecords.slice(i, i + VALIDATION_CHUNK_SIZE);
-                                                                chunk.forEach(r => {
-                                                                    r.validationResults = validator.validate(r);
-                                                                });
-                                                                setProcessingProgress({ current: Math.min(i + chunk.length, currentRecords.length), total: currentRecords.length });
-                                                                await new Promise(resolve => setTimeout(resolve, 0));
-                                                            }
-                                                            
-                                                            setRecords(currentRecords);
-                                                            addRecordsToDB(currentRecords).catch(e => console.error(e));
+                                                            const latestRules = await reloadRules();
+                                                            const validatedRecords = await validateAllRecords(records, latestRules);
+                                                            setRecords(validatedRecords);
+                                                            await addRecordsToDB(validatedRecords).catch(e => console.error(e));
+                                                            checkSentRecordsStatus(validatedRecords).catch(e => console.error(e));
                                                             message.success('Đã tải lại quy tắc mới nhất và cập nhật cho dữ liệu hiện tại.');
                                                         } catch (error) {
                                                             console.error(error);
                                                             message.error('Có lỗi xảy ra khi chạy lại kiểm tra.');
-                                                        } finally {
-                                                            setProcessingProgress(null);
                                                         }
                                                     }, 0);
                                                 }}

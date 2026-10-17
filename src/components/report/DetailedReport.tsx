@@ -415,7 +415,7 @@ export default function DetailedReport() {
 
         try {
             message.loading({ content: 'Đang lưu lỗi vào hệ thống...', key: 'saveErrors' });
-            const res = await fetch('/api/error-management/xml-errors', {
+            const res = await fetch(`${getBasePath()}/api/error-management/xml-errors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ errors: errorsToSave })

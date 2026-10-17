@@ -5,6 +5,7 @@ import { Table, Button, Tag, Modal, Form, Input, Select, message, Segmented, Car
 const { Text } = Typography;
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -13,7 +14,19 @@ import { FileExcelOutlined } from '@ant-design/icons';
 export default function XmlErrorManager() {
     const { user } = useAuth();
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'CNTT';
-    const canDelete = user?.role === 'ADMIN';
+    const canDelete = isAdmin || Boolean(user?.ma_khoa);
+
+    const isRecordSentToIT = (record: any) => {
+        return Boolean(record.itRequestId) || Boolean(record.departmentNote?.includes('[Đã gửi Yêu cầu IT]'));
+    };
+
+    const canDeleteRecord = (record: any) => {
+        if (isAdmin) return true;
+        if (user?.ma_khoa && record.ma_khoa === user.ma_khoa) {
+            return !isRecordSentToIT(record);
+        }
+        return false;
+    };
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -28,8 +41,10 @@ export default function XmlErrorManager() {
     const [sourceType, setSourceType] = useState(initialSourceType); // XML or CHUYEN_DE
     const [departments, setDepartments] = useState<Record<string, string>>({});
     const [staffList, setStaffList] = useState<any[]>([]);
+    const [deptFilter, setDeptFilter] = useState<string>(paramKhoa || 'ALL');
     const [chuyenDeFilter, setChuyenDeFilter] = useState<string>('ALL'); // Lọc chuyên đề
     const [statusFilter, setStatusFilter] = useState<string>('ALL'); // Lọc trạng thái
+    const [searchText, setSearchText] = useState<string>('');
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -43,7 +58,7 @@ export default function XmlErrorManager() {
     useEffect(() => {
         const fetchDepts = async () => {
             try {
-                const res = await fetch('/api/departments');
+                const res = await fetch(`${getBasePath()}/api/departments`);
                 if (res.ok) {
                     const data = await res.json();
                     const map: Record<string, string> = {};
@@ -56,7 +71,7 @@ export default function XmlErrorManager() {
         };
         const fetchStaff = async () => {
             try {
-                const res = await fetch('/api/staff');
+                const res = await fetch(`${getBasePath()}/api/staff`);
                 if (res.ok) {
                     const data = await res.json();
                     setStaffList(data);
@@ -72,7 +87,7 @@ export default function XmlErrorManager() {
     const fetchErrors = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/error-management/xml-errors?sourceType=${sourceType}`);
+            const res = await fetch(`${getBasePath()}/api/error-management/xml-errors?sourceType=${sourceType}`);
             if (res.ok) {
                 let data = await res.json();
                 
@@ -167,25 +182,43 @@ export default function XmlErrorManager() {
         return Array.from(rules).sort();
     }, [errors, sourceType]);
 
-    // Lọc dữ liệu theo URL params và Chuyên đề filter
-    const filteredErrors = useMemo(() => {
+    // Lọc dữ liệu theo Khoa, Chuyên đề, Tìm kiếm trước khi lọc trạng thái
+    const baseErrors = useMemo(() => {
         return errors.filter(e => {
-            if (paramKhoa && e.ma_khoa !== paramKhoa) return false;
+            if (deptFilter !== 'ALL' && e.ma_khoa !== deptFilter) return false;
             if (paramDetail && !e.chi_tiet_loi?.toLowerCase().includes(paramDetail.toLowerCase())) return false;
             if (chuyenDeFilter !== 'ALL') {
                 if (!e.chi_tiet_loi?.includes(chuyenDeFilter)) return false;
             }
-            if (statusFilter !== 'ALL') {
-                if (e.status !== statusFilter) return false;
+            if (searchText.trim()) {
+                const q = searchText.trim().toLowerCase();
+                const matchName = e.ho_ten?.toLowerCase().includes(q);
+                const matchLk = e.ma_lk?.toLowerCase().includes(q);
+                const matchBn = e.ma_bn?.toLowerCase().includes(q);
+                const matchDv = e.ma_dv?.toLowerCase().includes(q) || e.ten_dv?.toLowerCase().includes(q);
+                const matchLoi = e.chi_tiet_loi?.toLowerCase().includes(q);
+                const matchBs = e.ten_bac_si?.toLowerCase().includes(q) || e.ma_bac_si?.toLowerCase().includes(q);
+                const matchMay = e.ma_may?.toLowerCase().includes(q);
+                if (!matchName && !matchLk && !matchBn && !matchDv && !matchLoi && !matchBs && !matchMay) return false;
             }
             return true;
         });
-    }, [errors, paramKhoa, paramDetail, chuyenDeFilter, statusFilter]);
+    }, [errors, deptFilter, paramDetail, chuyenDeFilter, searchText]);
+
+    const filteredErrors = useMemo(() => {
+        if (statusFilter === 'SENT_IT') {
+            return baseErrors.filter(e => isRecordSentToIT(e));
+        }
+        if (statusFilter !== 'ALL') {
+            return baseErrors.filter(e => e.status === statusFilter);
+        }
+        return baseErrors;
+    }, [baseErrors, statusFilter]);
 
     const handleUpdate = async (values: any) => {
         if (!selectedError) return;
         try {
-            const res = await fetch('/api/error-management/xml-errors', {
+            const res = await fetch(`${getBasePath()}/api/error-management/xml-errors`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -231,14 +264,19 @@ export default function XmlErrorManager() {
                 }
             }
 
-            const dynamicFields = {
+            const dynamicFields: Record<string, any> = {
                 'Người báo': nguoiBaoName,
                 'Loại lỗi': sourceType === 'XML' ? 'Lỗi XML' : 'Lỗi Chuyên đề trùng thời gian',
                 'Tên chuyên đề': ruleName,
                 'Mã máy/Giường': selectedErrorForIT.ma_may || '',
                 'Chi tiết vi phạm': tenLoiGoc,
-                'Ghi chú': values.yeu_cau_khoa || ''
+                'Ghi chú': values.yeu_cau_khoa || '',
+                'Mã LK': selectedErrorForIT.ma_lk || ''
             };
+
+            if (selectedErrorForIT.ma_bn) {
+                dynamicFields['Mã BN'] = selectedErrorForIT.ma_bn;
+            }
 
             const payload = {
                 ma_ba: selectedErrorForIT.ma_lk || '',
@@ -251,7 +289,7 @@ export default function XmlErrorManager() {
                 dynamicFields
             };
 
-            const res = await fetch('/api/error-management/it-requests', {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -263,7 +301,7 @@ export default function XmlErrorManager() {
                 itForm.resetFields();
                 
                 // Cập nhật tự động dòng "Đã gửi Yêu cầu IT" vào departmentNote
-                const updateRes = await fetch('/api/error-management/xml-errors', {
+                const updateRes = await fetch(`${getBasePath()}/api/error-management/xml-errors`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -287,16 +325,16 @@ export default function XmlErrorManager() {
     };
 
     const handleDelete = async (ids: string[]) => {
-        if (!user || user.role !== 'ADMIN') return;
+        if (!user || (!isAdmin && !user.ma_khoa)) return;
         Modal.confirm({
-            title: 'Xác nhận xóa',
-            content: `Bạn có chắc chắn muốn xóa ${ids.length} lỗi này không?`,
+            title: 'Xác nhận xóa phiếu lỗi',
+            content: `Bạn có chắc chắn muốn xóa ${ids.length} lỗi này không? (Lưu ý: Chỉ áp dụng cho các lỗi thuộc khoa phòng của bạn và chưa gửi CNTT)`,
             okText: 'Xóa',
             cancelText: 'Hủy',
             okButtonProps: { danger: true },
             onOk: async () => {
                 try {
-                    const res = await fetch('/api/error-management/xml-errors', {
+                    const res = await fetch(`${getBasePath()}/api/error-management/xml-errors`, {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ ids })
@@ -403,11 +441,59 @@ export default function XmlErrorManager() {
     };
 
     const stats = useMemo(() => {
-        const total = filteredErrors.length;
-        const pending = filteredErrors.filter(e => e.status === 'PENDING').length;
-        const resolved = filteredErrors.filter(e => e.status !== 'PENDING').length;
-        return { total, pending, resolved };
-    }, [filteredErrors]);
+        const total = baseErrors.length;
+        const pending = baseErrors.filter(e => e.status === 'PENDING').length;
+        const resolved = baseErrors.filter(e => e.status !== 'PENDING').length;
+        const sentIT = baseErrors.filter(e => isRecordSentToIT(e)).length;
+        return { total, pending, resolved, sentIT };
+    }, [baseErrors]);
+
+    const statusOptions = useMemo(() => [
+        {
+            value: 'PENDING',
+            label: (
+                <div className="flex items-center gap-1.5 px-1 py-0.5">
+                    <span>🔴 Chờ xử lý</span>
+                    <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${stats.pending > 0 ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-500'}`}>
+                        {stats.pending}
+                    </span>
+                </div>
+            )
+        },
+        {
+            value: 'EXPLAINED',
+            label: (
+                <div className="flex items-center gap-1.5 px-1 py-0.5">
+                    <span>✅ Đã xử lý</span>
+                    <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${stats.resolved > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                        {stats.resolved}
+                    </span>
+                </div>
+            )
+        },
+        {
+            value: 'ALL',
+            label: (
+                <div className="flex items-center gap-1.5 px-1 py-0.5">
+                    <span>Tất cả</span>
+                    <span className="text-xs px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 font-semibold">
+                        {stats.total}
+                    </span>
+                </div>
+            )
+        },
+        {
+            value: 'SENT_IT',
+            label: (
+                <div className="flex items-center gap-1.5 px-1 py-0.5">
+                    <span>📩 Đã gửi CNTT</span>
+                    <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${stats.sentIT > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'}`}>
+                        {stats.sentIT}
+                    </span>
+                </div>
+            )
+        }
+    ], [stats]);
 
 
     const chuyenDeColumns = [
@@ -478,41 +564,67 @@ export default function XmlErrorManager() {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 120,
+            width: 140,
             fixed: 'right' as const,
-            render: (_: any, record: any) => (
-                <div className="flex flex-col gap-1.5 py-1">
-                    <Tag 
-                        color={record.status === 'PENDING' ? 'warning' : 'success'} 
-                        className="w-full text-center m-0 py-0.5 font-semibold border-transparent text-xs"
-                    >
-                        {record.status === 'PENDING' ? '⏳ Chờ xử lý' : '✓ Đã xử lý'}
-                    </Tag>
-                    <Button 
-                        size="small" 
-                        type={record.status === 'PENDING' ? 'primary' : 'default'}
-                        className={record.status === 'PENDING' ? "bg-blue-600 hover:bg-blue-700 text-xs" : "bg-white text-xs"}
-                        onClick={() => {
-                            if (!isAdmin) {
-                                setSelectedErrorForIT(record);
-                                itForm.resetFields();
-                                if (user?.staffId) itForm.setFieldsValue({ nguoi_bao_id: user.staffId });
-                                setIsITModalVisible(true);
-                            } else {
-                                setSelectedError(record);
-                                form.setFieldsValue({
-                                    status: record.status,
-                                    departmentNote: record.departmentNote,
-                                    adminNote: record.adminNote
-                                });
-                                setIsModalVisible(true);
-                            }
-                        }}
-                    >
-                        {isAdmin ? 'Xử lý' : 'Gửi CNTT'}
-                    </Button>
-                </div>
-            )
+            render: (_: any, record: any) => {
+                const isSent = isRecordSentToIT(record);
+                const canDel = canDeleteRecord(record);
+                return (
+                    <div className="flex flex-col gap-1.5 py-1 items-stretch">
+                        <Tag 
+                            color={record.status === 'PENDING' ? 'warning' : 'success'} 
+                            className="w-full text-center m-0 py-0.5 font-semibold border-transparent text-xs"
+                        >
+                            {record.status === 'PENDING' ? '⏳ Chờ xử lý' : '✓ Đã xử lý'}
+                        </Tag>
+                        {isSent && (
+                            <Tag color="processing" className="w-full text-center m-0 py-0.5 font-medium border-transparent text-[11px] bg-blue-50 text-blue-600">
+                                📩 Đã gửi CNTT
+                            </Tag>
+                        )}
+                        <Button 
+                            size="small" 
+                            type={record.status === 'PENDING' ? 'primary' : 'default'}
+                            className={record.status === 'PENDING' ? "bg-blue-600 hover:bg-blue-700 text-xs text-white" : "bg-white text-xs"}
+                            onClick={() => {
+                                if (!isAdmin) {
+                                    setSelectedErrorForIT(record);
+                                    itForm.resetFields();
+                                    if (user?.staffId) itForm.setFieldsValue({ nguoi_bao_id: user.staffId });
+                                    setIsITModalVisible(true);
+                                } else {
+                                    setSelectedError(record);
+                                    form.setFieldsValue({
+                                        status: record.status,
+                                        departmentNote: record.departmentNote,
+                                        adminNote: record.adminNote
+                                    });
+                                    setIsModalVisible(true);
+                                }
+                            }}
+                        >
+                            {isAdmin ? 'Xử lý' : (isSent ? 'Gửi lại CNTT' : 'Gửi CNTT')}
+                        </Button>
+                        {canDel ? (
+                            <Button 
+                                size="small" 
+                                danger 
+                                type="text" 
+                                className="hover:bg-red-50 text-xs text-red-600" 
+                                onClick={() => handleDelete([record.id])}
+                            >
+                                Xóa phiếu
+                            </Button>
+                        ) : (
+                            !isAdmin && isSent && (
+                                <span className="text-[11px] text-center text-slate-400 italic">
+                                    🔒 Không thể xóa
+                                </span>
+                            )
+                        )}
+                    </div>
+                );
+            }
         }
     ];
 
@@ -614,45 +726,60 @@ export default function XmlErrorManager() {
             key: 'action',
             width: 140,
             fixed: 'right' as const,
-            render: (_: any, record: any) => (
-                <div className="flex flex-col gap-2.5 py-2 items-stretch">
-                    <Tag 
-                        color={record.status === 'PENDING' ? 'warning' : 'success'} 
-                        className="w-full text-center m-0 py-1 font-semibold border-transparent"
-                    >
-                        {record.status === 'PENDING' ? '⏳ Chờ xử lý' : '✅ Đã xử lý'}
-                    </Tag>
-                    <Button 
-                        size="small" 
-                        type={record.status === 'PENDING' ? 'primary' : 'default'}
-                        className={record.status === 'PENDING' ? "bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200" : "bg-white"}
-                        onClick={() => {
-                            if (!isAdmin) {
-                                setSelectedErrorForIT(record);
-                                itForm.resetFields();
-                                if (user?.staffId) itForm.setFieldsValue({ nguoi_bao_id: user.staffId });
-                                setIsITModalVisible(true);
-                            } else {
-                                setSelectedError(record);
-                                form.setFieldsValue({
-                                    status: record.status,
-                                    departmentNote: record.departmentNote,
-                                    adminNote: record.adminNote
-                                });
-                                setIsModalVisible(true);
-                            }
-                        }}
-                    >
-                        {isAdmin ? 'Xử lý' : 'Gửi CNTT'}
-                    </Button>
-                    
-                    {canDelete && (
-                        <Button size="small" danger type="text" className="hover:bg-red-50" onClick={() => handleDelete([record.id])}>
-                            Xóa
+            render: (_: any, record: any) => {
+                const isSent = isRecordSentToIT(record);
+                const canDel = canDeleteRecord(record);
+                return (
+                    <div className="flex flex-col gap-2 py-2 items-stretch">
+                        <Tag 
+                            color={record.status === 'PENDING' ? 'warning' : 'success'} 
+                            className="w-full text-center m-0 py-1 font-semibold border-transparent"
+                        >
+                            {record.status === 'PENDING' ? '⏳ Chờ xử lý' : '✅ Đã xử lý'}
+                        </Tag>
+                        {isSent && (
+                            <Tag color="processing" className="w-full text-center m-0 py-0.5 font-medium border-transparent text-xs bg-blue-50 text-blue-600">
+                                📩 Đã gửi CNTT
+                            </Tag>
+                        )}
+                        <Button 
+                            size="small" 
+                            type={record.status === 'PENDING' ? 'primary' : 'default'}
+                            className={record.status === 'PENDING' ? "bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 text-white" : "bg-white"}
+                            onClick={() => {
+                                if (!isAdmin) {
+                                    setSelectedErrorForIT(record);
+                                    itForm.resetFields();
+                                    if (user?.staffId) itForm.setFieldsValue({ nguoi_bao_id: user.staffId });
+                                    setIsITModalVisible(true);
+                                } else {
+                                    setSelectedError(record);
+                                    form.setFieldsValue({
+                                        status: record.status,
+                                        departmentNote: record.departmentNote,
+                                        adminNote: record.adminNote
+                                    });
+                                    setIsModalVisible(true);
+                                }
+                            }}
+                        >
+                            {isAdmin ? 'Xử lý' : (isSent ? 'Gửi lại CNTT' : 'Gửi CNTT')}
                         </Button>
-                    )}
-                </div>
-            )
+                        
+                        {canDel ? (
+                            <Button size="small" danger type="text" className="hover:bg-red-50 text-xs text-red-600" onClick={() => handleDelete([record.id])}>
+                                Xóa phiếu
+                            </Button>
+                        ) : (
+                            !isAdmin && isSent && (
+                                <span className="text-[11px] text-center text-slate-400 italic">
+                                    🔒 Không thể xóa
+                                </span>
+                            )
+                        )}
+                    </div>
+                );
+            }
         }
     ];
 
@@ -688,76 +815,121 @@ export default function XmlErrorManager() {
                     <Card className="flex-1 min-w-[140px] shadow-sm border-green-100 rounded-2xl bg-green-50/50" styles={{ body: { padding: '16px 24px' } }}>
                         <Statistic title={<span className="text-green-600 font-medium">Đã khắc phục</span>} value={stats.resolved} styles={{ content: { color: '#16a34a', fontWeight: 700 } }} />
                     </Card>
+                    <Card className="flex-1 min-w-[140px] shadow-sm border-blue-100 rounded-2xl bg-blue-50/50" styles={{ body: { padding: '16px 24px' } }}>
+                        <Statistic title={<span className="text-blue-600 font-medium">Đã gửi CNTT</span>} value={stats.sentIT} styles={{ content: { color: '#2563eb', fontWeight: 700 } }} />
+                    </Card>
                 </div>
             </div>
 
-            {/* Filter Bar */}
-            <Tabs
-                type="card"
-                activeKey={sourceType}
-                onChange={(val: any) => {
-                    setSourceType(val);
-                    setChuyenDeFilter('ALL');
-                }}
-                className="mb-4 font-medium custom-tabs"
-                tabBarExtraContent={
-                    <div className="flex gap-4 items-center mb-1">
-                        <Space size="middle" className="flex-wrap">
+            {/* Unified Table Section: Tabs + Card (Toolbar & Table) */}
+            <div className="space-y-0">
+                {/* Row 1: Tabs & Top Action Buttons */}
+                <div className="flex flex-col sm:flex-row justify-between items-end gap-2 -mb-[1px] relative z-10">
+                    <Tabs
+                        type="card"
+                        activeKey={sourceType}
+                        onChange={(val: any) => {
+                            setSourceType(val);
+                            setChuyenDeFilter('ALL');
+                        }}
+                        className="font-medium custom-tabs m-0 [&_.ant-tabs-nav]:!mb-0 [&_.ant-tabs-content-holder]:!hidden"
+                        items={[
+                            { key: 'XML', label: '📄 Lỗi XML' },
+                            { key: 'CHUYEN_DE', label: '⏱️ Lỗi Chuyên đề trùng thời gian' }
+                        ]}
+                    />
+                    
+                    <div className="flex items-center gap-2 mb-2 sm:mb-1.5 shrink-0">
+                        <Button  
+                            onClick={() => router.push('/error-management/xml-summary')}
+                            className="rounded-lg font-medium"
+                        >
+                            Báo cáo Tổng hợp
+                        </Button>
+                        <Button 
+                            type="primary" 
+                            icon={<FileExcelOutlined />} 
+                            onClick={handleExportExcel}
+                            className="bg-green-600 hover:bg-green-700 rounded-lg font-medium shadow-md shadow-green-200"
+                        >
+                            Xuất Excel
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Unified Card: Toolbar + Table */}
+                <div className="bg-white rounded-b-2xl rounded-tr-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    {/* Row 2: Filter & Search Toolbar */}
+                    <div className="p-3 sm:p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white">
+                        <div className="flex flex-wrap items-center gap-3">
                             <Segmented
-                                options={[
-                                    { label: '🔴 Chờ xử lý', value: 'PENDING' },
-                                    { label: '✅ Đã xử lý', value: 'EXPLAINED' },
-                                    { label: 'Tất cả trạng thái', value: 'ALL' }
-                                ]}
+                                options={statusOptions}
                                 value={statusFilter}
                                 onChange={(val: any) => setStatusFilter(val)}
                                 className="bg-slate-100 p-1 font-medium"
                             />
+                            {selectedRowKeys.length > 0 && (
+                                <Button
+                                    danger
+                                    type="primary"
+                                    size="small"
+                                    onClick={() => handleDelete(selectedRowKeys as string[])}
+                                    className="font-medium shadow-sm"
+                                >
+                                    Xóa {selectedRowKeys.length} phiếu đã chọn
+                                </Button>
+                            )}
+                            {isAdmin && Object.keys(departments).length > 0 && (
+                                <Select
+                                    value={deptFilter}
+                                    onChange={setDeptFilter}
+                                    showSearch
+                                    placeholder="Lọc theo khoa"
+                                    style={{ minWidth: 180, maxWidth: 240 }}
+                                    optionFilterProp="label"
+                                    options={[
+                                        { value: 'ALL', label: 'Tất cả khoa phòng' },
+                                        ...Object.entries(departments).map(([code, name]) => ({
+                                            value: code,
+                                            label: `${code} - ${name}`
+                                        }))
+                                    ]}
+                                    className="font-medium"
+                                />
+                            )}
                             {sourceType === 'CHUYEN_DE' && (
                                 <Select
                                     value={chuyenDeFilter}
                                     onChange={setChuyenDeFilter}
-                                    style={{ width: 300 }}
+                                    style={{ minWidth: 240, maxWidth: 320 }}
                                     options={[
-                                        { value: 'ALL', label: 'Tất cả Lỗi Chuyên đề trùng thời gian' },
+                                        { value: 'ALL', label: 'Tất cả Lỗi Chuyên đề' },
                                         ...uniqueChuyenDeRules.map(rule => ({ value: rule, label: rule }))
                                     ]}
                                     className="font-medium"
                                 />
                             )}
-                        </Space>
-                        
-                        <Space size="small" className="flex-wrap">
-                            <Button  
-                                onClick={() => router.push('/error-management/xml-summary')}
-                                className="rounded-lg font-medium"
-                            >
-                                Báo cáo Tổng hợp
-                            </Button>
-                            <Button 
-                                type="primary" 
-                                icon={<FileExcelOutlined />} 
-                                onClick={handleExportExcel}
-                                className="bg-green-600 hover:bg-green-700 rounded-lg font-medium shadow-md shadow-green-200"
-                            >
-                                Xuất Excel
-                            </Button>
-                        </Space>
-                    </div>
-                }
-                items={[
-                    { key: 'XML', label: 'Lỗi XML' },
-                    { key: 'CHUYEN_DE', label: 'Lỗi Chuyên đề trùng thời gian' }
-                ]}
-            />
+                        </div>
 
-            {/* Table Area */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Input.Search
+                                placeholder="Tìm mã LK, BN, họ tên, mã DV..."
+                                value={searchText}
+                                onChange={e => setSearchText(e.target.value)}
+                                allowClear
+                                className="w-full sm:w-[280px]"
+                            />
+                        </div>
+                    </div>
                 <Table
                     className={sourceType === 'CHUYEN_DE' ? 'custom-chuyende-table' : ''}
                     rowSelection={canDelete ? {
                         selectedRowKeys,
                         onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
+                        getCheckboxProps: (record: any) => ({
+                            disabled: !canDeleteRecord(record),
+                            title: !canDeleteRecord(record) ? 'Phiếu đã gửi CNTT hoặc không thuộc khoa của bạn' : undefined
+                        })
                     } : undefined}
                     dataSource={filteredErrors}
                     columns={sourceType === 'CHUYEN_DE' ? chuyenDeColumns : columns}
@@ -765,14 +937,17 @@ export default function XmlErrorManager() {
                     bordered={sourceType === 'CHUYEN_DE'}
                     loading={loading}
                     pagination={{ 
-                        defaultPageSize: 15, 
+                        defaultPageSize: 12, 
+                        pageSizeOptions: ['12', '24', '48', '96'],
                         showSizeChanger: true, 
+                        locale: { items_per_page: '/ Trang' },
                         className: "px-6 py-4 border-t border-slate-100 m-0",
                         showTotal: (total, range) => <span className="text-slate-500 font-medium">Đang hiển thị {range[0]}-{range[1]} / {total} lỗi</span>
                     }}
                     scroll={{ x: 1300 }}
                     rowClassName={(record: any) => record.itResolved ? 'bg-green-50/50' : (record.groupColor || '')}
                 />
+                </div>
             </div>
 
             <Modal

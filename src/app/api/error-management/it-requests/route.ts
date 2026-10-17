@@ -239,7 +239,11 @@ export async function POST(request: Request) {
             let telegramMsg = `🔴 <b>HỐI THÚC XỬ LÝ (Lần ${newPingCount})</b>\n\n`;
             telegramMsg += `🏢 <b>Khoa:</b> ${tenKhoa}\n`;
             telegramMsg += `👤 <b>Người báo:</b> ${nguoiBaoName}\n`;
-            telegramMsg += `📝 <b>Bệnh án:</b> ${ma_ba}\n`;
+            const isXmlPing = Boolean(ten_loi?.includes('[Hỗ trợ Lỗi Hồ sơ]') || dynamicFields?.['Loại lỗi']?.includes('Lỗi XML') || dynamicFields?.['Loại lỗi']?.includes('Lỗi Chuyên đề') || dynamicFields?.['Mã LK']);
+            telegramMsg += `📝 <b>${isXmlPing ? 'Mã LK' : 'Bệnh án'}:</b> ${ma_ba}\n`;
+            if (dynamicFields?.['Mã BN']) {
+                telegramMsg += `🆔 <b>Mã BN:</b> ${dynamicFields['Mã BN']}\n`;
+            }
             telegramMsg += `❌ <b>Lỗi:</b> ${ten_loi}\n`;
             if (dynamicFields?.['Ghi chú']) {
                 telegramMsg += `🗒 <b>Ghi chú gửi lại:</b> ${dynamicFields['Ghi chú']}\n`;
@@ -444,8 +448,14 @@ export async function POST(request: Request) {
         telegramMsg += `📌 <b>Loại sự cố:</b> ${category === 'SOFTWARE' ? 'Phần Mềm / Nghiệp Vụ' : 'Phần Cứng / Sửa Chữa'}\n`;
 
         if (category === 'SOFTWARE') {
-            telegramMsg += `📝 <b>Bệnh án:</b> ${ma_ba}\n`;
-            telegramMsg += `📊 <b>Trạng thái:</b> ${dynamicFields['Trạng thái BA'] || ''}\n`;
+            const isXmlNew = Boolean(ten_loi?.includes('[Hỗ trợ Lỗi Hồ sơ]') || dynamicFields?.['Loại lỗi']?.includes('Lỗi XML') || dynamicFields?.['Loại lỗi']?.includes('Lỗi Chuyên đề') || dynamicFields?.['Mã LK']);
+            telegramMsg += `📝 <b>${isXmlNew ? 'Mã LK' : 'Bệnh án'}:</b> ${ma_ba}\n`;
+            if (dynamicFields['Mã BN']) {
+                telegramMsg += `🆔 <b>Mã BN:</b> ${dynamicFields['Mã BN']}\n`;
+            }
+            if (dynamicFields['Trạng thái BA']) {
+                telegramMsg += `📊 <b>Trạng thái:</b> ${dynamicFields['Trạng thái BA']}\n`;
+            }
         }
 
         telegramMsg += `❌ <b>Lỗi:</b> ${ten_loi}\n`;
