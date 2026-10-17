@@ -173,20 +173,32 @@ export default function ClinicalSchedulingPage() {
     
     const [morningStaffs, setMorningStaffs] = useState<string[]>([]);
     const [afternoonStaffs, setAfternoonStaffs] = useState<string[]>([]);
+    const [dateSourceColumn, setDateSourceColumn] = useState<string>('');
 
-    // Thống kê các ngày dự kiến thực hiện có trong file Excel
+    // Lấy chuỗi ngày từ dòng dữ liệu dựa vào cột ngày đã chọn hoặc fallback
+    const getItemDate = (item: any): string => {
+        let raw = '';
+        if (dateSourceColumn && item._originalRow && item._originalRow[dateSourceColumn] !== undefined && item._originalRow[dateSourceColumn] !== '') {
+            raw = item._originalRow[dateSourceColumn];
+        }
+        if (!raw) {
+            raw = item.ngay_du_kien || item.thoi_gian_chi_dinh;
+        }
+        return extractDateString(raw);
+    };
+
+    // Thống kê các ngày có trong file Excel dựa vào cột ngày đã chọn
     const availableDatesInFile = React.useMemo(() => {
         if (!uploadedData.length) return [];
         const map: Record<string, number> = {};
         uploadedData.forEach(item => {
-            const raw = item.ngay_du_kien || item.thoi_gian_chi_dinh;
-            const d = extractDateString(raw);
+            const d = getItemDate(item);
             if (d) {
                 map[d] = (map[d] || 0) + 1;
             }
         });
         return Object.entries(map).map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
-    }, [uploadedData]);
+    }, [uploadedData, dateSourceColumn]);
 
     // Lọc dữ liệu của ngày thực hiện đang chọn ở ô số 1
     const currentDayData = React.useMemo(() => {
@@ -194,14 +206,13 @@ export default function ClinicalSchedulingPage() {
         if (!selectedDate) return uploadedData;
         
         return uploadedData.filter(item => {
-            const raw = item.ngay_du_kien || item.thoi_gian_chi_dinh;
-            const d = extractDateString(raw);
+            const d = getItemDate(item);
             if (d) {
                 return d === selectedDate;
             }
             return true;
         });
-    }, [uploadedData, selectedDate]);
+    }, [uploadedData, selectedDate, dateSourceColumn]);
 
     // Tự động cập nhật danh sách dịch vụ khi ngày thực hiện hoặc dữ liệu thay đổi
     useEffect(() => {
@@ -838,6 +849,23 @@ export default function ClinicalSchedulingPage() {
                     setColumnMapping(autoMap);
                     setOutputMapping(outMap);
                     
+                    const primaryDateSetting = matchedTemplate.mappings?.find((m: any) => m.system_field === 'primary_date_field')?.excel_column;
+                    const customDateSetting = matchedTemplate.mappings?.find((m: any) => m.system_field === 'custom_date_col')?.excel_column;
+                    let chosenDateCol = '';
+                    if (primaryDateSetting === 'thoi_gian_chi_dinh') {
+                        chosenDateCol = autoMap.thoi_gian_chi_dinh;
+                    } else if (primaryDateSetting === 'custom' && customDateSetting) {
+                        chosenDateCol = customDateSetting;
+                    } else if (primaryDateSetting === 'ngay_du_kien') {
+                        chosenDateCol = autoMap.ngay_du_kien;
+                    }
+                    if (!chosenDateCol) {
+                        chosenDateCol = customDateSetting || autoMap.ngay_du_kien || autoMap.thoi_gian_chi_dinh || '';
+                    }
+                    if (chosenDateCol) {
+                        setDateSourceColumn(chosenDateCol);
+                    }
+
                     if (processMappedData(autoMap, json)) {
                         message.success(selectedTemplateId ? `Đã áp dụng mẫu: ${matchedTemplate.name}` : `Đã tự động nhận diện mẫu: ${matchedTemplate.name}`);
                     }
@@ -858,6 +886,12 @@ export default function ClinicalSchedulingPage() {
                     if (upper.includes('MÃ KHOA') || upper === 'MAKHOA') autoMap.ma_khoa = h;
                     if (upper.includes('PHÒNG THỰC HIỆN') || upper === 'PHONGTHUCHIEN') autoMap.phong_thuc_hien = h;
                 });
+                
+                const foundDateHeader = autoMap.ngay_du_kien || autoMap.thoi_gian_chi_dinh || '';
+                if (foundDateHeader) {
+                    setDateSourceColumn(foundDateHeader);
+                }
+
                 setColumnMapping(autoMap);
                 setMappingModalVisible(true);
             } catch (error) {
@@ -872,6 +906,11 @@ export default function ClinicalSchedulingPage() {
         if (!mapping.ma_dich_vu) {
             message.error('Bắt buộc phải chọn cột Mã Dịch Vụ!');
             return false;
+        }
+
+        if (!dateSourceColumn) {
+            const defaultDateCol = mapping.ngay_du_kien || mapping.thoi_gian_chi_dinh || '';
+            if (defaultDateCol) setDateSourceColumn(defaultDateCol);
         }
 
         localStorage.setItem('clinical_schedule_column_mapping', JSON.stringify(mapping));
@@ -1782,9 +1821,27 @@ export default function ClinicalSchedulingPage() {
                                         </div>
 
                                         <div style={{ marginTop: 24, textAlign: 'center', background: '#f6ffed', padding: 16, border: '1px solid #b7eb8f', borderRadius: 8 }}>
-                                            <h3 style={{ margin: 0, color: '#389e0d', marginBottom: 6 }}>
+                                            <h3 style={{ margin: 0, color: '#389e0d', marginBottom: 8 }}>
                                                 ✅ Đã tải file: {uploadedData.length} chỉ định dịch vụ
                                             </h3>
+
+                                            {/* Bộ chọn Cột ngày căn cứ xếp lịch linh hoạt */}
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: '#ffffff', padding: '6px 14px', borderRadius: 8, border: '1px solid #91caff', marginBottom: 12, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                                <span style={{ fontWeight: 600, color: '#0958d9', fontSize: 13 }}>
+                                                    📅 Cột ngày căn cứ để xếp lịch:
+                                                </span>
+                                                <Select
+                                                    value={dateSourceColumn || undefined}
+                                                    onChange={(val) => {
+                                                        setDateSourceColumn(val);
+                                                        message.info(`Đã đổi cột ngày xếp lịch sang: "${val}"`);
+                                                    }}
+                                                    style={{ minWidth: 260, textAlign: 'left' }}
+                                                    placeholder="Chọn cột ngày trong file Excel..."
+                                                    options={excelHeaders.map(h => ({ label: h, value: h }))}
+                                                    showSearch
+                                                />
+                                            </div>
                                             
                                             <div style={{ fontSize: 14, color: '#1f2937', marginBottom: 10 }}>
                                                 📅 Ngày đang chọn (<strong>{dayjs(selectedDate).format('DD/MM/YYYY')}</strong>): có <strong style={{ color: currentDayData.length > 0 ? '#16a34a' : '#d9363e', fontSize: 16 }}>{currentDayData.length}</strong> ca chờ xếp lịch.
@@ -1792,7 +1849,7 @@ export default function ClinicalSchedulingPage() {
 
                                             {availableDatesInFile.length > 1 && (
                                                 <div style={{ marginTop: 8, marginBottom: 14, padding: '8px 12px', background: '#ffffff', borderRadius: 6, border: '1px dashed #b7eb8f', display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
-                                                    <span style={{ fontSize: 13, color: '#4b5563', fontWeight: 600 }}>File có {availableDatesInFile.length} ngày dự kiến (bấm để đổi nhanh):</span>
+                                                    <span style={{ fontSize: 13, color: '#4b5563', fontWeight: 600 }}>Cột "{dateSourceColumn || 'ngày'}" có {availableDatesInFile.length} ngày (bấm để đổi nhanh):</span>
                                                     {availableDatesInFile.map(({ date, count }) => {
                                                         const isSelected = date === selectedDate;
                                                         return (
@@ -1820,8 +1877,8 @@ export default function ClinicalSchedulingPage() {
 
                                             {currentDayData.length === 0 && (
                                                 <Alert 
-                                                    title={`Không có dịch vụ nào dự kiến thực hiện trong ngày ${dayjs(selectedDate).format('DD/MM/YYYY')}!`}
-                                                    description="Vui lòng bấm chọn một trong các ngày có dữ liệu ở phía trên hoặc thay đổi ngày ở ô '1. Chọn ngày thực hiện'."
+                                                    title={`Không có dịch vụ nào trong ngày ${dayjs(selectedDate).format('DD/MM/YYYY')} theo cột "${dateSourceColumn || 'ngày'}"!`}
+                                                    description="Vui lòng bấm chọn một trong các ngày có dữ liệu ở phía trên, hoặc đổi 'Cột ngày căn cứ để xếp lịch' ở ô phía trên sang cột khác (ví dụ: NGAYCHIDINH, NGAY_Y_LENH, NGAYDUKIEN...)."
                                                     type="warning"
                                                     showIcon
                                                     style={{ marginBottom: 16, textAlign: 'left' }}
@@ -2537,6 +2594,27 @@ export default function ClinicalSchedulingPage() {
                             allowClear
                             placeholder="Chọn cột Ngày dự kiến"
                         />
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col span={24} style={{ marginBottom: 16 }}>
+                        <div style={{ padding: '10px 14px', background: '#e6f4ff', borderRadius: 8, border: '1px solid #91caff' }}>
+                            <div style={{ marginBottom: 6, fontWeight: 600, color: '#0958d9' }}>
+                                📅 Cột ngày căn cứ để xếp lịch:
+                            </div>
+                            <Select
+                                style={{ width: '100%' }}
+                                value={dateSourceColumn || undefined}
+                                onChange={v => setDateSourceColumn(v)}
+                                options={excelHeaders.map(h => ({ label: h, value: h }))}
+                                showSearch
+                                allowClear
+                                placeholder="Chọn cột ngày trong file Excel dùng để lọc và xếp lịch..."
+                            />
+                            <div style={{ fontSize: 12, color: '#595959', marginTop: 4 }}>
+                                Bất kể tên cột trong file là gì (ví dụ: NGAYCHIDINH, NGAY_Y_LENH, NGAYDUKIEN...), hệ thống sẽ lấy ngày theo cột này để chia thời gian thực hiện.
+                            </div>
+                        </div>
                     </Col>
                 </Row>
                 <Row gutter={16}>

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Space, Tag, Popconfirm, Upload, AutoComplete, Checkbox, App } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Space, Tag, Popconfirm, Upload, AutoComplete, Checkbox, Radio, App } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 
@@ -66,6 +66,18 @@ export default function ExcelTemplateConfig() {
             excel_column: values[field.code] || ''
         })).filter(m => m.excel_column);
 
+        mappings.push({
+            system_field: 'primary_date_field',
+            excel_column: values.primary_date_field || 'ngay_du_kien'
+        });
+
+        if (values.custom_date_col) {
+            mappings.push({
+                system_field: 'custom_date_col',
+                excel_column: values.custom_date_col
+            });
+        }
+
         OUTPUT_FIELDS.forEach(field => {
             mappings.push({
                 system_field: `enable_${field.code}`,
@@ -126,6 +138,13 @@ export default function ExcelTemplateConfig() {
                     formData[m.system_field] = m.excel_column;
                 }
             });
+            const dateFieldMapping = template.mappings?.find((m: any) => m.system_field === 'primary_date_field');
+            formData.primary_date_field = dateFieldMapping?.excel_column || 'ngay_du_kien';
+            const customDateMapping = template.mappings?.find((m: any) => m.system_field === 'custom_date_col');
+            if (customDateMapping) {
+                formData.custom_date_col = customDateMapping.excel_column;
+            }
+
             // Ensure any missing enable_ states default to true
             OUTPUT_FIELDS.forEach(f => {
                 if (formData[`enable_${f.code}`] === undefined) {
@@ -135,7 +154,7 @@ export default function ExcelTemplateConfig() {
             form.setFieldsValue(formData);
         } else {
             form.resetFields();
-            const defaultFormData: any = {};
+            const defaultFormData: any = { primary_date_field: 'ngay_du_kien' };
             OUTPUT_FIELDS.forEach(f => {
                 defaultFormData[`enable_${f.code}`] = true;
             });
@@ -298,6 +317,61 @@ export default function ExcelTemplateConfig() {
                                     />
                                 </Form.Item>
                             ))}
+                        </div>
+
+                        <div style={{ background: '#fff', padding: '14px 16px', borderRadius: '8px', border: '1px solid #d9d9d9', marginTop: 14 }}>
+                            <div style={{ marginBottom: 8, fontWeight: 600, color: '#0958d9', fontSize: 14 }}>
+                                📅 Cột ngày căn cứ để xếp lịch:
+                            </div>
+                            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.ngay_du_kien !== cur.ngay_du_kien || prev.thoi_gian_chi_dinh !== cur.thoi_gian_chi_dinh || prev.primary_date_field !== cur.primary_date_field}>
+                                {({ getFieldValue }) => {
+                                    const valNgayDuKien = getFieldValue('ngay_du_kien');
+                                    const valThoiGianChiDinh = getFieldValue('thoi_gian_chi_dinh');
+                                    const selectedRadio = getFieldValue('primary_date_field');
+
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            <Form.Item name="primary_date_field" style={{ margin: 0 }}>
+                                                <Radio.Group style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                    <Radio value="ngay_du_kien">
+                                                        Thời gian dự kiến thực hiện {valNgayDuKien ? <strong style={{ color: '#1677ff' }}>({valNgayDuKien})</strong> : <i style={{ color: '#8c8c8c' }}>(Chưa điền tên cột)</i>}
+                                                    </Radio>
+                                                    <Radio value="thoi_gian_chi_dinh">
+                                                        Thời gian chỉ định {valThoiGianChiDinh ? <strong style={{ color: '#1677ff' }}>({valThoiGianChiDinh})</strong> : <i style={{ color: '#8c8c8c' }}>(Chưa điền tên cột)</i>}
+                                                    </Radio>
+                                                    <Radio value="custom">
+                                                        Cột ngày khác trong file (Ví dụ: NGAY_Y_LENH, NGAY_KHAM, NGAY_HEN...)
+                                                    </Radio>
+                                                </Radio.Group>
+                                            </Form.Item>
+
+                                            {selectedRadio === 'custom' && (
+                                                <div style={{ marginLeft: 24, marginTop: 4 }}>
+                                                    <Form.Item 
+                                                        name="custom_date_col" 
+                                                        style={{ margin: 0 }}
+                                                        rules={[{ required: true, message: 'Vui lòng nhập hoặc chọn tên cột ngày' }]}
+                                                    >
+                                                        <AutoComplete 
+                                                            options={uploadedHeaders.map(h => ({ value: h }))}
+                                                            placeholder="Nhập hoặc chọn tên cột ngày khác từ file..."
+                                                            allowClear
+                                                            style={{ maxWidth: 360 }}
+                                                            filterOption={(inputValue, option) =>
+                                                                option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                                                            }
+                                                        />
+                                                    </Form.Item>
+                                                </div>
+                                            )}
+                                            
+                                            <div style={{ fontSize: 12, color: '#595959', marginTop: 4 }}>
+                                                * Hệ thống sẽ tự động tìm ngày trong cột được chọn này để lọc ca bệnh và chia thời gian xếp lịch.
+                                            </div>
+                                        </div>
+                                    );
+                                }}
+                            </Form.Item>
                         </div>
                     </div>
                     
