@@ -4,13 +4,34 @@ import path from 'path';
 
 const configPath = path.join(process.cwd(), 'data', 'admin-paths.json');
 
+import prisma from '@/lib/prisma';
+
 export async function GET() {
     try {
-        const fileContent = await fs.readFile(configPath, 'utf-8');
-        const paths = JSON.parse(fileContent);
-        return NextResponse.json(paths);
+        let filePaths: string[] = [];
+        try {
+            const fileContent = await fs.readFile(configPath, 'utf-8');
+            filePaths = JSON.parse(fileContent);
+        } catch (e) {
+            console.error('Error reading admin-paths.json:', e);
+        }
+
+        // Tự động lấy tất cả các menu được đánh dấu là Quản trị từ Database
+        let dbAdminPaths: string[] = [];
+        try {
+            const adminMenus = await prisma.menu.findMany({
+                where: { isAdminOnly: true, isActive: true },
+                select: { path: true }
+            });
+            dbAdminPaths = adminMenus.map(m => m.path).filter((p): p is string => Boolean(p && p.trim() !== '' && p !== '/'));
+        } catch (e) {
+            console.error('Error fetching admin menus from db:', e);
+        }
+
+        const combinedPaths = Array.from(new Set([...filePaths, ...dbAdminPaths]));
+        return NextResponse.json(combinedPaths);
     } catch (error) {
-        console.error('Error reading admin-paths.json:', error);
+        console.error('Error in GET paths-config:', error);
         return NextResponse.json({ error: 'Failed to read config' }, { status: 500 });
     }
 }

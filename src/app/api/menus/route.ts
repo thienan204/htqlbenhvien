@@ -45,6 +45,7 @@ export async function POST(req: Request) {
                 order: data.order || 0,
                 permissionCode: data.permissionCode,
                 isActive: data.isActive !== undefined ? data.isActive : true,
+                isAdminOnly: data.isAdminOnly !== undefined ? Boolean(data.isAdminOnly) : false,
                 isSpecialGroup: data.isSpecialGroup,
                 showInPaths: data.showInPaths || [],
             }

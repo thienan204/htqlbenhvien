@@ -24,6 +24,7 @@ const checkPathMatch = (patterns: string[], currentPath: string) => {
 import { useAuth } from '@/contexts/AuthContext';
 
 const isMenuAdmin = (menu: any, rules: any[], allMenus: any[], adminOnlyPaths: string[]): boolean => {
+    if (menu.isAdminOnly) return true;
     if (menu.path) {
         return adminOnlyPaths.some(p => menu.path.startsWith(p));
     }

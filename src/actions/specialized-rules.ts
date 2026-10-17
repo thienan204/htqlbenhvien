@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache'
 export async function getSpecializedRules() {
     try {
         const rules = await prisma.specializedRule.findMany({
+            where: {
+                ruleType: { notIn: ['SYSTEM_CONFIG', 'USER_SOUND_CONFIG'] }
+            },
             orderBy: { order: 'asc' },
         })
         return { success: true, data: rules }

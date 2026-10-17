@@ -1,5 +1,24 @@
 [
   {
+    "id": "cmv4yhj7c0002n49wwxkoivue",
+    "name": "Cấu hình âm thanh của Hoàng Thế Lâm",
+    "slug": "user-sound-cmr5tcqqb009n3l00o4p17w4q",
+    "description": "Cài đặt nhạc chuông cá nhân của người dùng ID: cmr5tcqqb009n3l00o4p17w4q",
+    "isActive": true,
+    "order": 0,
+    "ruleType": "USER_SOUND_CONFIG",
+    "logicConfig": {
+      "url": "https://www.youtube.com/watch?v=u1eAt7VkjqA",
+      "mode": "CUSTOM",
+      "name": "",
+      "type": "YOUTUBE",
+      "duration": 30
+    },
+    "sqlQuery": null,
+    "createdAt": "2026-10-12T07:54:12.210Z",
+    "updatedAt": "2026-10-12T12:30:09.281Z"
+  },
+  {
     "id": "cmqqt69ug0001cgoylimnzrlz",
     "name": "Cấu hình trường động cho IT Request",
     "slug": "it-request-fields-config",
@@ -186,8 +205,7 @@
       "type": "DUPLICATE_BED",
       "fields": {
         "bed": [
-          "MA_BN",
-          "NGUOI_THUC_HIEN"
+          "MA_BN"
         ],
         "room": "MA_PHONG",
         "endTime": "NGAY_TH_YL",
@@ -202,12 +220,13 @@
           "3"
         ]
       },
+      "ignoreNullValues": true,
       "toleranceMinutes": 0,
       "ignoreIfSameField": ""
     },
     "sqlQuery": null,
     "createdAt": "2026-04-26T04:27:40.117Z",
-    "updatedAt": "2026-05-06T02:21:15.143Z"
+    "updatedAt": "2026-08-18T08:59:41.469Z"
   },
   {
     "id": "cmogqksxw0009y2kvkn3guk85",

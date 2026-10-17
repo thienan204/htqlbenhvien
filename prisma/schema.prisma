@@ -607,6 +607,7 @@ model Menu {
   order          Int      @default(0)
   permissionCode String?
   isActive       Boolean  @default(true)
+  isAdminOnly    Boolean  @default(false)
   isSpecialGroup String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

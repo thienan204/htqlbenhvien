@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tree, Card, Button, Form, Input, Select, Switch, message, Modal, Spin, Popconfirm, Tooltip, Divider, AutoComplete } from 'antd';
+import { Tree, Card, Button, Form, Input, Select, Switch, message, Modal, Spin, Popconfirm, Tooltip, Divider, AutoComplete, Tag } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, ReloadOutlined, EditOutlined, DragOutlined } from '@ant-design/icons';
 import type { TreeDataNode, TreeProps } from 'antd';
 import * as Icons from '@ant-design/icons';
@@ -19,6 +19,7 @@ interface MenuNode {
     order: number;
     permissionCode: string | null;
     isActive: boolean;
+    isAdminOnly?: boolean;
     isSpecialGroup: string | null;
     showInPaths?: string[];
     children?: MenuNode[];
@@ -246,6 +247,7 @@ export default function MenuBuilderPage() {
         form.setFieldsValue({
             parentId,
             isActive: true,
+            isAdminOnly: false,
             order: 0
         });
     };
@@ -338,11 +340,16 @@ export default function MenuBuilderPage() {
                                 onExpand={setExpandedKeys}
                                 titleRender={(nodeData: any) => {
                                     return (
-                                        <div className="flex items-center gap-3 py-1 px-2 group">
+                                        <div className="flex items-center gap-2 py-1 px-2 group">
                                             <span className="text-slate-400">{renderIcon(nodeData.icon) || <DragOutlined />}</span>
                                             <span className={`font-medium ${!nodeData.isActive ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                                                 {nodeData.title}
                                             </span>
+                                            {nodeData.isAdminOnly && (
+                                                <Tag color="volcano" className="text-[10px] py-0 px-1.5 leading-4 border-none ml-1">
+                                                    Quản trị
+                                                </Tag>
+                                            )}
                                             {nodeData.permissionCode && (
                                                 <span className="ml-auto text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded border border-blue-100 hidden sm:inline-block">
                                                     {nodeData.permissionCode}
@@ -436,12 +443,23 @@ export default function MenuBuilderPage() {
                                         <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
                                     </Form.Item>
                                     <Form.Item 
+                                        name="isAdminOnly" 
+                                        label="Phân loại Menu" 
+                                        valuePropName="checked"
+                                        tooltip="Bật nếu menu này chỉ dành cho Quản trị viên (sẽ hiển thị ở chế độ Quản trị và chỉ ADMIN được vào)"
+                                    >
+                                        <Switch checkedChildren="Quản trị" unCheckedChildren="Người dùng" />
+                                    </Form.Item>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Form.Item 
                                         name="isSpecialGroup" 
                                         label="Loại Menu Đặc Biệt"
                                         tooltip="Dùng để tự động tải các danh sách chuyên đề vào nhóm này"
                                     >
                                         <Select placeholder="Bình thường" allowClear>
-                                            <Option value="SPECIALIZED_RULES">NhNhóm Danh Sách Chuyên Đề</Option>
+                                            <Option value="SPECIALIZED_RULES">Nhóm Danh Sách Chuyên Đề</Option>
                                         </Select>
                                     </Form.Item>
                                 </div>

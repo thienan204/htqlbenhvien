@@ -34,7 +34,7 @@ async function getSpecializedRules() {
     const rules = await prisma.specializedRule.findMany({
       where: { 
         isActive: true,
-        ruleType: { not: 'SYSTEM_CONFIG' }
+        ruleType: { notIn: ['SYSTEM_CONFIG', 'USER_SOUND_CONFIG'] }
       },
       orderBy: { order: 'asc' },
     });
@@ -93,6 +93,8 @@ export default async function RootLayout({
   } catch (e) {
     console.error("Failed to read admin-paths.json in layout", e);
   }
+  const dbAdminPaths = menus.filter(m => m.isAdminOnly && m.path).map(m => m.path);
+  adminOnlyPaths = Array.from(new Set([...adminOnlyPaths, ...dbAdminPaths]));
 
   return (
     <html lang="en" suppressHydrationWarning>

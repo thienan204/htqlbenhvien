@@ -33,6 +33,7 @@ export async function PUT(req: Request, context: any) {
                 order: data.order,
                 permissionCode: data.permissionCode,
                 isActive: data.isActive,
+                isAdminOnly: data.isAdminOnly !== undefined ? Boolean(data.isAdminOnly) : false,
                 isSpecialGroup: data.isSpecialGroup,
                 showInPaths: data.showInPaths || [],
             }

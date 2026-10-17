@@ -13,7 +13,10 @@ import prisma from '@/lib/prisma';
 async function getSpecializedRules() {
     try {
         const rules = await prisma.specializedRule.findMany({
-            where: { isActive: true },
+            where: { 
+                isActive: true,
+                ruleType: { notIn: ['SYSTEM_CONFIG', 'USER_SOUND_CONFIG'] }
+            },
             orderBy: { order: 'asc' },
         });
         return rules;

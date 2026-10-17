@@ -11,5 +11,6 @@
     "/docs",
     "/users",
     "/error-management/duty-roster",
-    "/bed-catalog"
+    "/bed-catalog",
+    "/system-categories"
 ]

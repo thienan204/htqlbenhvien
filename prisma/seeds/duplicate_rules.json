@@ -38,11 +38,11 @@
     "serviceValues": [],
     "excludedServiceValues": [],
     "createdAt": "2026-02-05T03:24:08.713Z",
-    "updatedAt": "2026-07-29T03:46:44.779Z",
-    "ignoreIfSameField": null,
+    "updatedAt": "2026-08-10T08:31:05.229Z",
+    "ignoreIfSameField": "MAHOSOBENHAN",
     "minGapMinutes": 0,
     "departmentExclusions": [],
-    "allowedOverlapGroups": null
+    "allowedOverlapGroups": []
   },
   {
     "id": "cmnjssa3s0002d8dt8ha1ul07",

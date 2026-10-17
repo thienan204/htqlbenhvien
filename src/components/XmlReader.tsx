@@ -12,9 +12,6 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { getBasePath } from '@/utils/config';
 import { addWorkingDays, calculateRemainingTime } from '@/utils/dateUtils';
 
-import { getSpecializedRules } from '@/actions/specialized-rules';
-import { runDuplicateBedRule, runDuplicateDoctorRule, runMachineCheckRule } from '@/lib/specialized-rules-engine';
-import { exportDuplicateBedExcel, exportDuplicateDoctorExcel } from '@/lib/specialized-export';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -358,9 +355,7 @@ export default function XmlReader() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
     const [selectedKhoa, setSelectedKhoa] = useState<string | null>(null);
 
-    // Specialized rules state
-    const [specializedRules, setSpecializedRules] = useState<any[]>([]);
-    const [isSpecializedChecking, setIsSpecializedChecking] = useState(false);
+
     const [activeTab, setActiveTab] = useState<string>('XML1');
     const [user, setUser] = useState<any>(null);
     interface ProcessingProgressState {
@@ -585,13 +580,6 @@ export default function XmlReader() {
         };
         fetchUser();
 
-        const fetchSpecRules = async () => {
-            const res = await getSpecializedRules();
-            if (res && res.success) {
-                setSpecializedRules((res.data || []).filter((r: any) => r.isActive && r.ruleType !== 'SYSTEM_CONFIG' && r.ruleType !== 'SQL'));
-            }
-        };
-        fetchSpecRules();
 
 
         const initDB = async () => {
@@ -927,165 +915,6 @@ export default function XmlReader() {
         }
     };
 
-    const handleRunSpecializedRule = (rule: any) => {
-        if (!rule.logicConfig) {
-            message.error("Quy tắc chưa có cấu hình logic");
-            return;
-        }
-
-        setIsSpecializedChecking(true);
-        message.loading({ content: `Đang kiểm tra ${rule.name}...`, key: 'spec_check' });
-        
-        setTimeout(() => {
-            let result: any;
-            if (rule.ruleType === 'DUPLICATE_BED' || rule.logicConfig?.type === 'DUPLICATE_BED' || rule.slug?.includes('trung-giuong')) {
-                result = runDuplicateBedRule(records, rule.logicConfig);
-            } else if (rule.ruleType === 'DUPLICATE_DOCTOR' || rule.logicConfig?.type === 'DUPLICATE_DOCTOR' || rule.slug?.includes('trung-bac-si')) {
-                result = runDuplicateDoctorRule(records, rule.logicConfig);
-            } else if (rule.ruleType === 'MACHINE_CHECK' || rule.logicConfig?.type === 'MACHINE_CHECK' || rule.slug?.includes('may')) {
-                result = runMachineCheckRule(records, rule.logicConfig);
-            }
-
-            if (result) {
-                const overlaps = result.overlaps as Set<string>;
-                if (overlaps.size > 0) {
-                    const newRecords = records.map(r => {
-                        if (overlaps.has(r.id)) {
-                            // avoid duplicate tags
-                            const existingResults = r.validationResults || [];
-                            const hasThisError = existingResults.some((e: any) => e.message?.includes(rule.name));
-                            if (!hasThisError) {
-                                return {
-                                    ...r,
-                                    validationResults: [
-                                        ...existingResults,
-                                        { 
-                                            ruleId: `CHUYEN_DE_${rule.id || 'RULE'}`,
-                                            ruleName: rule.name,
-                                            type: 'Cảnh báo',
-                                            xmlType: 'XML1',
-                                            field: 'MA_LK',
-                                            message: `[Chuyên đề] ${rule.name}`,
-                                            isError: true 
-                                        } as ValidationResult
-                                    ]
-                                };
-                            }
-                        }
-                        return r;
-                    });
-                    setRecords(newRecords);
-                    message.success({ content: `Phát hiện ${overlaps.size} hồ sơ vi phạm chuyên đề ${rule.name}`, key: 'spec_check', duration: 4 });
-                } else {
-                    message.success({ content: `Không phát hiện vi phạm chuyên đề ${rule.name}`, key: 'spec_check', duration: 3 });
-                }
-            } else {
-                message.warning({ content: `Chuyên đề ${rule.name} (Loại: ${rule.ruleType}) chưa được hỗ trợ kiểm tra trực tiếp.`, key: 'spec_check', duration: 4 });
-            }
-            setIsSpecializedChecking(false);
-        }, 100);
-    };
-
-    const handleRunAllSpecializedRules = () => {
-        setIsSpecializedChecking(true);
-        message.loading({ content: `Đang chạy kiểm tra ${specializedRules.length} chuyên đề...`, key: 'spec_check_all' });
-        
-        setTimeout(() => {
-            let totalOverlaps = 0;
-            let currentRecords = [...records];
-            
-            for (const rule of specializedRules) {
-                if (!rule.logicConfig) continue;
-                
-                let result: any;
-                if (rule.ruleType === 'DUPLICATE_BED' || rule.logicConfig?.type === 'DUPLICATE_BED' || rule.slug?.includes('trung-giuong')) {
-                    result = runDuplicateBedRule(currentRecords, rule.logicConfig);
-                } else if (rule.ruleType === 'DUPLICATE_DOCTOR' || rule.logicConfig?.type === 'DUPLICATE_DOCTOR' || rule.slug?.includes('trung-bac-si')) {
-                    result = runDuplicateDoctorRule(currentRecords, rule.logicConfig);
-                } else if (rule.ruleType === 'MACHINE_CHECK' || rule.logicConfig?.type === 'MACHINE_CHECK' || rule.slug?.includes('may')) {
-                    result = runMachineCheckRule(currentRecords, rule.logicConfig);
-                }
-                
-                if (result) {
-                    const overlaps = result.overlaps as Set<string>;
-                    if (overlaps.size > 0) {
-                        totalOverlaps += overlaps.size;
-                        currentRecords = currentRecords.map(r => {
-                            if (overlaps.has(r.id)) {
-                                const existingResults = r.validationResults || [];
-                                const hasThisError = existingResults.some((e: any) => e.message?.includes(rule.name));
-                                if (!hasThisError) {
-                                    return {
-                                        ...r,
-                                        validationResults: [
-                                            ...existingResults,
-                                            { 
-                                                ruleId: `CHUYEN_DE_${rule.id || 'RULE'}`,
-                                                ruleName: rule.name,
-                                                type: 'Cảnh báo',
-                                                xmlType: 'XML1',
-                                                field: 'MA_LK',
-                                                message: `[Chuyên đề] ${rule.name}`,
-                                                isError: true 
-                                            } as ValidationResult
-                                        ]
-                                    };
-                                }
-                            }
-                            return r;
-                        });
-                    }
-                }
-            }
-            
-            setRecords(currentRecords);
-            setIsSpecializedChecking(false);
-            if (totalOverlaps > 0) {
-                message.success({ content: `Đã phát hiện tổng cộng ${totalOverlaps} lỗi trên các hồ sơ`, key: 'spec_check_all', duration: 4 });
-            } else {
-                message.success({ content: `Tuyệt vời! Không phát hiện vi phạm chuyên đề nào`, key: 'spec_check_all', duration: 3 });
-            }
-        }, 100);
-    };
-
-    const handleExportSpecializedRule = (rule: any) => {
-        if (!rule.logicConfig) {
-            message.error("Quy tắc chưa có cấu hình logic");
-            return;
-        }
-
-        setIsSpecializedChecking(true);
-        message.loading({ content: `Đang xuất báo cáo ${rule.name}...`, key: 'spec_export' });
-
-        setTimeout(async () => {
-            try {
-                if (rule.ruleType === 'DUPLICATE_BED' || rule.logicConfig?.type === 'DUPLICATE_BED' || rule.slug?.includes('trung-giuong') || rule.ruleType === 'MACHINE_CHECK' || rule.logicConfig?.type === 'MACHINE_CHECK' || rule.slug?.includes('may')) {
-                    const result = runDuplicateBedRule(records, rule.logicConfig, departments, {});
-                    if (result && result.results && result.results.length > 0) {
-                        await exportDuplicateBedExcel(result.results, rule.name);
-                        message.success({ content: `Đã xuất báo cáo ${rule.name}`, key: 'spec_export', duration: 3 });
-                    } else {
-                        message.warning({ content: `Không có dữ liệu vi phạm để xuất`, key: 'spec_export', duration: 3 });
-                    }
-                } else if (rule.ruleType === 'DUPLICATE_DOCTOR' || rule.logicConfig?.type === 'DUPLICATE_DOCTOR' || rule.slug?.includes('trung-bac-si')) {
-                    const result = runDuplicateDoctorRule(records, rule.logicConfig, departments, {});
-                    if (result && result.results && result.results.length > 0) {
-                        await exportDuplicateDoctorExcel(result.results, rule.name);
-                        message.success({ content: `Đã xuất báo cáo ${rule.name}`, key: 'spec_export', duration: 3 });
-                    } else {
-                        message.warning({ content: `Không có dữ liệu vi phạm để xuất`, key: 'spec_export', duration: 3 });
-                    }
-                } else {
-                    message.warning({ content: `Chuyên đề ${rule.name} chưa được hỗ trợ xuất báo cáo.`, key: 'spec_export', duration: 3 });
-                }
-            } catch (error) {
-                console.error(error);
-                message.error({ content: `Lỗi xuất báo cáo`, key: 'spec_export', duration: 3 });
-            } finally {
-                setIsSpecializedChecking(false);
-            }
-        }, 100);
-    };
 
     const handleSaveToDBForViewer = async () => {
         const targetRecords = getFilteredRecords();
@@ -2332,38 +2161,7 @@ export default function XmlReader() {
                                     
                                     {/* Bottom Row: Filters */}
                                     <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-100">
-                                        <Space wrap>
-                                            <Dropdown
-                                                menu={{
-                                                    items: [
-                                                        {
-                                                            key: 'run-all',
-                                                            label: <span className="font-bold text-blue-600">Kiểm tra tất cả trên lưới</span>,
-                                                            onClick: () => handleRunAllSpecializedRules()
-                                                        },
-                                                        { type: 'divider' },
-                                                        ...specializedRules.map(rule => ({
-                                                            key: rule.id,
-                                                            label: rule.name,
-                                                            children: [
-                                                                { key: `${rule.id}-check`, label: 'Kiểm tra trên lưới', onClick: () => handleRunSpecializedRule(rule) },
-                                                                { key: `${rule.id}-export`, label: 'Xuất Báo cáo Excel', onClick: () => handleExportSpecializedRule(rule) }
-                                                            ]
-                                                        }))
-                                                    ]
-                                                }}
-                                                trigger={['click']}
-                                                disabled={specializedRules.length === 0}
-                                            >
-                                                <Button 
-                                                    type="default" 
-                                                    loading={isSpecializedChecking}
-                                                    className="text-teal-600 border-teal-200 hover:text-teal-700 hover:border-teal-400"
-                                                >
-                                                    Kiểm tra theo chuyên đề {specializedRules.length > 0 && `(${specializedRules.length})`}
-                                                </Button>
-                                            </Dropdown>
-                                        </Space>
+
                                         <Space wrap>
                                             <Select
                                                 placeholder="Lọc theo Khoa"
