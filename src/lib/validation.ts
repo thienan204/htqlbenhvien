@@ -504,7 +504,7 @@ export class ValidationEngine {
         return isNaN(d.getTime()) ? null : d;
     }
 
-    public evaluateRule(rule: ValidationRule, record: HosoRecord): { isMatch: boolean, error?: string } {
+    public evaluateRule(rule: ValidationRule, record: HosoRecord): { isMatch: boolean, error?: string, evaluatedMessage?: string } {
         try {
             const rootContext: Record<string, any> = {};
             // ... (keep context setup)
