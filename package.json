@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "node --max-old-space-size=8192 node_modules/next/dist/bin/next dev --webpack",
+    "prebuild": "node scripts/generate-routes.js",
     "build": "next build",
+    "generate-routes": "node scripts/generate-routes.js",
     "start": "next start",
     "lint": "eslint",
     "git-push": "node scripts/export-data.js && git add . && git commit -m \"auto backup data\" && git push"

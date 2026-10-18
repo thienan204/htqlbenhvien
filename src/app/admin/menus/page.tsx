@@ -25,6 +25,8 @@ interface MenuNode {
     children?: MenuNode[];
 }
 
+import defaultSystemRoutes from '@/config/systemRoutes.json';
+
 // Danh sách các icon phổ biến cho Sidebar
 const ICON_LIST = [
     'DashboardOutlined', 'FileExcelOutlined', 'ExperimentOutlined', 'TableOutlined', 
@@ -34,42 +36,12 @@ const ICON_LIST = [
     'ProjectOutlined', 'FolderOutlined', 'CheckSquareOutlined'
 ];
 
-// Danh sách các đường dẫn tĩnh có sẵn trong hệ thống
-const AVAILABLE_PATHS = [
-    { value: '/', label: '/ (Trang chủ)' },
-    { value: '/doc-file-excel', label: '/doc-file-excel' },
-    { value: '/chuyen-de/quy-tac-chuyen-de', label: '/chuyen-de/quy-tac-chuyen-de' },
-    { value: '/error-management/it-requests', label: '/error-management/it-requests' },
-    { value: '/error-management/it-requests/create', label: '/error-management/it-requests/create (Tạo Yêu Cầu IT)' },
-    { value: '/error-management/vendor-tasks', label: '/error-management/vendor-tasks (Việc gửi Đối tác ngoài)' },
-    { value: '/error-management/vtyt-requests', label: '/error-management/vtyt-requests' },
-    { value: '/error-management/vtyt-requests/create', label: '/error-management/vtyt-requests/create (Tạo Yêu Cầu VTYT)' },
-    { value: '/error-management/hcqt-requests', label: '/error-management/hcqt-requests' },
-    { value: '/error-management/hcqt-requests/create', label: '/error-management/hcqt-requests/create (Tạo Yêu Cầu HCQT)' },
-    { value: '/error-management/xml-errors', label: '/error-management/xml-errors' },
-    { value: '/error-management/duty-roster', label: '/error-management/duty-roster' },
-    { value: '/error-management/config', label: '/error-management/config' },
-    { value: '/error-management/report', label: '/error-management/report' },
-    { value: '/error-management/images', label: '/error-management/images' },
-    { value: '/rules', label: '/rules (Quy tắc XML)' },
-    { value: '/excel-rules', label: '/excel-rules' },
-    { value: '/departments', label: '/departments (Quản lý Khoa)' },
-    { value: '/staff', label: '/staff (Quản lý Nhân viên)' },
-    { value: '/users', label: '/users (Quản lý Tài khoản)' },
-    { value: '/roles', label: '/roles (Quản lý Vai trò)' },
-    { value: '/mau01-catalog', label: '/mau01-catalog' },
-    { value: '/mau02-catalog', label: '/mau02-catalog' },
-    { value: '/mau03-catalog', label: '/mau03-catalog' },
-    { value: '/mau04-catalog', label: '/mau04-catalog' },
-    { value: '/mau05-catalog', label: '/mau05-catalog' },
-    { value: '/mau06-catalog', label: '/mau06-catalog' }
-];
-
 export default function MenuBuilderPage() {
     const [menus, setMenus] = useState<MenuNode[]>([]);
     const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+    const [availablePaths, setAvailablePaths] = useState<{ value: string; label: string }[]>(defaultSystemRoutes || []);
     
     // Edit form state
     const [selectedNode, setSelectedNode] = useState<MenuNode | null>(null);
@@ -79,7 +51,22 @@ export default function MenuBuilderPage() {
 
     useEffect(() => {
         fetchMenus();
+        fetchRoutes();
     }, []);
+
+    const fetchRoutes = async () => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/admin/routes`);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    setAvailablePaths(data);
+                }
+            }
+        } catch (e) {
+            console.error('Lỗi khi tải danh sách routes:', e);
+        }
+    };
 
     const fetchMenus = async () => {
         setLoading(true);
@@ -394,12 +381,14 @@ export default function MenuBuilderPage() {
                                     </span>
                                 }>
                                     <AutoComplete 
-                                        options={AVAILABLE_PATHS}
-                                        placeholder="Chỉ nhập khi URL Alias là một đường link tùy chỉnh" 
-                                        filterOption={(inputValue, option) =>
-                                            option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1 ||
-                                            option!.label.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                                        }
+                                        options={availablePaths}
+                                        placeholder="Chọn hoặc tìm kiếm route (VD: /xml-checker, lịch lâm sàng, excel...)" 
+                                        filterOption={(inputValue, option) => {
+                                            const search = (inputValue || '').trim().toLowerCase();
+                                            const val = ((option?.value as string) || '').toLowerCase();
+                                            const lbl = ((option?.label as string) || '').toLowerCase();
+                                            return val.includes(search) || lbl.includes(search);
+                                        }}
                                         allowClear
                                     />
                                 </Form.Item>

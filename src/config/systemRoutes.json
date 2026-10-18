@@ -1,0 +1,517 @@
+[
+  {
+    "value": "/",
+    "label": "/ (Trang chủ)",
+    "title": "Trang chủ"
+  },
+  {
+    "value": "/[slug]",
+    "label": "/[slug] ([slug])",
+    "title": "/[slug]"
+  },
+  {
+    "value": "/admin/dashboard-cards",
+    "label": "/admin/dashboard-cards (Cấu hình thẻ Dashboard)",
+    "title": "Cấu hình thẻ Dashboard"
+  },
+  {
+    "value": "/admin/instructions",
+    "label": "/admin/instructions (Quản lý hướng dẫn)",
+    "title": "Quản lý hướng dẫn"
+  },
+  {
+    "value": "/admin/menus",
+    "label": "/admin/menus (Quản lý Menu)",
+    "title": "Quản lý Menu"
+  },
+  {
+    "value": "/admin/nhansu/quan-ly-lich-su-dich-vu",
+    "label": "/admin/nhansu/quan-ly-lich-su-dich-vu (Quan Ly Lich Su Dich Vu)",
+    "title": "/admin/nhansu/quan-ly-lich-su-dich-vu"
+  },
+  {
+    "value": "/admin/notifications",
+    "label": "/admin/notifications (Quản lý thông báo)",
+    "title": "Quản lý thông báo"
+  },
+  {
+    "value": "/admin/paths-config",
+    "label": "/admin/paths-config (Cấu hình đường dẫn bảo vệ)",
+    "title": "Cấu hình đường dẫn bảo vệ"
+  },
+  {
+    "value": "/api-management",
+    "label": "/api-management (Quản lý API)",
+    "title": "Quản lý API"
+  },
+  {
+    "value": "/bang-chi-tieu-3176",
+    "label": "/bang-chi-tieu-3176 (Bảng chỉ tiêu 3176)",
+    "title": "Bảng chỉ tiêu 3176"
+  },
+  {
+    "value": "/bed-catalog",
+    "label": "/bed-catalog (Danh mục giường bệnh)",
+    "title": "Danh mục giường bệnh"
+  },
+  {
+    "value": "/chuyen-de/[slug]",
+    "label": "/chuyen-de/[slug] ([slug])",
+    "title": "/chuyen-de/[slug]"
+  },
+  {
+    "value": "/chuyen-de/doi-chieu-toan-vien",
+    "label": "/chuyen-de/doi-chieu-toan-vien (Đối chiếu toàn viện)",
+    "title": "Đối chiếu toàn viện"
+  },
+  {
+    "value": "/chuyen-de/ho-so-da-gui",
+    "label": "/chuyen-de/ho-so-da-gui (Hồ sơ đã gửi BHYT)",
+    "title": "Hồ sơ đã gửi BHYT"
+  },
+  {
+    "value": "/chuyen-de/kiem-tra-cchn",
+    "label": "/chuyen-de/kiem-tra-cchn (Kiểm tra CCHN)",
+    "title": "Kiểm tra CCHN"
+  },
+  {
+    "value": "/chuyen-de/quy-tac-chuyen-de",
+    "label": "/chuyen-de/quy-tac-chuyen-de (Quy tắc chuyên đề)",
+    "title": "Quy tắc chuyên đề"
+  },
+  {
+    "value": "/clinical-scheduling/attendance",
+    "label": "/clinical-scheduling/attendance (Chấm công lâm sàng)",
+    "title": "Chấm công lâm sàng"
+  },
+  {
+    "value": "/clinical-scheduling/config",
+    "label": "/clinical-scheduling/config (Cấu hình ca trực & Excel)",
+    "title": "Cấu hình ca trực & Excel"
+  },
+  {
+    "value": "/clinical-scheduling/saved-schedules",
+    "label": "/clinical-scheduling/saved-schedules (Lịch trực đã lưu)",
+    "title": "Lịch trực đã lưu"
+  },
+  {
+    "value": "/clinical-scheduling/schedule",
+    "label": "/clinical-scheduling/schedule (Xếp lịch lâm sàng)",
+    "title": "Xếp lịch lâm sàng"
+  },
+  {
+    "value": "/demo-ui",
+    "label": "/demo-ui (Demo Ui)",
+    "title": "/demo-ui"
+  },
+  {
+    "value": "/demo-ui/architect-demo",
+    "label": "/demo-ui/architect-demo (Architect Demo)",
+    "title": "/demo-ui/architect-demo"
+  },
+  {
+    "value": "/demo-ui/doc-file-excel",
+    "label": "/demo-ui/doc-file-excel (Doc File Excel)",
+    "title": "/demo-ui/doc-file-excel"
+  },
+  {
+    "value": "/demo-ui/kiem-tra-chuyen-de",
+    "label": "/demo-ui/kiem-tra-chuyen-de (Kiem Tra Chuyen De)",
+    "title": "/demo-ui/kiem-tra-chuyen-de"
+  },
+  {
+    "value": "/departments",
+    "label": "/departments (Quản lý Khoa/Phòng)",
+    "title": "Quản lý Khoa/Phòng"
+  },
+  {
+    "value": "/doc-file-excel",
+    "label": "/doc-file-excel (Đọc dữ liệu Excel)",
+    "title": "Đọc dữ liệu Excel"
+  },
+  {
+    "value": "/doc-file-excel/duplicates",
+    "label": "/doc-file-excel/duplicates (Kiểm tra trùng Excel)",
+    "title": "Kiểm tra trùng Excel"
+  },
+  {
+    "value": "/docs",
+    "label": "/docs (Tài liệu hướng dẫn)",
+    "title": "Tài liệu hướng dẫn"
+  },
+  {
+    "value": "/dynamic-forms",
+    "label": "/dynamic-forms (Quản lý biểu mẫu động)",
+    "title": "Quản lý biểu mẫu động"
+  },
+  {
+    "value": "/dynamic-forms/[id]/data",
+    "label": "/dynamic-forms/[id]/data (Data)",
+    "title": "/dynamic-forms/[id]/data"
+  },
+  {
+    "value": "/dynamic-forms/[id]/edit",
+    "label": "/dynamic-forms/[id]/edit (Edit)",
+    "title": "/dynamic-forms/[id]/edit"
+  },
+  {
+    "value": "/dynamic-forms/[id]/submit",
+    "label": "/dynamic-forms/[id]/submit (Submit)",
+    "title": "/dynamic-forms/[id]/submit"
+  },
+  {
+    "value": "/dynamic-forms/ksk-toan-dan/nhap-lieu",
+    "label": "/dynamic-forms/ksk-toan-dan/nhap-lieu (KSK Toàn dân - Nhập liệu)",
+    "title": "KSK Toàn dân - Nhập liệu"
+  },
+  {
+    "value": "/dynamic-forms/ksk-toan-dan/portal/[maCoQuan]",
+    "label": "/dynamic-forms/ksk-toan-dan/portal/[maCoQuan] ([maCoQuan])",
+    "title": "/dynamic-forms/ksk-toan-dan/portal/[maCoQuan]"
+  },
+  {
+    "value": "/dynamic-forms/ksk-toan-dan/quan-ly",
+    "label": "/dynamic-forms/ksk-toan-dan/quan-ly (KSK Toàn dân - Quản lý hồ sơ)",
+    "title": "KSK Toàn dân - Quản lý hồ sơ"
+  },
+  {
+    "value": "/dynamic-forms/ksk-toan-dan/tra-cuu",
+    "label": "/dynamic-forms/ksk-toan-dan/tra-cuu (KSK Toàn dân - Tra cứu)",
+    "title": "KSK Toàn dân - Tra cứu"
+  },
+  {
+    "value": "/equipment-management/database-diagram",
+    "label": "/equipment-management/database-diagram (Sơ đồ cơ sở dữ liệu thiết bị)",
+    "title": "Sơ đồ cơ sở dữ liệu thiết bị"
+  },
+  {
+    "value": "/equipment-management/export-vouchers",
+    "label": "/equipment-management/export-vouchers (Phiếu xuất thiết bị)",
+    "title": "Phiếu xuất thiết bị"
+  },
+  {
+    "value": "/equipment-management/export-vouchers/create",
+    "label": "/equipment-management/export-vouchers/create (Create)",
+    "title": "/equipment-management/export-vouchers/create"
+  },
+  {
+    "value": "/equipment-management/import-vouchers",
+    "label": "/equipment-management/import-vouchers (Phiếu nhập thiết bị)",
+    "title": "Phiếu nhập thiết bị"
+  },
+  {
+    "value": "/equipment-management/import-vouchers/create",
+    "label": "/equipment-management/import-vouchers/create (Create)",
+    "title": "/equipment-management/import-vouchers/create"
+  },
+  {
+    "value": "/equipment-management/import-vouchers/edit/[id]",
+    "label": "/equipment-management/import-vouchers/edit/[id] ([id])",
+    "title": "/equipment-management/import-vouchers/edit/[id]"
+  },
+  {
+    "value": "/equipment-management/import-vouchers/view/[id]",
+    "label": "/equipment-management/import-vouchers/view/[id] ([id])",
+    "title": "/equipment-management/import-vouchers/view/[id]"
+  },
+  {
+    "value": "/equipment-management/list",
+    "label": "/equipment-management/list (Danh sách thiết bị y tế)",
+    "title": "Danh sách thiết bị y tế"
+  },
+  {
+    "value": "/equipment-management/reports/import",
+    "label": "/equipment-management/reports/import (Báo cáo nhập thiết bị)",
+    "title": "Báo cáo nhập thiết bị"
+  },
+  {
+    "value": "/equipment-management/reports/inventory",
+    "label": "/equipment-management/reports/inventory (Báo cáo tồn kho thiết bị)",
+    "title": "Báo cáo tồn kho thiết bị"
+  },
+  {
+    "value": "/equipment-management/warehouses",
+    "label": "/equipment-management/warehouses (Quản lý kho thiết bị)",
+    "title": "Quản lý kho thiết bị"
+  },
+  {
+    "value": "/error-management/config",
+    "label": "/error-management/config (Cấu hình sự cố)",
+    "title": "Cấu hình sự cố"
+  },
+  {
+    "value": "/error-management/duty-roster",
+    "label": "/error-management/duty-roster (Lịch trực CNTT)",
+    "title": "Lịch trực CNTT"
+  },
+  {
+    "value": "/error-management/hcqt-requests",
+    "label": "/error-management/hcqt-requests (Danh sách Yêu cầu HCQT)",
+    "title": "Danh sách Yêu cầu HCQT"
+  },
+  {
+    "value": "/error-management/hcqt-requests/create",
+    "label": "/error-management/hcqt-requests/create (Tạo Yêu Cầu HCQT)",
+    "title": "Tạo Yêu Cầu HCQT"
+  },
+  {
+    "value": "/error-management/images",
+    "label": "/error-management/images (Quản lý hình ảnh sự cố)",
+    "title": "Quản lý hình ảnh sự cố"
+  },
+  {
+    "value": "/error-management/it-requests",
+    "label": "/error-management/it-requests (Danh sách Yêu cầu IT)",
+    "title": "Danh sách Yêu cầu IT"
+  },
+  {
+    "value": "/error-management/it-requests/create",
+    "label": "/error-management/it-requests/create (Tạo Yêu Cầu IT)",
+    "title": "Tạo Yêu Cầu IT"
+  },
+  {
+    "value": "/error-management/it-requests/share/[id]",
+    "label": "/error-management/it-requests/share/[id] ([id])",
+    "title": "/error-management/it-requests/share/[id]"
+  },
+  {
+    "value": "/error-management/report",
+    "label": "/error-management/report (Báo cáo sự cố)",
+    "title": "Báo cáo sự cố"
+  },
+  {
+    "value": "/error-management/vendor-tasks",
+    "label": "/error-management/vendor-tasks (Việc gửi Đối tác ngoài)",
+    "title": "Việc gửi Đối tác ngoài"
+  },
+  {
+    "value": "/error-management/vtyt-requests",
+    "label": "/error-management/vtyt-requests (Danh sách Yêu cầu VTYT)",
+    "title": "Danh sách Yêu cầu VTYT"
+  },
+  {
+    "value": "/error-management/vtyt-requests/create",
+    "label": "/error-management/vtyt-requests/create (Tạo Yêu Cầu VTYT)",
+    "title": "Tạo Yêu Cầu VTYT"
+  },
+  {
+    "value": "/error-management/xml-errors",
+    "label": "/error-management/xml-errors (Lỗi XML)",
+    "title": "Lỗi XML"
+  },
+  {
+    "value": "/error-management/xml-summary",
+    "label": "/error-management/xml-summary (Tổng hợp lỗi XML)",
+    "title": "Tổng hợp lỗi XML"
+  },
+  {
+    "value": "/excel-check/[type]",
+    "label": "/excel-check/[type] ([type])",
+    "title": "/excel-check/[type]"
+  },
+  {
+    "value": "/excel-check/[type]/duplicates",
+    "label": "/excel-check/[type]/duplicates (Duplicates)",
+    "title": "/excel-check/[type]/duplicates"
+  },
+  {
+    "value": "/excel-checker/[slug]",
+    "label": "/excel-checker/[slug] ([slug])",
+    "title": "/excel-checker/[slug]"
+  },
+  {
+    "value": "/excel-checker/builder",
+    "label": "/excel-checker/builder (Builder)",
+    "title": "/excel-checker/builder"
+  },
+  {
+    "value": "/excel-rules",
+    "label": "/excel-rules (Quy tắc kiểm tra Excel)",
+    "title": "Quy tắc kiểm tra Excel"
+  },
+  {
+    "value": "/huong-dan",
+    "label": "/huong-dan (Hướng dẫn sử dụng)",
+    "title": "Hướng dẫn sử dụng"
+  },
+  {
+    "value": "/huong-dan/[slug]",
+    "label": "/huong-dan/[slug] ([slug])",
+    "title": "/huong-dan/[slug]"
+  },
+  {
+    "value": "/icd10",
+    "label": "/icd10 (Tra cứu danh mục ICD-10)",
+    "title": "Tra cứu danh mục ICD-10"
+  },
+  {
+    "value": "/kiem-tra-chuyen-de",
+    "label": "/kiem-tra-chuyen-de (Kiểm tra chuyên đề)",
+    "title": "Kiểm tra chuyên đề"
+  },
+  {
+    "value": "/kiem-tra-chuyen-de/ma-may/[groupId]",
+    "label": "/kiem-tra-chuyen-de/ma-may/[groupId] ([groupId])",
+    "title": "/kiem-tra-chuyen-de/ma-may/[groupId]"
+  },
+  {
+    "value": "/kiem-tra-chuyen-de/xml3",
+    "label": "/kiem-tra-chuyen-de/xml3 (Xml3)",
+    "title": "/kiem-tra-chuyen-de/xml3"
+  },
+  {
+    "value": "/kiem-tra-chuyen-de/xml3/15",
+    "label": "/kiem-tra-chuyen-de/xml3/15 (15)",
+    "title": "/kiem-tra-chuyen-de/xml3/15"
+  },
+  {
+    "value": "/login",
+    "label": "/login (Đăng nhập)",
+    "title": "Đăng nhập"
+  },
+  {
+    "value": "/maintenance",
+    "label": "/maintenance (Chế độ bảo trì)",
+    "title": "Chế độ bảo trì"
+  },
+  {
+    "value": "/mau01-catalog",
+    "label": "/mau01-catalog (Mau01 Catalog)",
+    "title": "/mau01-catalog"
+  },
+  {
+    "value": "/mau02-catalog",
+    "label": "/mau02-catalog (Mau02 Catalog)",
+    "title": "/mau02-catalog"
+  },
+  {
+    "value": "/mau03-catalog",
+    "label": "/mau03-catalog (Mau03 Catalog)",
+    "title": "/mau03-catalog"
+  },
+  {
+    "value": "/mau04-catalog",
+    "label": "/mau04-catalog (Mau04 Catalog)",
+    "title": "/mau04-catalog"
+  },
+  {
+    "value": "/mau05-catalog",
+    "label": "/mau05-catalog (Mau05 Catalog)",
+    "title": "/mau05-catalog"
+  },
+  {
+    "value": "/mau06-catalog",
+    "label": "/mau06-catalog (Mau06 Catalog)",
+    "title": "/mau06-catalog"
+  },
+  {
+    "value": "/pdf-reports",
+    "label": "/pdf-reports (Báo cáo PDF)",
+    "title": "Báo cáo PDF"
+  },
+  {
+    "value": "/pham-vi-chuyen-mon",
+    "label": "/pham-vi-chuyen-mon (Phạm vi chuyên môn)",
+    "title": "Phạm vi chuyên môn"
+  },
+  {
+    "value": "/practicing-certificates",
+    "label": "/practicing-certificates (Chứng chỉ hành nghề)",
+    "title": "Chứng chỉ hành nghề"
+  },
+  {
+    "value": "/pttt-excel",
+    "label": "/pttt-excel (Kiểm tra PTTT Excel)",
+    "title": "Kiểm tra PTTT Excel"
+  },
+  {
+    "value": "/pttt-excel/duplicates",
+    "label": "/pttt-excel/duplicates (Kiểm tra trùng PTTT Excel)",
+    "title": "Kiểm tra trùng PTTT Excel"
+  },
+  {
+    "value": "/report",
+    "label": "/report (Report)",
+    "title": "/report"
+  },
+  {
+    "value": "/roles",
+    "label": "/roles (Quản lý Vai trò)",
+    "title": "Quản lý Vai trò"
+  },
+  {
+    "value": "/rules",
+    "label": "/rules (Quy tắc XML)",
+    "title": "Quy tắc XML"
+  },
+  {
+    "value": "/saved-reports",
+    "label": "/saved-reports (Báo cáo đã lưu)",
+    "title": "Báo cáo đã lưu"
+  },
+  {
+    "value": "/schema",
+    "label": "/schema (Schema)",
+    "title": "/schema"
+  },
+  {
+    "value": "/staff",
+    "label": "/staff (Quản lý Nhân viên)",
+    "title": "Quản lý Nhân viên"
+  },
+  {
+    "value": "/staff/quan-ly-lich-su-dich-vu",
+    "label": "/staff/quan-ly-lich-su-dich-vu (Quan Ly Lich Su Dich Vu)",
+    "title": "/staff/quan-ly-lich-su-dich-vu"
+  },
+  {
+    "value": "/staff/reports",
+    "label": "/staff/reports (Báo cáo nhân viên)",
+    "title": "Báo cáo nhân viên"
+  },
+  {
+    "value": "/staff/stafftraning",
+    "label": "/staff/stafftraning (Stafftraning)",
+    "title": "/staff/stafftraning"
+  },
+  {
+    "value": "/system-categories",
+    "label": "/system-categories (Danh mục hệ thống)",
+    "title": "Danh mục hệ thống"
+  },
+  {
+    "value": "/tt32",
+    "label": "/tt32 (Danh mục TT32)",
+    "title": "Danh mục TT32"
+  },
+  {
+    "value": "/users",
+    "label": "/users (Quản lý Tài khoản)",
+    "title": "Quản lý Tài khoản"
+  },
+  {
+    "value": "/xml-checker",
+    "label": "/xml-checker (Kiểm tra hồ sơ XML)",
+    "title": "Kiểm tra hồ sơ XML"
+  },
+  {
+    "value": "/xml-sua-ba",
+    "label": "/xml-sua-ba (Sửa bệnh án XML)",
+    "title": "Sửa bệnh án XML"
+  },
+  {
+    "value": "/xml1-report",
+    "label": "/xml1-report (Báo cáo tổng hợp XML1)",
+    "title": "Báo cáo tổng hợp XML1"
+  },
+  {
+    "value": "/xml1-viewer",
+    "label": "/xml1-viewer (Xem chi tiết XML1)",
+    "title": "Xem chi tiết XML1"
+  },
+  {
+    "value": "/xml3",
+    "label": "/xml3 (Xml3)",
+    "title": "/xml3"
+  }
+]

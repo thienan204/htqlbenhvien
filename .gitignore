@@ -42,7 +42,8 @@ test-prisma-constructor.js
 api-*.txt
 
 # custom test & debug scripts
-/scripts/
+/scripts/*
+!/scripts/generate-routes.js
 *debug*.js
 *test*.js
 *.log
@@ -50,3 +51,7 @@ api-*.txt
 # custom
 desktop-client/node_modules/
 desktop-client/dist/
+
+# backups
+/backups/
+*.sql.gz
