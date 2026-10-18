@@ -916,6 +916,20 @@ export default function XmlReader() {
     };
 
 
+    const computeRecordChecksum = async (hoso: ExtendedHosoRecord): Promise<string> => {
+        try {
+            const xmlDataMap: Record<string, any[]> = {};
+            hoso.groups?.forEach((g: any) => {
+                xmlDataMap[g.type] = getXmlDataList(g);
+            });
+            const jsonStr = JSON.stringify(xmlDataMap);
+            const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(jsonStr));
+            return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            return '';
+        }
+    };
+
     const handleSaveToDBForViewer = async () => {
         const targetRecords = getFilteredRecords();
         if (targetRecords.length === 0) {
@@ -924,43 +938,105 @@ export default function XmlReader() {
         }
 
         try {
-            message.loading({ content: 'Đang kiểm tra trùng lặp...', key: 'saveXMLDB' });
+            message.loading({ content: 'Đang kiểm tra tính toàn vẹn và trùng lặp hồ sơ...', key: 'saveXMLDB' });
             
-            const maLkList = targetRecords.map(r => String(r.id || r.summary?.MA_LK)).filter(Boolean);
+            // Tính checksum song song cho từng hồ sơ để so sánh với CSDL
+            const items = await Promise.all(targetRecords.map(async (r) => {
+                const maLk = String(r.id || r.summary?.MA_LK);
+                const checksum = await computeRecordChecksum(r);
+                return { maLk, checksum };
+            }));
+
             const checkRes = await fetch(`${getBasePath()}/api/xml1/check-exists`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ maLkList })
+                body: JSON.stringify({ items })
             });
 
-            if (checkRes.ok) {
-                const checkData = await checkRes.json();
-                if (checkData.exists && checkData.exists.length > 0) {
-                    Modal.confirm({
-                        title: 'Cảnh báo trùng lặp hồ sơ',
-                        content: `Phát hiện ${checkData.exists.length} hồ sơ đã tồn tại trong Database. Việc tiếp tục lưu sẽ tự động bỏ qua nếu dữ liệu giống hệt, hoặc cập nhật phiên bản mới nếu có thay đổi. Bạn có muốn tiếp tục?`,
-                        okText: 'Tiếp tục lưu',
-                        cancelText: 'Hủy bỏ',
-                        onOk: () => proceedSaveToDBForViewer(targetRecords)
-                    });
-                    return;
-                }
+            if (!checkRes.ok) {
+                throw new Error('Lỗi khi kiểm tra dữ liệu với máy chủ');
             }
 
-            // No duplicates or error checking, proceed directly
-            proceedSaveToDBForViewer(targetRecords);
+            const checkData = await checkRes.json();
+            message.destroy('saveXMLDB');
+
+            const { unchangedCount = 0, changedCount = 0, newCount = 0, unchanged = [] } = checkData;
+
+            // TRƯỜNG HỢP 1: TOÀN BỘ HỒ SƠ ĐÃ TỒN TẠI VÀ KHÔNG CÓ THAY ĐỔI NÀO -> DỪNG LẠI NGAY LẬP TỨC
+            if (unchangedCount === targetRecords.length) {
+                Modal.info({
+                    title: 'Dữ liệu đã đồng bộ hoàn tất',
+                    content: (
+                        <div className="py-2">
+                            <p className="text-base text-gray-700">
+                                Toàn bộ <b>{targetRecords.length}</b> hồ sơ này đã tồn tại trong CSDL và <b>hoàn toàn không có thay đổi nào</b>.
+                            </p>
+                            <p className="text-sm text-green-600 font-medium mt-2">
+                                ✅ Hệ thống tự động dừng lại, không cần lưu lại!
+                            </p>
+                        </div>
+                    ),
+                    okText: 'Đã hiểu'
+                });
+                return;
+            }
+
+            // TRƯỜNG HỢP 2: CÓ HỒ SƠ MỚI HOẶC CÓ HỒ SƠ THAY ĐỔI
+            const unchangedSet = new Set(unchanged);
+            // Chỉ giữ lại những hồ sơ thực sự cần lưu (mới hoặc có thay đổi)
+            const recordsToSave = targetRecords.filter(r => !unchangedSet.has(String(r.id || r.summary?.MA_LK)));
+
+            if (recordsToSave.length === 0) {
+                message.info('Không có hồ sơ nào có thay đổi cần lưu');
+                return;
+            }
+
+            // Nếu có hồ sơ trùng khớp không đổi và có hồ sơ cần cập nhật/thêm mới
+            if (unchangedCount > 0) {
+                Modal.confirm({
+                    title: 'Xác nhận cập nhật hồ sơ vào CSDL',
+                    content: (
+                        <div className="py-1">
+                            <p className="text-gray-600 mb-1">
+                                • Tự động bỏ qua: <b>{unchangedCount}</b> hồ sơ trùng khớp và không có thay đổi.
+                            </p>
+                            {newCount > 0 && (
+                                <p className="text-blue-600 mb-1">
+                                    • Lưu mới: <b>{newCount}</b> hồ sơ chưa từng có trong CSDL.
+                                </p>
+                            )}
+                            {changedCount > 0 && (
+                                <p className="text-orange-600 mb-1">
+                                    • Cập nhật phiên bản mới: <b>{changedCount}</b> hồ sơ có thay đổi nội dung.
+                                </p>
+                            )}
+                            <p className="font-semibold text-gray-800 mt-3">
+                                Bạn có muốn tiếp tục lưu {recordsToSave.length} hồ sơ này không?
+                            </p>
+                        </div>
+                    ),
+                    okText: `Lưu ${recordsToSave.length} hồ sơ`,
+                    cancelText: 'Hủy bỏ',
+                    onOk: () => proceedSaveToDBForViewer(recordsToSave, unchangedCount)
+                });
+                return;
+            }
+
+            // Toàn bộ là hồ sơ mới chưa từng có trong DB
+            proceedSaveToDBForViewer(recordsToSave, 0);
 
         } catch (error: any) {
             message.error({ content: `Lỗi kết nối: ${error.message}`, key: 'saveXMLDB' });
         }
     };
 
-    const proceedSaveToDBForViewer = async (targetRecords: ExtendedHosoRecord[]) => {
+    const proceedSaveToDBForViewer = async (targetRecords: ExtendedHosoRecord[], skippedCount: number = 0) => {
         try {
             message.loading({ content: `Đang gửi dữ liệu (0/${targetRecords.length})...`, key: 'saveXMLDB' });
             
             const CHUNK_SIZE = 50;
-            let successCount = 0;
+            let actualSavedCount = 0;
+            let actualDuplicateCount = 0;
             let errorCount = 0;
 
             for (let i = 0; i < targetRecords.length; i += CHUNK_SIZE) {
@@ -981,8 +1057,11 @@ export default function XmlReader() {
                 });
 
                 if (res.ok) {
-                    successCount += chunk.length;
-                    message.loading({ content: `Đang gửi dữ liệu (${successCount}/${targetRecords.length})...`, key: 'saveXMLDB' });
+                    const data = await res.json().catch(() => ({}));
+                    actualSavedCount += (data.count || 0);
+                    actualDuplicateCount += (data.duplicateCount || 0);
+                    const processed = Math.min(i + CHUNK_SIZE, targetRecords.length);
+                    message.loading({ content: `Đang gửi dữ liệu (${processed}/${targetRecords.length})...`, key: 'saveXMLDB' });
                 } else {
                     errorCount += chunk.length;
                     const isJson = res.headers.get('content-type')?.includes('application/json');
@@ -996,10 +1075,27 @@ export default function XmlReader() {
                 }
             }
 
+            const totalSkipped = skippedCount + actualDuplicateCount;
+
             if (errorCount === 0) {
-                message.success({ content: `Đã hoàn tất lưu ${successCount} hồ sơ vào CSDL.`, key: 'saveXMLDB' });
+                if (actualSavedCount > 0) {
+                    message.success({ 
+                        content: `Đã hoàn tất! Lưu thành công ${actualSavedCount} hồ sơ vào CSDL${totalSkipped > 0 ? ` (đã bỏ qua ${totalSkipped} hồ sơ trùng khớp không đổi)` : ''}.`, 
+                        key: 'saveXMLDB',
+                        duration: 5
+                    });
+                } else {
+                    message.info({
+                        content: `Không có dữ liệu mới để lưu (đã bỏ qua ${totalSkipped} hồ sơ đã tồn tại trong CSDL).`,
+                        key: 'saveXMLDB',
+                        duration: 5
+                    });
+                }
             } else {
-                message.warning({ content: `Đã lưu ${successCount} hồ sơ. Có ${errorCount} hồ sơ bị lỗi khi lưu do file quá nặng.`, key: 'saveXMLDB' });
+                message.warning({ 
+                    content: `Đã lưu ${actualSavedCount} hồ sơ. Có ${errorCount} hồ sơ bị lỗi khi lưu do file quá nặng.`, 
+                    key: 'saveXMLDB' 
+                });
             }
         } catch (error: any) {
             message.error({ content: `Lỗi kết nối: ${error.message}`, key: 'saveXMLDB' });
