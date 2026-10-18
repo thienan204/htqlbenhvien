@@ -25,7 +25,8 @@ export default function ITConfigPage() {
     
     // We also need to preserve the assignmentMode
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
-    const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(10);
+    const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(15);
+    const [allowedFileExtensions, setAllowedFileExtensions] = useState<string>('.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
     const [maBaLength, setMaBaLength] = useState<number>(11);
     const [telegramBotToken, setTelegramBotToken] = useState<string>('');
     const [telegramChatId, setTelegramChatId] = useState<string>('');
@@ -64,7 +65,8 @@ export default function ITConfigPage() {
                 setSoftwareErrors(mappedSoftwareErrors);
                 setHardwareErrors(mappedHardwareErrors);
                 setAssignmentMode(data.assignmentMode || 'A');
-                setMaxImageSizeMB(data.maxImageSizeMB || 10);
+                setMaxImageSizeMB(data.maxFileSizeMB || data.maxImageSizeMB || 15);
+                setAllowedFileExtensions(data.allowedFileExtensions || '.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
                 setMaBaLength(data.maBaLength || 11);
                 setTelegramBotToken(data.telegramBotToken || '');
                 setTelegramChatId(data.telegramChatId || '');
@@ -165,6 +167,8 @@ export default function ITConfigPage() {
                 hardwareErrors: hardwareErrors.map((e: any) => e.name),
                 assignmentMode,
                 maxImageSizeMB,
+                maxFileSizeMB: maxImageSizeMB,
+                allowedFileExtensions,
                 maBaLength,
                 targetDepartment,
                 telegramBotToken,
@@ -369,21 +373,37 @@ export default function ITConfigPage() {
                         </div>
                     </Card>
 
-                    <Card size="small" title="Giới hạn ảnh đính kèm" className="border border-slate-200">
-                        <div className="flex gap-2 items-center">
-                            <InputNumber 
-                                min={1} 
-                                max={50} 
-                                value={maxImageSizeMB} 
-                                onChange={val => setMaxImageSizeMB(val || 10)} 
-                                disabled={user?.role !== 'ADMIN'}
-                            />
-                            <span className="text-slate-500 font-medium">MB</span>
+                    <Card size="small" title="Cấu hình Tệp đính kèm & Dung lượng (Ảnh / File)" className="border border-slate-200">
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <div className="text-xs font-semibold text-slate-700 mb-1">Dung lượng tối đa mỗi tệp:</div>
+                                <div className="flex gap-2 items-center">
+                                    <InputNumber 
+                                        min={1} 
+                                        max={100} 
+                                        value={maxImageSizeMB} 
+                                        onChange={val => setMaxImageSizeMB(val || 15)} 
+                                        disabled={user?.role !== 'ADMIN'}
+                                    />
+                                    <span className="text-slate-500 font-medium">MB</span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-1">Dung lượng tối đa cho mỗi file hoặc ảnh tải lên. Khuyến nghị 15MB - 30MB.</div>
+                            </div>
+                            <div>
+                                <div className="text-xs font-semibold text-slate-700 mb-1">Danh sách đuôi file được phép đính kèm:</div>
+                                <Input 
+                                    value={allowedFileExtensions}
+                                    onChange={e => setAllowedFileExtensions(e.target.value)}
+                                    placeholder=".jpg, .jpeg, .png, .pdf, .docx, .xlsx, .zip..."
+                                    disabled={user?.role !== 'ADMIN'}
+                                    className="text-xs"
+                                />
+                                <div className="text-[11px] text-slate-500 mt-1">Các đuôi file viết cách nhau bởi dấu phẩy. Mặc định hỗ trợ ảnh, tài liệu văn phòng và file nén.</div>
+                            </div>
                             {user?.role === 'ADMIN' && (
-                                <Button type="default" onClick={() => handleSaveGeneralConfig()}>Lưu thay đổi</Button>
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit mt-1">Lưu cấu hình tệp</Button>
                             )}
                         </div>
-                        <div className="text-xs text-slate-500 mt-2">Dung lượng tối đa (MB) cho mỗi ảnh khi tải lên. Khuyến nghị 10MB để tránh treo trình duyệt. Hệ thống sẽ tự nén lại sau khi chọn.</div>
                     </Card>
 
                     <Card size="small" title="Độ dài Mã Bệnh Án (BA)" className="border border-slate-200">

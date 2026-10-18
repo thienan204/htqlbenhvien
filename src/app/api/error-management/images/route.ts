@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readdir, stat, unlink } from 'fs/promises';
-import { join } from 'path';
+import { join, extname } from 'path';
 import { getCurrentUser } from '@/actions/auth';
 import prisma from '@/lib/prisma';
 
@@ -23,10 +23,12 @@ export async function GET() {
         const images = await Promise.all(files.map(async (file) => {
             const filepath = join(uploadDir, file);
             const stats = await stat(filepath);
+            const ext = extname(file).toLowerCase();
             return {
                 name: file,
                 url: `/uploads/tickets/${file}`,
                 size: stats.size, // bytes
+                ext: ext,
                 createdAt: stats.mtime // Lấy thời gian modify thay vì birthtime vì trên linux birthtime có thể không chính xác
             };
         }));
@@ -56,17 +58,20 @@ export async function DELETE(request: Request) {
         // Ngăn chặn path traversal
         const safeName = name.replace(/^.*[\\\/]/, '');
         
-        // Kiểm tra xem ảnh này có thuộc về yêu cầu IT nào chưa hoàn thành không
+        // Kiểm tra xem file này có thuộc về yêu cầu IT nào chưa hoàn thành không
         const fileUrl = `/uploads/tickets/${safeName}`;
         const activeRequests: any[] = await prisma.$queryRaw`
             SELECT id FROM "ITRequest"
             WHERE status != 'RESOLVED'
-            AND "dynamicFields"::text LIKE ${'%' + fileUrl + '%'}
+            AND (
+                "dynamicFields"::text LIKE ${'%' + fileUrl + '%'}
+                OR array_to_string("it_images", ',') LIKE ${'%' + fileUrl + '%'}
+            )
             LIMIT 1
         `;
 
         if (activeRequests && activeRequests.length > 0) {
-            return NextResponse.json({ error: 'Ảnh này đang được sử dụng trong một yêu cầu chưa hoàn thành.' }, { status: 400 });
+            return NextResponse.json({ error: 'Tệp này đang được sử dụng trong một yêu cầu chưa hoàn thành.' }, { status: 400 });
         }
 
         const filepath = join(process.cwd(), 'public', 'uploads', 'tickets', safeName);

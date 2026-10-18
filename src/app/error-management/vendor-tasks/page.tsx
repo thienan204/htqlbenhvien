@@ -19,7 +19,9 @@ import {
     FileTextOutlined,
     CalendarOutlined,
     EditOutlined,
-    SettingOutlined
+    SettingOutlined,
+    LinkOutlined,
+    ShareAltOutlined
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -29,6 +31,7 @@ import { TicketActionModal } from '../it-requests/components/TicketActionModal';
 import { TicketChatModal } from '../it-requests/components/TicketChatModal';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { getBasePath } from '@/utils/config';
+import { copyTicketShareLink, copyTicketZaloMessage } from '../it-requests/utils/shareUtils';
 
 function VendorTasksContent() {
     const router = useRouter();
@@ -227,25 +230,50 @@ function VendorTasksContent() {
         {
             title: 'Đơn vị / Đối tác ngoài',
             key: 'vendor',
-            width: 220,
-            render: (_: any, record: Ticket) => (
-                <div className="space-y-1">
-                    <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                        <ShopOutlined className="text-amber-600" />
-                        <span>{record.vendorName || 'Chưa gán đối tác'}</span>
+            width: 240,
+            render: (_: any, record: Ticket) => {
+                const dept = departments.find(d => d.ma_khoa === record.ma_khoa);
+                return (
+                    <div className="space-y-1.5">
+                        <div className="font-bold text-amber-950 flex items-center justify-between gap-1">
+                            <span className="flex items-center gap-1.5 truncate">
+                                <ShopOutlined className="text-amber-600" />
+                                <span>{record.vendorName || 'Chưa gán đối tác'}</span>
+                            </span>
+                            <div className="flex items-center shrink-0">
+                                <Tooltip title="Sao chép Link xem phiếu gửi đối tác">
+                                    <Button 
+                                        size="small" 
+                                        type="text" 
+                                        className="h-6 w-6 p-0 text-slate-400 hover:text-blue-600"
+                                        icon={<LinkOutlined />} 
+                                        onClick={() => copyTicketShareLink(record.id)} 
+                                    />
+                                </Tooltip>
+                                <Tooltip title="Sao chép tin nhắn Zalo kèm Link">
+                                    <Button 
+                                        size="small" 
+                                        type="text" 
+                                        className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        icon={<ShareAltOutlined />} 
+                                        onClick={() => copyTicketZaloMessage(record, { deptName: dept?.ten_khoa })} 
+                                    />
+                                </Tooltip>
+                            </div>
+                        </div>
+                        {record.vendorTicketCode && (
+                            <div className="text-xs font-mono text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 inline-block">
+                                Mã ticket: <strong>{record.vendorTicketCode}</strong>
+                            </div>
+                        )}
+                        {record.vendorSentAt && (
+                            <div className="text-[11px] text-slate-400">
+                                Gửi ngày: {dayjs(record.vendorSentAt).format('DD/MM/YYYY HH:mm')}
+                            </div>
+                        )}
                     </div>
-                    {record.vendorTicketCode && (
-                        <div className="text-xs font-mono text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 inline-block">
-                            Mã ticket: <strong>{record.vendorTicketCode}</strong>
-                        </div>
-                    )}
-                    {record.vendorSentAt && (
-                        <div className="text-[11px] text-slate-400">
-                            Gửi ngày: {dayjs(record.vendorSentAt).format('DD/MM/YYYY HH:mm')}
-                        </div>
-                    )}
-                </div>
-            )
+                );
+            }
         },
         {
             title: 'Yêu cầu & Khoa phòng',
@@ -375,48 +403,60 @@ function VendorTasksContent() {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 140,
+            width: 150,
             fixed: 'right' as const,
             align: 'center' as const,
-            render: (_: any, record: Ticket) => (
-                <div className="flex flex-col items-center gap-1.5">
-                    <Button 
-                        size="small" 
-                        type="primary"
-                        className="bg-amber-600 hover:bg-amber-500 font-medium text-xs w-full"
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            setSelectedTicket(record);
-                            setIsActionModalVisible(true);
-                        }}
-                    >
-                        {record.status === 'RESOLVED' ? 'Xem lại' : 'Cập nhật / Nhận'}
-                    </Button>
-                    <div className="flex items-center gap-1 w-full justify-center">
-                        <Badge count={record.messageCount} size="small" offset={[-4, 4]}>
-                            <Button 
-                                size="small" 
-                                type="dashed" 
-                                icon={<MessageOutlined />} 
-                                title="Thảo luận / Trao đổi" 
-                                onClick={() => {
-                                    setSelectedTicket(record);
-                                    setIsChatVisible(true);
-                                }} 
-                            />
-                        </Badge>
-                        {record.ma_ba && record.hasXml && (
-                            <Button 
-                                size="small" 
-                                type="default" 
-                                icon={<FileTextOutlined />} 
-                                title="Xem hồ sơ XML" 
-                                onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')} 
-                            />
-                        )}
+            render: (_: any, record: Ticket) => {
+                const dept = departments.find(d => d.ma_khoa === record.ma_khoa);
+                return (
+                    <div className="flex flex-col items-center gap-1.5">
+                        <Button 
+                            size="small" 
+                            type="primary"
+                            className="bg-amber-600 hover:bg-amber-500 font-medium text-xs w-full"
+                            icon={<EditOutlined />}
+                            onClick={() => {
+                                setSelectedTicket(record);
+                                setIsActionModalVisible(true);
+                            }}
+                        >
+                            {record.status === 'RESOLVED' ? 'Xem lại' : 'Cập nhật / Nhận'}
+                        </Button>
+                        <div className="flex items-center gap-1 w-full justify-center">
+                            <Tooltip title="Sao chép tin nhắn Zalo gửi đối tác">
+                                <Button
+                                    size="small"
+                                    type="default"
+                                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    icon={<ShareAltOutlined />}
+                                    onClick={() => copyTicketZaloMessage(record, { deptName: dept?.ten_khoa })}
+                                />
+                            </Tooltip>
+                            <Badge count={record.unreadMessageCount || 0} size="small" offset={[-4, 4]}>
+                                <Button 
+                                    size="small" 
+                                    type="dashed" 
+                                    icon={<MessageOutlined />} 
+                                    title={record.unreadMessageCount ? `${record.unreadMessageCount} tin chưa đọc` : 'Thảo luận / Trao đổi'} 
+                                    onClick={() => {
+                                        setSelectedTicket(record);
+                                        setIsChatVisible(true);
+                                    }} 
+                                />
+                            </Badge>
+                            {record.ma_ba && record.hasXml && (
+                                <Button 
+                                    size="small" 
+                                    type="default" 
+                                    icon={<FileTextOutlined />} 
+                                    title="Xem hồ sơ XML" 
+                                    onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')} 
+                                />
+                            )}
+                        </div>
                     </div>
-                </div>
-            )
+                );
+            }
         }
     ];
 

@@ -13,6 +13,9 @@ export interface Ticket {
     dynamicFields: any;
     it_note: string | null;
     messageCount?: number;
+    unreadMessageCount?: number;
+    unreadInternalCount?: number;
+    unreadVendorCount?: number;
     hasXml?: boolean;
     ten_khoa?: string;
     nguoi_bao?: string;

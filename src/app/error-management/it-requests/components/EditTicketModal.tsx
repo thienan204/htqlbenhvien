@@ -29,7 +29,10 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
         previewOpen,
         previewImage,
         setPreviewOpen,
-        handleFileChange
+        handleFileChange,
+        uploadPendingFiles,
+        uploadingFiles,
+        clearFiles
     } = useImageUpload(10); // Hardcode 10MB cho đơn giản ở Modal sửa
 
     useEffect(() => {
@@ -46,14 +49,21 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             }, 0);
 
             // Set initial fileList from ticket if exists
-            if (ticket.dynamicFields?.['Hình ảnh đính kèm'] && Array.isArray(ticket.dynamicFields['Hình ảnh đính kèm'])) {
-                const existingFiles = ticket.dynamicFields['Hình ảnh đính kèm'].map((url: string, index: number) => ({
-                    uid: `existing-${index}`,
-                    name: `image-${index}.jpg`,
-                    status: 'done',
-                    url: url,
-                    thumbUrl: url
-                }));
+            const existingUrls = ticket.dynamicFields?.['Tệp đính kèm'] || ticket.dynamicFields?.['Hình ảnh đính kèm'];
+            if (existingUrls && Array.isArray(existingUrls)) {
+                const existingFiles = existingUrls.map((url: string, index: number) => {
+                    const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                    const fileName = url.split('/').pop() || `file-${index}`;
+                    return {
+                        uid: `existing-${index}`,
+                        name: fileName,
+                        status: 'done',
+                        url: url,
+                        thumbUrl: isImg ? url : undefined,
+                        isDoc: !isImg,
+                        isPending: false
+                    };
+                });
                 setFileList(existingFiles);
             } else {
                 setFileList([]);
@@ -69,11 +79,14 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             if (!ticket) return;
 
             setLoading(true);
+            const uploadedUrls = await uploadPendingFiles();
+
             const dynamicFieldsUpdate = {
                 'Người báo': values.nguoi_bao,
                 'SĐT': values.sdt,
                 'Ghi chú': values.ghi_chu,
-                'Hình ảnh đính kèm': fileList.map(f => f.url)
+                'Hình ảnh đính kèm': uploadedUrls,
+                'Tệp đính kèm': uploadedUrls
             };
 
             const res = await fetch('/api/error-management/it-requests', {
@@ -90,13 +103,15 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
 
             if (res.ok) {
                 message.success('Đã cập nhật yêu cầu thành công!');
+                clearFiles();
                 onSuccess();
             } else {
                 const data = await res.json();
                 message.error(data.error || 'Cập nhật thất bại');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            message.error(error.message || 'Lỗi cập nhật');
         } finally {
             setLoading(false);
         }

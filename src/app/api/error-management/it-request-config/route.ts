@@ -42,6 +42,8 @@ export async function GET(request: Request) {
             hardwareErrors: config.hardwareErrors && config.hardwareErrors.length > 0 ? config.hardwareErrors : defaultHardwareErrors,
             assignmentMode: config.assignmentMode || 'A',
             maxImageSizeMB: config.maxImageSizeMB || 10,
+            maxFileSizeMB: config.maxFileSizeMB || config.maxImageSizeMB || 15,
+            allowedFileExtensions: config.allowedFileExtensions || '.jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar',
             maBaLength: config.maBaLength || 11,
             telegramBotToken: config.telegramBotToken || '',
             telegramChatId: config.telegramChatId || '',
@@ -68,7 +70,18 @@ export async function POST(request: Request) {
         else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
 
         const body = await request.json();
-        const { softwareErrors, hardwareErrors, assignmentMode, maxImageSizeMB, maBaLength, telegramBotToken, telegramChatId, notificationSound } = body;
+        const { 
+            softwareErrors, 
+            hardwareErrors, 
+            assignmentMode, 
+            maxImageSizeMB, 
+            maxFileSizeMB,
+            allowedFileExtensions,
+            maBaLength, 
+            telegramBotToken, 
+            telegramChatId, 
+            notificationSound 
+        } = body;
 
         if (softwareErrors && !Array.isArray(softwareErrors)) {
             return NextResponse.json({ error: 'Dữ liệu softwareErrors không hợp lệ, phải là mảng string' }, { status: 400 });
@@ -81,12 +94,18 @@ export async function POST(request: Request) {
         const existingRule = await prisma.specializedRule.findUnique({ where: { slug } });
         const existingConfig: any = existingRule?.logicConfig || {};
 
+        const resolvedMaxFileSizeMB = maxFileSizeMB !== undefined 
+            ? Number(maxFileSizeMB) 
+            : (maxImageSizeMB !== undefined ? Number(maxImageSizeMB) : (existingConfig.maxFileSizeMB || 15));
+
         const newConfig = {
             ...existingConfig,
             softwareErrors: softwareErrors || existingConfig.softwareErrors || [],
             hardwareErrors: hardwareErrors || existingConfig.hardwareErrors || [],
             assignmentMode: assignmentMode || existingConfig.assignmentMode || 'A',
-            maxImageSizeMB: maxImageSizeMB !== undefined ? maxImageSizeMB : (existingConfig.maxImageSizeMB || 10),
+            maxImageSizeMB: resolvedMaxFileSizeMB,
+            maxFileSizeMB: resolvedMaxFileSizeMB,
+            allowedFileExtensions: allowedFileExtensions !== undefined ? allowedFileExtensions : (existingConfig.allowedFileExtensions || '.jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar'),
             maBaLength: maBaLength !== undefined ? Number(maBaLength) : (existingConfig.maBaLength || 11),
             telegramBotToken: telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
             telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId,

@@ -59,6 +59,8 @@ interface ReportRow {
     ma_khoa: string;
     ten_khoa: string;
     chi_tiet_loi: string;
+    ten_quy_tac: string;
+    rule_name: string;
     ma_doituong_kcb: string;
     ma_giuong: string;
     pp_vo_cam: string;
@@ -177,6 +179,8 @@ export default function DetailedReport() {
                             ma_khoa: renderValue(record.summary?.MA_KHOA),
                             ten_khoa: departments[renderValue(record.summary?.MA_KHOA)] || '',
                             chi_tiet_loi: '',
+                            ten_quy_tac: '',
+                            rule_name: '',
                             isError: false,
                             ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
                             ma_giuong: '',
@@ -241,6 +245,8 @@ export default function DetailedReport() {
                                 ma_khoa: maKhoa,
                                 ten_khoa: departments[maKhoa] || '',
                                 chi_tiet_loi: `[${err.xmlType}] ${err.message || err.ruleName}`,
+                                ten_quy_tac: `[${err.xmlType}] ${err.ruleName || 'Quy tắc chưa đặt tên'}`,
+                                rule_name: err.ruleName || '',
                                 isError: true,
                                 ma_doituong_kcb: renderValue(record.summary?.MA_DOITUONG_KCB),
                                 ma_giuong: maGiuong,
@@ -272,16 +278,22 @@ export default function DetailedReport() {
     }, []);
 
     // Filter Logic
-    const uniqueErrors = useMemo(() => {
-        const errorSet = new Set<string>();
+    // Filter Logic: Gom nhóm theo Tên quy tắc
+    const uniqueRules = useMemo(() => {
+        const ruleCountMap = new Map<string, { count: number, value: string }>();
         fullDataSource.forEach(r => {
-            if (r.chi_tiet_loi) {
-                errorSet.add(r.chi_tiet_loi);
+            if (r.ten_quy_tac) {
+                const current = ruleCountMap.get(r.ten_quy_tac) || { count: 0, value: r.ten_quy_tac };
+                current.count += 1;
+                ruleCountMap.set(r.ten_quy_tac, current);
             }
         });
-        return Array.from(errorSet)
-            .sort()
-            .map(err => ({ value: err }));
+        return Array.from(ruleCountMap.values())
+            .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+            .map(item => ({
+                value: item.value,
+                label: `${item.value} (${item.count})`
+            }));
     }, [fullDataSource]);
 
     const filteredDataSource = useMemo(() => {
@@ -301,8 +313,11 @@ export default function DetailedReport() {
         }
 
         if (searchErrorText) {
-            const lowerSearch = searchErrorText.toLowerCase();
-            base = base.filter(r => (r.chi_tiet_loi || '').toLowerCase().includes(lowerSearch));
+            const lowerSearch = searchErrorText.toLowerCase().trim();
+            base = base.filter(r => 
+                (r.ten_quy_tac || '').toLowerCase().includes(lowerSearch) ||
+                (r.chi_tiet_loi || '').toLowerCase().includes(lowerSearch)
+            );
         }
 
         return base;
@@ -325,7 +340,7 @@ export default function DetailedReport() {
         worksheet.columns = [
             { header: 'STT', key: 'stt', width: 5 },
             { header: 'Mã BN', key: 'ma_bn', width: 14 },
-            { header: 'Mã BN', key: 'ma_bn', width: 14 },
+            { header: 'Tên quy tắc', key: 'ten_quy_tac', width: 30 },
             { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
             { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
             { header: 'Họ tên', key: 'ho_ten', width: 25 },
@@ -460,6 +475,7 @@ export default function DetailedReport() {
             worksheet.columns = [
                 { header: 'STT', key: 'stt', width: 5 },
                 { header: 'Mã BN', key: 'ma_bn', width: 14 },
+                { header: 'Tên quy tắc', key: 'ten_quy_tac', width: 30 },
                 { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
                 { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
                 { header: 'Họ tên', key: 'ho_ten', width: 25 },
@@ -608,11 +624,16 @@ export default function DetailedReport() {
             title: 'Chi tiết lỗi',
             dataIndex: 'chi_tiet_loi',
             key: 'chi_tiet_loi',
-            width: 300,
+            width: 320,
             onCell: createOnCell('chi_tiet_loi'),
-            render: (text: string) => text ? (
-                <Tooltip title={text}>
-                    <div className="truncate text-red-600 font-medium">{text}</div>
+            render: (_: any, record: ReportRow) => record.chi_tiet_loi ? (
+                <Tooltip title={record.chi_tiet_loi}>
+                    <div>
+                        {record.ten_quy_tac && (
+                            <div className="font-semibold text-blue-700 text-xs mb-0.5">{record.ten_quy_tac}</div>
+                        )}
+                        <div className="truncate text-red-600 text-xs">{record.chi_tiet_loi}</div>
+                    </div>
                 </Tooltip>
             ) : <Tag color="success">Hợp lệ</Tag>,
             filters: [
@@ -681,14 +702,15 @@ export default function DetailedReport() {
                     extra={
                         <Space>
                             <AutoComplete
-                                placeholder="Tìm hoặc chọn mã lỗi..."
+                                placeholder="Tìm hoặc chọn tên quy tắc..."
                                 allowClear
-                                style={{ width: 280 }}
-                                options={uniqueErrors}
+                                style={{ width: 340 }}
+                                options={uniqueRules}
                                 value={searchErrorText}
                                 onChange={(val) => setSearchErrorText(val)}
                                 filterOption={(inputValue, option) =>
-                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()) ||
+                                    (String(option?.label ?? '')).toUpperCase().includes(inputValue.toUpperCase())
                                 }
                             />
                             <Select

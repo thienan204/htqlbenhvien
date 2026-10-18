@@ -536,6 +536,9 @@ model RequestMessage {
   content     String?
   imageUrl    String?
   isSystem    Boolean   @default(false)
+  readBy      String[]  @default([])
+  channel     String    @default("INTERNAL")
+  vendorName  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   itRequest   ITRequest @relation(fields: [itRequestId], references: [id], onDelete: Cascade)

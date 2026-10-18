@@ -48,7 +48,10 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         previewImage,
         setPreviewOpen,
         uploadProps,
-        handleFileChange
+        handleFileChange,
+        uploadPendingFiles,
+        uploadingFiles,
+        clearFiles
     } = useImageUpload(maxImageSizeMB);
 
     const handleCreateTicket = async (values: any) => {
@@ -77,15 +80,18 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
             localStorage.setItem('last_it_request_staff_id', staff.id);
         }
 
-        if (fileList.length > 0) {
-            dynamicObj['Hình ảnh đính kèm'] = fileList.map((f: any) => f.url);
-        }
-
-        if (values.ke_hoach) {
-            dynamicObj['Kế hoạch xử lý'] = values.ke_hoach;
-        }
-
         try {
+            // Chỉ upload tệp lên máy chủ khi người dùng nhấn Gửi yêu cầu
+            const uploadedUrls = await uploadPendingFiles();
+            if (uploadedUrls.length > 0) {
+                dynamicObj['Hình ảnh đính kèm'] = uploadedUrls;
+                dynamicObj['Tệp đính kèm'] = uploadedUrls;
+            }
+
+            if (values.ke_hoach) {
+                dynamicObj['Kế hoạch xử lý'] = values.ke_hoach;
+            }
+
             const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -108,13 +114,15 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
 
             if (res.ok) {
                 message.success('Gửi yêu cầu thành công!');
+                clearFiles();
                 router.push(backPath);
             } else {
                 const err = await res.json();
                 message.error(err.error || 'Gửi yêu cầu thất bại');
             }
-        } catch (error) {
-            message.error('Lỗi kết nối');
+        } catch (error: any) {
+            console.error('Error submitting ticket:', error);
+            message.error(error.message || 'Lỗi kết nối');
         } finally {
             setLoading(false);
         }
@@ -146,6 +154,9 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
                     fileList={fileList}
                     uploadProps={uploadProps}
                     handleFileChange={handleFileChange}
+                    uploadPendingFiles={uploadPendingFiles}
+                    uploadingFiles={uploadingFiles}
+                    clearFiles={clearFiles}
                     setActiveTab={handleTabChange}
                     form={form}
                     targetDepartment={targetDepartment}

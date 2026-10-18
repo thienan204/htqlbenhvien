@@ -48,7 +48,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
     const [editingRule, setEditingRule] = useState<ValidationRule | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedXmlType, setSelectedXmlType] = useState<string>('ALL');
-    const [testResult, setTestResult] = useState<{ matched: number, total: number, errors: string[] } | null>(null);
+    const [testResult, setTestResult] = useState<{ matched: number, total: number, errors: string[], evaluatedMessage?: string } | null>(null);
     const [form] = Form.useForm();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isGuideModalVisible, setIsGuideModalVisible] = useState(false);
@@ -122,6 +122,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
         const validator = new ValidationEngine([], localMasterData);
         let matchCount = 0;
         const errors: string[] = [];
+        let sampleEvaluatedMessage: string | undefined = undefined;
 
         sampleRecords.forEach((record, idx) => {
             // Create a temporary rule object for testing
@@ -137,10 +138,13 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                 else if (errors.length === 5) errors.push('...');
             } else if (result.isMatch) {
                 matchCount++;
+                if (!sampleEvaluatedMessage && result.evaluatedMessage) {
+                    sampleEvaluatedMessage = result.evaluatedMessage;
+                }
             }
         });
 
-        setTestResult({ matched: matchCount, total: sampleRecords.length, errors });
+        setTestResult({ matched: matchCount, total: sampleRecords.length, errors, evaluatedMessage: sampleEvaluatedMessage });
         if (errors.length > 0) message.error('Có lỗi khi thực thi logic!');
         else message.success(`Kiểm tra hoàn tất: khớp ${matchCount}/${sampleRecords.length} hồ sơ.`);
     };
@@ -428,6 +432,91 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
         </Modal>
     );
 
+    const handleInsertPlaceholder = (placeholder: string) => {
+        const current = form.getFieldValue('errorMessage') || '';
+        const token = `{${placeholder}}`;
+        const updated = current ? `${current.trim()} ${token}` : token;
+        form.setFieldsValue({ errorMessage: updated });
+    };
+
+    const renderErrorMessageSection = () => (
+        <Form.Item shouldUpdate={(prev, curr) => prev.xmlType !== curr.xmlType} noStyle>
+            {() => {
+                const currentXml = form.getFieldValue('xmlType') || 'XML1';
+                const xmlFields = dynamicXmlFields[currentXml] || [];
+                const quickXml1Fields = ['MA_LK', 'HO_TEN', 'MA_THE_BHYT', 'NGAY_VAO', 'NGAY_RA'];
+                const quickCurrentFields = xmlFields.slice(0, 8);
+
+                return (
+                    <div className="mb-3">
+                        <Form.Item
+                            name="errorMessage"
+                            label={
+                                <div className="flex justify-between items-center w-full">
+                                    <span>Nội dung báo lỗi</span>
+                                    <span className="text-[11px] text-gray-400 font-normal">Hỗ trợ biến động: &#123;TEN_TRUONG&#125;</span>
+                                </div>
+                            }
+                            style={{ marginBottom: 6 }}
+                        >
+                            <TextArea rows={2} placeholder="Thông báo hiển thị khi vi phạm... VD: Dịch vụ {MA_DICH_VU} không hợp lệ (BN: {XML1.HO_TEN})" />
+                        </Form.Item>
+                        <div className="p-2 bg-slate-50 border border-slate-200 rounded text-xs">
+                            <div className="text-gray-500 font-medium mb-1.5 flex items-center gap-1">
+                                <span>💡 Chèn nhanh trường động vào nội dung báo lỗi:</span>
+                            </div>
+
+                            {/* Gợi ý trường thuộc XML hiện tại */}
+                            <div className="flex flex-wrap items-center gap-1 mb-1.5">
+                                <span className="text-gray-400 text-[11px] font-mono mr-1">[{currentXml}]:</span>
+                                {quickCurrentFields.map(f => (
+                                    <Tag
+                                        key={f}
+                                        color="cyan"
+                                        className="cursor-pointer hover:opacity-80 m-0 py-0.5 px-1.5 text-xs font-mono"
+                                        onClick={() => handleInsertPlaceholder(f)}
+                                    >
+                                        +{f}
+                                    </Tag>
+                                ))}
+                                {xmlFields.length > 8 && (
+                                    <Select
+                                        size="small"
+                                        placeholder="Chọn trường khác..."
+                                        style={{ width: 140 }}
+                                        showSearch
+                                        value={null}
+                                        onChange={(val) => {
+                                            if (val) handleInsertPlaceholder(val);
+                                        }}
+                                        options={xmlFields.slice(8).map(f => ({ label: f, value: f }))}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Gợi ý trường XML1 (nếu XML hiện tại không phải XML1) */}
+                            {currentXml !== 'XML1' && (
+                                <div className="flex flex-wrap items-center gap-1">
+                                    <span className="text-gray-400 text-[11px] font-mono mr-1">[XML1]:</span>
+                                    {quickXml1Fields.map(f => (
+                                        <Tag
+                                            key={f}
+                                            color="blue"
+                                            className="cursor-pointer hover:opacity-80 m-0 py-0.5 px-1.5 text-xs font-mono"
+                                            onClick={() => handleInsertPlaceholder(`XML1.${f}`)}
+                                        >
+                                            +XML1.{f}
+                                        </Tag>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }}
+        </Form.Item>
+    );
+
     const logicCheatSheetItems = [
         {
             key: '1',
@@ -637,9 +726,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                         </Col>
                                     </Row>
 
-                                    <Form.Item name="errorMessage" label="Nội dung báo lỗi" style={{ marginBottom: 12 }}>
-                                        <TextArea rows={2} placeholder="Thông báo hiển thị khi vi phạm..." />
-                                    </Form.Item>
+                                    {renderErrorMessageSection()}
                                 </Card>
                             </Col>
 
@@ -673,8 +760,15 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                                             </ul>
                                                         </div>
                                                     ) : (
-                                                        <div className="text-green-600">
-                                                            <CheckCircleOutlined /> Khớp {testResult.matched}/{testResult.total} hồ sơ mẫu.
+                                                        <div className="text-green-600 space-y-1">
+                                                            <div>
+                                                                <CheckCircleOutlined /> Khớp {testResult.matched}/{testResult.total} hồ sơ mẫu.
+                                                            </div>
+                                                            {testResult.evaluatedMessage && (
+                                                                <div className="bg-green-50 p-2 rounded border border-green-200 text-slate-700 font-mono text-[11px]">
+                                                                    <span className="font-semibold text-green-700">Mẫu thông báo khi vi phạm:</span> {testResult.evaluatedMessage}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -883,9 +977,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                     </Col>
                                 </Row>
 
-                                <Form.Item name="errorMessage" label="Nội dung báo lỗi" style={{ marginBottom: 12 }}>
-                                    <TextArea rows={2} placeholder="Thông báo hiển thị khi vi phạm..." />
-                                </Form.Item>
+                                {renderErrorMessageSection()}
                             </Card>
                         </Col>
 
@@ -919,8 +1011,15 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                                         </ul>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-green-600">
-                                                        <CheckCircleOutlined /> Khớp {testResult.matched}/{testResult.total} hồ sơ mẫu.
+                                                    <div className="text-green-600 space-y-1">
+                                                        <div>
+                                                            <CheckCircleOutlined /> Khớp {testResult.matched}/{testResult.total} hồ sơ mẫu.
+                                                        </div>
+                                                        {testResult.evaluatedMessage && (
+                                                            <div className="bg-green-50 p-2 rounded border border-green-200 text-slate-700 font-mono text-[11px]">
+                                                                <span className="font-semibold text-green-700">Mẫu thông báo khi vi phạm:</span> {testResult.evaluatedMessage}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

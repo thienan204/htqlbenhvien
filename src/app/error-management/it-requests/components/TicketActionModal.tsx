@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Select, Input, DatePicker, Card, Tag, Button } from 'antd';
-import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Modal, Form, Select, Input, DatePicker, Card, Tag, Button, message } from 'antd';
+import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined, ShareAltOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import { Ticket, ITUser, VendorItem } from '../types';
-import { PasteImageTextArea } from './PasteImageTextArea';
+import { PasteImageTextArea, AttachmentItem } from './PasteImageTextArea';
 import { getBasePath } from '@/utils/config';
+import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
 
 interface TicketActionModalProps {
     visible: boolean;
@@ -29,7 +30,8 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     const [actionForm] = Form.useForm();
     const [vendors, setVendors] = useState<VendorItem[]>([]);
     const [loadingVendors, setLoadingVendors] = useState(false);
-    const [attachedImages, setAttachedImages] = useState<string[]>([]);
+    const [attachedImages, setAttachedImages] = useState<AttachmentItem[]>([]);
+    const [submitting, setSubmitting] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState<string>('IN_PROGRESS');
     const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
@@ -43,6 +45,47 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     if (!isManager && isUnassigned) {
         availableUsers = itUsers.filter(u => u.id === user?.id);
     }
+
+    const resizeImage = (file: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1200;
+                    const MAX_HEIGHT = 1200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('Canvas conversion failed'));
+                    }, 'image/jpeg', 0.75);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    };
 
     // Tải danh mục đối tác từ /system-categories
     useEffect(() => {
@@ -64,7 +107,16 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
         if (visible && ticket) {
             setSelectedStatus(ticket.status || 'IN_PROGRESS');
             setSelectedVendorId(ticket.vendorId || null);
-            setAttachedImages(Array.isArray(ticket.it_images) ? ticket.it_images : []);
+            
+            const existing = Array.isArray(ticket.it_images) 
+                ? ticket.it_images.map((url: string, index: number) => ({
+                    id: `existing-${index}-${url}`,
+                    url: url,
+                    name: url.split('/').pop() || `Tệp ${index + 1}`,
+                    isPending: false
+                }))
+                : [];
+            setAttachedImages(existing);
 
             setTimeout(() => {
                 actionForm.setFieldsValue({
@@ -79,15 +131,81 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
         }
     }, [visible, ticket, actionForm]);
 
-    const handleFormSubmit = (values: any) => {
-        const selectedVendor = vendors.find(v => v.id === values.vendorId);
-        const payload: any = {
-            ...values,
-            it_images: attachedImages,
-            vendorName: selectedVendor ? selectedVendor.name : (ticket?.vendorName || null),
-            vendorExpectedReturnAt: values.vendorExpectedReturnAt ? values.vendorExpectedReturnAt.toISOString() : null,
-        };
-        onOk(payload);
+    const handleCancel = () => {
+        attachedImages.forEach(item => {
+            if (item.url && item.url.startsWith('blob:')) {
+                try {
+                    URL.revokeObjectURL(item.url);
+                } catch (e) {}
+            }
+        });
+        setAttachedImages([]);
+        onCancel();
+    };
+
+    const handleFormSubmit = async (values: any) => {
+        setSubmitting(true);
+        try {
+            const selectedVendor = vendors.find(v => v.id === values.vendorId);
+            const finalUrls: string[] = [];
+
+            for (const item of attachedImages) {
+                // Nếu đã là link server có sẵn
+                if (!item.isPending && item.url && !item.url.startsWith('blob:')) {
+                    finalUrls.push(item.url);
+                    continue;
+                }
+
+                const file: File | undefined = item.file;
+                if (!file) {
+                    if (item.url && !item.url.startsWith('blob:')) finalUrls.push(item.url);
+                    continue;
+                }
+
+                const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+                let fileToUpload: Blob = file;
+                if (isImage) {
+                    try {
+                        fileToUpload = await resizeImage(file);
+                    } catch (e) {
+                        fileToUpload = file;
+                    }
+                }
+
+                const formData = new FormData();
+                formData.append('file', fileToUpload, file.name || (isImage ? 'upload.jpg' : 'file'));
+
+                const res = await fetch(`${getBasePath()}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    finalUrls.push(data.url);
+                    if (item.url && item.url.startsWith('blob:')) {
+                        try {
+                            URL.revokeObjectURL(item.url);
+                        } catch (e) {}
+                    }
+                } else {
+                    message.error(data.error || `Lỗi tải tệp: ${file.name}`);
+                    throw new Error(data.error || 'Upload error');
+                }
+            }
+
+            const payload: any = {
+                ...values,
+                it_images: finalUrls,
+                vendorName: selectedVendor ? selectedVendor.name : (ticket?.vendorName || null),
+                vendorExpectedReturnAt: values.vendorExpectedReturnAt ? values.vendorExpectedReturnAt.toISOString() : null,
+            };
+            await onOk(payload);
+        } catch (error: any) {
+            console.error('Lỗi khi lưu xử lý phiếu:', error);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const selectedVendor = vendors.find(v => v.id === selectedVendorId);
@@ -105,8 +223,9 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                 </div>
             }
             open={visible}
-            onCancel={onCancel}
+            onCancel={handleCancel}
             onOk={() => actionForm.submit()}
+            confirmLoading={submitting}
             okText="Lưu cập nhật"
             cancelText="Hủy"
             destroyOnHidden
@@ -207,6 +326,43 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                                 <Input placeholder="Nhập mã phiếu nếu có..." className="!rounded-lg" />
                             </Form.Item>
                         </div>
+
+                        {ticket?.id && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white/95 border border-amber-300/80 rounded-xl text-xs shadow-2xs mt-1">
+                                <span className="font-semibold text-amber-950 flex items-center gap-1.5">
+                                    📢 Gửi cho công ty đối tác:
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                    <Button
+                                        size="small"
+                                        icon={<LinkOutlined />}
+                                        onClick={() => copyTicketShareLink(ticket.id)}
+                                        className="text-xs rounded-lg text-slate-700 hover:text-blue-600"
+                                    >
+                                        Sao chép Link
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        type="primary"
+                                        icon={<ShareAltOutlined />}
+                                        onClick={() => {
+                                            const currentValues = actionForm.getFieldsValue();
+                                            const mergedTicket = {
+                                                ...ticket,
+                                                vendorName: selectedVendor ? selectedVendor.name : (ticket.vendorName || ''),
+                                                vendorExpectedReturnAt: currentValues.vendorExpectedReturnAt ? currentValues.vendorExpectedReturnAt.toISOString() : ticket.vendorExpectedReturnAt,
+                                                vendorTicketCode: currentValues.vendorTicketCode || ticket.vendorTicketCode,
+                                                it_note: currentValues.it_note || ticket.it_note
+                                            };
+                                            copyTicketZaloMessage(mergedTicket);
+                                        }}
+                                        className="text-xs bg-blue-600 hover:bg-blue-500 rounded-lg font-medium"
+                                    >
+                                        Sao chép tin nhắn Zalo
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

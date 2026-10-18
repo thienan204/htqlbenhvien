@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge } from 'antd';
-import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge, Tooltip } from 'antd';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
 import { getBasePath } from '@/utils/config';
+import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -149,24 +150,48 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                             </span>
                                         );
                                     })()}
-                                    {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 &&
-                                        Object.entries(record.dynamicFields).filter(([k]) => k !== 'Hình ảnh đính kèm' && k !== 'Mã LK').map(([k, v]) => {
-                                            if (k === 'SĐT') {
-                                                return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
-                                            }
-                                            return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
-                                        })
-                                    }
+                                    {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 && (() => {
+                                        const attachmentKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm'];
+                                        return Object.entries(record.dynamicFields)
+                                            .filter(([k]) => !attachmentKeys.includes(k) && k !== 'Mã LK')
+                                            .map(([k, v]) => {
+                                                if (k === 'SĐT') {
+                                                    return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
+                                                }
+                                                return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
+                                            });
+                                    })()}
                                 </div>
-                                {record.dynamicFields?.['Hình ảnh đính kèm'] && Array.isArray(record.dynamicFields['Hình ảnh đính kèm']) && (
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                        <AntImage.PreviewGroup>
-                                            {record.dynamicFields['Hình ảnh đính kèm'].map((url: string, idx: number) => (
-                                                <TicketImage key={idx} url={url} />
-                                            ))}
-                                        </AntImage.PreviewGroup>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const attachmentKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm'];
+                                    const rawAttachments: string[] = [];
+                                    if (record.dynamicFields && typeof record.dynamicFields === 'object') {
+                                        attachmentKeys.forEach(k => {
+                                            const val = record.dynamicFields[k];
+                                            if (Array.isArray(val)) {
+                                                rawAttachments.push(...val);
+                                            } else if (typeof val === 'string' && val.startsWith('/uploads/')) {
+                                                rawAttachments.push(val);
+                                            }
+                                        });
+                                    }
+                                    const attachments = Array.from(new Set(rawAttachments)).filter(Boolean);
+
+                                    if (attachments.length === 0) return null;
+
+                                    return (
+                                        <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-100">
+                                            <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                                                <PaperClipOutlined className="text-blue-500" /> Tệp đính kèm ({attachments.length}):
+                                            </span>
+                                            <div className="flex flex-wrap gap-1.5 items-center">
+                                                {attachments.map((url: string, idx: number) => (
+                                                    <TicketImage key={idx} url={url} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>
@@ -220,6 +245,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         }
                     }
 
+                    const dept = departments.find(d => d.ma_khoa === record.ma_khoa);
+
                     return (
                         <div className="flex flex-col items-start gap-1">
                             <Tag color="orange" className="font-semibold m-0 flex items-center gap-1 border-amber-300">
@@ -245,6 +272,30 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                     Chưa hẹn ngày
                                 </span>
                             )}
+                            <div className="flex items-center gap-1 mt-0.5">
+                                <Tooltip title="Sao chép Link xem phiếu gửi đối tác">
+                                    <Button
+                                        size="small"
+                                        type="text"
+                                        className="h-5 px-1.5 text-[11px] text-slate-600 hover:text-blue-600 flex items-center gap-0.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded"
+                                        icon={<LinkOutlined className="text-[10px]" />}
+                                        onClick={() => copyTicketShareLink(record.id)}
+                                    >
+                                        Link
+                                    </Button>
+                                </Tooltip>
+                                <Tooltip title="Sao chép tin nhắn Zalo kèm Link">
+                                    <Button
+                                        size="small"
+                                        type="text"
+                                        className="h-5 px-1.5 text-[11px] text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 flex items-center gap-0.5 border border-blue-200 rounded font-medium"
+                                        icon={<ShareAltOutlined className="text-[10px]" />}
+                                        onClick={() => copyTicketZaloMessage(record, { deptName: dept?.ten_khoa })}
+                                    >
+                                        Zalo
+                                    </Button>
+                                </Tooltip>
+                            </div>
                         </div>
                     );
                 }
@@ -383,8 +434,14 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             )}
                             
                             {onChatClick && (
-                                <Badge count={record.messageCount} size="small" offset={[-4, 4]}>
-                                    <Button size="small" type="dashed" icon={<MessageOutlined />} title="Thảo luận" onClick={() => onChatClick(record)} />
+                                <Badge count={record.unreadMessageCount || 0} size="small" offset={[-4, 4]}>
+                                    <Button 
+                                        size="small" 
+                                        type="dashed" 
+                                        icon={<MessageOutlined />} 
+                                        title={record.unreadMessageCount ? `${record.unreadMessageCount} tin chưa đọc` : 'Thảo luận'} 
+                                        onClick={() => onChatClick(record)} 
+                                    />
                                 </Badge>
                             )}
 

@@ -1,13 +1,21 @@
-import React, { useState, useRef } from 'react';
-import { Input, Image as AntImage, Button, Tooltip, message, Spin } from 'antd';
-import { PictureOutlined, CloseCircleFilled, LoadingOutlined, PaperClipOutlined } from '@ant-design/icons';
+import React, { useRef } from 'react';
+import { Input, Image as AntImage, Button, message } from 'antd';
+import { CloseCircleFilled, PaperClipOutlined } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
+
+export interface AttachmentItem {
+    id: string;
+    url: string; // URL server hoặc blob url preview
+    name: string;
+    file?: File;
+    isPending?: boolean;
+}
 
 interface PasteImageTextAreaProps {
     value?: string;
     onChange?: (val: string) => void;
-    images: string[];
-    onImagesChange: (images: string[]) => void;
+    images: (string | AttachmentItem)[];
+    onImagesChange: (images: AttachmentItem[]) => void;
     placeholder?: string;
     rows?: number;
     disabled?: boolean;
@@ -22,32 +30,37 @@ export const PasteImageTextArea: React.FC<PasteImageTextAreaProps> = ({
     rows = 4,
     disabled = false
 }) => {
-    const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const uploadFile = async (file: File) => {
-        setUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', file, file.name || 'clipboard.jpg');
+    // Chuẩn hóa images sang AttachmentItem[]
+    const normalizedImages: AttachmentItem[] = images.map((item, idx) => {
+        if (typeof item === 'string') {
+            return {
+                id: `existing-${idx}-${item}`,
+                url: item,
+                name: item.split('/').pop() || `Tệp ${idx + 1}`,
+                isPending: false
+            };
+        }
+        return item;
+    });
 
-            const res = await fetch(`${getBasePath()}/api/upload`, {
-                method: 'POST',
-                body: formData
+    const addFiles = (files: File[]) => {
+        const newItems: AttachmentItem[] = [];
+        for (const file of files) {
+            const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+            const previewUrl = isImage ? URL.createObjectURL(file) : '';
+            newItems.push({
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                file,
+                name: file.name || (isImage ? 'anh_dan.jpg' : 'tep_dinh_kem'),
+                url: previewUrl,
+                isPending: true
             });
-
-            const data = await res.json();
-            if (res.ok && data.url) {
-                onImagesChange([...images, data.url]);
-                message.success('Đã dán ảnh thành công!');
-            } else {
-                message.error(data.error || 'Lỗi tải ảnh lên máy chủ');
-            }
-        } catch (error) {
-            console.error('Error uploading pasted image:', error);
-            message.error('Lỗi khi tải ảnh lên');
-        } finally {
-            setUploading(false);
+        }
+        if (newItems.length > 0) {
+            onImagesChange([...normalizedImages, ...newItems]);
+            message.success(`Đã chọn: ${newItems.map(i => i.name).join(', ')}`);
         }
     };
 
@@ -55,32 +68,41 @@ export const PasteImageTextArea: React.FC<PasteImageTextAreaProps> = ({
         const clipboardItems = e.clipboardData?.items;
         if (!clipboardItems) return;
 
-        let hasImage = false;
+        const filesToAdd: File[] = [];
         for (let i = 0; i < clipboardItems.length; i++) {
             const item = clipboardItems[i];
             if (item.type.indexOf('image') !== -1) {
                 const file = item.getAsFile();
                 if (file) {
-                    hasImage = true;
-                    uploadFile(file);
+                    filesToAdd.push(file);
                 }
             }
         }
-        // Nếu dán ảnh thì không chặn gõ text nếu clipboard vừa có text vừa có ảnh
+        if (filesToAdd.length > 0) {
+            addFiles(filesToAdd);
+        }
     };
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
-            files.forEach(file => uploadFile(file));
+            addFiles(files);
         }
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
-    const handleRemoveImage = (indexToRemove: number) => {
-        onImagesChange(images.filter((_, idx) => idx !== indexToRemove));
+    const handleRemoveItem = (idToRemove: string) => {
+        const target = normalizedImages.find(i => i.id === idToRemove);
+        if (target && target.url && target.url.startsWith('blob:')) {
+            try {
+                URL.revokeObjectURL(target.url);
+            } catch (e) {
+                console.error('Error revoking object URL:', e);
+            }
+        }
+        onImagesChange(normalizedImages.filter(i => i.id !== idToRemove));
     };
 
     return (
@@ -95,20 +117,15 @@ export const PasteImageTextArea: React.FC<PasteImageTextAreaProps> = ({
                     disabled={disabled}
                     className="!rounded-xl text-[13px] leading-relaxed pr-8"
                 />
-                {uploading && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-white/90 px-2 py-0.5 rounded-md border border-blue-200 text-blue-600 text-xs shadow-sm">
-                        <LoadingOutlined spin /> Đang tải ảnh...
-                    </div>
-                )}
             </div>
 
-            {/* Thanh công cụ và hình ảnh xem trước */}
+            {/* Thanh công cụ và đính kèm tệp */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
                 <div className="flex items-center gap-2">
                     <input
                         type="file"
                         ref={fileInputRef}
-                        accept="image/*"
+                        accept="*"
                         multiple
                         className="hidden"
                         onChange={handleFileInputChange}
@@ -117,51 +134,102 @@ export const PasteImageTextArea: React.FC<PasteImageTextAreaProps> = ({
                         size="small"
                         icon={<PaperClipOutlined />}
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={disabled || uploading}
+                        disabled={disabled}
                         className="text-xs text-slate-600 hover:text-blue-600 rounded-lg flex items-center"
                     >
-                        Chọn / Chụp ảnh
+                        Chọn ảnh / Đính kèm tệp
                     </Button>
                     <span className="text-[11px] text-slate-400 italic">
-                        💡 Mẹo: Chụp màn hình rồi bấm <b>Ctrl + V</b> để dán ảnh trực tiếp
+                        💡 Hỗ trợ đính kèm ảnh (Ctrl + V dán trực tiếp), Word, Excel, PDF, Zip...
                     </span>
                 </div>
 
-                {images.length > 0 && (
+                {normalizedImages.length > 0 && (
                     <span className="text-xs font-semibold text-slate-500">
-                        Đã đính kèm: {images.length} ảnh
+                        Đã đính kèm: {normalizedImages.length} tệp
                     </span>
                 )}
             </div>
 
-            {/* Danh sách ảnh đã đính kèm */}
-            {images.length > 0 && (
+            {/* Danh sách tệp/ảnh đã đính kèm */}
+            {normalizedImages.length > 0 && (
                 <div className="flex flex-wrap gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
                     <AntImage.PreviewGroup>
-                        {images.map((url, idx) => (
-                            <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-2xs bg-white shrink-0">
-                                <AntImage
-                                    src={url.startsWith('/') ? `${getBasePath()}${url}` : url}
-                                    alt={`Ảnh đính kèm ${idx + 1}`}
-                                    width={64}
-                                    height={64}
-                                    className="object-cover w-full h-full"
-                                />
-                                {!disabled && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveImage(idx);
-                                        }}
-                                        className="absolute top-0.5 right-0.5 text-red-500 hover:text-red-700 bg-white/90 rounded-full shadow-sm text-sm leading-none opacity-80 hover:opacity-100 transition-opacity z-10"
-                                        title="Xóa ảnh này"
-                                    >
-                                        <CloseCircleFilled />
-                                    </button>
-                                )}
-                            </div>
-                        ))}
+                        {normalizedImages.map((item) => {
+                            const isImg = (item.file && item.file.type.startsWith('image/')) || 
+                                          /\.(jpg|jpeg|png|gif|webp)$/i.test(item.name || item.url) || 
+                                          item.url.startsWith('blob:');
+                            const isPdf = /\.pdf$/i.test(item.name || item.url);
+                            const isWord = /\.(doc|docx)$/i.test(item.name || item.url);
+                            const isExcel = /\.(xls|xlsx)$/i.test(item.name || item.url);
+                            const isZip = /\.(zip|rar|7z)$/i.test(item.name || item.url);
+
+                            if (isImg && item.url) {
+                                return (
+                                    <div key={item.id} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-2xs bg-white shrink-0">
+                                        <AntImage
+                                            src={item.url.startsWith('/') ? `${getBasePath()}${item.url}` : item.url}
+                                            alt={item.name}
+                                            width={64}
+                                            height={64}
+                                            className="object-cover w-full h-full"
+                                        />
+                                        {!disabled && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveItem(item.id);
+                                                }}
+                                                className="absolute top-0.5 right-0.5 text-red-500 hover:text-red-700 bg-white/90 rounded-full shadow-sm text-sm leading-none opacity-80 hover:opacity-100 transition-opacity z-10 cursor-pointer"
+                                                title="Xóa ảnh này"
+                                            >
+                                                <CloseCircleFilled />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div key={item.id} className="relative group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white shadow-2xs text-xs max-w-[240px]">
+                                    <span className="text-base shrink-0">
+                                        {isPdf ? '📕' : isWord ? '📘' : isExcel ? '📗' : isZip ? '📦' : '📄'}
+                                    </span>
+                                    {item.isPending ? (
+                                        <span 
+                                            className="truncate text-slate-700 font-medium flex-1 cursor-help"
+                                            title={`Tệp: ${item.name} (Sẽ tải lên khi bạn nhấn Lưu cập nhật)`}
+                                        >
+                                            {item.name}
+                                        </span>
+                                    ) : (
+                                        <a 
+                                            href={item.url.startsWith('/') ? `${getBasePath()}${item.url}` : item.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="truncate text-blue-600 hover:underline flex-1"
+                                            title={item.name}
+                                        >
+                                            {item.name}
+                                        </a>
+                                    )}
+                                    {!disabled && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveItem(item.id);
+                                            }}
+                                            className="text-red-400 hover:text-red-600 ml-1 shrink-0 text-sm cursor-pointer"
+                                            title="Xóa tệp này"
+                                        >
+                                            <CloseCircleFilled />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </AntImage.PreviewGroup>
                 </div>
             )}

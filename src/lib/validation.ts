@@ -205,7 +205,7 @@ export class ValidationEngine {
                     }
 
                     if (isError) {
-                        results.push(this.createResult(rule));
+                        results.push(this.createResult(rule, undefined, undefined, context));
                     }
                 } else {
                     // List validation (XML2, 3, 4, 5)
@@ -295,12 +295,13 @@ export class ValidationEngine {
                                 // Để UI có thể map và hiển thị lên bảng (cần index list)
                                 debugMatchedRows.forEach(rowIndex => {
                                     const debugMsg = `(Cảnh báo số lượng vi phạm hạn mức cấu hình: ${matchCount})`;
-                                    results.push(this.createResult(rule, rowIndex - 1, debugMsg)); // rowIndex was 1-indexed, convert back to 0-indexed
+                                    const rowCtx = list[rowIndex - 1] ? { ...rootContext, ...list[rowIndex - 1] } : rootContext;
+                                    results.push(this.createResult(rule, rowIndex - 1, debugMsg, rowCtx)); // rowIndex was 1-indexed, convert back to 0-indexed
                                 });
                                 // Nếu đếm ra 0 bản ghi nhưng MinCount = 1 (Tức là thiếu) -> Push 1 bản ghi lỗi trắng
                                 if (debugMatchedRows.length === 0) {
                                     const debugMsg = `(Hồ sơ không có đủ dữ liệu theo yêu cầu, Số lượng: 0, Yêu cầu tối thiểu: ${rule.minCountVal})`;
-                                    results.push(this.createResult(rule, undefined, debugMsg));
+                                    results.push(this.createResult(rule, undefined, debugMsg, rootContext));
                                 }
                             }
                         } else {
@@ -395,7 +396,7 @@ export class ValidationEngine {
                                 }
 
                                 if (isError) {
-                                    results.push(this.createResult(rule, index, debugMsg));
+                                    results.push(this.createResult(rule, index, debugMsg, extendedContext));
                                 }
                             });
                         }
@@ -424,8 +425,38 @@ export class ValidationEngine {
         return list.filter((item: any) => item);
     }
 
-    private createResult(rule: ValidationRule, index?: number, debugInfo?: string): ValidationResult {
-        const msg = this.dynamicMessage ? this.dynamicMessage : (rule.errorMessage || rule.name);
+    public interpolateMessage(template: string, context?: any): string {
+        if (!template || !context || !template.includes('{')) return template;
+        return template.replace(/\{([a-zA-Z0-9_\.]+)\}/g, (match, fieldPath) => {
+            const parts = fieldPath.split('.');
+            let val: any = context;
+            for (const part of parts) {
+                if (val === undefined || val === null) break;
+                if (val[part] !== undefined) {
+                    val = val[part];
+                } else if (typeof val === 'object') {
+                    const actualKey = Object.keys(val).find(k => k.toLowerCase() === part.toLowerCase());
+                    if (actualKey) val = val[actualKey];
+                    else {
+                        val = undefined;
+                        break;
+                    }
+                } else {
+                    val = undefined;
+                    break;
+                }
+            }
+            if (val === undefined || val === null) return match;
+            const str = this.getDataValue(val);
+            return str !== '' ? str : match;
+        });
+    }
+
+    private createResult(rule: ValidationRule, index?: number, debugInfo?: string, context?: any): ValidationResult {
+        let msg = this.dynamicMessage ? this.dynamicMessage : (rule.errorMessage || rule.name);
+        if (context) {
+            msg = this.interpolateMessage(msg, context);
+        }
         return {
             ruleId: rule.id,
             ruleName: rule.name,
@@ -574,7 +605,8 @@ export class ValidationEngine {
 
                 try {
                     const result = checkLogic(context);
-                    return { isMatch: result };
+                    const evalMsg = result ? this.interpolateMessage(rule.errorMessage || rule.name, context) : undefined;
+                    return { isMatch: result, evaluatedMessage: evalMsg };
                 } catch (e: any) {
                     return { isMatch: false, error: e.message || String(e) };
                 }
@@ -652,7 +684,8 @@ export class ValidationEngine {
                 }
 
                 if (isError) {
-                    return { isMatch: true, error: `Số lượng bản ghi thỏa mãn: ${matchCount}` };
+                    const evalMsg = this.interpolateMessage(rule.errorMessage || rule.name, rootContext);
+                    return { isMatch: true, error: `Số lượng bản ghi thỏa mãn: ${matchCount}`, evaluatedMessage: evalMsg };
                 } else {
                     return { isMatch: false };
                 }
@@ -714,7 +747,8 @@ export class ValidationEngine {
 
                     try {
                         if (checkLogic(itemContext)) {
-                            return { isMatch: true };
+                            const evalMsg = this.interpolateMessage(rule.errorMessage || rule.name, itemContext);
+                            return { isMatch: true, evaluatedMessage: evalMsg };
                         }
                     } catch (e: any) {
                         return { isMatch: false, error: `Row error: ${e.message || String(e)}` };

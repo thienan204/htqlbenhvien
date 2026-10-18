@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switch, Alert, Tag } from 'antd';
-import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined } from '@ant-design/icons';
+import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
 import { useCheckBa } from '../hooks/useCheckBa';
@@ -18,6 +18,9 @@ interface ChatTabProps {
     fileList: any[];
     uploadProps: any;
     handleFileChange: (e: any) => void;
+    uploadPendingFiles?: () => Promise<string[]>;
+    uploadingFiles?: boolean;
+    clearFiles?: () => void;
     form: any;
     setActiveTab: (tab: string) => void;
     targetDepartment?: string;
@@ -36,6 +39,9 @@ export function ChatTab({
     fileList,
     uploadProps,
     handleFileChange,
+    uploadPendingFiles,
+    uploadingFiles = false,
+    clearFiles,
     setActiveTab,
     form,
     targetDepartment = 'CNTT',
@@ -185,11 +191,20 @@ export function ChatTab({
             'Người báo': staff?.ho_ten || ''
         };
 
-        if (fileList.length > 0) {
-            dynamicObj['Hình ảnh đính kèm'] = fileList.map(f => f.url);
-        }
-
         try {
+            // Chỉ upload tệp lên máy chủ khi người dùng nhấn Gửi yêu cầu
+            let uploadedUrls: string[] = [];
+            if (uploadPendingFiles) {
+                uploadedUrls = await uploadPendingFiles();
+            } else {
+                uploadedUrls = fileList.map((f: any) => f.url || f.response?.url).filter(Boolean);
+            }
+
+            if (uploadedUrls.length > 0) {
+                dynamicObj['Hình ảnh đính kèm'] = uploadedUrls;
+                dynamicObj['Tệp đính kèm'] = uploadedUrls;
+            }
+
             const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -209,6 +224,7 @@ export function ChatTab({
 
             if (res.ok) {
                 message.success('Gửi yêu cầu thành công!');
+                if (clearFiles) clearFiles();
                 if (targetDepartment === 'VTYT') router.push('/error-management/vtyt-requests');
                 else if (targetDepartment === 'HCQT') router.push('/error-management/hcqt-requests');
                 else router.push('/error-management/it-requests');
@@ -216,8 +232,9 @@ export function ChatTab({
                 const err = await res.json();
                 message.error(err.error || 'Gửi yêu cầu thất bại');
             }
-        } catch (error) {
-            message.error('Lỗi kết nối');
+        } catch (error: any) {
+            console.error('Error submitting chat request:', error);
+            message.error(error.message || 'Lỗi kết nối');
         } finally {
             setChatLoading(false);
         }
@@ -368,8 +385,8 @@ export function ChatTab({
                                         label: (
                                             <label className="flex items-center gap-3 py-1 cursor-pointer w-full text-slate-700">
                                                 <PictureOutlined className="text-lg text-blue-500" />
-                                                <span className="font-medium text-[14px]">Chọn từ thư viện</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                                                <span className="font-medium text-[14px]">Chọn ảnh từ thư viện</span>
+                                                <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
                                             </label>
                                         )
                                     },
@@ -382,12 +399,22 @@ export function ChatTab({
                                                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
                                             </label>
                                         )
+                                    },
+                                    {
+                                        key: '3',
+                                        label: (
+                                            <label className="flex items-center gap-3 py-1 cursor-pointer w-full text-slate-700 border-t border-slate-100 pt-1.5 mt-0.5">
+                                                <PaperClipOutlined className="text-lg text-purple-600" />
+                                                <span className="font-medium text-[14px]">Đính kèm tệp / Tài liệu (PDF, Word, Excel, Zip...)</span>
+                                                <input type="file" multiple className="hidden" onChange={handleFileChange} />
+                                            </label>
+                                        )
                                     }
                                 ]
                             }}
                         >
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors">
-                                <PictureOutlined className="text-xl" />
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors" title="Đính kèm ảnh hoặc tài liệu">
+                                <PaperClipOutlined className="text-xl" />
                             </div>
                         </Dropdown>
                     </div>
@@ -424,7 +451,8 @@ export function ChatTab({
                             size="large" 
                             icon={<SendOutlined />} 
                             onClick={handleCreateFromChat}
-                            loading={chatLoading}
+                            loading={chatLoading || uploadingFiles}
+                            disabled={chatLoading || uploadingFiles}
                             className="bg-blue-600"
                         />
                     </div>

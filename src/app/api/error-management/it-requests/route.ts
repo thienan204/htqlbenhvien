@@ -77,6 +77,13 @@ export async function GET(request: Request) {
             include: {
                 _count: {
                     select: { messages: true }
+                },
+                messages: {
+                    where: {
+                        senderId: { not: user.id },
+                        NOT: { readBy: { has: user.id } }
+                    },
+                    select: { id: true, channel: true }
                 }
             }
         });
@@ -111,14 +118,21 @@ export async function GET(request: Request) {
         });
         const existingXmlSet = new Set(existingXmls.map(xml => xml.MA_LK));
 
-        const enrichedRequests = requests.map(req => ({
-            ...req,
-            assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
-            assigneePhone: req.assigneeId ? assigneeMap[req.assigneeId]?.phone : null,
-            transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null,
-            messageCount: req._count?.messages || 0,
-            hasXml: req.ma_ba ? existingXmlSet.has(req.ma_ba) : false
-        }));
+        const enrichedRequests = requests.map(req => {
+            const unreadList = (req as any).messages || [];
+            return {
+                ...req,
+                assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
+                assigneePhone: req.assigneeId ? assigneeMap[req.assigneeId]?.phone : null,
+                transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null,
+                messageCount: req._count?.messages || 0,
+                unreadMessageCount: unreadList.length,
+                unreadInternalCount: unreadList.filter((m: any) => m.channel === 'INTERNAL').length,
+                unreadVendorCount: unreadList.filter((m: any) => m.channel === 'VENDOR').length,
+                hasXml: req.ma_ba ? existingXmlSet.has(req.ma_ba) : false,
+                messages: undefined // Không gửi toàn bộ object messages ra list để giảm payload
+            };
+        });
 
         return NextResponse.json(enrichedRequests, {
             headers: {
