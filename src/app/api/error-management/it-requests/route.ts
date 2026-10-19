@@ -79,11 +79,8 @@ export async function GET(request: Request) {
                     select: { messages: true }
                 },
                 messages: {
-                    where: {
-                        senderId: { not: user.id },
-                        NOT: { readBy: { has: user.id } }
-                    },
-                    select: { id: true, channel: true }
+                    orderBy: { createdAt: 'asc' },
+                    select: { id: true, channel: true, senderId: true, readBy: true }
                 }
             }
         });
@@ -119,7 +116,14 @@ export async function GET(request: Request) {
         const existingXmlSet = new Set(existingXmls.map(xml => xml.MA_LK));
 
         const enrichedRequests = requests.map(req => {
-            const unreadList = (req as any).messages || [];
+            const allMessages = (req as any).messages || [];
+            // Tin nhắn đầu tiên (index 0) là nội dung yêu cầu ban đầu của Khoa (đã hiển thị ở cột Lỗi yêu cầu), mặc định coi như đã đọc
+            // Chỉ tính tin chưa đọc cho các tin nhắn thảo luận/trao đổi từ tin nhắn thứ 2 trở đi
+            const conversationMessages = allMessages.slice(1);
+            const unreadList = conversationMessages.filter((m: any) => 
+                m.senderId !== user.id && (!m.readBy || !m.readBy.includes(user.id))
+            );
+
             return {
                 ...req,
                 assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
@@ -390,7 +394,8 @@ export async function POST(request: Request) {
                             senderId: nguoi_bao_id || user.id,
                             senderName: dynamicFields['Người báo'] || (user as any).name || user.username,
                             content: ten_loi,
-                            imageUrl: dynamicFields['Hình ảnh đính kèm'] && dynamicFields['Hình ảnh đính kèm'].length > 0 ? dynamicFields['Hình ảnh đính kèm'][0] : null
+                            imageUrl: dynamicFields['Hình ảnh đính kèm'] && dynamicFields['Hình ảnh đính kèm'].length > 0 ? dynamicFields['Hình ảnh đính kèm'][0] : null,
+                            readBy: [user.id]
                         }
                     ]
                 }
