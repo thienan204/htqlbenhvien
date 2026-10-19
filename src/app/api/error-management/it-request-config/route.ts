@@ -41,12 +41,24 @@ export async function GET(request: Request) {
             softwareErrors: config.softwareErrors || config.fields || [], 
             hardwareErrors: config.hardwareErrors && config.hardwareErrors.length > 0 ? config.hardwareErrors : defaultHardwareErrors,
             assignmentMode: config.assignmentMode || 'A',
+            maxConcurrentTasks: config.maxConcurrentTasks !== undefined ? Number(config.maxConcurrentTasks) : 2,
+            morningStartTime: config.morningStartTime || '07:00',
+            morningEndTime: config.morningEndTime || '11:30',
+            afternoonStartTime: config.afternoonStartTime || '13:30',
+            afternoonEndTime: config.afternoonEndTime || config.officeEndTime || '16:50',
+            officeEndTime: config.afternoonEndTime || config.officeEndTime || '16:50',
+            holidays: Array.isArray(config.holidays) ? config.holidays : [],
+            makeupWorkdays: Array.isArray(config.makeupWorkdays) ? config.makeupWorkdays : [],
+            noStaffWarningEnabled: config.noStaffWarningEnabled !== undefined ? Boolean(config.noStaffWarningEnabled) : true,
+            noStaffWarningMessage: config.noStaffWarningMessage || 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!',
             maxImageSizeMB: config.maxImageSizeMB || 10,
             maxFileSizeMB: config.maxFileSizeMB || config.maxImageSizeMB || 15,
             allowedFileExtensions: config.allowedFileExtensions || '.jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar',
             maBaLength: config.maBaLength || 11,
             telegramBotToken: config.telegramBotToken || '',
             telegramChatId: config.telegramChatId || '',
+            zaloEnabled: Boolean(config.zaloEnabled),
+            zaloWebhookUrl: config.zaloWebhookUrl || '',
             notificationSound: config.notificationSound || { type: 'DEFAULT', url: '', duration: 7 }
         });
     } catch (error: any) {
@@ -74,12 +86,24 @@ export async function POST(request: Request) {
             softwareErrors, 
             hardwareErrors, 
             assignmentMode, 
+            maxConcurrentTasks,
+            morningStartTime,
+            morningEndTime,
+            afternoonStartTime,
+            afternoonEndTime,
+            officeEndTime,
+            holidays,
+            makeupWorkdays,
+            noStaffWarningEnabled,
+            noStaffWarningMessage,
             maxImageSizeMB, 
             maxFileSizeMB,
             allowedFileExtensions,
             maBaLength, 
             telegramBotToken, 
-            telegramChatId, 
+            telegramChatId,
+            zaloEnabled,
+            zaloWebhookUrl, 
             notificationSound 
         } = body;
 
@@ -98,17 +122,33 @@ export async function POST(request: Request) {
             ? Number(maxFileSizeMB) 
             : (maxImageSizeMB !== undefined ? Number(maxImageSizeMB) : (existingConfig.maxFileSizeMB || 15));
 
+        const finalAfternoonEnd = afternoonEndTime !== undefined 
+            ? afternoonEndTime.trim() 
+            : (officeEndTime !== undefined ? officeEndTime.trim() : (existingConfig.afternoonEndTime || existingConfig.officeEndTime || '16:50'));
+
         const newConfig = {
             ...existingConfig,
             softwareErrors: softwareErrors || existingConfig.softwareErrors || [],
             hardwareErrors: hardwareErrors || existingConfig.hardwareErrors || [],
             assignmentMode: assignmentMode || existingConfig.assignmentMode || 'A',
+            maxConcurrentTasks: maxConcurrentTasks !== undefined ? Number(maxConcurrentTasks) : (existingConfig.maxConcurrentTasks !== undefined ? Number(existingConfig.maxConcurrentTasks) : 2),
+            morningStartTime: morningStartTime !== undefined ? morningStartTime.trim() : (existingConfig.morningStartTime || '07:00'),
+            morningEndTime: morningEndTime !== undefined ? morningEndTime.trim() : (existingConfig.morningEndTime || '11:30'),
+            afternoonStartTime: afternoonStartTime !== undefined ? afternoonStartTime.trim() : (existingConfig.afternoonStartTime || '13:30'),
+            afternoonEndTime: finalAfternoonEnd,
+            officeEndTime: finalAfternoonEnd,
+            holidays: holidays !== undefined && Array.isArray(holidays) ? holidays : (existingConfig.holidays || []),
+            makeupWorkdays: makeupWorkdays !== undefined && Array.isArray(makeupWorkdays) ? makeupWorkdays : (existingConfig.makeupWorkdays || []),
+            noStaffWarningEnabled: noStaffWarningEnabled !== undefined ? Boolean(noStaffWarningEnabled) : (existingConfig.noStaffWarningEnabled !== undefined ? Boolean(existingConfig.noStaffWarningEnabled) : true),
+            noStaffWarningMessage: noStaffWarningMessage !== undefined ? noStaffWarningMessage.trim() : (existingConfig.noStaffWarningMessage || 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!'),
             maxImageSizeMB: resolvedMaxFileSizeMB,
             maxFileSizeMB: resolvedMaxFileSizeMB,
             allowedFileExtensions: allowedFileExtensions !== undefined ? allowedFileExtensions : (existingConfig.allowedFileExtensions || '.jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar'),
             maBaLength: maBaLength !== undefined ? Number(maBaLength) : (existingConfig.maBaLength || 11),
             telegramBotToken: telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
             telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId,
+            zaloEnabled: zaloEnabled !== undefined ? Boolean(zaloEnabled) : Boolean(existingConfig.zaloEnabled),
+            zaloWebhookUrl: zaloWebhookUrl !== undefined ? zaloWebhookUrl.trim() : (existingConfig.zaloWebhookUrl || ''),
             notificationSound: notificationSound !== undefined ? notificationSound : (existingConfig.notificationSound || { type: 'DEFAULT', url: '', duration: 7 })
         };
 

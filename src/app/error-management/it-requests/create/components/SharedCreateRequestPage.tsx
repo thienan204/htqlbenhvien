@@ -113,9 +113,25 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
             });
 
             if (res.ok) {
-                message.success('Gửi yêu cầu thành công!');
+                const data = await res.json().catch(() => ({}));
                 clearFiles();
-                router.push(backPath);
+                if (data.warningMessage) {
+                    Modal.warning({
+                        title: 'Đã gửi yêu cầu - Lưu ý tiếp nhận',
+                        content: (
+                            <div className="py-2">
+                                <p className="text-amber-800 font-medium whitespace-pre-line leading-relaxed">{data.warningMessage}</p>
+                            </div>
+                        ),
+                        okText: 'Đã hiểu và hoàn tất',
+                        onOk: () => {
+                            router.push(backPath);
+                        }
+                    });
+                } else {
+                    message.success('Gửi yêu cầu thành công!');
+                    router.push(backPath);
+                }
             } else {
                 const err = await res.json();
                 message.error(err.error || 'Gửi yêu cầu thất bại');

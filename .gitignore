@@ -42,8 +42,8 @@ test-prisma-constructor.js
 api-*.txt
 
 # custom test & debug scripts
-/scripts/*
-!/scripts/generate-routes.js
+/scripts/
+!scripts/generate-routes.js
 *debug*.js
 *test*.js
 *.log

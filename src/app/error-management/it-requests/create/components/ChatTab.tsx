@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switch, Alert, Tag } from 'antd';
+import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switch, Alert, Tag, Modal } from 'antd';
 import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
@@ -223,11 +223,29 @@ export function ChatTab({
             });
 
             if (res.ok) {
-                message.success('Gửi yêu cầu thành công!');
+                const data = await res.json().catch(() => ({}));
                 if (clearFiles) clearFiles();
-                if (targetDepartment === 'VTYT') router.push('/error-management/vtyt-requests');
-                else if (targetDepartment === 'HCQT') router.push('/error-management/hcqt-requests');
-                else router.push('/error-management/it-requests');
+                const redirectPath = targetDepartment === 'VTYT' 
+                    ? '/error-management/vtyt-requests' 
+                    : (targetDepartment === 'HCQT' ? '/error-management/hcqt-requests' : '/error-management/it-requests');
+
+                if (data.warningMessage) {
+                    Modal.warning({
+                        title: 'Đã gửi yêu cầu - Lưu ý tiếp nhận',
+                        content: (
+                            <div className="py-2">
+                                <p className="text-amber-800 font-medium whitespace-pre-line leading-relaxed">{data.warningMessage}</p>
+                            </div>
+                        ),
+                        okText: 'Đã hiểu và hoàn tất',
+                        onOk: () => {
+                            router.push(redirectPath);
+                        }
+                    });
+                } else {
+                    message.success('Gửi yêu cầu thành công!');
+                    router.push(redirectPath);
+                }
             } else {
                 const err = await res.json();
                 message.error(err.error || 'Gửi yêu cầu thất bại');

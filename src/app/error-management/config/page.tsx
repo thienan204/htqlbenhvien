@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio, Upload, Alert, Popover, Tooltip } from 'antd';
+import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio, Upload, Alert, Popover, Tooltip, Switch, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, YoutubeOutlined, LinkOutlined, SendOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { SoundConfig, playSoundByConfig, stopAllNotificationSounds, extractYouTubeId } from '@/utils/audioUtils';
 import Link from 'next/link';
@@ -25,12 +25,30 @@ export default function ITConfigPage() {
     
     // We also need to preserve the assignmentMode
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
+    const [maxConcurrentTasks, setMaxConcurrentTasks] = useState<number>(2);
+    const [morningStartTime, setMorningStartTime] = useState<string>('07:00');
+    const [morningEndTime, setMorningEndTime] = useState<string>('11:30');
+    const [afternoonStartTime, setAfternoonStartTime] = useState<string>('13:30');
+    const [afternoonEndTime, setAfternoonEndTime] = useState<string>('16:50');
+    const [officeEndTime, setOfficeEndTime] = useState<string>('16:50');
+    const [holidays, setHolidays] = useState<string[]>([]);
+    const [makeupWorkdays, setMakeupWorkdays] = useState<string[]>([]);
+    const [newHolidayInput, setNewHolidayInput] = useState<string>('');
+    const [newMakeupInput, setNewMakeupInput] = useState<string>('');
+    const [noStaffWarningEnabled, setNoStaffWarningEnabled] = useState<boolean>(true);
+    const [noStaffWarningMessage, setNoStaffWarningMessage] = useState<string>('');
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(15);
     const [allowedFileExtensions, setAllowedFileExtensions] = useState<string>('.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
     const [maBaLength, setMaBaLength] = useState<number>(11);
     const [telegramBotToken, setTelegramBotToken] = useState<string>('');
     const [telegramChatId, setTelegramChatId] = useState<string>('');
     const [testingTelegram, setTestingTelegram] = useState(false);
+    const [personalTelegramId, setPersonalTelegramId] = useState<string>('');
+    const [savingPersonal, setSavingPersonal] = useState(false);
+    const [testingPersonal, setTestingPersonal] = useState(false);
+    const [zaloEnabled, setZaloEnabled] = useState<boolean>(false);
+    const [zaloWebhookUrl, setZaloWebhookUrl] = useState<string>('');
+    const [testingZalo, setTestingZalo] = useState(false);
     const [notificationSound, setNotificationSound] = useState<SoundConfig>({
         type: 'DEFAULT',
         url: '',
@@ -46,7 +64,26 @@ export default function ITConfigPage() {
 
     useEffect(() => {
         fetchConfig();
+        fetchMyProfile();
     }, []);
+
+    const fetchMyProfile = async () => {
+        try {
+            const res = await fetch('/api/auth/profile');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.user?.telegram_id) {
+                    setPersonalTelegramId(data.user.telegram_id);
+                } else if ((user as any)?.telegram_id) {
+                    setPersonalTelegramId((user as any).telegram_id);
+                }
+            }
+        } catch (e) {
+            if ((user as any)?.telegram_id) {
+                setPersonalTelegramId((user as any).telegram_id);
+            }
+        }
+    };
 
     const fetchConfig = async () => {
         setLoading(true);
@@ -65,11 +102,24 @@ export default function ITConfigPage() {
                 setSoftwareErrors(mappedSoftwareErrors);
                 setHardwareErrors(mappedHardwareErrors);
                 setAssignmentMode(data.assignmentMode || 'A');
+                setMaxConcurrentTasks(data.maxConcurrentTasks !== undefined ? Number(data.maxConcurrentTasks) : 2);
+                setMorningStartTime(data.morningStartTime || '07:00');
+                setMorningEndTime(data.morningEndTime || '11:30');
+                setAfternoonStartTime(data.afternoonStartTime || '13:30');
+                const loadedAfternoonEnd = data.afternoonEndTime || data.officeEndTime || '16:50';
+                setAfternoonEndTime(loadedAfternoonEnd);
+                setOfficeEndTime(loadedAfternoonEnd);
+                setHolidays(Array.isArray(data.holidays) ? data.holidays : []);
+                setMakeupWorkdays(Array.isArray(data.makeupWorkdays) ? data.makeupWorkdays : []);
+                setNoStaffWarningEnabled(data.noStaffWarningEnabled !== undefined ? Boolean(data.noStaffWarningEnabled) : true);
+                setNoStaffWarningMessage(data.noStaffWarningMessage || '');
                 setMaxImageSizeMB(data.maxFileSizeMB || data.maxImageSizeMB || 15);
                 setAllowedFileExtensions(data.allowedFileExtensions || '.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
                 setMaBaLength(data.maBaLength || 11);
                 setTelegramBotToken(data.telegramBotToken || '');
                 setTelegramChatId(data.telegramChatId || '');
+                setZaloEnabled(Boolean(data.zaloEnabled));
+                setZaloWebhookUrl(data.zaloWebhookUrl || '');
                 if (data.notificationSound) {
                     setNotificationSound(data.notificationSound);
                 }
@@ -166,6 +216,16 @@ export default function ITConfigPage() {
                 softwareErrors: softwareErrors.map((e: any) => e.name),
                 hardwareErrors: hardwareErrors.map((e: any) => e.name),
                 assignmentMode,
+                maxConcurrentTasks,
+                morningStartTime: morningStartTime.trim() || '07:00',
+                morningEndTime: morningEndTime.trim() || '11:30',
+                afternoonStartTime: afternoonStartTime.trim() || '13:30',
+                afternoonEndTime: (afternoonEndTime.trim() || officeEndTime.trim() || '16:50'),
+                officeEndTime: (afternoonEndTime.trim() || officeEndTime.trim() || '16:50'),
+                holidays,
+                makeupWorkdays,
+                noStaffWarningEnabled,
+                noStaffWarningMessage: noStaffWarningMessage.trim(),
                 maxImageSizeMB,
                 maxFileSizeMB: maxImageSizeMB,
                 allowedFileExtensions,
@@ -173,6 +233,8 @@ export default function ITConfigPage() {
                 targetDepartment,
                 telegramBotToken,
                 telegramChatId,
+                zaloEnabled,
+                zaloWebhookUrl: zaloWebhookUrl.trim(),
                 notificationSound: currentSound
             };
             const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`, {
@@ -218,6 +280,88 @@ export default function ITConfigPage() {
             message.error('Lỗi kết nối khi gửi thử Telegram');
         } finally {
             setTestingTelegram(false);
+        }
+    };
+
+    const handleSavePersonalTelegram = async () => {
+        setSavingPersonal(true);
+        try {
+            const res = await fetch('/api/auth/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: user?.name || user?.username,
+                    telegram_id: personalTelegramId.trim()
+                })
+            });
+            if (res.ok) {
+                message.success('Đã lưu Telegram ID cá nhân thành công!');
+            } else {
+                const err = await res.json();
+                message.error(err.error || 'Lỗi khi lưu Telegram ID cá nhân');
+            }
+        } catch (e) {
+            message.error('Lỗi kết nối khi lưu Telegram ID cá nhân');
+        } finally {
+            setSavingPersonal(false);
+        }
+    };
+
+    const handleTestPersonalTelegram = async () => {
+        if (!personalTelegramId?.trim()) {
+            message.warning('Vui lòng nhập Telegram ID của bạn trước khi kiểm tra');
+            return;
+        }
+        setTestingPersonal(true);
+        try {
+            const res = await fetch('/api/error-management/it-requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'TEST_PERSONAL_TELEGRAM',
+                    personalTelegramId: personalTelegramId.trim(),
+                    targetDepartment
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                message.success(data.message || 'Đã gửi tin nhắn thử nghiệm vào Telegram riêng của bạn!');
+            } else {
+                message.error(data.error || 'Gửi thất bại. Hãy chắc chắn bạn đã bấm Start bot trên Telegram.');
+            }
+        } catch (e) {
+            message.error('Lỗi kết nối khi gửi thử Telegram cá nhân');
+        } finally {
+            setTestingPersonal(false);
+        }
+    };
+
+    const handleTestZalo = async () => {
+        if (!zaloWebhookUrl?.trim()) {
+            message.warning('Vui lòng nhập Zalo Webhook URL trước khi kiểm tra');
+            return;
+        }
+        setTestingZalo(true);
+        try {
+            const res = await fetch('/api/error-management/it-requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'TEST_ZALO',
+                    testWebhookUrl: zaloWebhookUrl.trim(),
+                    targetDepartment
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                message.success(data.message || 'Đã gửi tin nhắn thử nghiệm thành công! Hãy kiểm tra nhóm Zalo.');
+            } else {
+                message.error(data.error || 'Gửi thử nghiệm thất bại. Vui lòng kiểm tra lại Webhook URL.');
+            }
+        } catch (e: any) {
+            message.error('Lỗi kết nối khi gửi thử Zalo');
+        } finally {
+            setTestingZalo(false);
         }
     };
 
@@ -345,30 +489,428 @@ export default function ITConfigPage() {
             key: 'GENERAL',
             label: 'Cấu hình chung',
             children: (
-                <div className="space-y-6 max-w-lg mt-4">
-                    <Card size="small" title="Chế độ phân công công việc" className="border border-slate-200">
+                <div className="space-y-6 w-full mt-4">
+                    {/* Card 1: Chế độ phân công công việc (4 Tùy chọn) */}
+                    <Card 
+                        size="small" 
+                        title={
+                            <div className="flex items-center justify-between w-full">
+                                <span className="font-semibold text-slate-800">Chế độ phân công công việc (4 Tùy chọn)</span>
+                                <Popover 
+                                    trigger="click"
+                                    placement="bottomRight"
+                                    title={<span className="font-bold text-blue-700">📘 Hướng dẫn chi tiết 4 chế độ phân công</span>}
+                                    content={
+                                        <div className="max-w-[490px] max-h-[75vh] overflow-y-auto space-y-3 text-xs text-slate-700 leading-relaxed pr-1">
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1">
+                                                    🟢 1. Tự do nhận việc (Chế độ A)
+                                                </div>
+                                                <div className="text-slate-600 space-y-1">
+                                                    <div>• <b>Cơ chế:</b> Ticket ở trạng thái chờ, không gán cho ai. Mọi nhân viên kỹ thuật đều thấy, ai rảnh thì tự bấm <i>"Nhận việc"</i>.</div>
+                                                    <div>• <b>Lưu ý:</b> Dễ bị đùn đẩy hoặc các ca khó bị để lâu.</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1">
+                                                    🟡 2. Trưởng nhóm điều phối (Chế độ B)
+                                                </div>
+                                                <div className="text-slate-600 space-y-1">
+                                                    <div>• <b>Cơ chế:</b> Ticket gửi lên nằm chờ, chỉ Admin hoặc Trưởng phòng mới có quyền bấm chỉ định người xử lý.</div>
+                                                    <div>• <b>Lưu ý:</b> Phụ thuộc vào Trưởng phòng phải túc trực chia việc thủ công.</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                                                <div className="font-bold text-amber-900 text-xs mb-1">
+                                                    ⚡ 3. Tự động - Phản ứng nhanh (Chế độ C)
+                                                </div>
+                                                <div className="text-slate-700 space-y-1">
+                                                    <div>• <b>Cơ chế:</b> Đếm số việc đang dở dang (Chờ + Đang làm) của từng người. Ai đang có ít việc dở dang nhất sẽ nhận việc ngay để hỗ trợ khoa nhanh nhất.</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-blue-50/70 p-2.5 rounded-lg border border-blue-200">
+                                                <div className="font-bold text-blue-900 text-xs mb-1 flex items-center justify-between">
+                                                    <span>⚖️ 4. Tự động - Cân bằng công bằng (Chế độ D)</span>
+                                                    <span className="text-[10px] bg-green-100 text-green-700 font-semibold px-1.5 py-0.5 rounded">Khuyên dùng</span>
+                                                </div>
+                                                <div className="text-slate-700 space-y-1">
+                                                    <div>• <b>Cơ chế 2 tầng:</b> Ưu tiên người đang rảnh tay trước. Nếu có nhiều người cùng rảnh, so sánh tổng số việc đã nhận trong ca/ngày để chia đều việc, tránh người làm nhanh bị ôm đồm quá nhiều việc.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                >
+                                    <Button 
+                                        type="link" 
+                                        size="small" 
+                                        icon={<QuestionCircleOutlined />} 
+                                        className="text-blue-600 hover:text-blue-500 font-medium p-0 h-auto flex items-center gap-1"
+                                    >
+                                        Xem hướng dẫn
+                                    </Button>
+                                </Popover>
+                            </div>
+                        }
+                        className="border border-slate-200"
+                    >
                         <div className="flex flex-col gap-3">
                             <Radio.Group 
                                 value={assignmentMode} 
                                 onChange={e => setAssignmentMode(e.target.value)}
-                                className="flex flex-col gap-2"
-                                disabled={user?.role !== 'ADMIN'}
+                                className="flex flex-col gap-2.5"
+                                disabled={!isAdmin}
                             >
                                 <Radio value="A">
-                                    <span className="font-medium text-slate-700">Tự do nhận việc</span>
-                                    <div className="text-xs text-slate-500">Ticket gửi lên ở trạng thái chờ, nhân viên {targetDepartment} ai rảnh thì chủ động click "Nhận việc".</div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-medium text-slate-700">1. Tự do nhận việc</span>
+                                        <Tooltip title="Ticket không gán cho ai, mọi nhân viên đều thấy và tự chủ động bấm 'Nhận việc' khi rảnh">
+                                            <QuestionCircleOutlined className="text-slate-400 text-xs hover:text-blue-500 cursor-pointer" />
+                                        </Tooltip>
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">Ticket gửi lên ở trạng thái chờ, nhân viên {targetDepartment} ai rảnh thì chủ động click "Nhận việc".</div>
                                 </Radio>
                                 <Radio value="B">
-                                    <span className="font-medium text-slate-700">Trưởng nhóm điều phối</span>
-                                    <div className="text-xs text-slate-500">Ticket gửi lên không phân công ai. Chỉ Admin/Trưởng phòng mới có quyền gán việc cho nhân viên.</div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-medium text-slate-700">2. Trưởng nhóm điều phối</span>
+                                        <Tooltip title="Chỉ Admin hoặc Trưởng phòng mới có quyền gán việc cho nhân viên, không tự động gán ai">
+                                            <QuestionCircleOutlined className="text-slate-400 text-xs hover:text-blue-500 cursor-pointer" />
+                                        </Tooltip>
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">Ticket gửi lên không phân công ai. Chỉ Admin/Trưởng phòng mới có quyền gán việc cho nhân viên.</div>
                                 </Radio>
                                 <Radio value="C">
-                                    <span className="font-medium text-slate-700">Tự động phân công (Thông minh)</span>
-                                    <div className="text-xs text-slate-500">Hệ thống tự động tìm nhân viên đang Online và rảnh việc nhất trong ngày để gán ngay lập tức.</div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-medium text-slate-700">3. Tự động - Phản ứng nhanh (Tốc độ)</span>
+                                        <Tooltip title="Đếm số việc dở dang (chờ + đang làm), ai đang rảnh tay nhất sẽ nhận việc ngay để hỗ trợ khoa">
+                                            <QuestionCircleOutlined className="text-slate-400 text-xs hover:text-blue-500 cursor-pointer" />
+                                        </Tooltip>
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">Ưu tiên người ít việc dở dang nhất tại thời điểm đó để xử lý lỗi ngay cho khoa phòng.</div>
+                                </Radio>
+                                <Radio value="D">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-medium text-slate-700">4. Tự động - Cân bằng công bằng (2 tầng)</span>
+                                        <span className="text-[10px] bg-green-100 text-green-700 font-medium px-1.5 py-0.2 rounded">Khuyên dùng</span>
+                                        <Tooltip title="Ưu tiên người rảnh việc dở dang trước, kết hợp so sánh tổng số việc trong ca để chia đều, người làm nhanh không bị dồn việc">
+                                            <QuestionCircleOutlined className="text-blue-500 text-xs hover:text-blue-600 cursor-pointer" />
+                                        </Tooltip>
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">Cân bằng 2 tầng: Vừa ưu tiên người rảnh, vừa so sánh tổng việc trong ca để chia đều công việc cho cả phòng.</div>
                                 </Radio>
                             </Radio.Group>
-                            {user?.role === 'ADMIN' && (
-                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit mt-2">Lưu cấu hình</Button>
+
+                            {/* Cấu hình Giới hạn việc dở dang tối đa (khi chọn chế độ tự động C hoặc D) */}
+                            {(assignmentMode === 'C' || assignmentMode === 'D') && (
+                                <div className="mt-2 p-3 bg-amber-50/70 rounded-lg border border-amber-200">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+                                            🛑 Giới hạn việc dở dang tối đa mỗi người:
+                                            <Tooltip title="Nếu một nhân viên đang có số việc chưa xong chạm mức này, hệ thống sẽ KHÔNG chia thêm việc cho họ nữa để tránh quá tải">
+                                                <QuestionCircleOutlined className="text-amber-600 cursor-pointer text-xs" />
+                                            </Tooltip>
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <InputNumber 
+                                            min={1} 
+                                            max={10} 
+                                            value={maxConcurrentTasks} 
+                                            onChange={val => setMaxConcurrentTasks(val || 2)}
+                                            disabled={!isAdmin}
+                                            className="w-24"
+                                        />
+                                        <span className="text-xs text-slate-600">việc dở dang / người (Khuyến nghị: 2 hoặc 3)</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {isAdmin && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit mt-2 bg-blue-600 hover:bg-blue-500">
+                                    Lưu chế độ phân công
+                                </Button>
+                            )}
+                        </div>
+                    </Card>
+
+                    {/* Card 2: Cấu hình 2 Khung thời gian làm việc & Lịch trực */}
+                    <Card 
+                        size="small" 
+                        title={<span className="font-semibold text-slate-800">Cấu hình 2 Khung thời gian: Hành chính & Giờ trực</span>}
+                        extra={
+                            isAdmin && (
+                                <Button 
+                                    size="small" 
+                                    type="link" 
+                                    onClick={() => {
+                                        setMorningStartTime('07:00');
+                                        setMorningEndTime('11:30');
+                                        setAfternoonStartTime('13:30');
+                                        setAfternoonEndTime('16:50');
+                                        setOfficeEndTime('16:50');
+                                        message.info('Đã khôi phục khung giờ về mặc định!');
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-700 p-0 h-auto"
+                                >
+                                    Đặt lại mặc định
+                                </Button>
+                            )
+                        }
+                        className="border border-slate-200"
+                    >
+                        <div className="flex flex-col gap-3 text-xs">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {/* Cột 1: Khung 1 - Giờ Hành chính */}
+                                <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200 flex flex-col justify-between">
+                                    <div>
+                                        <div className="font-bold text-slate-800 text-xs mb-2.5 flex items-center justify-between">
+                                            <span>🏢 Khung 1: Giờ Hành chính (Admin tùy chỉnh)</span>
+                                            <span className="text-[10px] text-slate-400 font-normal">Định dạng HH:mm</span>
+                                        </div>
+                                        <div className="space-y-2.5">
+                                            {/* Ca Sáng */}
+                                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-amber-500">☀️</span>
+                                                    <span className="font-semibold text-slate-700 text-xs">Ca Sáng:</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Input 
+                                                        value={morningStartTime} 
+                                                        onChange={e => setMorningStartTime(e.target.value)} 
+                                                        disabled={!isAdmin}
+                                                        placeholder="07:00" 
+                                                        style={{ width: 75 }}
+                                                        className="text-center font-bold text-blue-700 text-xs h-7 px-1 rounded-md"
+                                                    />
+                                                    <span className="text-slate-400 font-bold">-</span>
+                                                    <Input 
+                                                        value={morningEndTime} 
+                                                        onChange={e => setMorningEndTime(e.target.value)} 
+                                                        disabled={!isAdmin}
+                                                        placeholder="11:30" 
+                                                        style={{ width: 75 }}
+                                                        className="text-center font-bold text-blue-700 text-xs h-7 px-1 rounded-md"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Ca Chiều */}
+                                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
+                                                <div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-orange-500">🌤️</span>
+                                                        <span className="font-semibold text-slate-700 text-xs">Ca Chiều:</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">(Mốc giao ca ra về)</div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Input 
+                                                        value={afternoonStartTime} 
+                                                        onChange={e => setAfternoonStartTime(e.target.value)} 
+                                                        disabled={!isAdmin}
+                                                        placeholder="13:30" 
+                                                        style={{ width: 75 }}
+                                                        className="text-center font-bold text-blue-700 text-xs h-7 px-1 rounded-md"
+                                                    />
+                                                    <span className="text-slate-400 font-bold">-</span>
+                                                    <Input 
+                                                        value={afternoonEndTime} 
+                                                        onChange={e => {
+                                                            setAfternoonEndTime(e.target.value);
+                                                            setOfficeEndTime(e.target.value);
+                                                        }} 
+                                                        disabled={!isAdmin}
+                                                        placeholder="16:50" 
+                                                        style={{ width: 75 }}
+                                                        className="text-center font-bold text-blue-700 text-xs h-7 px-1 rounded-md"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 italic mt-2.5 pt-2 border-t border-slate-200/80">
+                                        * Mặc định bệnh viện: Sáng <b>07:00 - 11:30</b>, Chiều <b>13:30 - 16:50</b>.
+                                    </div>
+                                </div>
+
+                                {/* Cột 2: Khung 2 - Giờ Trực & Ngoài giờ */}
+                                <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 flex flex-col justify-between">
+                                    <div>
+                                        <div className="font-bold text-blue-900 text-xs mb-2.5 flex items-center justify-between">
+                                            <span>🏥 Khung 2: Giờ Trực & Ngoài giờ</span>
+                                            <span className="text-[10px] text-blue-600 bg-blue-100/70 px-1.5 py-0.5 rounded-full font-medium">Tự động liên thông</span>
+                                        </div>
+                                        <div className="space-y-2 text-xs">
+                                            <div className="flex items-center justify-between bg-white/90 p-2 rounded-lg border border-blue-100">
+                                                <span className="font-medium text-slate-600">🍱 Trực Trưa:</span>
+                                                <span className="font-bold text-blue-800">{morningEndTime || '11:30'} - {afternoonStartTime || '13:30'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-white/90 p-2 rounded-lg border border-blue-100">
+                                                <span className="font-medium text-slate-600">🌙 Trực Tối & Đêm:</span>
+                                                <span className="font-bold text-indigo-700">{afternoonEndTime || '16:50'} - {morningStartTime || '07:00'} (sáng hôm sau)</span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-white/90 p-2 rounded-lg border border-blue-100">
+                                                <span className="font-medium text-slate-600">🏖️ Thứ 7, CN, Ngày Lễ:</span>
+                                                <span className="font-bold text-emerald-700">Trực 24/24 ({morningStartTime || '07:00'} - {morningStartTime || '07:00'})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-[11px] text-blue-700 italic mt-2.5 pt-2 border-t border-blue-100">
+                                        * Lúc <b>{afternoonEndTime || '16:50'}</b> mọi người tắt trạng thái ra về, hệ thống tự động gán việc cho Người trực đang bật trạng thái!
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Ngày nghỉ lễ / Hoán đổi */}
+                            <div className="pt-2 border-t border-slate-200">
+                                <div className="font-semibold text-slate-800 mb-1 flex items-center justify-between">
+                                    <span>Danh sách Ngày nghỉ Lễ / Tết / Hoán đổi (Tính là Giờ trực cả ngày):</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[28px] p-1.5 bg-slate-50 rounded border border-slate-200">
+                                    {holidays.length === 0 ? (
+                                        <span className="text-slate-400 italic text-[11px]">Chưa có ngày lễ nào được thiết lập.</span>
+                                    ) : (
+                                        holidays.map(day => (
+                                            <Tag 
+                                                key={day} 
+                                                closable={isAdmin} 
+                                                onClose={() => setHolidays(holidays.filter(d => d !== day))}
+                                                color="red"
+                                                className="text-xs"
+                                            >
+                                                {day}
+                                            </Tag>
+                                        ))
+                                    )}
+                                </div>
+                                {isAdmin && (
+                                    <div className="flex items-center gap-2">
+                                        <Input 
+                                            placeholder="Nhập ngày dạng YYYY-MM-DD (VD: 2026-04-30)"
+                                            value={newHolidayInput}
+                                            onChange={e => setNewHolidayInput(e.target.value)}
+                                            className="text-xs w-60 h-7"
+                                        />
+                                        <Button 
+                                            size="small"
+                                            onClick={() => {
+                                                const val = newHolidayInput.trim();
+                                                if (val && /^\d{4}-\d{2}-\d{2}$/.test(val) && !holidays.includes(val)) {
+                                                    setHolidays([...holidays, val]);
+                                                    setNewHolidayInput('');
+                                                } else {
+                                                    message.warning('Vui lòng nhập đúng định dạng YYYY-MM-DD (Ví dụ: 2026-04-30)');
+                                                }
+                                            }}
+                                        >
+                                            + Thêm ngày nghỉ
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Ngày làm bù Thứ 7, CN */}
+                            <div className="pt-2 border-t border-slate-200">
+                                <div className="font-semibold text-slate-800 mb-1">
+                                    Danh sách Ngày làm bù Thứ 7, CN (Tính là Giờ hành chính):
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[28px] p-1.5 bg-slate-50 rounded border border-slate-200">
+                                    {makeupWorkdays.length === 0 ? (
+                                        <span className="text-slate-400 italic text-[11px]">Chưa có ngày làm bù nào.</span>
+                                    ) : (
+                                        makeupWorkdays.map(day => (
+                                            <Tag 
+                                                key={day} 
+                                                closable={isAdmin} 
+                                                onClose={() => setMakeupWorkdays(makeupWorkdays.filter(d => d !== day))}
+                                                color="green"
+                                                className="text-xs"
+                                            >
+                                                {day}
+                                            </Tag>
+                                        ))
+                                    )}
+                                </div>
+                                {isAdmin && (
+                                    <div className="flex items-center gap-2">
+                                        <Input 
+                                            placeholder="Nhập ngày làm bù YYYY-MM-DD (VD: 2026-05-02)"
+                                            value={newMakeupInput}
+                                            onChange={e => setNewMakeupInput(e.target.value)}
+                                            className="text-xs w-60 h-7"
+                                        />
+                                        <Button 
+                                            size="small"
+                                            onClick={() => {
+                                                const val = newMakeupInput.trim();
+                                                if (val && /^\d{4}-\d{2}-\d{2}$/.test(val) && !makeupWorkdays.includes(val)) {
+                                                    setMakeupWorkdays([...makeupWorkdays, val]);
+                                                    setNewMakeupInput('');
+                                                } else {
+                                                    message.warning('Vui lòng nhập đúng định dạng YYYY-MM-DD (Ví dụ: 2026-05-02)');
+                                                }
+                                            }}
+                                        >
+                                            + Thêm ngày bù
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {isAdmin && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit mt-1 bg-blue-600 hover:bg-blue-500">
+                                    Lưu Khung giờ & Lịch làm việc
+                                </Button>
+                            )}
+                        </div>
+                    </Card>
+
+                    {/* Card 3: Cảnh báo Khoa/Phòng khi không có ai nhận việc */}
+                    <Card 
+                        size="small" 
+                        title={
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-800">Cảnh báo Khoa/Phòng khi không có ai nhận việc</span>
+                                    <Switch 
+                                        checked={noStaffWarningEnabled} 
+                                        onChange={checked => setNoStaffWarningEnabled(checked)} 
+                                        checkedChildren="Bật" 
+                                        unCheckedChildren="Tắt"
+                                        disabled={!isAdmin}
+                                    />
+                                </div>
+                                <Tooltip title="Khi Khoa gửi yêu cầu mà không có ai nhận (ngoài giờ hoặc không ai trực), hệ thống sẽ bật cảnh báo cho Khoa đồng thời bắn cảnh báo đỏ lên Telegram/Zalo">
+                                    <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
+                                </Tooltip>
+                            </div>
+                        }
+                        className="border border-slate-200"
+                    >
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <div className="text-xs font-semibold text-slate-700 mb-1">
+                                    Nội dung thông điệp cảnh báo hiển thị cho Khoa/Phòng:
+                                </div>
+                                <Input.TextArea 
+                                    rows={3}
+                                    value={noStaffWarningMessage}
+                                    onChange={e => setNoStaffWarningMessage(e.target.value)}
+                                    placeholder="Ví dụ: Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp, vui lòng gọi điện thoại trực ban..."
+                                    disabled={!isAdmin}
+                                    className="text-xs"
+                                />
+                                <div className="text-[11px] text-slate-400 mt-1 italic">
+                                    * Thông điệp này sẽ hiện lên màn hình Khoa/Phòng khi họ gửi yêu cầu mà không có nhân viên kỹ thuật nào tiếp nhận.
+                                </div>
+                            </div>
+                            {isAdmin && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit bg-blue-600 hover:bg-blue-500">
+                                    Lưu nội dung cảnh báo
+                                </Button>
                             )}
                         </div>
                     </Card>
@@ -504,7 +1046,7 @@ export default function ITConfigPage() {
                                             <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
                                         </Tooltip>
                                     </div>
-                                    <span className="text-xs text-slate-400 font-normal">Từ @BotFather</span>
+                                    <span className="text-xs text-slate-400 font-normal">Từ @BotFather (Chỉ Admin sửa)</span>
                                 </div>
                                 <Input 
                                     placeholder="Ví dụ: 8587756206:AAHYxJXL37jmpJfPu1mVupK1AYDxeUOsLr8" 
@@ -516,25 +1058,25 @@ export default function ITConfigPage() {
                             <div>
                                 <div className="text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
                                     <div className="flex items-center gap-1.5">
-                                        <span>Chat ID (Nhóm hoặc Cá nhân)</span>
-                                        <Tooltip title="ID nhóm Telegram lấy từ @getmyid_bot (thường bắt đầu bằng dấu trừ -)">
+                                        <span>Chat ID Nhóm chung của Phòng</span>
+                                        <Tooltip title="ID nhóm Telegram lấy từ @getmyid_bot (bắt đầu bằng dấu trừ - để gửi cho cả phòng)">
                                             <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
                                         </Tooltip>
                                     </div>
                                     <span className="text-xs text-slate-400 font-normal">ID nhóm có dấu âm (-)</span>
                                 </div>
                                 <Input 
-                                    placeholder="Ví dụ: -1002345678901 hoặc 123456789" 
+                                    placeholder="Ví dụ: -1002345678901 (Nhóm chat của phòng)" 
                                     value={telegramChatId} 
                                     onChange={e => setTelegramChatId(e.target.value)} 
                                     disabled={user?.role !== 'ADMIN'}
                                 />
                             </div>
 
-                            {user?.role === 'ADMIN' && (
+                            {user?.role === 'ADMIN' ? (
                                 <div className="flex flex-wrap items-center gap-2 pt-1">
                                     <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="bg-blue-600 hover:bg-blue-500">
-                                        Lưu cấu hình Bot
+                                        Lưu cấu hình Bot & Nhóm
                                     </Button>
                                     <Button 
                                         type="default" 
@@ -543,7 +1085,206 @@ export default function ITConfigPage() {
                                         onClick={handleTestTelegram}
                                         className="border-green-600 text-green-700 hover:text-green-800 hover:border-green-700 bg-green-50"
                                     >
-                                        🧪 Gửi tin nhắn thử nghiệm (Test Bot)
+                                        🧪 Gửi tin nhắn thử nghiệm nhóm (Test Bot)
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="text-[11px] text-slate-400 italic">
+                                    * Bot Token và Chat ID Nhóm chung do Quản trị viên (ADMIN) thiết lập.
+                                </div>
+                            )}
+
+                            {/* Khu vực cấu hình Telegram Cá nhân của Kỹ thuật viên */}
+                            <div className="mt-1 pt-3 border-t border-slate-200 bg-blue-50/60 p-3 rounded-lg border border-blue-100">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="font-semibold text-blue-900 text-sm flex items-center gap-1.5">
+                                        <span>👤 Telegram Cá nhân của bạn ({user?.name || user?.username})</span>
+                                        <Tooltip title="Khi có phiếu hỗ trợ được phân công cho bạn, Bot sẽ tự động bắn tin nhắn riêng cho bạn">
+                                            <QuestionCircleOutlined className="text-blue-500 text-xs cursor-pointer" />
+                                        </Tooltip>
+                                    </div>
+                                    <span className="text-[11px] bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Nhận việc cá nhân</span>
+                                </div>
+                                <p className="text-xs text-slate-600 mb-2.5">
+                                    Điền <b>User ID Telegram</b> của bạn (lấy từ <b>@getmyid_bot</b>) để nhận tin nhắn riêng 1-1 từ Bot mỗi khi được giao việc mới.
+                                </p>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                    <Input 
+                                        placeholder="Ví dụ: 2123748615 (ID cá nhân của bạn)" 
+                                        value={personalTelegramId} 
+                                        onChange={e => setPersonalTelegramId(e.target.value)} 
+                                        className="flex-1 bg-white font-mono"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <Button 
+                                            type="primary" 
+                                            loading={savingPersonal}
+                                            onClick={handleSavePersonalTelegram} 
+                                            className="bg-blue-600 hover:bg-blue-500 whitespace-nowrap"
+                                        >
+                                            💾 Lưu ID của tôi
+                                        </Button>
+                                        <Button 
+                                            type="default" 
+                                            icon={<SendOutlined />}
+                                            loading={testingPersonal}
+                                            onClick={handleTestPersonalTelegram}
+                                            className="border-green-600 text-green-700 hover:text-green-800 bg-white whitespace-nowrap"
+                                        >
+                                            🧪 Gửi thử cho tôi
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Cấu hình Nhóm Zalo */}
+                    <Card 
+                        size="small" 
+                        title={
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-800">Cấu hình Thông báo Nhóm Zalo</span>
+                                    <Switch 
+                                        checked={zaloEnabled} 
+                                        onChange={checked => setZaloEnabled(checked)} 
+                                        checkedChildren="Bật" 
+                                        unCheckedChildren="Tắt"
+                                        disabled={user?.role !== 'ADMIN'}
+                                    />
+                                </div>
+                                <Popover 
+                                    trigger="click"
+                                    placement="bottomRight"
+                                    title={<span className="font-bold text-blue-700">📘 Hướng dẫn chi tiết tạo Zalo Webhook cho Nhóm</span>}
+                                    content={
+                                        <div className="max-w-[500px] max-h-[75vh] overflow-y-auto space-y-3 text-xs text-slate-700 leading-relaxed pr-1">
+                                            <div className="bg-blue-50/70 p-2.5 rounded-lg border border-blue-200">
+                                                <div className="font-bold text-blue-900 text-xs mb-1">
+                                                    💡 Cơ chế hoạt động (Không tốn phí tin ZNS theo lượt)
+                                                </div>
+                                                <div className="text-slate-700 leading-relaxed">
+                                                    Hệ thống gửi dữ liệu thông báo qua cổng <b>Zalo Webhook</b> để đẩy tin nhắn vào <b>Nhóm Zalo chung</b> của bộ phận kỹ thuật.
+                                                    Tất cả thành viên trong nhóm Zalo đều nhận được thông báo ngay lập tức khi:
+                                                    <ul className="list-disc pl-4 mt-1 space-y-0.5 text-slate-600">
+                                                        <li>Có yêu cầu mới được gửi từ Khoa/Phòng</li>
+                                                        <li>Khoa/Phòng bấm nút hối thúc xử lý (Ping)</li>
+                                                        <li>Khoa/Phòng gửi tin nhắn phản hồi trong ticket</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1.5 flex items-center justify-between">
+                                                    <span>🌟 Cách 1: Qua nền tảng Chatbot (Dễ nhất - Miễn phí)</span>
+                                                    <span className="text-[10px] bg-green-100 text-green-700 font-medium px-1.5 py-0.5 rounded">Khuyên dùng</span>
+                                                </div>
+                                                <ol className="list-decimal pl-4 space-y-1.5 text-slate-600">
+                                                    <li>
+                                                        <b>Tạo Nick Zalo phụ:</b> Dùng 1 SĐT tạo nick Zalo tên là <i>"Bot Thông Báo BV"</i>, sau đó thêm nick này vào <b>Nhóm Zalo</b> của phòng bạn.
+                                                    </li>
+                                                    <li>
+                                                        <b>Đăng ký dịch vụ:</b> Truy cập <a href="https://fchat.vn" target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">fchat.vn</a> hoặc <a href="https://ahachat.com" target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">ahachat.com</a> (miễn phí).
+                                                    </li>
+                                                    <li>
+                                                        <b>Kết nối Zalo:</b> Vào mục <b>Kết nối Zalo cá nhân</b>, dùng app Zalo quét mã QR để đăng nhập Nick Zalo phụ đó.
+                                                    </li>
+                                                    <li>
+                                                        <b>Lấy Webhook URL:</b> Vào mục <b>Cài đặt / Tích hợp Webhook (API)</b> ➔ Chọn hành động <i>"Gửi tin nhắn vào Nhóm Zalo"</i> (chọn đúng nhóm đã thêm bot).
+                                                    </li>
+                                                    <li>
+                                                        <b>Dán vào phần mềm:</b> Sao chép đường link Webhook URL nhận được (dạng <code>https://fchat.vn/api/webhook/...</code>) và dán vào ô <b>Zalo Webhook URL</b> bên dưới.
+                                                    </li>
+                                                </ol>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1.5">
+                                                    🛡️ Cách 2: Tự dựng Bot Zalo nội bộ (Dành cho CNTT - 100% Nội bộ)
+                                                </div>
+                                                <ol className="list-decimal pl-4 space-y-1.5 text-slate-600">
+                                                    <li>
+                                                        Phòng CNTT chạy service mini Bot Zalo (dùng NodeJS với thư viện mã nguồn mở <code>zca-js</code> hoặc <code>zalo-api</code>).
+                                                    </li>
+                                                    <li>
+                                                        Quét mã QR đăng nhập tài khoản Zalo thông báo 1 lần (service tự động lưu phiên).
+                                                    </li>
+                                                    <li>
+                                                        Script mở cổng HTTP Endpoint nội bộ, ví dụ: <code>http://192.168.1.X:5001/send-zalo?groupId=ID_NHOM</code>.
+                                                    </li>
+                                                    <li>
+                                                        Dán link này vào ô cấu hình. Toàn bộ thông báo sẽ truyền trực tiếp trong mạng nội bộ bệnh viện.
+                                                    </li>
+                                                </ol>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                                <div className="font-bold text-slate-800 text-xs mb-1.5">
+                                                    🏢 Cách 3: Zalo Doanh nghiệp (Zalo OA chính ngạch)
+                                                </div>
+                                                <div className="text-slate-600 space-y-1">
+                                                    <div>Nếu viện có tài khoản Zalo OA Doanh nghiệp, vào <a href="https://developers.zalo.me" target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">developers.zalo.me</a> ➔ Tạo ứng dụng ➔ Lấy Webhook Endpoint.</div>
+                                                    <div className="text-amber-700 text-[11px]"><i>Lưu ý:</i> Zalo OA có tính phí theo lượt tin nhắn (ZNS) theo quy định của Zalo.</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+                                                <div className="font-bold text-emerald-800 text-xs mb-1">
+                                                    ⚡ Kiểm tra gửi thử nghiệm
+                                                </div>
+                                                <div className="text-slate-600">
+                                                    Sau khi dán link, bật công tắc <b>"Bật"</b>, bấm <b>"Lưu cấu hình Zalo"</b> rồi bấm nút <b>"⚡ Gửi tin nhắn thử nghiệm (Test Zalo)"</b> để kiểm tra tin nhắn mẫu bắn vào nhóm Zalo.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                >
+                                    <Button 
+                                        type="link" 
+                                        size="small" 
+                                        icon={<QuestionCircleOutlined />} 
+                                        className="text-blue-600 hover:text-blue-500 font-medium p-0 h-auto flex items-center gap-1"
+                                    >
+                                        Hướng dẫn thiết lập
+                                    </Button>
+                                </Popover>
+                            </div>
+                        }
+                        className="border border-slate-200"
+                    >
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <div className="text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <span>Zalo Webhook URL</span>
+                                        <Tooltip title="Đường link webhook đẩy tin nhắn vào nhóm Zalo">
+                                            <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
+                                        </Tooltip>
+                                    </div>
+                                    <span className="text-xs text-slate-400 font-normal">Endpoint HTTP/HTTPS</span>
+                                </div>
+                                <Input 
+                                    placeholder="Ví dụ: https://webhook.yourdomain.com/zalo-notify hoặc webhook Zalo Bot" 
+                                    value={zaloWebhookUrl} 
+                                    onChange={e => setZaloWebhookUrl(e.target.value)} 
+                                    disabled={user?.role !== 'ADMIN'}
+                                />
+                            </div>
+
+                            {user?.role === 'ADMIN' && (
+                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="bg-blue-600 hover:bg-blue-500">
+                                        Lưu cấu hình Zalo
+                                    </Button>
+                                    <Button 
+                                        type="default" 
+                                        icon={<SendOutlined />}
+                                        loading={testingZalo}
+                                        onClick={handleTestZalo}
+                                        className="border-blue-600 text-blue-700 hover:text-blue-800 hover:border-blue-700 bg-blue-50"
+                                    >
+                                        ⚡ Gửi tin nhắn thử nghiệm (Test Zalo)
                                     </Button>
                                 </div>
                             )}
@@ -556,7 +1297,7 @@ export default function ITConfigPage() {
             key: 'SOUND',
             label: 'Nhạc chuông chung (Khoa/Phòng)',
             children: (
-                <div className="space-y-6 max-w-xl mt-4">
+                <div className="space-y-6 w-full mt-4">
                     <Alert 
                         type="info" 
                         showIcon 
@@ -667,7 +1408,7 @@ export default function ITConfigPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 pt-12">
-            <div className="max-w-[1000px] mx-auto space-y-6">
+            <div className="max-w-[1200px] mx-auto space-y-6">
                 <Breadcrumb items={[
                     { title: <Link href="/"><HomeOutlined /> Trang chủ</Link> }, 
                     { title: <Link href={`/error-management/${targetDepartment === 'CNTT' ? 'it' : targetDepartment.toLowerCase()}-requests`}>Quản lý Yêu cầu {targetDepartment}</Link> }, 

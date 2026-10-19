@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
 import { sendPushNotification } from '@/lib/firebase-admin';
 import { emitEvent } from '@/lib/notificationService';
+import { sendZaloGroupNotification } from '@/lib/zalo';
 
 export async function GET(request: Request, context: any) {
     try {
@@ -145,6 +146,38 @@ export async function POST(request: Request, context: any) {
                 `${user.name || user.username} vừa phản hồi trong BA: ${ticket.ma_ba}`, 
                 `/error-management/it-requests`
             );
+        }
+
+        // Bắn thông báo Zalo vào Nhóm chung khi Khoa/Phòng phản hồi
+        if (!isFromIT && !isVendorUser) {
+            try {
+                let slug = 'it-request-fields-config';
+                if (ticket.targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
+                else if (ticket.targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
+
+                const configRule = await prisma.specializedRule.findUnique({ where: { slug } });
+                const config: any = configRule?.logicConfig || {};
+                
+                if (config.zaloEnabled && config.zaloWebhookUrl) {
+                    const dept = await prisma.department.findUnique({ where: { ma_khoa: ticket.ma_khoa } });
+                    const tenKhoa = dept?.ten_khoa || ticket.ma_khoa;
+                    const origin = process.env.APP_URL || request.headers.get('origin') || 'http://localhost:3000';
+                    const ticketUrl = `${origin}/htqlbenhvien/error-management/it-requests?highlight=${ticket.id}`;
+                    
+                    await sendZaloGroupNotification(config.zaloWebhookUrl, {
+                        title: `Phản hồi mới từ Khoa/Phòng [${ticket.targetDepartment}]`,
+                        department: tenKhoa,
+                        senderName: user.name || user.username,
+                        phone: (user as any).phone || undefined,
+                        patientCode: ticket.ma_ba ? `Mã BA: ${ticket.ma_ba}` : undefined,
+                        content: newMessage.content || (newMessage.imageUrl ? '[Đã gửi một hình ảnh]' : ''),
+                        ticketUrl,
+                        priority: 'REPLY'
+                    });
+                }
+            } catch (zErr) {
+                console.error('Lỗi gửi Zalo notification khi khoa phản hồi tin nhắn:', zErr);
+            }
         }
         
         // Triggers UI refresh for anyone looking at it

@@ -5,6 +5,8 @@ import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { sendPushNotification } from '@/lib/firebase-admin';
 import { emitEvent } from '@/lib/notificationService';
+import { sendZaloGroupNotification } from '@/lib/zalo';
+import { getCurrentHospitalShift } from '@/lib/shiftUtils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -177,6 +179,17 @@ export async function POST(request: Request) {
         let assignmentMode = 'A';
         let targetBotToken = process.env.TELEGRAM_BOT_TOKEN;
         let targetChatId = process.env.TELEGRAM_CHAT_ID;
+        let targetZaloEnabled = false;
+        let targetZaloWebhookUrl = process.env.ZALO_WEBHOOK_URL || '';
+        let targetMaxConcurrentTasks = 2;
+        let targetMorningStartTime = '07:00';
+        let targetMorningEndTime = '11:30';
+        let targetAfternoonStartTime = '13:30';
+        let targetAfternoonEndTime = '16:50';
+        let targetHolidays: string[] = [];
+        let targetMakeupWorkdays: string[] = [];
+        let targetNoStaffWarningEnabled = true;
+        let targetNoStaffWarningMessage = 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!';
 
         if (configRule && configRule.logicConfig) {
             const config: any = configRule.logicConfig;
@@ -184,8 +197,29 @@ export async function POST(request: Request) {
                 assignmentMode = config.assignmentMode || 'A';
                 if (config.telegramBotToken) targetBotToken = config.telegramBotToken;
                 if (config.telegramChatId) targetChatId = config.telegramChatId;
+                if (config.zaloEnabled !== undefined) targetZaloEnabled = Boolean(config.zaloEnabled);
+                if (config.zaloWebhookUrl) targetZaloWebhookUrl = config.zaloWebhookUrl;
+                if (config.maxConcurrentTasks !== undefined) targetMaxConcurrentTasks = Number(config.maxConcurrentTasks);
+                if (config.morningStartTime) targetMorningStartTime = config.morningStartTime;
+                if (config.morningEndTime) targetMorningEndTime = config.morningEndTime;
+                if (config.afternoonStartTime) targetAfternoonStartTime = config.afternoonStartTime;
+                if (config.afternoonEndTime) targetAfternoonEndTime = config.afternoonEndTime;
+                else if (config.officeEndTime) targetAfternoonEndTime = config.officeEndTime;
+                if (Array.isArray(config.holidays)) targetHolidays = config.holidays;
+                if (Array.isArray(config.makeupWorkdays)) targetMakeupWorkdays = config.makeupWorkdays;
+                if (config.noStaffWarningEnabled !== undefined) targetNoStaffWarningEnabled = Boolean(config.noStaffWarningEnabled);
+                if (config.noStaffWarningMessage) targetNoStaffWarningMessage = config.noStaffWarningMessage;
             }
         }
+
+        const currentShift = getCurrentHospitalShift({
+            morningStart: targetMorningStartTime,
+            morningEnd: targetMorningEndTime,
+            afternoonStart: targetAfternoonStartTime,
+            afternoonEnd: targetAfternoonEndTime,
+            holidays: targetHolidays,
+            makeupWorkdays: targetMakeupWorkdays
+        });
 
         if (action === 'TEST_TELEGRAM') {
             const { testBotToken, testChatId } = body;
@@ -214,6 +248,66 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: result.error || 'Gửi tin nhắn Telegram thất bại' }, { status: 400 });
             }
             return NextResponse.json({ success: true, message: 'Đã gửi tin nhắn thử nghiệm thành công vào Telegram!' });
+        }
+
+        if (action === 'TEST_PERSONAL_TELEGRAM') {
+            const { personalTelegramId } = body;
+            const targetChat = personalTelegramId || (user as any).telegram_id;
+            if (!targetChat || !targetChat.trim()) {
+                return NextResponse.json({ error: 'Vui lòng nhập Telegram ID cá nhân của bạn để kiểm tra' }, { status: 400 });
+            }
+            if (!targetBotToken) {
+                return NextResponse.json({ error: 'Chưa cấu hình Bot Token cho hệ thống' }, { status: 400 });
+            }
+            const origin = process.env.APP_URL || request.headers.get('origin') || `${urlObj.protocol}//${request.headers.get('host') || urlObj.host}`;
+            const testUrl = `${origin}/htqlbenhvien/error-management/it-requests`;
+            const testMsg = `🔔 <b>THÔNG BÁO THỬ NGHIỆM TỚI CÁ NHÂN KỸ THUẬT VIÊN</b>\n\n` +
+                `👤 <b>Kỹ thuật viên:</b> ${(user as any).name || user.username}\n` +
+                `✅ Kết nối Telegram cá nhân thành công! Khi có phiếu hỗ trợ được giao cho bạn, Bot sẽ nhắn tin riêng cho bạn tại đây.\n` +
+                `📅 Thời gian: ${new Date().toLocaleString('vi-VN')}\n\n` +
+                `🔗 <a href="${testUrl}">👉 Mở hệ thống Quản lý Yêu cầu</a>`;
+            
+            const replyMarkup = {
+                inline_keyboard: [
+                    [
+                        { text: '⚡ Mở Quản lý Yêu cầu', url: testUrl }
+                    ]
+                ]
+            };
+            
+            const result = await sendTelegramMessage(testMsg, targetChat.trim(), targetBotToken, replyMarkup);
+            if (!result.success) {
+                const errMsg = result.error || '';
+                const isBlockedOrNotFound = errMsg.toLowerCase().includes('chat not found') || errMsg.toLowerCase().includes('blocked');
+                return NextResponse.json({ 
+                    error: isBlockedOrNotFound 
+                        ? 'Không tìm thấy cuộc trò chuyện. Bạn vui lòng mở Bot trên Telegram và bấm nút [Start] (Bắt đầu) trước nhé!' 
+                        : (errMsg || 'Gửi tin nhắn Telegram riêng thất bại') 
+                }, { status: 400 });
+            }
+            return NextResponse.json({ success: true, message: 'Đã gửi tin nhắn thử nghiệm thành công vào Telegram riêng của bạn!' });
+        }
+
+        if (action === 'TEST_ZALO') {
+            const { testWebhookUrl } = body;
+            const webhookUrl = testWebhookUrl || targetZaloWebhookUrl;
+            if (!webhookUrl || !webhookUrl.trim()) {
+                return NextResponse.json({ error: 'Vui lòng nhập Webhook URL của Zalo để kiểm tra' }, { status: 400 });
+            }
+            const origin = process.env.APP_URL || request.headers.get('origin') || `${urlObj.protocol}//${request.headers.get('host') || urlObj.host}`;
+            const testUrl = `${origin}/htqlbenhvien/error-management/it-requests`;
+            const result = await sendZaloGroupNotification(webhookUrl, {
+                title: `Thông báo thử nghiệm [${targetDepartment}]`,
+                department: 'Phòng Kỹ thuật / Quản trị viên',
+                senderName: (user as any).name || user.username,
+                content: `Kết nối Zalo Webhook thành công! Hệ thống sẵn sàng nhận thông báo khi có yêu cầu mới, phản hồi hoặc hối thúc.`,
+                ticketUrl: testUrl,
+                priority: 'NORMAL'
+            });
+            if (!result.success) {
+                return NextResponse.json({ error: result.error || 'Gửi tin nhắn Zalo thất bại' }, { status: 400 });
+            }
+            return NextResponse.json({ success: true, message: 'Đã gửi tin nhắn thử nghiệm thành công vào nhóm Zalo!' });
         }
 
         if (action === 'PING' && xmlErrorId) {
@@ -280,6 +374,23 @@ export async function POST(request: Request) {
                 await sendTelegramMessage(telegramMsg, targetChatId, targetBotToken, replyMarkup);
             }
 
+            // Gửi Zalo hối thúc
+            if (targetZaloEnabled && targetZaloWebhookUrl) {
+                try {
+                    await sendZaloGroupNotification(targetZaloWebhookUrl, {
+                        title: `Hối thúc xử lý (Lần ${newPingCount}) [${targetDepartment}]`,
+                        department: tenKhoa,
+                        senderName: nguoiBaoName,
+                        patientCode: ma_ba ? `${isXmlPing ? 'Mã LK' : 'Mã BA'}: ${ma_ba}` : undefined,
+                        content: `${ten_loi}${dynamicFields?.['Ghi chú'] ? ` (Ghi chú: ${dynamicFields['Ghi chú']})` : ''}`,
+                        ticketUrl,
+                        priority: 'URGENT'
+                    });
+                } catch (zErr) {
+                    console.error('Lỗi gửi Zalo ping notification:', zErr);
+                }
+            }
+
             return NextResponse.json({ success: true, pingCount: newPingCount });
         }
 
@@ -339,38 +450,65 @@ export async function POST(request: Request) {
 
         // Nếu Khoa không chọn ai (Khoa không có quyền chọn, nên luôn là null)
         if (!finalAssignee && !isSelfHandling) {
-            if (assignmentMode === 'C') {
-                // Cách C: Chia việc tự động cho người online rảnh nhất
+            if (assignmentMode === 'C' || assignmentMode === 'D') {
+                // Lọc những người có thể nhận việc (đang bật trực ban, không bị khóa nhận việc, không phải người tạo)
                 const availableUsers = await prisma.user.findMany({
                     where: {
                         role: targetDepartment,
                         isAvailable: true,
-                        autoAssignDisabled: false, // Bỏ qua người đang bật chế độ tập trung việc riêng / sếp giao việc
-                        id: { not: user.id } // Chốt chặn: KHÔNG tự giao việc cho chính người đang bấm nút tạo
+                        autoAssignDisabled: false,
+                        id: { not: user.id }
                     }
                 });
 
                 if (availableUsers.length > 0) {
-                    const startOfDay = new Date();
-                    startOfDay.setHours(0, 0, 0, 0);
+                    // Mốc bắt đầu của ca trực hiện tại (chuẩn Việt Nam GMT+7, xuyên đêm qua 00h)
+                    const shiftStart = currentShift.startTime;
 
-                    // Đếm số task đang xử lý hoặc chờ xử lý của mỗi người TRONG NGÀY HÔM NAY
-                    const ticketCounts = await Promise.all(availableUsers.map(async (u) => {
-                        const count = await prisma.iTRequest.count({
+                    // Tính tải cho từng ứng viên
+                    const candidates = await Promise.all(availableUsers.map(async (u) => {
+                        // 1. Số việc dở dang hiện tại (PENDING + IN_PROGRESS)
+                        const activeTasks = await prisma.iTRequest.count({
                             where: {
                                 assigneeId: u.id,
-                                status: { in: ['PENDING', 'IN_PROGRESS'] },
-                                createdAt: { gte: startOfDay }
+                                status: { in: ['PENDING', 'IN_PROGRESS'] }
                             }
                         });
-                        return { id: u.id, count };
+
+                        // 2. Tổng số việc đã nhận trong ca làm việc hiện tại
+                        const totalInShift = await prisma.iTRequest.count({
+                            where: {
+                                assigneeId: u.id,
+                                createdAt: { gte: shiftStart }
+                            }
+                        });
+
+                        return {
+                            id: u.id,
+                            activeTasks,
+                            totalInShift
+                        };
                     }));
 
-                    // Tìm người có số task ít nhất
-                    ticketCounts.sort((a, b) => a.count - b.count);
-                    finalAssignee = ticketCounts[0].id;
+                    // Lọc những người chưa vượt trần maxConcurrentTasks
+                    const eligible = candidates.filter(c => c.activeTasks < targetMaxConcurrentTasks);
+                    const pool = eligible.length > 0 ? eligible : candidates; // Nếu tất cả đều chạm trần thì lấy từ danh sách chung
+
+                    if (assignmentMode === 'C') {
+                        // Chế độ C (Phản ứng nhanh): Sắp xếp theo ít việc dở dang nhất
+                        pool.sort((a, b) => a.activeTasks - b.activeTasks || a.totalInShift - b.totalInShift);
+                        finalAssignee = pool[0].id;
+                    } else if (assignmentMode === 'D') {
+                        // Chế độ D (Cân bằng công bằng 2 tầng):
+                        // Tầng 1: Lọc nhóm người có số việc dở dang ít nhất
+                        const minActive = Math.min(...pool.map(p => p.activeTasks));
+                        const bestActiveGroup = pool.filter(p => p.activeTasks === minActive);
+                        // Tầng 2: Trong nhóm rảnh nhất, chọn người có tổng số việc trong ca ít nhất
+                        bestActiveGroup.sort((a, b) => a.totalInShift - b.totalInShift);
+                        finalAssignee = bestActiveGroup[0].id;
+                    }
                 }
-            } else if (assignmentMode === 'A' || assignmentMode === 'B') {
+            } else {
                 // Cách A (Tự nhận) và Cách B (Admin gán thủ công) -> Khởi tạo không có ai
                 finalAssignee = null;
             }
@@ -443,25 +581,36 @@ export async function POST(request: Request) {
         const tenKhoa = dept?.ten_khoa || ma_khoa;
 
         // Lấy thông tin người nhận (Tên và Telegram ID)
-        let assigneeInfo = 'Chờ Admin duyệt';
+        let assigneeInfo = 'Chờ tiếp nhận';
         let assigneeUser = null;
+        let isNoStaffAlert = false;
+
         if (finalAssignee) {
             assigneeUser = await prisma.user.findUnique({ where: { id: finalAssignee } });
             if (assigneeUser) {
                 assigneeInfo = assigneeUser.name || assigneeUser.username;
                 if (assigneeUser.telegram_id) {
-                    // Nếu là tên @username thì tag, còn nếu là ID số thì không hiển thị thô ra
                     assigneeInfo += assigneeUser.telegram_id.startsWith('@') ? ` (${assigneeUser.telegram_id})` : '';
                 }
             } else {
                 assigneeInfo = 'Đã phân công';
             }
+        } else if (targetNoStaffWarningEnabled) {
+            isNoStaffAlert = true;
+            assigneeInfo = '⚠️ CHƯA CÓ NGƯỜI TIẾP NHẬN';
         }
 
         // Tạo thông điệp Telegram
-        let telegramMsg = isFocusAssignment 
-            ? `👑 <b>NHIỆM VỤ TẬP TRUNG DO LÃNH ĐẠO GIAO</b>\n\n`
-            : `🚨 <b>YÊU CẦU HỖ TRỢ MỚI</b>\n\n`;
+        let telegramMsg = '';
+        if (isNoStaffAlert) {
+            telegramMsg = `🚨 <b>[CẢNH BÁO: CHƯA CÓ KỸ THUẬT VIÊN NHẬN VIỆC]</b>\n\n` +
+                `⚠️ <b>Tình trạng:</b> Hiện tại KHÔNG CÓ KỸ THUẬT VIÊN nào đang nhận việc / trực ban (${currentShift.shiftName})!\n` +
+                `👉 Đề nghị kỹ thuật viên trực ban kiểm tra và bấm nút nhận việc ngay!\n\n`;
+        } else if (isFocusAssignment) {
+            telegramMsg = `👑 <b>NHIỆM VỤ TẬP TRUNG DO LÃNH ĐẠO GIAO</b>\n\n`;
+        } else {
+            telegramMsg = `🚨 <b>YÊU CẦU HỖ TRỢ MỚI</b>\n\n`;
+        }
         telegramMsg += `🏢 <b>Khoa:</b> ${tenKhoa}\n`;
         telegramMsg += `👤 <b>Người báo:</b> ${dynamicFields['Người báo'] || 'Không rõ'} - <b>SĐT:</b> ${finalSdt || 'Không có'}\n`;
         telegramMsg += `📌 <b>Loại sự cố:</b> ${category === 'SOFTWARE' ? 'Phần Mềm / Nghiệp Vụ' : 'Phần Cứng / Sửa Chữa'}\n`;
@@ -509,6 +658,32 @@ export async function POST(request: Request) {
             await sendTelegramMessage(dmMsg, assigneeUser.telegram_id, targetBotToken, replyMarkup);
         }
 
+        // Bắn Zalo vào Group chung nếu bật
+        if (targetZaloEnabled && targetZaloWebhookUrl) {
+            try {
+                const isXmlTicket = category === 'SOFTWARE' && Boolean(ten_loi?.includes('[Hỗ trợ Lỗi Hồ sơ]') || dynamicFields?.['Loại lỗi']?.includes('Lỗi XML') || dynamicFields?.['Loại lỗi']?.includes('Lỗi Chuyên đề') || dynamicFields?.['Mã LK']);
+                const zaloTitle = isNoStaffAlert 
+                    ? `🚨 [CẢNH BÁO: CHƯA CÓ NGƯỜI NHẬN VIỆC] [${targetDepartment}]`
+                    : `Yêu cầu mới [${targetDepartment}]`;
+                const zaloContent = isNoStaffAlert
+                    ? `⚠️ CẢNH BÁO: Hiện không có ai nhận việc! Lỗi: ${ten_loi}`
+                    : `${ten_loi}${dynamicFields['Ghi chú'] ? ` (${dynamicFields['Ghi chú']})` : ''}`;
+
+                await sendZaloGroupNotification(targetZaloWebhookUrl, {
+                    title: zaloTitle,
+                    department: tenKhoa,
+                    senderName: dynamicFields['Người báo'] || (user as any).name || user.username,
+                    phone: dynamicFields['Số điện thoại'] || (user as any).phone || '',
+                    patientCode: ma_ba ? `${isXmlTicket ? 'Mã LK' : 'Mã BA'}: ${ma_ba}` : undefined,
+                    content: zaloContent,
+                    ticketUrl,
+                    priority: isNoStaffAlert ? 'URGENT' : 'NORMAL'
+                });
+            } catch (zErr) {
+                console.error('Lỗi gửi Zalo notification khi tạo ticket:', zErr);
+            }
+        }
+
         // Bắn Push Notification qua Firebase
         try {
             let userIdsToNotify: string[] = [];
@@ -547,7 +722,13 @@ export async function POST(request: Request) {
             });
         }
 
-        return NextResponse.json(newRequest);
+        const warningMessage = (!finalAssignee && targetNoStaffWarningEnabled) ? targetNoStaffWarningMessage : null;
+
+        return NextResponse.json({
+            ...newRequest,
+            hasAssignee: Boolean(finalAssignee),
+            warningMessage
+        });
     } catch (error: any) {
         console.error('Error POST it-requests:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });

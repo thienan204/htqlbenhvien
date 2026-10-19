@@ -296,6 +296,7 @@ export default function XmlErrorManager() {
             });
 
             if (res.ok) {
+                const data = await res.json().catch(() => ({}));
                 message.success({ content: 'Gửi yêu cầu IT thành công!', key: 'sendIT' });
                 setIsITModalVisible(false);
                 itForm.resetFields();
@@ -314,6 +315,18 @@ export default function XmlErrorManager() {
                 
                 if (updateRes.ok) {
                     fetchErrors(); // Tải lại bảng để thấy note mới
+                }
+
+                if (data.warningMessage) {
+                    Modal.warning({
+                        title: 'Đã gửi yêu cầu IT - Lưu ý tiếp nhận',
+                        content: (
+                            <div className="py-2">
+                                <p className="text-amber-800 font-medium whitespace-pre-line leading-relaxed">{data.warningMessage}</p>
+                            </div>
+                        ),
+                        okText: 'Đã hiểu'
+                    });
                 }
             } else {
                 const err = await res.json();
