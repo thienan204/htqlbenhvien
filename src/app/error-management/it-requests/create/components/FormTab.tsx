@@ -456,7 +456,7 @@ export function FormTab({
                                                                 className="mb-0"
                                                                 extra={<span className="text-[11px] text-amber-700">Để trống hệ thống sẽ tự lấy theo tên lỗi/công việc</span>}
                                                             >
-                                                                <Input placeholder="Ví dụ: Triển khai EMR, Cài máy chủ..." size="small" className="!rounded-lg text-xs" />
+                                                                <Input.TextArea placeholder="Ví dụ: Triển khai EMR, Cài máy chủ..." rows={2} style={{ resize: 'vertical' }} className="!rounded-lg text-xs" />
                                                             </Form.Item>
                                                             <Form.Item 
                                                                 name="status" 

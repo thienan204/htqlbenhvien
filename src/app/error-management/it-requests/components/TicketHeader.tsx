@@ -88,19 +88,20 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                     </div>
                                 }
                                 content={
-                                    <div className="w-80 space-y-3 py-1">
+                                    <div className="w-96 space-y-3 py-1">
                                         <p className="text-xs text-slate-500 m-0 leading-relaxed">
                                             Khi bật, hệ thống sẽ <strong>miễn phân công tự động</strong> việc mới từ khoa phòng và <strong>tự động tạo một Yêu cầu</strong> để bạn theo dõi tiến độ.
                                         </p>
                                         <div>
                                             <label className="text-xs font-medium text-slate-700 block mb-1">Nhiệm vụ / Công việc tập trung:</label>
-                                            <Input 
+                                            <Input.TextArea 
                                                 placeholder="Ví dụ: Triển khai EMR, Cài máy chủ PACS..." 
                                                 value={reasonInput}
                                                 onChange={(e) => setReasonInput(e.target.value)}
-                                                maxLength={100}
-                                                size="middle"
-                                                className="rounded-lg"
+                                                rows={3}
+                                                showCount
+                                                style={{ resize: 'vertical' }}
+                                                className="rounded-lg text-xs"
                                             />
                                         </div>
                                         <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
