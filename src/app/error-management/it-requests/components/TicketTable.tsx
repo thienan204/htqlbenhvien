@@ -8,6 +8,7 @@ import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
 import { getBasePath } from '@/utils/config';
 import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
+import { getDefaultPagination } from '@/utils/pagination';
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -507,17 +508,15 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             columns={columns}
             rowKey="id" 
             loading={loading}
-            pagination={{ 
+            pagination={getDefaultPagination({ 
                 current: currentPage,
                 pageSize: pageSize,
-                defaultPageSize: 10,
-                showSizeChanger: true,
-                pageSizeOptions: ['10', '20', '50', '100'],
+                unit: 'yêu cầu',
                 onChange: (page, size) => {
                     setCurrentPage(page);
                     setPageSize(size);
                 }
-            }}
+            })}
             scroll={{ x: 1390 }}
             sticky
             rowClassName={(record) => record.status === 'RESOLVED' ? 'bg-green-50/50' : ''}

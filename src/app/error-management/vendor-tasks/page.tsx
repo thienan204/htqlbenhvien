@@ -28,6 +28,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { Ticket, ITUser, VendorItem } from '../it-requests/types';
 import { TicketActionModal } from '../it-requests/components/TicketActionModal';
+import { getDefaultPagination } from '@/utils/pagination';
 import { TicketChatModal } from '../it-requests/components/TicketChatModal';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { getBasePath } from '@/utils/config';
@@ -647,11 +648,10 @@ function VendorTasksContent() {
                     dataSource={filteredTickets}
                     rowKey="id"
                     loading={loading}
-                    pagination={{
+                    pagination={getDefaultPagination({
                         pageSize: 10,
-                        showTotal: (total) => `Tổng số ${total} công việc`,
-                        showSizeChanger: true
-                    }}
+                        unit: 'công việc'
+                    })}
                     scroll={{ x: 1200 }}
                     locale={{
                         emptyText: (
