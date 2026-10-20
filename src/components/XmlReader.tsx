@@ -960,8 +960,68 @@ export default function XmlReader() {
             const checkData = await checkRes.json();
             message.destroy('saveXMLDB');
 
-            const { unchangedCount = 0, changedCount = 0, newCount = 0, unchanged = [] } = checkData;
+            const { unchangedCount = 0, changedCount = 0, newCount = 0, unchanged = [], changed = [], exists = [] } = checkData;
 
+            // =========================================================================
+            // CHỈ XỬ LÝ RIÊNG CHO TRƯỜNG HỢP CHECK VÀO "CÓ GIẤY HẸN (XML14)"
+            // Quy tắc: Nếu hồ sơ đã có MA_LK trong CSDL rồi thì KHÔNG CHO LƯU / GHI ĐÈ
+            // =========================================================================
+            if (hasGiayHenFilter) {
+                const existingSet = new Set(exists || [...unchanged, ...changed]);
+                const existingRecords = targetRecords.filter(r => existingSet.has(String(r.id || r.summary?.MA_LK)));
+                const newRecordsToSave = targetRecords.filter(r => !existingSet.has(String(r.id || r.summary?.MA_LK)));
+
+                // Tình huống 1: Toàn bộ hồ sơ đang lọc đều đã có MA_LK trong CSDL -> Chặn hoàn toàn
+                if (newRecordsToSave.length === 0) {
+                    Modal.warning({
+                        title: 'Không thể lưu hồ sơ có giấy hẹn',
+                        content: (
+                            <div className="py-2">
+                                <p className="text-base text-gray-700">
+                                    Toàn bộ <b>{targetRecords.length}</b> hồ sơ có giấy hẹn này <b>đã tồn tại trong CSDL</b> (đã có Mã liên kết).
+                                </p>
+                                <p className="text-sm text-red-600 font-medium mt-2">
+                                    🚫 Theo quy định đối với hồ sơ Giấy hẹn (XML14), hệ thống không cho phép lưu lại hoặc ghi đè hồ sơ đã có trong CSDL!
+                                </p>
+                            </div>
+                        ),
+                        okText: 'Đã hiểu'
+                    });
+                    return;
+                }
+
+                // Tình huống 2: Một số hồ sơ đã có MA_LK, một số hồ sơ mới hoàn toàn -> Bỏ qua hồ sơ đã có, chỉ lưu hồ sơ mới
+                if (existingRecords.length > 0) {
+                    Modal.confirm({
+                        title: 'Xác nhận lưu hồ sơ có giấy hẹn mới',
+                        content: (
+                            <div className="py-1">
+                                <p className="text-red-600 mb-1">
+                                    • Bỏ qua: <b>{existingRecords.length}</b> hồ sơ đã có MA_LK trong CSDL (chặn ghi đè theo quy tắc giấy hẹn).
+                                </p>
+                                <p className="text-blue-600 mb-1">
+                                    • Lưu mới: <b>{newRecordsToSave.length}</b> hồ sơ chưa từng có trong CSDL.
+                                </p>
+                                <p className="font-semibold text-gray-800 mt-3">
+                                    Bạn có muốn tiếp tục lưu {newRecordsToSave.length} hồ sơ mới này vào CSDL không?
+                                </p>
+                            </div>
+                        ),
+                        okText: `Lưu ${newRecordsToSave.length} hồ sơ mới`,
+                        cancelText: 'Hủy bỏ',
+                        onOk: () => proceedSaveToDBForViewer(newRecordsToSave, existingRecords.length)
+                    });
+                    return;
+                }
+
+                // Tình huống 3: Toàn bộ đều là hồ sơ mới chưa từng có trong CSDL -> Cho lưu bình thường
+                proceedSaveToDBForViewer(newRecordsToSave, 0);
+                return;
+            }
+
+            // =========================================================================
+            // TRƯỜNG HỢP BÌNH THƯỜNG (KHÔNG CHECK GIẤY HẸN): GIỮ NGUYÊN CƠ CHẾ HIỆN TẠI
+            // =========================================================================
             // TRƯỜNG HỢP 1: TOÀN BỘ HỒ SƠ ĐÃ TỒN TẠI VÀ KHÔNG CÓ THAY ĐỔI NÀO -> DỪNG LẠI NGAY LẬP TỨC
             if (unchangedCount === targetRecords.length) {
                 Modal.info({
