@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, Segmented, message } from 'antd';
+import { Card, Segmented, message, Modal, DatePicker, Button, Tooltip } from 'antd';
+import { CalendarOutlined } from '@ant-design/icons';
+import dayjs, { Dayjs } from 'dayjs';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,6 +35,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
+    const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
     const [togglingAvailability, setTogglingAvailability] = useState(false);
 
     const [togglingFocusMode, setTogglingFocusMode] = useState(false);
@@ -117,8 +120,18 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         } else if (user?.ma_khoa) {
             result = result.filter(t => t.ma_khoa === user.ma_khoa);
         }
+
+        // Lọc theo ngày (mặc định hôm nay, hoặc ngày được chọn)
+        if (selectedDate) {
+            const targetDateStr = selectedDate.format('YYYY-MM-DD');
+            result = result.filter(t => {
+                if (!t.createdAt) return false;
+                return dayjs(t.createdAt).format('YYYY-MM-DD') === targetDateStr;
+            });
+        }
+
         return result;
-    }, [tickets, filterMode, isAdmin, user]);
+    }, [tickets, filterMode, isAdmin, user, selectedDate]);
 
     const statusCounts = useMemo(() => {
         return {
@@ -136,6 +149,16 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         if (!isAdmin && user?.ma_khoa) {
             allTickets = allTickets.filter(t => t.ma_khoa === user.ma_khoa);
         }
+
+        // Lọc theo ngày
+        if (selectedDate) {
+            const targetDateStr = selectedDate.format('YYYY-MM-DD');
+            allTickets = allTickets.filter(t => {
+                if (!t.createdAt) return false;
+                return dayjs(t.createdAt).format('YYYY-MM-DD') === targetDateStr;
+            });
+        }
+
         const mineCount = allTickets.filter(t => t.assigneeId === user?.id || t.transferToId === user?.id).length;
         const unassignedCount = allTickets.filter(t => !t.assigneeId).length;
         return {
@@ -143,7 +166,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             MINE: mineCount,
             UNASSIGNED: unassignedCount
         };
-    }, [tickets, isAdmin, user]);
+    }, [tickets, isAdmin, user, selectedDate]);
 
     const filteredTickets = useMemo(() => {
         let result = baseTickets;
@@ -161,15 +184,38 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    targetDepartment,
                     users: [{ id: user.id, isAvailable: checked }]
                 })
             });
+            const data = await res.json();
             if (res.ok) {
                 setIsAvailable(checked);
                 message.success(`Đã ${checked ? 'Bật' : 'Tắt'} trạng thái nhận việc tự động!`);
                 fetchITUsers();
+
+                // Cảnh báo nếu tất cả nhân viên phòng CNTT đều OFF
+                if (data?.allStaffOff) {
+                    Modal.warning({
+                        title: <span className="text-red-600 font-bold text-base">⚠️ CẢNH BÁO: PHÒNG {targetDepartment} KHÔNG CÒN AI NHẬN VIỆC!</span>,
+                        content: (
+                            <div className="space-y-2 text-slate-700 py-1 text-sm">
+                                <p>Bạn vừa chuyển trạng thái sang <strong>Tắt nhận việc</strong>.</p>
+                                <p className="text-red-700 font-medium bg-red-50 p-2.5 rounded-lg border border-red-200">
+                                    🚨 Hiện tại phòng <strong>{targetDepartment}</strong> KHÔNG CÒN nhân viên nào đang bật nhận việc! Các yêu cầu gửi lên từ các Khoa/Phòng sẽ không có ai tiếp nhận.
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    Hệ thống đã tự động gửi tin nhắn cảnh báo khẩn cấp lên nhóm Telegram của phòng {targetDepartment}.
+                                </p>
+                            </div>
+                        ),
+                        okText: 'Tôi đã hiểu',
+                        okButtonProps: { danger: true },
+                        width: 520
+                    });
+                }
             } else {
-                message.error('Lỗi khi cập nhật trạng thái');
+                message.error(data?.error || 'Lỗi khi cập nhật trạng thái');
             }
         } catch (error) {
             message.error('Lỗi kết nối');
@@ -189,6 +235,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    targetDepartment,
                     users: [{ 
                         id: user.id, 
                         isAvailable: disabled ? true : isAvailable,
@@ -197,6 +244,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     }]
                 })
             });
+            const data = await res.json();
 
             if (res.ok) {
                 if (disabled && !isAvailable) {
@@ -240,6 +288,26 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         console.error('Lỗi tự động tạo yêu cầu tập trung:', createErr);
                         message.success('Đã bật Chế độ tập trung!');
                     }
+
+                    // Cảnh báo nếu cả phòng không còn ai nhận việc tự động
+                    if (data?.allStaffOff) {
+                        Modal.warning({
+                            title: <span className="text-amber-600 font-bold text-base">⚠️ CẢNH BÁO: PHÒNG {targetDepartment} KHÔNG CÒN AI NHẬN VIỆC TỰ ĐỘNG!</span>,
+                            content: (
+                                <div className="space-y-2 text-slate-700 py-1 text-sm">
+                                    <p>Bạn vừa bật <strong>Chế độ tập trung</strong> (miễn chia việc tự động).</p>
+                                    <p className="text-amber-800 font-medium bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                                        🚨 Hiện tại phòng <strong>{targetDepartment}</strong> KHÔNG CÒN nhân viên nào khác sẵn sàng nhận việc tự động!
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        Hệ thống đã tự động gửi cảnh báo khẩn cấp lên nhóm Telegram để nhắc nhở nhân viên ca trực.
+                                    </p>
+                                </div>
+                            ),
+                            okText: 'Tôi đã hiểu',
+                            width: 520
+                        });
+                    }
                 } else {
                     message.success('Đã tắt chế độ tập trung, bạn sẽ tiếp tục nhận việc tự động từ khoa phòng!');
                     fetchTickets();
@@ -247,7 +315,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
                 fetchITUsers();
             } else {
-                message.error('Lỗi khi cập nhật trạng thái');
+                message.error(data?.error || 'Lỗi khi cập nhật trạng thái');
             }
         } catch (error) {
             message.error('Lỗi kết nối');
@@ -413,6 +481,36 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                             }
                         ]}
                     />
+                </div>
+
+                {/* Bộ lọc theo ngày (Mặc định: Ngày hiện tại) */}
+                <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                    <Tooltip title="Chọn ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                        <DatePicker 
+                            value={selectedDate}
+                            onChange={(date) => setSelectedDate(date)}
+                            format="DD/MM/YYYY"
+                            allowClear
+                            placeholder="Chọn ngày..."
+                            className="rounded-lg text-xs sm:text-sm font-medium w-[130px] sm:w-[140px]"
+                        />
+                    </Tooltip>
+                    <Button 
+                        size="small"
+                        type={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'primary' : 'default'}
+                        onClick={() => setSelectedDate(dayjs())}
+                        className={`text-xs rounded-lg ${selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                    >
+                        Hôm nay
+                    </Button>
+                    <Button 
+                        size="small"
+                        type={!selectedDate ? 'primary' : 'default'}
+                        onClick={() => setSelectedDate(null)}
+                        className={`text-xs rounded-lg ${!selectedDate ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                    >
+                        Tất cả
+                    </Button>
                 </div>
             </div>
 

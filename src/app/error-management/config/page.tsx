@@ -60,7 +60,8 @@ export default function ITConfigPage() {
     const searchParams = useSearchParams();
     const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
 
-    const isAdmin = user?.role === 'ADMIN' || user?.role === targetDepartment;
+    const canAccess = user?.role === 'ADMIN' || user?.role === targetDepartment;
+    const isAdmin = user?.role === 'ADMIN';
 
     useEffect(() => {
         fetchConfig();
@@ -420,7 +421,7 @@ export default function ITConfigPage() {
             key: 'name',
             sorter: (a: ITError, b: ITError) => a.name.localeCompare(b.name),
         },
-        {
+        ...(isAdmin ? [{
             title: 'Hành động',
             key: 'action',
             width: 150,
@@ -439,10 +440,10 @@ export default function ITConfigPage() {
                     </Popconfirm>
                 </Space>
             ),
-        },
+        }] : []),
     ];
 
-    if (!isAdmin) {
+    if (!canAccess) {
         return <div className="p-10 text-center text-red-500">Bạn không có quyền truy cập trang này.</div>;
     }
 
@@ -490,6 +491,20 @@ export default function ITConfigPage() {
             label: 'Cấu hình chung',
             children: (
                 <div className="space-y-6 w-full mt-4">
+                    {!isAdmin && (
+                        <Alert 
+                            type="info"
+                            showIcon
+                            className="rounded-xl border-blue-200 bg-blue-50/80"
+                            message={<span className="font-semibold text-blue-900">Quyền hạn tài khoản Kỹ thuật viên ({user?.role})</span>}
+                            description={
+                                <div className="text-xs text-slate-600 space-y-1 mt-0.5">
+                                    <div>• Các cấu hình phân công công việc, khung giờ và bot chung do <b>Quản trị viên (ADMIN)</b> thiết lập.</div>
+                                    <div>• Bạn chỉ cần kiểm tra và điền <b>Telegram ID cá nhân</b> của bạn tại mục bên dưới để nhận tin nhắn riêng khi được giao việc.</div>
+                                </div>
+                            }
+                        />
+                    )}
                     {/* Card 1: Chế độ phân công công việc (4 Tùy chọn) */}
                     <Card 
                         size="small" 
@@ -1394,7 +1409,7 @@ export default function ITConfigPage() {
                             >
                                 {isPlayingSound ? 'Dừng nghe thử' : 'Nghe thử âm thanh'}
                             </Button>
-                            {(user?.role === 'ADMIN' || user?.role === targetDepartment) && (
+                            {isAdmin && (
                                 <Button type="primary" onClick={() => handleSaveGeneralConfig()}>
                                     Lưu nhạc chuông chung
                                 </Button>
@@ -1418,13 +1433,15 @@ export default function ITConfigPage() {
                 <Card
                     title={<span className="text-xl font-bold text-slate-800">Cấu hình Danh Mục Yêu cầu - {targetDepartment}</span>}
                     extra={
-                        <Button type="primary" icon={<PlusOutlined />} onClick={() => {
-                            setEditingError(null);
-                            form.resetFields();
-                            setIsDrawerOpen(true);
-                        }}>
-                            Thêm lỗi mới
-                        </Button>
+                        isAdmin ? (
+                            <Button type="primary" icon={<PlusOutlined />} onClick={() => {
+                                setEditingError(null);
+                                form.resetFields();
+                                setIsDrawerOpen(true);
+                            }}>
+                                Thêm lỗi mới
+                            </Button>
+                        ) : null
                     }
                 >
                     <Tabs type="card" activeKey={activeTab} onChange={setActiveTab} items={tabItems} />

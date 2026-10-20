@@ -70,9 +70,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const user = await getCurrentUser();
-        // Chỉ ADMIN hoặc quyền quản lý phòng ban mới được phép cấu hình
-        if (!user || (!['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role))) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        // Chỉ Quản trị viên (ADMIN) mới được phép thay đổi cấu hình chung
+        if (!user || user.role !== 'ADMIN') {
+            return NextResponse.json({ error: 'Chỉ Quản trị viên (ADMIN) mới có quyền thay đổi cấu hình chung!' }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);

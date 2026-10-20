@@ -467,19 +467,28 @@ export async function POST(request: Request) {
 
                     // Tính tải cho từng ứng viên
                     const candidates = await Promise.all(availableUsers.map(async (u) => {
-                        // 1. Số việc dở dang hiện tại (PENDING + IN_PROGRESS)
+                        // 1. Số việc dở dang hiện tại (chỉ tính PENDING và IN_PROGRESS tự làm, loại trừ việc đã gửi công ty ngoài)
                         const activeTasks = await prisma.iTRequest.count({
                             where: {
                                 assigneeId: u.id,
-                                status: { in: ['PENDING', 'IN_PROGRESS'] }
+                                status: { in: ['PENDING', 'IN_PROGRESS'] },
+                                AND: [
+                                    { OR: [{ vendorId: null }, { vendorId: '' }] },
+                                    { OR: [{ vendorName: null }, { vendorName: '' }] }
+                                ]
                             }
                         });
 
-                        // 2. Tổng số việc đã nhận trong ca làm việc hiện tại
+                        // 2. Tổng số việc đã nhận và tự xử lý trong ca (loại trừ việc đã gửi công ty ngoài)
                         const totalInShift = await prisma.iTRequest.count({
                             where: {
                                 assigneeId: u.id,
-                                createdAt: { gte: shiftStart }
+                                createdAt: { gte: shiftStart },
+                                status: { not: 'WAITING_VENDOR' },
+                                AND: [
+                                    { OR: [{ vendorId: null }, { vendorId: '' }] },
+                                    { OR: [{ vendorName: null }, { vendorName: '' }] }
+                                ]
                             }
                         });
 

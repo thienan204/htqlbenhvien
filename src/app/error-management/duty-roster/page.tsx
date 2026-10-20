@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Switch, Button, message, Card, Space, Tag, Tabs, Input, Tooltip } from 'antd';
+import { Table, Switch, Button, message, Card, Space, Tag, Tabs, Input, Tooltip, Modal } from 'antd';
 import { ArrowUpOutlined, ArrowDownOutlined, SaveOutlined, ReloadOutlined, AimOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -64,14 +64,37 @@ export default function DutyRosterPage() {
             const res = await fetch('/api/error-management/duty-roster', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ users: updatedUsers })
+                body: JSON.stringify({ 
+                    targetDepartment: activeTab,
+                    users: updatedUsers 
+                })
             });
+            const data = await res.json();
 
             if (res.ok) {
                 message.success('Cập nhật ca trực thành công!');
                 setUsers(updatedUsers);
+
+                if (data?.allStaffOff) {
+                    Modal.warning({
+                        title: <span className="text-red-600 font-bold text-base">⚠️ CẢNH BÁO: PHÒNG {activeTab} KHÔNG CÒN AI NHẬN VIỆC!</span>,
+                        content: (
+                            <div className="space-y-2 text-slate-700 py-1 text-sm">
+                                <p className="text-red-700 font-medium bg-red-50 p-2.5 rounded-lg border border-red-200">
+                                    🚨 Hiện tại phòng <strong>{activeTab}</strong> KHÔNG CÒN nhân viên nào đang bật nhận việc! Các yêu cầu hỗ trợ gửi lên từ các Khoa/Phòng sẽ không có ai tiếp nhận.
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    Hệ thống đã tự động gửi tin nhắn cảnh báo khẩn cấp lên nhóm Telegram của phòng {activeTab}.
+                                </p>
+                            </div>
+                        ),
+                        okText: 'Tôi đã hiểu',
+                        okButtonProps: { danger: true },
+                        width: 520
+                    });
+                }
             } else {
-                message.error('Cập nhật thất bại!');
+                message.error(data?.error || 'Cập nhật thất bại!');
             }
         } catch (error) {
             message.error('Lỗi khi lưu dữ liệu');
