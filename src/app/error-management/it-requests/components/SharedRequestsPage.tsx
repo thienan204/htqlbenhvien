@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, Segmented, message, Modal, DatePicker, Button, Tooltip } from 'antd';
+import { Card, Segmented, message, Modal, DatePicker, Button, Tooltip, Select } from 'antd';
 import { CalendarOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { useRouter } from 'next/navigation';
@@ -359,11 +359,11 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 targetDepartment={targetDepartment}
             />
 
-            {/* Thanh bộ lọc 2 Hàng (Row 1: Phạm vi & Bộ lọc ngày | Row 2: Trạng thái xử lý) */}
-            <div className="flex flex-col gap-2.5 w-full">
-                {/* Hàng 1: Phạm vi công việc (Bên trái) + Bộ lọc theo ngày (Bên phải) */}
-                <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-                    {isAdmin ? (
+            {/* Thanh bộ lọc gom trên 1 dòng duy nhất */}
+            <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                {/* Cụm bên trái: Phân loại phạm vi (Admin) + Select Trạng thái */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                    {isAdmin && (
                         <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
                             <Segmented 
                                 className="min-w-max"
@@ -409,114 +409,116 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 }}
                             />
                         </div>
-                    ) : <div />}
+                    )}
 
-                    {/* Bộ lọc theo ngày (Mặc định: Ngày hiện tại) */}
-                    <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
-                        <Tooltip title="Chọn ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
-                            <DatePicker 
-                                value={selectedDate}
-                                onChange={(date) => setSelectedDate(date)}
-                                format="DD/MM/YYYY"
-                                allowClear
-                                placeholder="Chọn ngày..."
-                                className="rounded-lg text-xs sm:text-sm font-medium w-[130px] sm:w-[140px]"
-                            />
-                        </Tooltip>
-                        <Button 
-                            size="small"
-                            type={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'primary' : 'default'}
-                            onClick={() => setSelectedDate(dayjs())}
-                            className={`text-xs rounded-lg ${selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                        >
-                            Hôm nay
-                        </Button>
-                        <Button 
-                            size="small"
-                            type={!selectedDate ? 'primary' : 'default'}
-                            onClick={() => setSelectedDate(null)}
-                            className={`text-xs rounded-lg ${!selectedDate ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                        >
-                            Tất cả
-                        </Button>
+                    {/* Hộp chọn Trạng thái xử lý (Select) */}
+                    <div className="flex items-center bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                        <Select
+                            value={statusFilter}
+                            onChange={(val) => setStatusFilter(val)}
+                            className="w-[185px] sm:w-[215px]"
+                            variant="borderless"
+                            popupMatchSelectWidth={225}
+                            options={[
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-slate-700">Tất cả trạng thái</span>
+                                            <span className="text-xs px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                                                {statusCounts.ALL}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'ALL'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-amber-700">Chờ xử lý</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.PENDING > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.PENDING}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'PENDING'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-blue-700">Đang xử lý</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.IN_PROGRESS > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.IN_PROGRESS}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'IN_PROGRESS'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-orange-700">🏢 Chờ đối tác</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.WAITING_VENDOR > 0 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.WAITING_VENDOR}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'WAITING_VENDOR'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-purple-700">Chờ chuyển giao</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.TRANSFERRING > 0 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.TRANSFERRING}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'TRANSFERRING'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-emerald-700">Hoàn thành</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.RESOLVED > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.RESOLVED}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'RESOLVED'
+                                }
+                            ]}
+                        />
                     </div>
                 </div>
 
-                {/* Hàng 2: Trạng thái tiến độ xử lý */}
-                <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm w-fit max-w-full overflow-x-auto scrollbar-hide">
-                    <Segmented
-                        className="min-w-max"
-                        value={statusFilter}
-                        onChange={(val: any) => setStatusFilter(val)}
-                        options={[
-                            {
-                                label: (
-                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                        <span>Tất cả</span>
-                                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
-                                            {statusCounts.ALL}
-                                        </span>
-                                    </div>
-                                ),
-                                value: 'ALL'
-                            },
-                            {
-                                label: (
-                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                        <span>Chờ xử lý</span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.PENDING > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                                            {statusCounts.PENDING}
-                                        </span>
-                                    </div>
-                                ),
-                                value: 'PENDING'
-                            },
-                            {
-                                label: (
-                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                        <span>Đang xử lý</span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.IN_PROGRESS > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                                            {statusCounts.IN_PROGRESS}
-                                        </span>
-                                    </div>
-                                ),
-                                value: 'IN_PROGRESS'
-                            },
-                            {
-                                label: (
-                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                        <span>🏢 Chờ đối tác</span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.WAITING_VENDOR > 0 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
-                                            {statusCounts.WAITING_VENDOR}
-                                        </span>
-                                    </div>
-                                ),
-                                value: 'WAITING_VENDOR'
-                            },
-                            {
-                                label: (
-                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                        <span>Chờ chuyển giao</span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.TRANSFERRING > 0 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
-                                            {statusCounts.TRANSFERRING}
-                                        </span>
-                                    </div>
-                                ),
-                                value: 'TRANSFERRING'
-                            },
-                            {
-                                label: (
-                                    <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                        <span>Hoàn thành</span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${statusCounts.RESOLVED > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                                            {statusCounts.RESOLVED}
-                                        </span>
-                                    </div>
-                                ),
-                                value: 'RESOLVED'
-                            }
-                        ]}
-                    />
+                {/* Cụm bên phải: Bộ lọc theo ngày (Mặc định: Ngày hiện tại) */}
+                <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                    <Tooltip title="Chọn ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                        <DatePicker 
+                            value={selectedDate}
+                            onChange={(date) => setSelectedDate(date)}
+                            format="DD/MM/YYYY"
+                            allowClear
+                            placeholder="Chọn ngày..."
+                            className="rounded-lg text-xs sm:text-sm font-medium w-[130px] sm:w-[140px]"
+                        />
+                    </Tooltip>
+                    <Button 
+                        size="small"
+                        type={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'primary' : 'default'}
+                        onClick={() => setSelectedDate(dayjs())}
+                        className={`text-xs rounded-lg ${selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                    >
+                        Hôm nay
+                    </Button>
+                    <Button 
+                        size="small"
+                        type={!selectedDate ? 'primary' : 'default'}
+                        onClick={() => setSelectedDate(null)}
+                        className={`text-xs rounded-lg ${!selectedDate ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                    >
+                        Tất cả
+                    </Button>
                 </div>
             </div>
 
