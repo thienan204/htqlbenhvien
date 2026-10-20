@@ -35,7 +35,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
-    const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
+    const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>([dayjs().startOf('day'), dayjs().endOf('day')]);
     const [togglingAvailability, setTogglingAvailability] = useState(false);
 
     const [togglingFocusMode, setTogglingFocusMode] = useState(false);
@@ -121,17 +121,24 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             result = result.filter(t => t.ma_khoa === user.ma_khoa);
         }
 
-        // Lọc theo ngày (mặc định hôm nay, hoặc ngày được chọn)
-        if (selectedDate) {
-            const targetDateStr = selectedDate.format('YYYY-MM-DD');
+        // Lọc theo khoảng ngày (mặc định hôm nay, hoặc khoảng được chọn)
+        if (dateRange && (dateRange[0] || dateRange[1])) {
+            const start = dateRange[0] ? dateRange[0].startOf('day') : null;
+            const end = dateRange[1] ? dateRange[1].endOf('day') : null;
             result = result.filter(t => {
                 if (!t.createdAt) return false;
-                return dayjs(t.createdAt).format('YYYY-MM-DD') === targetDateStr;
+                const created = dayjs(t.createdAt);
+                if (start && end) {
+                    return (created.isAfter(start) || created.isSame(start)) && (created.isBefore(end) || created.isSame(end));
+                }
+                if (start) return created.isAfter(start) || created.isSame(start);
+                if (end) return created.isBefore(end) || created.isSame(end);
+                return true;
             });
         }
 
         return result;
-    }, [tickets, filterMode, isAdmin, user, selectedDate]);
+    }, [tickets, filterMode, isAdmin, user, dateRange]);
 
     const statusCounts = useMemo(() => {
         return {
@@ -150,12 +157,19 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             allTickets = allTickets.filter(t => t.ma_khoa === user.ma_khoa);
         }
 
-        // Lọc theo ngày
-        if (selectedDate) {
-            const targetDateStr = selectedDate.format('YYYY-MM-DD');
+        // Lọc theo khoảng ngày
+        if (dateRange && (dateRange[0] || dateRange[1])) {
+            const start = dateRange[0] ? dateRange[0].startOf('day') : null;
+            const end = dateRange[1] ? dateRange[1].endOf('day') : null;
             allTickets = allTickets.filter(t => {
                 if (!t.createdAt) return false;
-                return dayjs(t.createdAt).format('YYYY-MM-DD') === targetDateStr;
+                const created = dayjs(t.createdAt);
+                if (start && end) {
+                    return (created.isAfter(start) || created.isSame(start)) && (created.isBefore(end) || created.isSame(end));
+                }
+                if (start) return created.isAfter(start) || created.isSame(start);
+                if (end) return created.isBefore(end) || created.isSame(end);
+                return true;
             });
         }
 
@@ -166,7 +180,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             MINE: mineCount,
             UNASSIGNED: unassignedCount
         };
-    }, [tickets, isAdmin, user, selectedDate]);
+    }, [tickets, isAdmin, user, dateRange]);
 
     const filteredTickets = useMemo(() => {
         let result = baseTickets;
@@ -491,31 +505,31 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     </div>
                 </div>
 
-                {/* Cụm bên phải: Bộ lọc theo ngày (Mặc định: Ngày hiện tại) */}
+                {/* Cụm bên phải: Bộ lọc theo khoảng ngày (Mặc định: Ngày hiện tại) */}
                 <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
-                    <Tooltip title="Chọn ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
-                        <DatePicker 
-                            value={selectedDate}
-                            onChange={(date) => setSelectedDate(date)}
+                    <Tooltip title="Chọn khoảng ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                        <DatePicker.RangePicker 
+                            value={dateRange}
+                            onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
                             format="DD/MM/YYYY"
                             allowClear
-                            placeholder="Chọn ngày..."
-                            className="rounded-lg text-xs sm:text-sm font-medium w-[130px] sm:w-[140px]"
+                            placeholder={['Từ ngày', 'Đến ngày']}
+                            className="rounded-lg text-xs sm:text-sm font-medium w-[220px] sm:w-[240px]"
                         />
                     </Tooltip>
                     <Button 
                         size="small"
-                        type={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'primary' : 'default'}
-                        onClick={() => setSelectedDate(dayjs())}
-                        className={`text-xs rounded-lg ${selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                        type={dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'primary' : 'default'}
+                        onClick={() => setDateRange([dayjs().startOf('day'), dayjs().endOf('day')])}
+                        className={`text-xs rounded-lg ${dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
                     >
                         Hôm nay
                     </Button>
                     <Button 
                         size="small"
-                        type={!selectedDate ? 'primary' : 'default'}
-                        onClick={() => setSelectedDate(null)}
-                        className={`text-xs rounded-lg ${!selectedDate ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                        type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
+                        onClick={() => setDateRange(null)}
+                        className={`text-xs rounded-lg ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
                     >
                         Tất cả
                     </Button>
