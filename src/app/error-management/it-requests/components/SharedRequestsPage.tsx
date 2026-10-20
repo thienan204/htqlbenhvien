@@ -359,55 +359,91 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 targetDepartment={targetDepartment}
             />
 
-            <div className="flex flex-col xl:flex-row gap-3 items-start xl:items-center w-full overflow-x-auto scrollbar-hide pb-0.5">
-                {isAdmin && (
-                    <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
-                        <Segmented 
-                            className="min-w-max"
-                            options={[
-                                {
-                                    label: (
-                                        <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                            <span>Tất cả Yêu cầu</span>
-                                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
-                                                {filterModeCounts.ALL}
-                                            </span>
-                                        </div>
-                                    ),
-                                    value: 'ALL'
-                                },
-                                {
-                                    label: (
-                                        <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                            <span>Việc của tôi</span>
-                                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.MINE > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                {filterModeCounts.MINE}
-                                            </span>
-                                        </div>
-                                    ),
-                                    value: 'MINE'
-                                },
-                                ...(assignmentMode !== 'C' ? [{
-                                    label: (
-                                        <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                            <span>Chờ nhận việc (Trống)</span>
-                                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                {filterModeCounts.UNASSIGNED}
-                                            </span>
-                                        </div>
-                                    ),
-                                    value: 'UNASSIGNED'
-                                }] : [])
-                            ]}
-                            value={filterMode}
-                            onChange={(val: any) => {
-                                setFilterMode(val);
-                                setStatusFilter('ALL');
-                            }}
-                        />
+            {/* Thanh bộ lọc 2 Hàng (Row 1: Phạm vi & Bộ lọc ngày | Row 2: Trạng thái xử lý) */}
+            <div className="flex flex-col gap-2.5 w-full">
+                {/* Hàng 1: Phạm vi công việc (Bên trái) + Bộ lọc theo ngày (Bên phải) */}
+                <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                    {isAdmin ? (
+                        <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
+                            <Segmented 
+                                className="min-w-max"
+                                options={[
+                                    {
+                                        label: (
+                                            <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                                <span>Tất cả Yêu cầu</span>
+                                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                                                    {filterModeCounts.ALL}
+                                                </span>
+                                            </div>
+                                        ),
+                                        value: 'ALL'
+                                    },
+                                    {
+                                        label: (
+                                            <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                                <span>Việc của tôi</span>
+                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.MINE > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                    {filterModeCounts.MINE}
+                                                </span>
+                                            </div>
+                                        ),
+                                        value: 'MINE'
+                                    },
+                                    ...(assignmentMode !== 'C' ? [{
+                                        label: (
+                                            <div className="flex items-center gap-1.5 px-1 py-0.5">
+                                                <span>Chờ nhận việc (Trống)</span>
+                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                    {filterModeCounts.UNASSIGNED}
+                                                </span>
+                                            </div>
+                                        ),
+                                        value: 'UNASSIGNED'
+                                    }] : [])
+                                ]}
+                                value={filterMode}
+                                onChange={(val: any) => {
+                                    setFilterMode(val);
+                                    setStatusFilter('ALL');
+                                }}
+                            />
+                        </div>
+                    ) : <div />}
+
+                    {/* Bộ lọc theo ngày (Mặc định: Ngày hiện tại) */}
+                    <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                        <Tooltip title="Chọn ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                            <DatePicker 
+                                value={selectedDate}
+                                onChange={(date) => setSelectedDate(date)}
+                                format="DD/MM/YYYY"
+                                allowClear
+                                placeholder="Chọn ngày..."
+                                className="rounded-lg text-xs sm:text-sm font-medium w-[130px] sm:w-[140px]"
+                            />
+                        </Tooltip>
+                        <Button 
+                            size="small"
+                            type={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'primary' : 'default'}
+                            onClick={() => setSelectedDate(dayjs())}
+                            className={`text-xs rounded-lg ${selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                        >
+                            Hôm nay
+                        </Button>
+                        <Button 
+                            size="small"
+                            type={!selectedDate ? 'primary' : 'default'}
+                            onClick={() => setSelectedDate(null)}
+                            className={`text-xs rounded-lg ${!selectedDate ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                        >
+                            Tất cả
+                        </Button>
                     </div>
-                )}
-                <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
+                </div>
+
+                {/* Hàng 2: Trạng thái tiến độ xử lý */}
+                <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm w-fit max-w-full overflow-x-auto scrollbar-hide">
                     <Segmented
                         className="min-w-max"
                         value={statusFilter}
@@ -481,36 +517,6 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                             }
                         ]}
                     />
-                </div>
-
-                {/* Bộ lọc theo ngày (Mặc định: Ngày hiện tại) */}
-                <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
-                    <Tooltip title="Chọn ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
-                        <DatePicker 
-                            value={selectedDate}
-                            onChange={(date) => setSelectedDate(date)}
-                            format="DD/MM/YYYY"
-                            allowClear
-                            placeholder="Chọn ngày..."
-                            className="rounded-lg text-xs sm:text-sm font-medium w-[130px] sm:w-[140px]"
-                        />
-                    </Tooltip>
-                    <Button 
-                        size="small"
-                        type={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'primary' : 'default'}
-                        onClick={() => setSelectedDate(dayjs())}
-                        className={`text-xs rounded-lg ${selectedDate && selectedDate.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                    >
-                        Hôm nay
-                    </Button>
-                    <Button 
-                        size="small"
-                        type={!selectedDate ? 'primary' : 'default'}
-                        onClick={() => setSelectedDate(null)}
-                        className={`text-xs rounded-lg ${!selectedDate ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                    >
-                        Tất cả
-                    </Button>
                 </div>
             </div>
 
