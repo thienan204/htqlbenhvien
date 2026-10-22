@@ -434,10 +434,10 @@ export function FormTab({
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-amber-950 text-sm">
-                                                            Giao việc dưới dạng &quot;Nhiệm vụ tập trung&quot;
+                                                            🚶 Đi khoa phòng / Xử lý kéo dài
                                                         </div>
                                                         <div className="text-xs text-amber-800/80 mt-0.5">
-                                                            Tự động khóa nhận việc tự động từ khoa phòng cho nhân viên này cho đến khi hoàn thành nhiệm vụ.
+                                                            Tự động tạm ngưng nhận chia việc tự động từ khoa phòng cho nhân viên này cho đến khi hoàn thành nhiệm vụ (kéo mạng, lắp máy tại khoa phòng...).
                                                         </div>
                                                     </div>
                                                 </div>

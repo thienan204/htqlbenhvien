@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Select, Input, DatePicker, Card, Tag, Button, message } from 'antd';
+import { Modal, Form, Select, Input, DatePicker, Card, Tag, Button, message, Switch } from 'antd';
 import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined, ShareAltOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import Link from 'next/link';
@@ -123,6 +123,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     status: ticket.status,
                     it_note: ticket.it_note,
                     assigneeId: ticket.assigneeId,
+                    isFocusTask: Boolean(ticket.isFocusTask),
                     vendorId: ticket.vendorId,
                     vendorTicketCode: ticket.vendorTicketCode,
                     vendorExpectedReturnAt: ticket.vendorExpectedReturnAt ? dayjs(ticket.vendorExpectedReturnAt) : null,
@@ -196,6 +197,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
 
             const payload: any = {
                 ...values,
+                isFocusTask: Boolean(values.isFocusTask),
                 it_images: finalUrls,
                 vendorName: selectedVendor ? selectedVendor.name : (ticket?.vendorName || null),
                 vendorExpectedReturnAt: values.vendorExpectedReturnAt ? values.vendorExpectedReturnAt.toISOString() : null,
@@ -240,6 +242,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     >
                         <Select.Option value="PENDING">Chờ xử lý</Select.Option>
                         <Select.Option value="IN_PROGRESS">Đang xử lý</Select.Option>
+                        <Select.Option value="PAUSED">⏸️ Tạm dừng xử lý</Select.Option>
                         <Select.Option value="WAITING_VENDOR">
                             <span className="font-medium text-amber-600 flex items-center gap-1.5">
                                 <ShopOutlined /> Chờ đơn vị ngoài xử lý (Gửi đối tác)
@@ -249,6 +252,22 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                         <Select.Option value="RESOLVED">Hoàn thành</Select.Option>
                     </Select>
                 </Form.Item>
+
+                {/* TÙY CHỌN: ĐI KHOA PHÒNG / XỬ LÝ KÉO DÀI */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50/60 border border-purple-200/90 shadow-2xs mb-3">
+                    <div className="pr-3">
+                        <div className="font-bold text-purple-900 text-xs flex items-center gap-1.5">
+                            <span>🚶 Đi khoa phòng / Xử lý kéo dài</span>
+                            <Tag color="purple" className="m-0 text-[10px] font-medium border-purple-300">Tạm ngưng nhận chia việc tự động</Tag>
+                        </div>
+                        <div className="text-[11px] text-purple-700 mt-0.5 leading-relaxed">
+                            Bật khi bạn cần đi hiện trường (kéo mạng, cài máy, sửa thiết bị tại khoa phòng...). Hệ thống sẽ tạm ngưng chia thêm việc tự động cho bạn cho đến khi hoàn thành phiếu này.
+                        </div>
+                    </div>
+                    <Form.Item name="isFocusTask" valuePropName="checked" noStyle>
+                        <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                    </Form.Item>
+                </div>
 
                 {/* KHU VỰC THÔNG TIN GỬI ĐỐI TÁC NGOÀI (Chỉ hiện khi chọn WAITING_VENDOR) */}
                 {selectedStatus === 'WAITING_VENDOR' && (

@@ -405,24 +405,23 @@ export async function POST(request: Request) {
         // 1. Người tạo là nhân viên phòng kỹ thuật/CNTT hoặc ADMIN (isITStaff = true)
         // 2. VÀ người đó CHỦ ĐỘNG BẬT công tắc "⚡ Tôi trực tiếp xử lý" (selfAssign = true)
         // 3. HOẶC là nhiệm vụ tập trung và chọn trạng thái IN_PROGRESS
-        const isFocusAssignment = Boolean(isFocusTask) && Boolean(assigneeId);
         const isSelfHandling = isITStaff && Boolean(selfAssign);
+        let finalAssignee = assigneeId || null;
+        if (isSelfHandling || (isITStaff && Boolean(isFocusTask) && (!assigneeId || assigneeId === user.id))) {
+            finalAssignee = user.id;
+        } else if (!isManager) {
+            finalAssignee = null; // Khoa phòng tuyệt đối không được tự gán người xử lý
+        }
+        const isFocusAssignment = Boolean(isFocusTask) && Boolean(finalAssignee);
 
         let initialStatus = isSelfHandling ? 'IN_PROGRESS' : 'PENDING';
         if (isFocusAssignment && body.status) {
             initialStatus = body.status;
         } else if (isFocusAssignment && !body.status) {
-            initialStatus = 'IN_PROGRESS'; // Mặc định nhiệm vụ tập trung thì vào việc xử lý luôn
+            initialStatus = 'IN_PROGRESS'; // Mặc định nhiệm vụ đi khoa phòng/tập trung thì vào việc xử lý luôn
         }
 
         const newStartedAt = (initialStatus === 'IN_PROGRESS') ? new Date() : null;
-
-        let finalAssignee = assigneeId || null;
-        if (isSelfHandling || (isITStaff && Boolean(isFocusTask) && assigneeId === user.id)) {
-            finalAssignee = user.id;
-        } else if (!isManager) {
-            finalAssignee = null; // Khoa phòng tuyệt đối không được tự gán người xử lý
-        }
 
         // Tự động cập nhật số điện thoại vào bảng Staff
         let finalSdt = sdt || '';
@@ -458,20 +457,39 @@ export async function POST(request: Request) {
                         isAvailable: true,
                         autoAssignDisabled: false,
                         id: { not: user.id }
+                    },
+                    select: {
+                        id: true,
+                        dutyOrder: true
+                    },
+                    orderBy: {
+                        dutyOrder: 'asc'
                     }
                 });
 
                 if (availableUsers.length > 0) {
-                    // Mốc bắt đầu của ca trực hiện tại (chuẩn Việt Nam GMT+7, xuyên đêm qua 00h)
+                    // Mốc bắt đầu của ca trực / khung hành chính hiện tại
                     const shiftStart = currentShift.startTime;
 
-                    // Tính tải cho từng ứng viên
-                    const candidates = await Promise.all(availableUsers.map(async (u) => {
-                        // 1. Số việc dở dang hiện tại (chỉ tính PENDING và IN_PROGRESS tự làm, loại trừ việc đã gửi công ty ngoài)
-                        const activeTasks = await prisma.iTRequest.count({
+                    // Tính tải chi tiết cho từng ứng viên
+                    const candidatesRaw = await Promise.all(availableUsers.map(async (u) => {
+                        // 0. Kiểm tra xem kỹ thuật viên có đang có việc "Đi khoa phòng / Xử lý kéo dài" (isFocusTask: true) đang IN_PROGRESS không
+                        const isBusyOnSite = await prisma.iTRequest.findFirst({
                             where: {
                                 assigneeId: u.id,
-                                status: { in: ['PENDING', 'IN_PROGRESS'] },
+                                status: 'IN_PROGRESS',
+                                isFocusTask: true
+                            }
+                        });
+                        if (isBusyOnSite) {
+                            return null; // Đang đi hiện trường / việc kéo dài -> Tạm ngưng nhận chia việc tự động
+                        }
+
+                        // 1. Số việc đang xử lý trực tiếp (IN_PROGRESS)
+                        const inProgressTasks = await prisma.iTRequest.count({
+                            where: {
+                                assigneeId: u.id,
+                                status: 'IN_PROGRESS',
                                 AND: [
                                     { OR: [{ vendorId: null }, { vendorId: '' }] },
                                     { OR: [{ vendorName: null }, { vendorName: '' }] }
@@ -479,7 +497,19 @@ export async function POST(request: Request) {
                             }
                         });
 
-                        // 2. Tổng số việc đã nhận và tự xử lý trong ca (loại trừ việc đã gửi công ty ngoài)
+                        // 2. Số việc dở dang hiện tại (PENDING, IN_PROGRESS, PAUSED)
+                        const activeTasks = await prisma.iTRequest.count({
+                            where: {
+                                assigneeId: u.id,
+                                status: { in: ['PENDING', 'IN_PROGRESS', 'PAUSED'] },
+                                AND: [
+                                    { OR: [{ vendorId: null }, { vendorId: '' }] },
+                                    { OR: [{ vendorName: null }, { vendorName: '' }] }
+                                ]
+                            }
+                        });
+
+                        // 3. Tổng số việc đã nhận trong khung giờ/ca trực hiện tại (Khung hành chính cộng dồn cả sáng + chiều)
                         const totalInShift = await prisma.iTRequest.count({
                             where: {
                                 assigneeId: u.id,
@@ -492,34 +522,97 @@ export async function POST(request: Request) {
                             }
                         });
 
+                        // 4. Thời điểm gần nhất được giao việc (Round-Robin)
+                        const lastTicket = await prisma.iTRequest.findFirst({
+                            where: { assigneeId: u.id },
+                            orderBy: { createdAt: 'desc' },
+                            select: { createdAt: true }
+                        });
+
                         return {
                             id: u.id,
+                            dutyOrder: u.dutyOrder ?? 999,
+                            inProgressTasks,
                             activeTasks,
-                            totalInShift
+                            totalInShift,
+                            lastAssignedTime: lastTicket ? lastTicket.createdAt.getTime() : 0
                         };
                     }));
 
-                    // Lọc những người chưa vượt trần maxConcurrentTasks
-                    const eligible = candidates.filter(c => c.activeTasks < targetMaxConcurrentTasks);
-                    const pool = eligible.length > 0 ? eligible : candidates; // Nếu tất cả đều chạm trần thì lấy từ danh sách chung
+                    // Loại bỏ những kỹ thuật viên đang bận đi hiện trường / việc kéo dài
+                    const candidates = candidatesRaw.filter((c): c is NonNullable<typeof c> => c !== null);
 
-                    if (assignmentMode === 'C') {
-                        // Chế độ C (Phản ứng nhanh): Sắp xếp theo ít việc dở dang nhất
-                        pool.sort((a, b) => a.activeTasks - b.activeTasks || a.totalInShift - b.totalInShift);
+                    if (candidates.length > 0) {
+                        // Lọc những người chưa vượt trần maxConcurrentTasks
+                        const eligible = candidates.filter(c => c.activeTasks < targetMaxConcurrentTasks);
+                        const pool = eligible.length > 0 ? eligible : candidates; // Nếu tất cả đều chạm trần thì lấy từ danh sách chung
+
+                        // Sắp xếp ứng viên đa tầng:
+                        // 1. Ưu tiên người không có việc IN_PROGRESS (0 < 1)
+                        // 2. Chế độ D: Cân bằng tổng việc trong khung (totalInShift) -> ít việc dở dang (activeTasks)
+                        //    Chế độ C: Ít việc dở dang (activeTasks) -> Cân bằng tổng việc (totalInShift)
+                        // 3. Thứ tự ưu tiên dutyOrder trên bảng trực ban (1 -> 2 -> 3...)
+                        // 4. Xoay vòng Round-Robin: Ai lâu nhất chưa nhận việc mới (lastAssignedTime nhỏ hơn)
+                        pool.sort((a, b) => {
+                        if (a.inProgressTasks !== b.inProgressTasks) {
+                            return a.inProgressTasks - b.inProgressTasks;
+                        }
+                        if (assignmentMode === 'D') {
+                            if (a.totalInShift !== b.totalInShift) {
+                                return a.totalInShift - b.totalInShift;
+                            }
+                            if (a.activeTasks !== b.activeTasks) {
+                                return a.activeTasks - b.activeTasks;
+                            }
+                        } else {
+                            if (a.activeTasks !== b.activeTasks) {
+                                return a.activeTasks - b.activeTasks;
+                            }
+                            if (a.totalInShift !== b.totalInShift) {
+                                return a.totalInShift - b.totalInShift;
+                            }
+                        }
+                        if (a.dutyOrder !== b.dutyOrder) {
+                            return a.dutyOrder - b.dutyOrder;
+                        }
+                        return a.lastAssignedTime - b.lastAssignedTime;
+                    });
+
                         finalAssignee = pool[0].id;
-                    } else if (assignmentMode === 'D') {
-                        // Chế độ D (Cân bằng công bằng 2 tầng):
-                        // Tầng 1: Lọc nhóm người có số việc dở dang ít nhất
-                        const minActive = Math.min(...pool.map(p => p.activeTasks));
-                        const bestActiveGroup = pool.filter(p => p.activeTasks === minActive);
-                        // Tầng 2: Trong nhóm rảnh nhất, chọn người có tổng số việc trong ca ít nhất
-                        bestActiveGroup.sort((a, b) => a.totalInShift - b.totalInShift);
-                        finalAssignee = bestActiveGroup[0].id;
                     }
                 }
             } else {
                 // Cách A (Tự nhận) và Cách B (Admin gán thủ công) -> Khởi tạo không có ai
                 finalAssignee = null;
+            }
+        }
+
+        // Nếu tạo phiếu với trạng thái IN_PROGRESS trực tiếp cho nhân viên, tự động tạm dừng việc IN_PROGRESS cũ
+        if (initialStatus === 'IN_PROGRESS' && finalAssignee) {
+            try {
+                const existingInProgress = await prisma.iTRequest.findMany({
+                    where: {
+                        assigneeId: finalAssignee,
+                        status: 'IN_PROGRESS'
+                    }
+                });
+                for (const oldTicket of existingInProgress) {
+                    await prisma.iTRequest.update({
+                        where: { id: oldTicket.id },
+                        data: { status: 'PAUSED' }
+                    });
+                    await prisma.requestMessage.create({
+                        data: {
+                            itRequestId: oldTicket.id,
+                            senderId: user.id,
+                            senderName: (user as any).name || user.username || 'Hệ thống',
+                            content: `⏸️ [TỰ ĐỘNG TẠM DỪNG]: Tạm dừng xử lý do bắt đầu tạo và xử lý việc mới: ${ten_loi}`,
+                            isSystem: true
+                        }
+                    });
+                }
+            } catch (pErr) {
+                console.error('Lỗi tự động tạm dừng việc cũ khi tạo việc mới:', pErr);
             }
         }
 
@@ -534,7 +627,7 @@ export async function POST(request: Request) {
                 dynamicFields: dynamicFields || {},
                 status: initialStatus,
                 startedAt: newStartedAt,
-                isFocusTask: Boolean(isFocusAssignment),
+                isFocusTask: Boolean(isFocusTask),
                 messages: {
                     create: [
                         {
@@ -752,7 +845,7 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { 
             id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields,
-            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images 
+            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images, isFocusTask
         } = body;
 
         if (!id) return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
@@ -791,6 +884,31 @@ export async function PUT(request: Request) {
         }
 
         if (action === 'ACCEPT_TRANSFER') {
+            try {
+                const existingInProgress = await prisma.iTRequest.findMany({
+                    where: {
+                        assigneeId: user.id,
+                        status: 'IN_PROGRESS',
+                        id: { not: id }
+                    }
+                });
+                for (const oldTicket of existingInProgress) {
+                    await prisma.iTRequest.update({
+                        where: { id: oldTicket.id },
+                        data: { status: 'PAUSED' }
+                    });
+                    await prisma.requestMessage.create({
+                        data: {
+                            itRequestId: oldTicket.id,
+                            senderId: user.id,
+                            senderName: (user as any).name || user.username || 'Hệ thống',
+                            content: `⏸️ [TỰ ĐỘNG TẠM DỪNG]: Tạm dừng xử lý do tiếp nhận chuyển giao phiếu khác: #${id.slice(-6)} (${ticket.ten_loi})`,
+                            isSystem: true
+                        }
+                    });
+                }
+            } catch (err) {}
+
             const updated = await prisma.iTRequest.update({
                 where: { id },
                 data: {
@@ -836,6 +954,7 @@ export async function PUT(request: Request) {
         let newStartedAt = ticket.startedAt;
         let newResolvedAt = ticket.resolvedAt;
         const newStatus = status !== undefined ? status : ticket.status;
+        const finalAssigneeId = assigneeId !== undefined ? assigneeId : ticket.assigneeId;
 
         // Phân quyền đổi assignee (Giao việc / Tự nhận)
         if (assigneeId !== undefined && assigneeId !== ticket.assigneeId) {
@@ -857,6 +976,36 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Nhiệm vụ của ai người đó mới được hoàn thành!' }, { status: 403 });
         }
 
+        // Đơn tác vụ: Nếu chuyển sang IN_PROGRESS, tự động tạm dừng (PAUSED) tất cả các việc IN_PROGRESS khác của nhân viên này
+        if (newStatus === 'IN_PROGRESS' && finalAssigneeId) {
+            try {
+                const existingInProgress = await prisma.iTRequest.findMany({
+                    where: {
+                        assigneeId: finalAssigneeId,
+                        status: 'IN_PROGRESS',
+                        id: { not: id }
+                    }
+                });
+                for (const oldTicket of existingInProgress) {
+                    await prisma.iTRequest.update({
+                        where: { id: oldTicket.id },
+                        data: { status: 'PAUSED' }
+                    });
+                    await prisma.requestMessage.create({
+                        data: {
+                            itRequestId: oldTicket.id,
+                            senderId: user.id,
+                            senderName: (user as any).name || user.username || 'Hệ thống',
+                            content: `⏸️ [TỰ ĐỘNG TẠM DỪNG]: Tạm dừng xử lý do chuyển sang thực hiện yêu cầu khác: #${id.slice(-6)} (${ticket.ten_loi})`,
+                            isSystem: true
+                        }
+                    });
+                }
+            } catch (pErr) {
+                console.error('Lỗi tự động tạm dừng việc cũ trong PUT:', pErr);
+            }
+        }
+
         if (newStatus === 'IN_PROGRESS' && ticket.status !== 'IN_PROGRESS' && !newStartedAt) {
             newStartedAt = new Date();
         }
@@ -875,6 +1024,7 @@ export async function PUT(request: Request) {
                 status: newStatus,
                 it_note: it_note !== undefined ? it_note : ticket.it_note,
                 assigneeId: assigneeId !== undefined ? assigneeId : ticket.assigneeId,
+                isFocusTask: isFocusTask !== undefined ? Boolean(isFocusTask) : ticket.isFocusTask,
                 startedAt: newStartedAt,
                 resolvedAt: newResolvedAt,
                 vendorId: vendorId !== undefined ? vendorId : ticket.vendorId,
@@ -885,6 +1035,95 @@ export async function PUT(request: Request) {
                 it_images: it_images !== undefined ? it_images : ticket.it_images,
             }
         });
+
+        // Xử lý khi thay đổi cờ "Đi khoa phòng / Xử lý kéo dài" (isFocusTask)
+        if (isFocusTask !== undefined && Boolean(isFocusTask) !== ticket.isFocusTask) {
+            const currentAssignee = updated.assigneeId || user.id;
+            try {
+                if (Boolean(isFocusTask) === true) {
+                    await prisma.user.update({
+                        where: { id: currentAssignee },
+                        data: {
+                            autoAssignDisabled: true,
+                            focusReason: `Đi khoa phòng: ${ticket.ten_loi.slice(0, 80)}`
+                        }
+                    });
+                    await prisma.requestMessage.create({
+                        data: {
+                            itRequestId: id,
+                            senderId: user.id,
+                            senderName: (user as any).name || user.username || 'Hệ thống',
+                            content: `🚶 [ĐI KHOA PHÒNG / KÉO DÀI]: Đã bật chế độ xử lý tại hiện trường. Tạm ngưng nhận chia việc tự động cho kỹ thuật viên này.`,
+                            isSystem: true
+                        }
+                    });
+                } else {
+                    const remainingTasks = await prisma.iTRequest.count({
+                        where: {
+                            assigneeId: currentAssignee,
+                            isFocusTask: true,
+                            status: { in: ['PENDING', 'IN_PROGRESS', 'TRANSFERRING'] },
+                            id: { not: id }
+                        }
+                    });
+                    if (remainingTasks === 0) {
+                        await prisma.user.update({
+                            where: { id: currentAssignee },
+                            data: {
+                                autoAssignDisabled: false,
+                                focusReason: null
+                            }
+                        });
+                    }
+                    await prisma.requestMessage.create({
+                        data: {
+                            itRequestId: id,
+                            senderId: user.id,
+                            senderName: (user as any).name || user.username || 'Hệ thống',
+                            content: `🏢 [TRỞ LẠI VĂN PHÒNG]: Đã tắt chế độ đi khoa phòng. Kỹ thuật viên sẵn sàng nhận việc tự động.`,
+                            isSystem: true
+                        }
+                    });
+                }
+            } catch (fErr) {
+                console.error('Lỗi cập nhật autoAssignDisabled khi đổi isFocusTask:', fErr);
+            }
+        }
+
+        // Tạo tin nhắn thông báo khi Tạm dừng xử lý (PAUSED)
+        if (newStatus === 'PAUSED' && ticket.status !== 'PAUSED') {
+            try {
+                const pauseReason = it_note ? `Lý do: ${it_note}` : 'Kỹ thuật viên tạm dừng xử lý công việc';
+                await prisma.requestMessage.create({
+                    data: {
+                        itRequestId: id,
+                        senderId: user.id,
+                        senderName: (user as any).name || user.username || 'Kỹ thuật viên',
+                        content: `⏸️ [TẠM DỪNG XỬ LÝ]: ${pauseReason}`,
+                        isSystem: true
+                    }
+                });
+            } catch (pErr) {
+                console.error('Lỗi tạo tin nhắn tạm dừng:', pErr);
+            }
+        }
+
+        // Tạo tin nhắn thông báo khi Tiếp tục xử lý (RESUME từ PAUSED sang IN_PROGRESS)
+        if (newStatus === 'IN_PROGRESS' && ticket.status === 'PAUSED') {
+            try {
+                await prisma.requestMessage.create({
+                    data: {
+                        itRequestId: id,
+                        senderId: user.id,
+                        senderName: (user as any).name || user.username || 'Kỹ thuật viên',
+                        content: `▶️ [TIẾP TỤC XỬ LÝ]: Kỹ thuật viên tiếp tục thực hiện yêu cầu này.`,
+                        isSystem: true
+                    }
+                });
+            } catch (pErr) {
+                console.error('Lỗi tạo tin nhắn tiếp tục:', pErr);
+            }
+        }
 
         // Tạo tin nhắn thông báo vào cuộc hội thoại khi chuyển trạng thái WAITING_VENDOR
         if (newStatus === 'WAITING_VENDOR' && ticket.status !== 'WAITING_VENDOR') {

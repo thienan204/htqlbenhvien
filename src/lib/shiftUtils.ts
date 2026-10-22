@@ -136,9 +136,10 @@ export function getCurrentHospitalShift(config?: HospitalShiftConfig, referenceD
         };
     }
 
-    // 2.3. Ca Chiều Hành chính (13:30 -> 16:50)
+    // 2.3. Ca Chiều Hành chính (13:30 -> 16:50/17:00)
+    // Gộp cả ngày hành chính: Mốc tính tải tính từ 07:00 sáng hôm nay để không bị reset lúc 13h30
     if (vn.timeMinutes >= afternoonStartMin && vn.timeMinutes < afternoonEndMin) {
-        const startTime = createVnDate(vn.year, vn.month, vn.day, Math.floor(afternoonStartMin / 60), afternoonStartMin % 60);
+        const startTime = createVnDate(vn.year, vn.month, vn.day, Math.floor(morningStartMin / 60), morningStartMin % 60);
         return {
             isOfficeHours: true,
             shiftType: 'OFFICE_AFTERNOON',

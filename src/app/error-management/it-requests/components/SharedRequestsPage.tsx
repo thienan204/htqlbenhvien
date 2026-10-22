@@ -72,7 +72,9 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         fetchTickets,
         handleUpdateTicket,
         handleDeleteTicket,
-        handleReceiveTicketById
+        handleReceiveTicketById,
+        handlePauseTicket,
+        handleResumeTicket
     } = useTickets(user, isAdmin, targetDepartment, {
         onSelectTicket: handleSelectTicket,
         onNavigateToMyTickets: handleNavigateToMyTickets
@@ -145,6 +147,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             ALL: baseTickets.length,
             PENDING: baseTickets.filter(t => t.status === 'PENDING').length,
             IN_PROGRESS: baseTickets.filter(t => t.status === 'IN_PROGRESS').length,
+            PAUSED: baseTickets.filter(t => t.status === 'PAUSED').length,
             WAITING_VENDOR: baseTickets.filter(t => t.status === 'WAITING_VENDOR').length,
             TRANSFERRING: baseTickets.filter(t => t.status === 'TRANSFERRING').length,
             RESOLVED: baseTickets.filter(t => t.status === 'RESOLVED').length,
@@ -470,6 +473,17 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 {
                                     label: (
                                         <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-purple-700">⏸️ Tạm dừng</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.PAUSED > 0 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.PAUSED}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'PAUSED'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
                                             <span className="font-medium text-orange-700">🏢 Chờ đối tác</span>
                                             <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.WAITING_VENDOR > 0 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
                                                 {statusCounts.WAITING_VENDOR}
@@ -549,6 +563,8 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         fetchITUsers();
                     }}
                     onReceiveTicket={handleReceiveTicketById}
+                    onPauseTicket={handlePauseTicket}
+                    onResumeTicket={handleResumeTicket}
                     onDeleteTicket={handleDeleteTicket}
                     onProcessClick={(ticket) => {
                         setSelectedTicket(ticket);

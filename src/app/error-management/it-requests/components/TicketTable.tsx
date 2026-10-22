@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge, Tooltip } from 'antd';
-import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge, Tooltip, Modal, Input } from 'antd';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -20,6 +20,8 @@ interface TicketTableProps {
     onFetchTickets: () => void;
     onDeleteTicket: (id: string) => void;
     onReceiveTicket?: (id: string) => Promise<void>;
+    onPauseTicket?: (ticket: Ticket, reason?: string) => Promise<void> | void;
+    onResumeTicket?: (ticket: Ticket) => Promise<void> | void;
     onProcessClick: (ticket: Ticket) => void;
     onEditClick?: (ticket: Ticket) => void;
     onChatClick?: (ticket: Ticket) => void;
@@ -36,6 +38,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     onFetchTickets,
     onDeleteTicket,
     onReceiveTicket,
+    onPauseTicket,
+    onResumeTicket,
     onProcessClick,
     onEditClick,
     onChatClick,
@@ -44,6 +48,35 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [resolvingId, setResolvingId] = useState<string | null>(null);
+    const [togglingOnSiteId, setTogglingOnSiteId] = useState<string | null>(null);
+
+    const handleToggleOnSite = async (ticket: Ticket) => {
+        const nextState = !ticket.isFocusTask;
+        setTogglingOnSiteId(ticket.id);
+        try {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: ticket.id,
+                    isFocusTask: nextState
+                })
+            });
+            if (res.ok) {
+                message.success(nextState 
+                    ? 'Đã bật chế độ Đi khoa phòng (Tạm ngưng nhận việc tự động)!' 
+                    : 'Đã tắt chế độ Đi khoa phòng (Sẵn sàng nhận việc tự động)!'
+                );
+                onFetchTickets();
+            } else {
+                message.error('Lỗi khi cập nhật trạng thái');
+            }
+        } catch (err) {
+            message.error('Lỗi kết nối khi cập nhật');
+        } finally {
+            setTogglingOnSiteId(null);
+        }
+    };
 
     const handleQuickResolve = async (id: string) => {
         setResolvingId(id);
@@ -129,9 +162,11 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                     <div>
                         <div className="font-medium text-slate-800 flex items-center gap-1.5 flex-wrap">
                             {record.isFocusTask && (
-                                <Tag color="purple" className="m-0 font-bold border-purple-300 bg-purple-50 text-purple-700 shadow-2xs">
-                                    🎯 Nhiệm vụ tập trung
-                                </Tag>
+                                <Tooltip title="Việc xử lý tại khoa phòng / kéo dài (Kỹ thuật viên đang tạm ngưng nhận chia việc tự động)">
+                                    <Tag color="purple" className="m-0 font-bold border-purple-300 bg-purple-50 text-purple-700 shadow-2xs inline-flex items-center gap-1 cursor-default">
+                                        <span>🚶 Đi khoa phòng / Kéo dài</span>
+                                    </Tag>
+                                </Tooltip>
                             )}
                             <span>{text}</span>
                         </div>
@@ -304,6 +339,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 let color = 'default';
                 let label = 'Chờ xử lý';
                 if (status === 'IN_PROGRESS') { color = 'blue'; label = 'Đang xử lý'; }
+                if (status === 'PAUSED') { color = 'purple'; label = 'Tạm dừng'; }
                 if (status === 'RESOLVED') { color = 'success'; label = 'Hoàn thành'; }
                 if (status === 'TRANSFERRING') { color = 'warning'; label = 'Chờ chuyển giao'; }
                 return <Tag color={color}>{label}</Tag>;
@@ -359,7 +395,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
         {
             title: 'Thao tác',
             key: 'action',
-            width: 120,
+            width: 145,
             fixed: 'right' as const,
             align: 'center' as const,
             onCell: () => ({
@@ -378,41 +414,100 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 const canQuickResolve = record.status !== 'RESOLVED' && !canReceive && isMyTask;
 
                 return (
-                    <div className="flex flex-col items-center justify-center gap-1.5 py-1">
-                        {/* Hàng trên: Nhận việc hoặc Đồng ý/Từ chối chuyển giao */}
-                        {(canReceive || isTransferringToMe) && (
-                            <div className="w-full flex justify-center">
-                                {canReceive && (
-                                    <Button 
-                                        size="small" 
-                                        type="primary" 
-                                        className="bg-green-600 hover:bg-green-500 whitespace-nowrap font-medium text-xs px-2.5"
-                                        onClick={() => handleReceiveTicket(record.id)}
-                                    >
-                                        Nhận việc
-                                    </Button>
-                                )}
+                    <div className="flex flex-col items-center justify-center gap-1.5 py-1 w-full">
+                        {/* 1. Nhận việc (khi chờ nhận) */}
+                        {canReceive && (
+                            <Button 
+                                size="small" 
+                                type="primary" 
+                                className="bg-green-600 hover:bg-green-500 whitespace-nowrap font-medium text-xs px-2.5 w-full max-w-[105px]"
+                                onClick={() => handleReceiveTicket(record.id)}
+                            >
+                                Nhận việc
+                            </Button>
+                        )}
 
-                                {isTransferringToMe && (
-                                    <div className="flex items-center justify-center gap-1 w-full">
-                                        <Button 
-                                            size="small" 
-                                            type="primary" 
-                                            className="bg-green-600 hover:bg-green-500 whitespace-nowrap text-xs px-2"
-                                            onClick={() => handleTransferResponse(record.id, 'ACCEPT_TRANSFER')}
-                                        >
-                                            Đồng ý
-                                        </Button>
-                                        <Button 
-                                            size="small" 
-                                            danger
-                                            className="whitespace-nowrap text-xs px-2"
-                                            onClick={() => handleTransferResponse(record.id, 'REJECT_TRANSFER')}
-                                        >
-                                            Từ chối
-                                        </Button>
-                                    </div>
-                                )}
+                        {/* 2. Tiếp tục (khi đang Tạm dừng) */}
+                        {record.status === 'PAUSED' && isMyTask && (
+                            <Button 
+                                size="small" 
+                                type="primary" 
+                                className="bg-amber-600 hover:bg-amber-500 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 w-full max-w-[105px]"
+                                onClick={() => onResumeTicket ? onResumeTicket(record) : handleReceiveTicket(record.id)}
+                            >
+                                <PlayCircleOutlined /> Tiếp tục
+                            </Button>
+                        )}
+
+                        {/* 3. Tạm dừng (khi đang Xử lý - 1 row riêng) */}
+                        {record.status === 'IN_PROGRESS' && isMyTask && onPauseTicket && (
+                            <Button 
+                                size="small" 
+                                type="default" 
+                                className="text-amber-700 border-amber-300 hover:bg-amber-50 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 w-full max-w-[105px]"
+                                onClick={() => {
+                                    let reasonText = '';
+                                    Modal.confirm({
+                                        title: <span className="text-amber-700 font-bold">⏸️ TẠM DỪNG XỬ LÝ PHIẾU NÀY</span>,
+                                        content: (
+                                            <div className="py-2 space-y-2 text-xs">
+                                                <p>Nhập lý do tạm dừng (đang vướng, chờ khoa phản hồi, chờ dữ liệu...):</p>
+                                                <Input.TextArea 
+                                                    rows={3} 
+                                                    placeholder="VD: Đã làm được 50%, đang chờ Khoa Dược gửi lại mẫu..." 
+                                                    onChange={(e) => { reasonText = e.target.value; }}
+                                                />
+                                            </div>
+                                        ),
+                                        okText: 'Tạm dừng',
+                                        cancelText: 'Hủy bỏ',
+                                        onOk: () => {
+                                            onPauseTicket(record, reasonText);
+                                        }
+                                    });
+                                }}
+                            >
+                                <PauseCircleOutlined /> Tạm dừng
+                            </Button>
+                        )}
+
+                        {/* 4. Đi khoa / Về VP (khi đang Xử lý - 1 row riêng) */}
+                        {record.status === 'IN_PROGRESS' && isMyTask && (
+                            <Tooltip title={record.isFocusTask ? "Đã xong việc tại khoa phòng, bấm để báo về văn phòng & tiếp tục nhận phân việc tự động" : "Bấm khi rời phòng xuống khoa phòng để tạm ngưng nhận chia việc tự động"}>
+                                <Button 
+                                    size="small" 
+                                    loading={togglingOnSiteId === record.id}
+                                    type={record.isFocusTask ? "primary" : "default"} 
+                                    className={record.isFocusTask 
+                                        ? "!bg-purple-600 hover:!bg-purple-500 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 shadow-2xs w-full max-w-[105px]" 
+                                        : "text-purple-700 border-purple-300 hover:bg-purple-50 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 w-full max-w-[105px]"
+                                    }
+                                    onClick={() => handleToggleOnSite(record)}
+                                >
+                                    {record.isFocusTask ? '🏢 Về VP' : '🚶 Đi khoa'}
+                                </Button>
+                            </Tooltip>
+                        )}
+
+                        {/* Chuyển giao: Đồng ý / Từ chối */}
+                        {isTransferringToMe && (
+                            <div className="flex items-center justify-center gap-1 w-full max-w-[105px]">
+                                <Button 
+                                    size="small" 
+                                    type="primary" 
+                                    className="bg-green-600 hover:bg-green-500 whitespace-nowrap text-xs px-1.5 flex-1"
+                                    onClick={() => handleTransferResponse(record.id, 'ACCEPT_TRANSFER')}
+                                >
+                                    Đồng ý
+                                </Button>
+                                <Button 
+                                    size="small" 
+                                    danger
+                                    className="whitespace-nowrap text-xs px-1.5 flex-1"
+                                    onClick={() => handleTransferResponse(record.id, 'REJECT_TRANSFER')}
+                                >
+                                    Từ chối
+                                </Button>
                             </div>
                         )}
 
@@ -484,15 +579,15 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                 type="button"
                                 disabled={resolvingId === record.id}
                                 onClick={() => handleQuickResolve(record.id)}
-                                className="inline-flex items-center justify-center gap-1.5 px-3 py-0.5 text-xs font-semibold rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-300 hover:border-emerald-600 shadow-2xs hover:shadow transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50 mt-1"
+                                className="inline-flex items-center justify-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-300 hover:border-emerald-600 shadow-2xs hover:shadow transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50 mt-0.5 w-full max-w-[105px] whitespace-nowrap"
                                 title="Xác nhận hoàn thành nhiệm vụ này"
                             >
                                 {resolvingId === record.id ? (
-                                    <LoadingOutlined className="text-xs animate-spin" />
+                                    <LoadingOutlined className="text-xs animate-spin shrink-0" />
                                 ) : (
-                                    <CheckCircleOutlined className="text-xs text-emerald-600 group-hover:text-white" />
+                                    <CheckCircleOutlined className="text-xs text-emerald-600 group-hover:text-white shrink-0" />
                                 )}
-                                <span>Hoàn thành</span>
+                                <span className="whitespace-nowrap">Hoàn thành</span>
                             </button>
                         )}
                     </div>

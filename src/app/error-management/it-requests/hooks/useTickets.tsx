@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { message, notification } from 'antd';
+import { message, notification, Modal } from 'antd';
 import { Ticket } from '../types';
 import { playNotificationSound } from '@/utils/audioUtils';
 import {
@@ -165,7 +165,7 @@ export const useTickets = (
     const prevUnassignedCountRef = useRef<number | null>(null);
     const prevMyPendingCountRef = useRef<number | null>(null);
 
-    const quickReceiveTicket = async (ticket: Ticket) => {
+    const executeReceiveTicket = async (ticket: Ticket) => {
         try {
             let payload: any = {};
             if (ticket.status === 'TRANSFERRING' && ticket.transferToId === user?.id) {
@@ -183,9 +183,9 @@ export const useTickets = (
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
-                message.success('Đã nhận việc thành công!');
+                message.success('Đã bắt đầu xử lý yêu cầu!');
                 notification.destroy('unaccepted-ticket-warning');
-                // Cập nhật ngay lập tức state (Optimistic UI)
+                // Cập nhật ngay lập tức state (Optimistic UI): Việc cũ chuyển sang PAUSED, việc mới sang IN_PROGRESS
                 setTickets(prev => prev.map(t => {
                     if (t.id === ticket.id) {
                         return {
@@ -197,14 +197,49 @@ export const useTickets = (
                             startedAt: t.startedAt || new Date().toISOString()
                         };
                     }
+                    if (t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== ticket.id) {
+                        return {
+                            ...t,
+                            status: 'PAUSED'
+                        };
+                    }
                     return t;
                 }));
                 fetchTickets(true);
             } else {
-                message.error('Lỗi khi nhận việc');
+                message.error('Lỗi khi tiếp nhận xử lý');
             }
         } catch (err) {
-            message.error('Lỗi kết nối khi nhận việc');
+            message.error('Lỗi kết nối khi tiếp nhận xử lý');
+        }
+    };
+
+    const quickReceiveTicket = async (ticket: Ticket) => {
+        const activeTicket = tickets.find(t => t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== ticket.id);
+        if (activeTicket) {
+            Modal.confirm({
+                title: <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG VIỆC HIỆN TẠI ĐỂ XỬ LÝ VIỆC NÀY?</span>,
+                content: (
+                    <div className="py-2 text-slate-700 space-y-2 text-xs">
+                        <p>Bạn hiện đang có một việc đang xử lý:</p>
+                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                            <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                            <div><b>Lỗi:</b> {activeTicket.ten_loi}</div>
+                            <div><b>Khoa:</b> {activeTicket.ten_khoa || activeTicket.ma_khoa}</div>
+                        </div>
+                        <p className="text-slate-500 mt-1">
+                            Theo quy định, mỗi kỹ thuật viên chỉ tập trung <strong>1 việc tại một thời điểm</strong>. Phiếu cũ sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> (vẫn lưu lại tiến độ và do bạn phụ trách) để bạn thực hiện việc này.
+                        </p>
+                    </div>
+                ),
+                okText: 'Đồng ý & Bắt đầu',
+                cancelText: 'Hủy bỏ',
+                onOk: async () => {
+                    await executeReceiveTicket(ticket);
+                }
+            });
+        } else {
+            await executeReceiveTicket(ticket);
         }
     };
 
@@ -213,33 +248,120 @@ export const useTickets = (
         if (found) {
             await quickReceiveTicket(found);
         } else {
-            try {
-                const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id,
-                        assigneeId: user?.id,
-                        status: 'IN_PROGRESS'
-                    })
-                });
-                if (res.ok) {
-                    message.success('Đã nhận việc thành công!');
-                    notification.destroy('unaccepted-ticket-warning');
-                    setTickets(prev => prev.map(t => t.id === id ? {
-                        ...t,
-                        status: 'IN_PROGRESS',
-                        assigneeId: user?.id,
-                        assigneeName: user?.name || user?.username,
-                        startedAt: t.startedAt || new Date().toISOString()
-                    } : t));
-                    fetchTickets(true);
-                } else {
-                    message.error('Lỗi khi nhận việc');
+            const activeTicket = tickets.find(t => t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== id);
+            const doReceive = async () => {
+                try {
+                    const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id,
+                            assigneeId: user?.id,
+                            status: 'IN_PROGRESS'
+                        })
+                    });
+                    if (res.ok) {
+                        message.success('Đã bắt đầu xử lý yêu cầu!');
+                        notification.destroy('unaccepted-ticket-warning');
+                        setTickets(prev => prev.map(t => {
+                            if (t.id === id) {
+                                return {
+                                    ...t,
+                                    status: 'IN_PROGRESS',
+                                    assigneeId: user?.id,
+                                    assigneeName: user?.name || user?.username,
+                                    startedAt: t.startedAt || new Date().toISOString()
+                                };
+                            }
+                            if (t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== id) {
+                                return { ...t, status: 'PAUSED' };
+                            }
+                            return t;
+                        }));
+                        fetchTickets(true);
+                    } else {
+                        message.error('Lỗi khi nhận việc');
+                    }
+                } catch (err) {
+                    message.error('Lỗi kết nối khi nhận việc');
                 }
-            } catch (err) {
-                message.error('Lỗi kết nối khi nhận việc');
+            };
+
+            if (activeTicket) {
+                Modal.confirm({
+                    title: <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG VIỆC HIỆN TẠI ĐỂ XỬ LÝ VIỆC NÀY?</span>,
+                    content: (
+                        <div className="py-2 text-slate-700 space-y-2 text-xs">
+                            <p>Bạn hiện đang có một việc đang xử lý:</p>
+                            <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                                <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                                <div><b>Lỗi:</b> {activeTicket.ten_loi}</div>
+                                <div><b>Khoa:</b> {activeTicket.ten_khoa || activeTicket.ma_khoa}</div>
+                            </div>
+                            <p className="text-slate-500 mt-1">
+                                Phiếu cũ sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> để bạn bắt đầu việc này.
+                            </p>
+                        </div>
+                    ),
+                    okText: 'Đồng ý & Bắt đầu',
+                    cancelText: 'Hủy bỏ',
+                    onOk: doReceive
+                });
+            } else {
+                await doReceive();
             }
+        }
+    };
+
+    const handlePauseTicket = async (ticket: Ticket, reason?: string) => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: ticket.id,
+                    status: 'PAUSED',
+                    it_note: reason || ticket.it_note || 'Tạm dừng xử lý'
+                })
+            });
+            if (res.ok) {
+                message.success('Đã tạm dừng công việc!');
+                setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, status: 'PAUSED', it_note: reason || t.it_note } : t));
+                fetchTickets(true);
+            } else {
+                message.error('Lỗi khi tạm dừng công việc');
+            }
+        } catch (err) {
+            message.error('Lỗi kết nối khi tạm dừng');
+        }
+    };
+
+    const handleResumeTicket = async (ticket: Ticket) => {
+        const activeTicket = tickets.find(t => t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== ticket.id);
+        if (activeTicket) {
+            Modal.confirm({
+                title: <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG PHIẾU HIỆN TẠI ĐỂ TIẾP TỤC VIỆC NÀY?</span>,
+                content: (
+                    <div className="py-2 text-slate-700 space-y-2 text-xs">
+                        <p>Bạn hiện đang xử lý phiếu:</p>
+                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                            <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                            <div><b>Lỗi:</b> {activeTicket.ten_loi}</div>
+                            <div><b>Khoa:</b> {activeTicket.ten_khoa || activeTicket.ma_khoa}</div>
+                        </div>
+                        <p className="text-slate-500 mt-1">
+                            Hệ thống sẽ chuyển phiếu trên về trạng thái <strong>Tạm dừng</strong> để bạn quay lại tiếp tục phiếu này.
+                        </p>
+                    </div>
+                ),
+                okText: 'Đồng ý & Tiếp tục',
+                cancelText: 'Hủy bỏ',
+                onOk: async () => {
+                    await executeReceiveTicket(ticket);
+                }
+            });
+        } else {
+            await executeReceiveTicket(ticket);
         }
     };
 
@@ -401,6 +523,7 @@ export const useTickets = (
                 status: values.status,
                 it_note: values.it_note,
                 assigneeId: values.assigneeId || null,
+                isFocusTask: values.isFocusTask !== undefined ? values.isFocusTask : selectedTicket.isFocusTask,
                 vendorId: values.vendorId || null,
                 vendorName: values.vendorName || null,
                 vendorTicketCode: values.vendorTicketCode || null,
@@ -465,6 +588,8 @@ export const useTickets = (
         handleUpdateTicket,
         handleDeleteTicket,
         quickReceiveTicket,
-        handleReceiveTicketById
+        handleReceiveTicketById,
+        handlePauseTicket,
+        handleResumeTicket
     };
 };
