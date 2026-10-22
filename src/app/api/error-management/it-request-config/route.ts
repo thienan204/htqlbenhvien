@@ -146,6 +146,7 @@ export async function GET(request: Request) {
             telegramChatId: config.telegramChatId || '',
             zaloEnabled: Boolean(config.zaloEnabled),
             zaloWebhookUrl: config.zaloWebhookUrl || '',
+            saveAssignReason: config.saveAssignReason !== undefined ? Boolean(config.saveAssignReason) : true,
             notificationSound: config.notificationSound || { type: 'DEFAULT', url: '', duration: 7 }
         });
     } catch (error: any) {
@@ -194,6 +195,7 @@ export async function POST(request: Request) {
             telegramChatId,
             zaloEnabled,
             zaloWebhookUrl, 
+            saveAssignReason,
             notificationSound 
         } = body;
 
@@ -247,6 +249,7 @@ export async function POST(request: Request) {
             telegramChatId: isAdmin && telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId,
             zaloEnabled: isAdmin && zaloEnabled !== undefined ? Boolean(zaloEnabled) : Boolean(existingConfig.zaloEnabled),
             zaloWebhookUrl: isAdmin && zaloWebhookUrl !== undefined ? zaloWebhookUrl.trim() : (existingConfig.zaloWebhookUrl || ''),
+            saveAssignReason: isAdmin && saveAssignReason !== undefined ? Boolean(saveAssignReason) : (existingConfig.saveAssignReason !== undefined ? Boolean(existingConfig.saveAssignReason) : true),
             notificationSound: notificationSound !== undefined ? notificationSound : (existingConfig.notificationSound || { type: 'DEFAULT', url: '', duration: 7 })
         };
 

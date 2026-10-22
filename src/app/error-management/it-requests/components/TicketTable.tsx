@@ -187,9 +187,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                         );
                                     })()}
                                     {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 && (() => {
-                                        const attachmentKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm'];
+                                        const excludeKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm', 'Mã LK', 'Lý do phân việc', 'assignReason', 'Lý do tạm dừng', 'pauseReason'];
                                         return Object.entries(record.dynamicFields)
-                                            .filter(([k]) => !attachmentKeys.includes(k) && k !== 'Mã LK')
+                                            .filter(([k]) => !excludeKeys.includes(k))
                                             .map(([k, v]) => {
                                                 if (k === 'SĐT') {
                                                     return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
@@ -251,9 +251,29 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 if (record.status === 'TRANSFERRING' && record.transferToName) {
                     return <Tag color="warning" className="whitespace-normal leading-tight py-1">{record.assigneeName} ➜ {record.transferToName}</Tag>
                 }
+                const assignReason = record.dynamicFields?.['Lý do phân việc'] || record.dynamicFields?.['assignReason'];
+                const canViewReason = user?.role === 'ADMIN' || user?.role === 'CNTT' || (targetDepartment && user?.role === targetDepartment);
+
                 return (
                     <div className="flex flex-col items-start gap-1">
-                        <Tag color="purple">{record.assigneeName}</Tag>
+                        <div className="flex items-center gap-1 flex-wrap">
+                            <Tag color="purple">{record.assigneeName}</Tag>
+                            {canViewReason && assignReason && (
+                                <Tooltip 
+                                    placement="topLeft"
+                                    styles={{ container: { maxWidth: 450 } }}
+                                    title={
+                                        <div className="whitespace-pre-line text-xs py-1 leading-relaxed font-sans text-slate-100 max-w-[450px]">
+                                            {assignReason}
+                                        </div>
+                                    }
+                                >
+                                    <span className="cursor-help inline-flex items-center gap-0.5 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-1.5 py-0.2 shadow-2xs transition-colors">
+                                        🤖 Lý do
+                                    </span>
+                                </Tooltip>
+                            )}
+                        </div>
                         {record.assigneePhone && (
                             <div className="text-[11px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-sm">
                                 📞 {record.assigneePhone}
@@ -352,9 +372,19 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             width: 300,
             render: (text: string, record: Ticket) => {
                 const hasImages = Array.isArray(record.it_images) && record.it_images.length > 0;
+                const pauseReason = record.dynamicFields?.['Lý do tạm dừng'] || record.dynamicFields?.['pauseReason'];
                 return (
                     <div className="space-y-1.5">
-                        <div className="text-slate-600 italic whitespace-pre-wrap">{text || '-'}</div>
+                        {text ? (
+                            <div className="text-slate-700 whitespace-pre-wrap leading-relaxed">{text}</div>
+                        ) : (
+                            (!pauseReason || record.status !== 'PAUSED') && <div className="text-slate-400 italic">-</div>
+                        )}
+                        {record.status === 'PAUSED' && pauseReason && (
+                            <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 leading-relaxed">
+                                ⏸️ <b>Lý do tạm dừng:</b> {pauseReason}
+                            </div>
+                        )}
                         {hasImages && (
                             <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
                                 <AntImage.PreviewGroup>

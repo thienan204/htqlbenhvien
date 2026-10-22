@@ -315,18 +315,27 @@ export const useTickets = (
 
     const handlePauseTicket = async (ticket: Ticket, reason?: string) => {
         try {
+            const pauseReasonText = reason?.trim() || 'Tạm dừng xử lý';
             const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: ticket.id,
                     status: 'PAUSED',
-                    it_note: reason || ticket.it_note || 'Tạm dừng xử lý'
+                    pauseReason: pauseReasonText
                 })
             });
             if (res.ok) {
                 message.success('Đã tạm dừng công việc!');
-                setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, status: 'PAUSED', it_note: reason || t.it_note } : t));
+                setTickets(prev => prev.map(t => t.id === ticket.id ? { 
+                    ...t, 
+                    status: 'PAUSED',
+                    dynamicFields: {
+                        ...(t.dynamicFields || {}),
+                        'Lý do tạm dừng': pauseReasonText,
+                        pauseReason: pauseReasonText
+                    }
+                } : t));
                 fetchTickets(true);
             } else {
                 message.error('Lỗi khi tạm dừng công việc');

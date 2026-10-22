@@ -160,7 +160,7 @@ export async function POST(request: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action, targetDepartment = 'CNTT', selfAssign, isFocusTask, focusReason } = body;
+        let { ma_ba, ten_loi, assigneeId, dynamicFields, category, nguoi_bao_id, sdt, xmlErrorId, action, targetDepartment = 'CNTT', selfAssign, isFocusTask, focusReason } = body;
 
         let ma_khoa = body.ma_khoa;
         if (!['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
@@ -190,6 +190,7 @@ export async function POST(request: Request) {
         let targetMakeupWorkdays: string[] = [];
         let targetNoStaffWarningEnabled = true;
         let targetNoStaffWarningMessage = 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!';
+        let targetSaveAssignReason = true;
 
         if (configRule && configRule.logicConfig) {
             const config: any = configRule.logicConfig;
@@ -209,6 +210,7 @@ export async function POST(request: Request) {
                 if (Array.isArray(config.makeupWorkdays)) targetMakeupWorkdays = config.makeupWorkdays;
                 if (config.noStaffWarningEnabled !== undefined) targetNoStaffWarningEnabled = Boolean(config.noStaffWarningEnabled);
                 if (config.noStaffWarningMessage) targetNoStaffWarningMessage = config.noStaffWarningMessage;
+                if (config.saveAssignReason !== undefined) targetSaveAssignReason = Boolean(config.saveAssignReason);
             }
         }
 
@@ -308,6 +310,42 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: result.error || 'Gửi tin nhắn Zalo thất bại' }, { status: 400 });
             }
             return NextResponse.json({ success: true, message: 'Đã gửi tin nhắn thử nghiệm thành công vào nhóm Zalo!' });
+        }
+
+        if (action === 'CLEAR_ASSIGN_REASONS') {
+            const isITStaff = user.role === targetDepartment || user.role === 'ADMIN';
+            if (!isITStaff) {
+                return NextResponse.json({ error: 'Bạn không có quyền thực hiện thao tác này!' }, { status: 403 });
+            }
+            try {
+                const allTickets = await prisma.iTRequest.findMany({
+                    where: { targetDepartment },
+                    select: { id: true, dynamicFields: true }
+                });
+                let cleanedCount = 0;
+                for (const t of allTickets) {
+                    if (t.dynamicFields && typeof t.dynamicFields === 'object') {
+                        const fields = { ...(t.dynamicFields as any) };
+                        if (fields['Lý do phân việc'] || fields['assignReason']) {
+                            delete fields['Lý do phân việc'];
+                            delete fields['assignReason'];
+                            await prisma.iTRequest.update({
+                                where: { id: t.id },
+                                data: { dynamicFields: fields }
+                            });
+                            cleanedCount++;
+                        }
+                    }
+                }
+                return NextResponse.json({ 
+                    success: true, 
+                    count: cleanedCount, 
+                    message: `Đã dọn dẹp sạch lý do phân việc của ${cleanedCount} phiếu thành công!` 
+                });
+            } catch (clearErr: any) {
+                console.error('Lỗi khi xóa lý do phân việc:', clearErr);
+                return NextResponse.json({ error: 'Lỗi trong quá trình dọn dẹp dữ liệu' }, { status: 500 });
+            }
         }
 
         if (action === 'PING' && xmlErrorId) {
@@ -460,6 +498,8 @@ export async function POST(request: Request) {
                     },
                     select: {
                         id: true,
+                        name: true,
+                        username: true,
                         dutyOrder: true
                     },
                     orderBy: {
@@ -471,31 +511,27 @@ export async function POST(request: Request) {
                     // Mốc bắt đầu của ca trực / khung hành chính hiện tại
                     const shiftStart = currentShift.startTime;
 
-                    // Tính tải chi tiết cho từng ứng viên
+                    // Tính tải chi tiết và lấy công việc hiện tại của từng nhân viên
                     const candidatesRaw = await Promise.all(availableUsers.map(async (u) => {
-                        // 0. Kiểm tra xem kỹ thuật viên có đang có việc "Đi khoa phòng / Xử lý kéo dài" (isFocusTask: true) đang IN_PROGRESS không
-                        const isBusyOnSite = await prisma.iTRequest.findFirst({
+                        const staffName = u.name || u.username;
+
+                        // 0. Lấy chi tiết công việc đang xử lý trực tiếp (IN_PROGRESS) nếu có
+                        const currentActiveTask = await prisma.iTRequest.findFirst({
                             where: {
                                 assigneeId: u.id,
-                                status: 'IN_PROGRESS',
+                                status: 'IN_PROGRESS'
+                            },
+                            select: {
+                                ten_loi: true,
+                                ma_khoa: true,
                                 isFocusTask: true
                             }
                         });
-                        if (isBusyOnSite) {
-                            return null; // Đang đi hiện trường / việc kéo dài -> Tạm ngưng nhận chia việc tự động
-                        }
+
+                        const isBusyOnSite = Boolean(currentActiveTask?.isFocusTask);
 
                         // 1. Số việc đang xử lý trực tiếp (IN_PROGRESS)
-                        const inProgressTasks = await prisma.iTRequest.count({
-                            where: {
-                                assigneeId: u.id,
-                                status: 'IN_PROGRESS',
-                                AND: [
-                                    { OR: [{ vendorId: null }, { vendorId: '' }] },
-                                    { OR: [{ vendorName: null }, { vendorName: '' }] }
-                                ]
-                            }
-                        });
+                        const inProgressTasks = currentActiveTask ? 1 : 0;
 
                         // 2. Số việc dở dang hiện tại (PENDING, IN_PROGRESS, PAUSED)
                         const activeTasks = await prisma.iTRequest.count({
@@ -531,6 +567,9 @@ export async function POST(request: Request) {
 
                         return {
                             id: u.id,
+                            name: staffName,
+                            isBusyOnSite,
+                            currentActiveTask,
                             dutyOrder: u.dutyOrder ?? 999,
                             inProgressTasks,
                             activeTasks,
@@ -540,7 +579,7 @@ export async function POST(request: Request) {
                     }));
 
                     // Loại bỏ những kỹ thuật viên đang bận đi hiện trường / việc kéo dài
-                    const candidates = candidatesRaw.filter((c): c is NonNullable<typeof c> => c !== null);
+                    const candidates = candidatesRaw.filter(c => !c.isBusyOnSite);
 
                     if (candidates.length > 0) {
                         // Lọc những người chưa vượt trần maxConcurrentTasks
@@ -554,31 +593,70 @@ export async function POST(request: Request) {
                         // 3. Thứ tự ưu tiên dutyOrder trên bảng trực ban (1 -> 2 -> 3...)
                         // 4. Xoay vòng Round-Robin: Ai lâu nhất chưa nhận việc mới (lastAssignedTime nhỏ hơn)
                         pool.sort((a, b) => {
-                        if (a.inProgressTasks !== b.inProgressTasks) {
-                            return a.inProgressTasks - b.inProgressTasks;
-                        }
-                        if (assignmentMode === 'D') {
-                            if (a.totalInShift !== b.totalInShift) {
-                                return a.totalInShift - b.totalInShift;
+                            if (a.inProgressTasks !== b.inProgressTasks) {
+                                return a.inProgressTasks - b.inProgressTasks;
                             }
-                            if (a.activeTasks !== b.activeTasks) {
-                                return a.activeTasks - b.activeTasks;
+                            if (assignmentMode === 'D') {
+                                if (a.totalInShift !== b.totalInShift) {
+                                    return a.totalInShift - b.totalInShift;
+                                }
+                                if (a.activeTasks !== b.activeTasks) {
+                                    return a.activeTasks - b.activeTasks;
+                                }
+                            } else {
+                                if (a.activeTasks !== b.activeTasks) {
+                                    return a.activeTasks - b.activeTasks;
+                                }
+                                if (a.totalInShift !== b.totalInShift) {
+                                    return a.totalInShift - b.totalInShift;
+                                }
                             }
-                        } else {
-                            if (a.activeTasks !== b.activeTasks) {
-                                return a.activeTasks - b.activeTasks;
+                            if (a.dutyOrder !== b.dutyOrder) {
+                                return a.dutyOrder - b.dutyOrder;
                             }
-                            if (a.totalInShift !== b.totalInShift) {
-                                return a.totalInShift - b.totalInShift;
-                            }
-                        }
-                        if (a.dutyOrder !== b.dutyOrder) {
-                            return a.dutyOrder - b.dutyOrder;
-                        }
-                        return a.lastAssignedTime - b.lastAssignedTime;
-                    });
+                            return a.lastAssignedTime - b.lastAssignedTime;
+                        });
 
                         finalAssignee = pool[0].id;
+
+                        // Tạo lý do phân việc chi tiết nếu bật cấu hình
+                        if (targetSaveAssignReason) {
+                            const winner = pool[0];
+                            const modeTitle = assignmentMode === 'D' ? 'Cân bằng công bằng (2 tầng)' : 'Phản ứng nhanh (Tốc độ)';
+                            
+                            const otherStatusLines = candidatesRaw
+                                .filter(c => c.id !== winner.id)
+                                .map(c => {
+                                    if (c.isBusyOnSite && c.currentActiveTask) {
+                                        return ` • ${c.name}: Đang đi khoa phòng xử lý "${c.currentActiveTask.ten_loi}" (${c.currentActiveTask.ma_khoa || 'Khoa'}), tổng ca: ${c.totalInShift} việc`;
+                                    }
+                                    if (c.currentActiveTask) {
+                                        return ` • ${c.name}: Đang xử lý "${c.currentActiveTask.ten_loi}" (${c.currentActiveTask.ma_khoa || 'Khoa'}), tổng ca: ${c.totalInShift} việc`;
+                                    }
+                                    return ` • ${c.name}: Dở dang ${c.activeTasks} việc, tổng ca: ${c.totalInShift} việc`;
+                                });
+
+                            const reasonLines = [
+                                `🤖 CĂN CỨ TỰ ĐỘNG PHÂN VIỆC [${modeTitle.toUpperCase()}]`,
+                                `─────────────────────────────────────`,
+                                `✅ ĐƯỢC CHỌN: ${winner.name}`,
+                                ` • Trạng thái: ${winner.inProgressTasks === 0 ? 'Đang rảnh tay (0 việc đang xử lý)' : `${winner.inProgressTasks} việc đang xử lý`}`,
+                                ` • Tải trong ca: Đã nhận ${winner.totalInShift} việc (${assignmentMode === 'D' ? 'thấp nhất ca' : 'tổng ca'})`,
+                                ` • Tồn đọng: ${winner.activeTasks} việc dở dang`,
+                                ` • Trực ban: Đến lượt xoay vòng Round-Robin`,
+                                ...(otherStatusLines.length > 0 ? [
+                                    `\n📊 TÌNH TRẠNG CÁC NHÂN VIÊN KHÁC LÚC PHÂN VIỆC:`,
+                                    ...otherStatusLines
+                                ] : []),
+                                `─────────────────────────────────────`,
+                                `👉 Quyết định: Phân công cho ${winner.name} là tối ưu và công bằng nhất.`
+                            ];
+
+                            const autoReason = reasonLines.join('\n');
+                            if (!dynamicFields) dynamicFields = {};
+                            dynamicFields['Lý do phân việc'] = autoReason;
+                            dynamicFields['assignReason'] = autoReason;
+                        }
                     }
                 }
             } else {
@@ -632,9 +710,9 @@ export async function POST(request: Request) {
                     create: [
                         {
                             senderId: nguoi_bao_id || user.id,
-                            senderName: dynamicFields['Người báo'] || (user as any).name || user.username,
+                            senderName: dynamicFields?.['Người báo'] || (user as any).name || user.username,
                             content: ten_loi,
-                            imageUrl: dynamicFields['Hình ảnh đính kèm'] && dynamicFields['Hình ảnh đính kèm'].length > 0 ? dynamicFields['Hình ảnh đính kèm'][0] : null,
+                            imageUrl: dynamicFields?.['Hình ảnh đính kèm'] && dynamicFields['Hình ảnh đính kèm']?.length > 0 ? dynamicFields['Hình ảnh đính kèm'][0] : null,
                             readBy: [user.id]
                         }
                     ]
@@ -845,7 +923,8 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { 
             id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields,
-            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images, isFocusTask
+            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images, isFocusTask,
+            pauseReason
         } = body;
 
         if (!id) return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
@@ -1023,6 +1102,9 @@ export async function PUT(request: Request) {
             data: {
                 status: newStatus,
                 it_note: it_note !== undefined ? it_note : ticket.it_note,
+                dynamicFields: (newStatus === 'PAUSED' && pauseReason) 
+                    ? { ...(ticket.dynamicFields as any || {}), 'Lý do tạm dừng': pauseReason, pauseReason }
+                    : (dynamicFields !== undefined ? dynamicFields : ticket.dynamicFields),
                 assigneeId: assigneeId !== undefined ? assigneeId : ticket.assigneeId,
                 isFocusTask: isFocusTask !== undefined ? Boolean(isFocusTask) : ticket.isFocusTask,
                 startedAt: newStartedAt,
@@ -1093,13 +1175,14 @@ export async function PUT(request: Request) {
         // Tạo tin nhắn thông báo khi Tạm dừng xử lý (PAUSED)
         if (newStatus === 'PAUSED' && ticket.status !== 'PAUSED') {
             try {
-                const pauseReason = it_note ? `Lý do: ${it_note}` : 'Kỹ thuật viên tạm dừng xử lý công việc';
+                const finalPauseReason = pauseReason || it_note;
+                const reasonText = finalPauseReason ? `Lý do: ${finalPauseReason}` : 'Kỹ thuật viên tạm dừng xử lý công việc';
                 await prisma.requestMessage.create({
                     data: {
                         itRequestId: id,
                         senderId: user.id,
                         senderName: (user as any).name || user.username || 'Kỹ thuật viên',
-                        content: `⏸️ [TẠM DỪNG XỬ LÝ]: ${pauseReason}`,
+                        content: `⏸️ [TẠM DỪNG XỬ LÝ]: ${reasonText}`,
                         isSystem: true
                     }
                 });
