@@ -364,7 +364,10 @@ export function ChatTab({
 
             {/* Quick Replies */}
             <div className="flex flex-wrap gap-2 mb-2">
-                {(chatCategory === 'SOFTWARE' ? softwareErrors : hardwareErrors).map(reply => (
+                {(chatCategory === 'SOFTWARE' ? softwareErrors : hardwareErrors)
+                    ?.map((item: any) => typeof item === 'string' ? item : item?.name)
+                    ?.filter((reply: any): reply is string => typeof reply === 'string' && reply.trim().length > 0)
+                    ?.map((reply: string) => (
                     <div 
                         key={reply} 
                         onClick={() => setChatText(reply)}

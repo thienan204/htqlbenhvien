@@ -67,7 +67,28 @@ function extractDateString(val: any): string {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { date, maKhoa, services, patientShifts = {}, serviceStaffMappings = {}, staffShifts = {}, savedSchedules = [], patientTimeConstraints = [] } = body;
+        const { 
+            date, 
+            maKhoa, 
+            services, 
+            patientShifts = {}, 
+            serviceShifts = {},
+            morningServices = [],
+            afternoonServices = [],
+            serviceStaffMappings = {}, 
+            staffShifts = {}, 
+            savedSchedules = [], 
+            patientTimeConstraints = [] 
+        } = body;
+
+        const resolvedServiceShifts: Record<string, string> = { ...serviceShifts };
+        if (Array.isArray(morningServices)) {
+            morningServices.forEach((s: string) => { resolvedServiceShifts[s] = 'MORNING'; });
+        }
+        if (Array.isArray(afternoonServices)) {
+            afternoonServices.forEach((s: string) => { resolvedServiceShifts[s] = 'AFTERNOON'; });
+        }
+
         const availableSavedSchedules = [...savedSchedules];
         // services = [{ ma_ba, ten_bn, ma_dich_vu, ten_dich_vu, ... }, ...]
 
@@ -264,7 +285,18 @@ export async function POST(request: Request) {
 
         const sortedServices = [];
         for (const ma_ba of maBaList) {
-            sortedServices.push(...groupedServices[ma_ba]);
+            const patientServiceList = [...groupedServices[ma_ba]];
+            patientServiceList.sort((a, b) => {
+                const shiftA = resolvedServiceShifts[a.ten_dich_vu] || resolvedServiceShifts[a.ma_dich_vu] || 'AUTO';
+                const shiftB = resolvedServiceShifts[b.ten_dich_vu] || resolvedServiceShifts[b.ma_dich_vu] || 'AUTO';
+                const getServicePriority = (shift: string) => {
+                    if (shift === 'MORNING') return 1;
+                    if (shift === 'AFTERNOON') return 3;
+                    return 2;
+                };
+                return getServicePriority(shiftA) - getServicePriority(shiftB);
+            });
+            sortedServices.push(...patientServiceList);
         }
 
         // 5. Chạy thuật toán cho từng dòng dữ liệu đã được nhóm
@@ -448,6 +480,16 @@ export async function POST(request: Request) {
                         continue;
                     }
 
+                    // Ưu tiên Sáng/Chiều theo cấu hình Dịch vụ
+                    const serviceShiftPref = resolvedServiceShifts[task.ten_dich_vu] || resolvedServiceShifts[task.ma_dich_vu];
+                    if (serviceShiftPref === 'MORNING' && currentTime >= mEnd) {
+                        break; // Dịch vụ này chỉ làm buổi sáng
+                    }
+                    if (serviceShiftPref === 'AFTERNOON' && currentTime < aStart) {
+                        currentTime = aStart; // Nhảy thẳng đến giờ chiều cho dịch vụ này
+                        continue;
+                    }
+
                     // Ưu tiên Sáng/Chiều theo cấu hình Nhân viên
                     const staffShiftPref = staffShifts[staff.id];
                     if (staffShiftPref === 'MORNING' && currentTime >= mEnd) {
@@ -559,13 +601,20 @@ export async function POST(request: Request) {
                         error: `Không thể hoàn thành trước ${formatTime(patientConstraint.endMinutes)} theo yêu cầu (${patientConstraint.note || 'Hẹn giờ ra viện'}) do khung giờ trước ${formatTime(patientConstraint.endMinutes)} đã kín lịch hoặc không có nhân viên/máy phù hợp.`
                     });
                 } else {
-                    const shiftPref = patientShifts[ma_ba];
-                    if (shiftPref === 'MORNING') {
-                        failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
-                    } else if (shiftPref === 'AFTERNOON') {
-                        failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
+                    const serviceShiftPref = resolvedServiceShifts[task.ten_dich_vu] || resolvedServiceShifts[task.ma_dich_vu];
+                    if (serviceShiftPref === 'MORNING') {
+                        failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có nhân viên/máy trống trong buổi Sáng theo ưu tiên dịch vụ' });
+                    } else if (serviceShiftPref === 'AFTERNOON') {
+                        failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có nhân viên/máy trống trong buổi Chiều theo ưu tiên dịch vụ' });
                     } else {
-                        failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
+                        const shiftPref = patientShifts[ma_ba];
+                        if (shiftPref === 'MORNING') {
+                            failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
+                        } else if (shiftPref === 'AFTERNOON') {
+                            failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
+                        } else {
+                            failedResults.push({ ...task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
+                        }
                     }
                 }
             }

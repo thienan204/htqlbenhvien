@@ -173,7 +173,51 @@ export default function ClinicalSchedulingPage() {
     
     const [morningStaffs, setMorningStaffs] = useState<string[]>([]);
     const [afternoonStaffs, setAfternoonStaffs] = useState<string[]>([]);
+    const [morningServices, setMorningServices] = useState<string[]>([]);
+    const [afternoonServices, setAfternoonServices] = useState<string[]>([]);
     const [dateSourceColumn, setDateSourceColumn] = useState<string>('');
+
+    // Khôi phục tùy chọn ca dịch vụ theo Khoa/Phòng từ localStorage
+    useEffect(() => {
+        if (!selectedDept) return;
+        try {
+            const saved = localStorage.getItem(`clinical_scheduling_service_shifts_${selectedDept}`);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed.morningServices)) setMorningServices(parsed.morningServices);
+                if (Array.isArray(parsed.afternoonServices)) setAfternoonServices(parsed.afternoonServices);
+            } else {
+                setMorningServices([]);
+                setAfternoonServices([]);
+            }
+        } catch (e) {
+            console.error('Error loading service shifts from localStorage', e);
+        }
+    }, [selectedDept]);
+
+    const handleUpdateMorningServices = (vals: string[]) => {
+        setMorningServices(vals);
+        if (selectedDept) {
+            try {
+                localStorage.setItem(`clinical_scheduling_service_shifts_${selectedDept}`, JSON.stringify({
+                    morningServices: vals,
+                    afternoonServices
+                }));
+            } catch (e) {}
+        }
+    };
+
+    const handleUpdateAfternoonServices = (vals: string[]) => {
+        setAfternoonServices(vals);
+        if (selectedDept) {
+            try {
+                localStorage.setItem(`clinical_scheduling_service_shifts_${selectedDept}`, JSON.stringify({
+                    morningServices,
+                    afternoonServices: vals
+                }));
+            } catch (e) {}
+        }
+    };
 
     // Lấy chuỗi ngày từ dòng dữ liệu dựa vào cột ngày đã chọn hoặc fallback
     const getItemDate = (item: any): string => {
@@ -988,6 +1032,10 @@ export default function ClinicalSchedulingPage() {
         morningPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'MORNING'; });
         afternoonPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'AFTERNOON'; });
 
+        const serviceShifts: Record<string, string> = {};
+        morningServices.forEach(s => { serviceShifts[s] = 'MORNING'; });
+        afternoonServices.forEach(s => { serviceShifts[s] = 'AFTERNOON'; });
+
         const validConstraints = patientTimeConstraints.filter(c => c.ma_ba && c.endTime);
 
         const staffShifts: Record<string, string> = {};
@@ -1004,6 +1052,9 @@ export default function ClinicalSchedulingPage() {
                     maKhoa: selectedDept,
                     services: filteredData,
                     patientShifts,
+                    serviceShifts,
+                    morningServices,
+                    afternoonServices,
                     patientTimeConstraints: validConstraints,
                     staffShifts,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
@@ -1044,6 +1095,10 @@ export default function ClinicalSchedulingPage() {
         morningPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'MORNING'; });
         afternoonPatients.forEach(ma_ba => { patientShifts[ma_ba] = 'AFTERNOON'; });
 
+        const serviceShifts: Record<string, string> = {};
+        morningServices.forEach(s => { serviceShifts[s] = 'MORNING'; });
+        afternoonServices.forEach(s => { serviceShifts[s] = 'AFTERNOON'; });
+
         const validConstraints = patientTimeConstraints.filter(c => c.ma_ba && c.endTime);
 
         const staffShifts: Record<string, string> = {};
@@ -1060,6 +1115,9 @@ export default function ClinicalSchedulingPage() {
                     maKhoa: selectedDept,
                     services: filteredData,
                     patientShifts,
+                    serviceShifts,
+                    morningServices,
+                    afternoonServices,
                     patientTimeConstraints: validConstraints,
                     staffShifts,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
@@ -2116,6 +2174,47 @@ export default function ClinicalSchedulingPage() {
 
                                             <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
                                                 * Lưu ý: Các bệnh nhân không được chọn sẽ được thuật toán tự động xếp vào bất kỳ thời gian rảnh nào trong ngày. Nếu buổi đã chọn kín lịch, sẽ báo lỗi thiếu thời gian.
+                                            </div>
+                                        </div>
+
+                                        <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff', marginBottom: 24 }}>
+                                            <h3 style={{ margin: 0, color: '#722ed1', marginBottom: 16 }}>Tùy chọn Dịch vụ kỹ thuật ưu tiên xếp lịch theo buổi:</h3>
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <div style={{ marginBottom: 8 }}><strong>Dịch vụ ưu tiên buổi Sáng ({currentDeptHours.morningStart} - {currentDeptHours.morningEnd}):</strong></div>
+                                                    <Select
+                                                        mode="multiple"
+                                                        allowClear
+                                                        showSearch
+                                                        style={{ width: '100%' }}
+                                                        placeholder="Chọn dịch vụ chỉ làm buổi Sáng (Để trống = Tự động xếp cả ngày)"
+                                                        value={morningServices}
+                                                        onChange={handleUpdateMorningServices}
+                                                        options={Array.from(new Set([...uniqueServices, ...selectedServices]))
+                                                            .filter(s => !afternoonServices.includes(s))
+                                                            .map(s => ({ label: s, value: s }))}
+                                                        filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                    />
+                                                </Col>
+                                                <Col span={12}>
+                                                    <div style={{ marginBottom: 8 }}><strong>Dịch vụ ưu tiên buổi Chiều ({currentDeptHours.afternoonStart} - {currentDeptHours.afternoonEnd}):</strong></div>
+                                                    <Select
+                                                        mode="multiple"
+                                                        allowClear
+                                                        showSearch
+                                                        style={{ width: '100%' }}
+                                                        placeholder="Chọn dịch vụ chỉ làm buổi Chiều (Để trống = Tự động xếp cả ngày)"
+                                                        value={afternoonServices}
+                                                        onChange={handleUpdateAfternoonServices}
+                                                        options={Array.from(new Set([...uniqueServices, ...selectedServices]))
+                                                            .filter(s => !morningServices.includes(s))
+                                                            .map(s => ({ label: s, value: s }))}
+                                                        filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                            <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
+                                                * Lưu ý: Các dịch vụ được chọn tại đây sẽ chỉ được thuật toán xếp vào đúng buổi tương ứng (Sáng hoặc Chiều). Cấu hình này được tự động lưu theo từng Khoa/Phòng.
                                             </div>
                                         </div>
 

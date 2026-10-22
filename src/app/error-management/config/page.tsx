@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, Form, message, Breadcrumb, Card, Space, Drawer, Popconfirm, Tabs, InputNumber, Radio, Upload, Alert, Popover, Tooltip, Switch, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, YoutubeOutlined, LinkOutlined, SendOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, YoutubeOutlined, LinkOutlined, SendOutlined, QuestionCircleOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { SoundConfig, playSoundByConfig, stopAllNotificationSounds, extractYouTubeId } from '@/utils/audioUtils';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ITError {
     id: string; // Virtual ID for table key
     name: string;
+    isVisible?: boolean;
 }
 
 export default function ITConfigPage() {
@@ -62,6 +63,7 @@ export default function ITConfigPage() {
 
     const canAccess = user?.role === 'ADMIN' || user?.role === targetDepartment;
     const isAdmin = user?.role === 'ADMIN';
+    const canManageErrors = user?.role === 'ADMIN' || user?.role === targetDepartment;
 
     useEffect(() => {
         fetchConfig();
@@ -92,13 +94,17 @@ export default function ITConfigPage() {
             const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`);
             if (res.ok) {
                 const data = await res.json();
-                const mappedSoftwareErrors = (data.softwareErrors || []).map((err: string, index: number) => ({
-                    id: `soft_${index}_${Date.now()}`,
-                    name: err
+                const rawSoft = data.softwareErrorsConfig || data.softwareErrors || [];
+                const mappedSoftwareErrors = rawSoft.map((err: any, index: number) => ({
+                    id: typeof err === 'object' && err.id ? String(err.id) : `soft_${index}_${Date.now()}`,
+                    name: typeof err === 'object' ? err.name : String(err),
+                    isVisible: typeof err === 'object' && err.isVisible !== undefined ? Boolean(err.isVisible) : true
                 }));
-                const mappedHardwareErrors = (data.hardwareErrors || []).map((err: string, index: number) => ({
-                    id: `hard_${index}_${Date.now()}`,
-                    name: err
+                const rawHard = data.hardwareErrorsConfig || data.hardwareErrors || [];
+                const mappedHardwareErrors = rawHard.map((err: any, index: number) => ({
+                    id: typeof err === 'object' && err.id ? String(err.id) : `hard_${index}_${Date.now()}`,
+                    name: typeof err === 'object' ? err.name : String(err),
+                    isVisible: typeof err === 'object' && err.isVisible !== undefined ? Boolean(err.isVisible) : true
                 }));
                 setSoftwareErrors(mappedSoftwareErrors);
                 setHardwareErrors(mappedHardwareErrors);
@@ -134,49 +140,110 @@ export default function ITConfigPage() {
         }
     };
 
-    const handleSave = async (values: { name: string }) => {
+    const saveErrorsConfig = async (newSoft: ITError[], newHard: ITError[]) => {
+        try {
+            const payload = {
+                softwareErrorsConfig: newSoft.map(e => ({ name: e.name, isVisible: e.isVisible !== false })),
+                hardwareErrorsConfig: newHard.map(e => ({ name: e.name, isVisible: e.isVisible !== false })),
+                softwareErrors: newSoft.filter(e => e.isVisible !== false).map(e => e.name),
+                hardwareErrors: newHard.filter(e => e.isVisible !== false).map(e => e.name),
+                assignmentMode,
+                maxImageSizeMB,
+                targetDepartment
+            };
+            const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                message.error('Lỗi khi lưu cấu hình');
+            }
+        } catch (error) {
+            message.error('Lỗi kết nối khi lưu cấu hình');
+        }
+    };
+
+    const handleMoveItem = async (index: number, direction: 'UP' | 'DOWN') => {
+        const isSoftware = activeTab === 'SOFTWARE';
+        const currentErrors = [...(isSoftware ? softwareErrors : hardwareErrors)];
+        const targetIndex = direction === 'UP' ? index - 1 : index + 1;
+
+        if (targetIndex < 0 || targetIndex >= currentErrors.length) return;
+
+        const [movedItem] = currentErrors.splice(index, 1);
+        currentErrors.splice(targetIndex, 0, movedItem);
+
+        if (isSoftware) {
+            setSoftwareErrors(currentErrors);
+            await saveErrorsConfig(currentErrors, hardwareErrors);
+        } else {
+            setHardwareErrors(currentErrors);
+            await saveErrorsConfig(softwareErrors, currentErrors);
+        }
+        message.success(`Đã đổi vị trí "${movedItem.name}"`);
+    };
+
+    const handleToggleVisibility = async (id: string, isVisible: boolean) => {
+        const isSoftware = activeTab === 'SOFTWARE';
+        const currentList = isSoftware ? softwareErrors : hardwareErrors;
+        const targetItem = currentList.find(e => e.id === id);
+        const updatedErrors = currentList.map(item => 
+            item.id === id ? { ...item, isVisible } : item
+        );
+
+        if (isSoftware) {
+            setSoftwareErrors(updatedErrors);
+            await saveErrorsConfig(updatedErrors, hardwareErrors);
+        } else {
+            setHardwareErrors(updatedErrors);
+            await saveErrorsConfig(softwareErrors, updatedErrors);
+        }
+        message.success(isVisible 
+            ? `Đã hiện "${targetItem?.name || 'mục'}" ngoài trang tạo yêu cầu` 
+            : `Đã ẩn "${targetItem?.name || 'mục'}" khỏi trang tạo yêu cầu`
+        );
+    };
+
+    const handleSave = async (values: { name: string; isVisible?: boolean }) => {
         try {
             const isSoftware = activeTab === 'SOFTWARE';
             const currentErrors = isSoftware ? softwareErrors : hardwareErrors;
             let updatedErrors = [...currentErrors];
             const cleanName = values.name.trim();
+            const isVisible = values.isVisible !== undefined ? values.isVisible : true;
             
             if (editingError) {
                 // Update
-                updatedErrors = updatedErrors.map((e: any) => e.id === editingError.id ? { ...e, name: cleanName } : e);
+                updatedErrors = updatedErrors.map((e: ITError) => e.id === editingError.id ? { 
+                    ...e, 
+                    name: cleanName,
+                    isVisible
+                } : e);
             } else {
                 // Check duplicate
-                if (updatedErrors.some((e: any) => e.name.toLowerCase() === cleanName.toLowerCase())) {
+                if (updatedErrors.some((e: ITError) => e.name.toLowerCase() === cleanName.toLowerCase())) {
                     message.error('Lỗi này đã tồn tại!');
                     return;
                 }
                 // Add new
                 updatedErrors.push({
                     id: `${isSoftware ? 'soft' : 'hard'}_${Date.now()}`,
-                    name: cleanName
+                    name: cleanName,
+                    isVisible
                 });
             }
 
-            const stringArray = updatedErrors.map((e: any) => e.name);
-            const payload = isSoftware 
-                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map((e: any) => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
-                : { softwareErrors: softwareErrors.map((e: any) => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
+            const softToSave = isSoftware ? updatedErrors : softwareErrors;
+            const hardToSave = !isSoftware ? updatedErrors : hardwareErrors;
 
-            const res = await fetch(`/api/error-management/it-request-config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            
-            if (res.ok) {
-                message.success('Lưu thành công');
-                setIsDrawerOpen(false);
-                form.resetFields();
-                setEditingError(null);
-                fetchConfig();
-            } else {
-                message.error('Lỗi khi lưu');
-            }
+            await saveErrorsConfig(softToSave, hardToSave);
+
+            message.success('Lưu thành công');
+            setIsDrawerOpen(false);
+            form.resetFields();
+            setEditingError(null);
+            fetchConfig();
         } catch (error) {
             message.error('Lỗi kết nối');
         }
@@ -186,25 +253,15 @@ export default function ITConfigPage() {
         try {
             const isSoftware = activeTab === 'SOFTWARE';
             const currentErrors = isSoftware ? softwareErrors : hardwareErrors;
-            const updatedErrors = currentErrors.filter((e: any) => e.id !== id);
-            const stringArray = updatedErrors.map((e: any) => e.name);
+            const updatedErrors = currentErrors.filter((e: ITError) => e.id !== id);
 
-            const payload = isSoftware 
-                ? { softwareErrors: stringArray, hardwareErrors: hardwareErrors.map((e: any) => e.name), assignmentMode, maxImageSizeMB, targetDepartment }
-                : { softwareErrors: softwareErrors.map((e: any) => e.name), hardwareErrors: stringArray, assignmentMode, maxImageSizeMB, targetDepartment };
+            const softToSave = isSoftware ? updatedErrors : softwareErrors;
+            const hardToSave = !isSoftware ? updatedErrors : hardwareErrors;
 
-            const res = await fetch(`/api/error-management/it-request-config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            
-            if (res.ok) {
-                message.success('Xóa thành công');
-                fetchConfig();
-            } else {
-                message.error('Lỗi khi xóa');
-            }
+            await saveErrorsConfig(softToSave, hardToSave);
+
+            message.success('Xóa thành công');
+            fetchConfig();
         } catch (error) {
             message.error('Lỗi kết nối');
         }
@@ -214,8 +271,10 @@ export default function ITConfigPage() {
         try {
             const currentSound = (soundToSave && typeof soundToSave === 'object' && 'type' in soundToSave) ? soundToSave : notificationSound;
             const payload = {
-                softwareErrors: softwareErrors.map((e: any) => e.name),
-                hardwareErrors: hardwareErrors.map((e: any) => e.name),
+                softwareErrorsConfig: softwareErrors.map(e => ({ name: e.name, isVisible: e.isVisible !== false })),
+                hardwareErrorsConfig: hardwareErrors.map(e => ({ name: e.name, isVisible: e.isVisible !== false })),
+                softwareErrors: softwareErrors.filter(e => e.isVisible !== false).map((e: any) => e.name),
+                hardwareErrors: hardwareErrors.filter(e => e.isVisible !== false).map((e: any) => e.name),
                 assignmentMode,
                 maxConcurrentTasks,
                 morningStartTime: morningStartTime.trim() || '07:00',
@@ -412,35 +471,103 @@ export default function ITConfigPage() {
         {
             title: 'STT',
             key: 'index',
-            width: 80,
+            width: 70,
+            align: 'center' as const,
             render: (_: any, __: any, index: number) => index + 1,
         },
         {
             title: 'Tên lỗi',
             dataIndex: 'name',
             key: 'name',
-            sorter: (a: ITError, b: ITError) => a.name.localeCompare(b.name),
+            render: (name: string, record: ITError) => (
+                <div className="flex items-center gap-2">
+                    <span className={record.isVisible === false ? 'text-slate-400 line-through' : 'text-slate-800 font-medium'}>
+                        {name}
+                    </span>
+                    {record.isVisible === false && (
+                        <Tag color="default" className="text-[11px] font-normal">Đang ẩn</Tag>
+                    )}
+                </div>
+            )
         },
-        ...(isAdmin ? [{
-            title: 'Hành động',
-            key: 'action',
-            width: 150,
-            render: (_: any, record: ITError) => (
-                <Space size="middle">
-                    <Button
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            setEditingError(record);
-                            form.setFieldsValue({ name: record.name });
-                            setIsDrawerOpen(true);
-                        }}
-                    />
-                    <Popconfirm title="Bạn có chắc chắn muốn xóa?" onConfirm={() => handleDelete(record.id)}>
-                        <Button icon={<DeleteOutlined />} danger />
-                    </Popconfirm>
-                </Space>
-            ),
-        }] : []),
+        ...(canManageErrors ? [
+            {
+                title: 'Thứ tự',
+                key: 'order',
+                width: 100,
+                align: 'center' as const,
+                render: (_: any, record: ITError, index: number) => {
+                    const currentList = activeTab === 'SOFTWARE' ? softwareErrors : hardwareErrors;
+                    const isFirst = index === 0;
+                    const isLast = index === currentList.length - 1;
+                    return (
+                        <Space size={4}>
+                            <Tooltip title={isFirst ? 'Đang ở vị trí đầu tiên' : 'Đẩy lên trên'}>
+                                <Button
+                                    size="small"
+                                    icon={<ArrowUpOutlined />}
+                                    disabled={isFirst}
+                                    onClick={() => handleMoveItem(index, 'UP')}
+                                />
+                            </Tooltip>
+                            <Tooltip title={isLast ? 'Đang ở vị trí cuối cùng' : 'Đẩy xuống dưới'}>
+                                <Button
+                                    size="small"
+                                    icon={<ArrowDownOutlined />}
+                                    disabled={isLast}
+                                    onClick={() => handleMoveItem(index, 'DOWN')}
+                                />
+                            </Tooltip>
+                        </Space>
+                    );
+                }
+            },
+            {
+                title: 'Hiển thị',
+                key: 'isVisible',
+                width: 110,
+                align: 'center' as const,
+                render: (_: any, record: ITError) => (
+                    <Tooltip title={record.isVisible !== false ? 'Đang hiện ra ngoài cho khoa phòng chọn' : 'Đang ẩn khỏi màn hình tạo yêu cầu'}>
+                        <Switch
+                            size="small"
+                            checked={record.isVisible !== false}
+                            checkedChildren="Hiện"
+                            unCheckedChildren="Ẩn"
+                            onChange={(checked) => handleToggleVisibility(record.id, checked)}
+                        />
+                    </Tooltip>
+                )
+            },
+            {
+                title: 'Hành động',
+                key: 'action',
+                width: 120,
+                align: 'center' as const,
+                render: (_: any, record: ITError) => (
+                    <Space size="middle">
+                        <Tooltip title="Chỉnh sửa">
+                            <Button
+                                icon={<EditOutlined />}
+                                onClick={() => {
+                                    setEditingError(record);
+                                    form.setFieldsValue({ 
+                                        name: record.name,
+                                        isVisible: record.isVisible !== false
+                                    });
+                                    setIsDrawerOpen(true);
+                                }}
+                            />
+                        </Tooltip>
+                        <Popconfirm title="Bạn có chắc chắn muốn xóa?" onConfirm={() => handleDelete(record.id)}>
+                            <Tooltip title="Xóa">
+                                <Button icon={<DeleteOutlined />} danger />
+                            </Tooltip>
+                        </Popconfirm>
+                    </Space>
+                ),
+            }
+        ] : []),
     ];
 
     if (!canAccess) {
@@ -453,15 +580,15 @@ export default function ITConfigPage() {
             label: 'Lỗi Phần mềm (BAĐT)',
             children: (
                 <>
-                    <div className="mb-4 text-slate-500">
-                        Danh sách các lỗi nghiệp vụ phần mềm (Ví dụ: Hủy ký số, Sai thông tin hành chính, ...) để các khoa phòng chọn nhanh khi báo lỗi.
+                    <div className="mb-4 text-slate-500 text-sm">
+                        Danh sách các lỗi nghiệp vụ phần mềm (Ví dụ: Hủy ký số, Sai thông tin hành chính, ...) để các khoa phòng chọn nhanh khi báo lỗi. Dùng nút <b>⬆️ Lên / ⬇️ Xuống</b> để sắp xếp thứ tự và công tắc <b>Hiện / Ẩn</b> để hiển thị ra màn hình ngoài.
                     </div>
                     <Table
                         columns={columns}
                         dataSource={softwareErrors}
                         rowKey="id"
                         loading={loading}
-                        pagination={{ pageSize: 20 }}
+                        pagination={{ pageSize: 50, showSizeChanger: true }}
                         bordered
                     />
                 </>
@@ -472,15 +599,15 @@ export default function ITConfigPage() {
             label: 'Lỗi Thiết bị / Sửa chữa',
             children: (
                 <>
-                    <div className="mb-4 text-slate-500">
-                        Danh sách các lỗi phần cứng, mạng, thiết bị (Ví dụ: Mất mạng, Kẹt giấy máy in, Lỗi chuột bàn phím, ...).
+                    <div className="mb-4 text-slate-500 text-sm">
+                        Danh sách các lỗi phần cứng, mạng, thiết bị (Ví dụ: Mất mạng, Kẹt giấy máy in, Lỗi chuột bàn phím, ...). Dùng nút <b>⬆️ Lên / ⬇️ Xuống</b> để sắp xếp thứ tự và công tắc <b>Hiện / Ẩn</b> để hiển thị ra màn hình ngoài.
                     </div>
                     <Table
                         columns={columns}
                         dataSource={hardwareErrors}
                         rowKey="id"
                         loading={loading}
-                        pagination={{ pageSize: 20 }}
+                        pagination={{ pageSize: 50, showSizeChanger: true }}
                         bordered
                     />
                 </>
@@ -496,7 +623,7 @@ export default function ITConfigPage() {
                             type="info"
                             showIcon
                             className="rounded-xl border-blue-200 bg-blue-50/80"
-                            message={<span className="font-semibold text-blue-900">Quyền hạn tài khoản Kỹ thuật viên ({user?.role})</span>}
+                            title={<span className="font-semibold text-blue-900">Quyền hạn tài khoản Kỹ thuật viên ({user?.role})</span>}
                             description={
                                 <div className="text-xs text-slate-600 space-y-1 mt-0.5">
                                     <div>• Các cấu hình phân công công việc, khung giờ và bot chung do <b>Quản trị viên (ADMIN)</b> thiết lập.</div>
@@ -1433,10 +1560,11 @@ export default function ITConfigPage() {
                 <Card
                     title={<span className="text-xl font-bold text-slate-800">Cấu hình Danh Mục Yêu cầu - {targetDepartment}</span>}
                     extra={
-                        isAdmin ? (
+                        canManageErrors ? (
                             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
                                 setEditingError(null);
                                 form.resetFields();
+                                form.setFieldsValue({ isVisible: true });
                                 setIsDrawerOpen(true);
                             }}>
                                 Thêm lỗi mới
@@ -1469,6 +1597,14 @@ export default function ITConfigPage() {
                             ]}
                         >
                             <Input placeholder="Ví dụ: Lấy lại bệnh nhân..." autoFocus />
+                        </Form.Item>
+                        <Form.Item
+                            name="isVisible"
+                            label="Trạng thái hiển thị ngoài màn hình tạo"
+                            valuePropName="checked"
+                            initialValue={true}
+                        >
+                            <Switch checkedChildren="Hiện ra ngoài cho khoa phòng chọn" unCheckedChildren="Ẩn khỏi màn hình tạo yêu cầu" />
                         </Form.Item>
                     </Form>
                 </Drawer>

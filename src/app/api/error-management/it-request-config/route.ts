@@ -4,6 +4,59 @@ import { getCurrentUser } from '@/actions/auth';
 const CONFIG_SLUG = 'it-request-fields-config';
 const RULE_TYPE = 'SYSTEM_CONFIG';
 
+function normalizeErrors(rawErrors: any[]): Array<{ id: string; name: string; isVisible: boolean }> {
+    if (!Array.isArray(rawErrors)) return [];
+    const result: Array<{ id: string; name: string; isVisible: boolean }> = [];
+    for (let idx = 0; idx < rawErrors.length; idx++) {
+        const item = rawErrors[idx];
+        if (typeof item === 'string') {
+            const trimmed = item.trim();
+            if (trimmed) {
+                result.push({
+                    id: `err_${idx}_${idx}`,
+                    name: trimmed,
+                    isVisible: true
+                });
+            }
+        } else if (item && typeof item === 'object') {
+            const name = typeof item.name === 'string' ? item.name.trim() : '';
+            if (name) {
+                result.push({
+                    id: String(item.id || `err_${idx}_${idx}`),
+                    name,
+                    isVisible: item.isVisible !== false
+                });
+            }
+        }
+    }
+    return result;
+}
+
+function parseSubmittedErrors(submitted: any): Array<{ id: string; name: string; isVisible: boolean }> | null {
+    if (submitted === undefined || submitted === null) return null;
+    if (!Array.isArray(submitted)) return null;
+    const result: Array<{ id: string; name: string; isVisible: boolean }> = [];
+    for (let idx = 0; idx < submitted.length; idx++) {
+        const item = submitted[idx];
+        if (typeof item === 'string') {
+            const trimmed = item.trim();
+            if (trimmed) {
+                result.push({ id: `err_${idx}_${Date.now()}`, name: trimmed, isVisible: true });
+            }
+        } else if (item && typeof item === 'object') {
+            const name = typeof item.name === 'string' ? item.name.trim() : '';
+            if (name) {
+                result.push({
+                    id: String(item.id || `err_${idx}_${Date.now()}`),
+                    name,
+                    isVisible: item.isVisible !== false
+                });
+            }
+        }
+    }
+    return result;
+}
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -27,19 +80,53 @@ export async function GET(request: Request) {
 
         // Nếu chưa có, trả về mặc định
         if (!configRule || !configRule.logicConfig) {
-            return NextResponse.json({ fields: [], assignmentMode: 'A', hardwareErrors: defaultHardwareErrors, maBaLength: 11 });
+            const normDefaultHardware = normalizeErrors(defaultHardwareErrors);
+            return NextResponse.json({ 
+                fields: [], 
+                softwareErrors: [],
+                softwareErrorsConfig: [],
+                hardwareErrors: defaultHardwareErrors,
+                hardwareErrorsConfig: normDefaultHardware,
+                assignmentMode: 'A', 
+                maBaLength: 11 
+            });
         }
 
         // Handle legacy array format
         if (Array.isArray(configRule.logicConfig)) {
-            return NextResponse.json({ fields: configRule.logicConfig, assignmentMode: 'A', maxImageSizeMB: 10, maBaLength: 11 });
+            const normLegacy = normalizeErrors(configRule.logicConfig);
+            return NextResponse.json({ 
+                fields: configRule.logicConfig, 
+                softwareErrors: normLegacy.filter(e => e.isVisible).map(e => e.name),
+                softwareErrorsConfig: normLegacy,
+                hardwareErrors: defaultHardwareErrors,
+                hardwareErrorsConfig: normalizeErrors(defaultHardwareErrors),
+                assignmentMode: 'A', 
+                maxImageSizeMB: 10, 
+                maBaLength: 11 
+            });
         }
 
         // Handle object format
         const config: any = configRule.logicConfig;
+
+        // Software errors
+        const rawSoftware = config.softwareErrorsConfig || config.softwareErrors || config.fields || [];
+        const normSoftware = normalizeErrors(rawSoftware);
+        const visibleSoftware = normSoftware.filter(e => e.isVisible).map(e => e.name);
+
+        // Hardware errors
+        const rawHardware = config.hardwareErrorsConfig || config.hardwareErrors;
+        const normHardware = normalizeErrors(
+            rawHardware && rawHardware.length > 0 ? rawHardware : defaultHardwareErrors
+        );
+        const visibleHardware = normHardware.filter(e => e.isVisible).map(e => e.name);
+
         return NextResponse.json({ 
-            softwareErrors: config.softwareErrors || config.fields || [], 
-            hardwareErrors: config.hardwareErrors && config.hardwareErrors.length > 0 ? config.hardwareErrors : defaultHardwareErrors,
+            softwareErrors: visibleSoftware, 
+            softwareErrorsConfig: normSoftware,
+            hardwareErrors: visibleHardware,
+            hardwareErrorsConfig: normHardware,
             assignmentMode: config.assignmentMode || 'A',
             maxConcurrentTasks: config.maxConcurrentTasks !== undefined ? Number(config.maxConcurrentTasks) : 2,
             morningStartTime: config.morningStartTime || '07:00',
@@ -69,22 +156,25 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const user = await getCurrentUser();
-        // Chỉ Quản trị viên (ADMIN) mới được phép thay đổi cấu hình chung
-        if (!user || user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'Chỉ Quản trị viên (ADMIN) mới có quyền thay đổi cấu hình chung!' }, { status: 403 });
-        }
-
         const { searchParams } = new URL(request.url);
         const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
         let slug = 'it-request-fields-config';
         if (targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
         else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
 
+        const user = await getCurrentUser();
+        // Cho phép Quản trị viên (ADMIN) hoặc nhân viên thuộc phòng ban đích (CNTT, VTYT, HCQT)
+        if (!user || (user.role !== 'ADMIN' && user.role !== targetDepartment)) {
+            return NextResponse.json({ error: 'Bạn không có quyền thay đổi cấu hình cho phòng ban này!' }, { status: 403 });
+        }
+        const isAdmin = user.role === 'ADMIN';
+
         const body = await request.json();
         const { 
             softwareErrors, 
+            softwareErrorsConfig,
             hardwareErrors, 
+            hardwareErrorsConfig,
             assignmentMode, 
             maxConcurrentTasks,
             morningStartTime,
@@ -107,16 +197,22 @@ export async function POST(request: Request) {
             notificationSound 
         } = body;
 
-        if (softwareErrors && !Array.isArray(softwareErrors)) {
-            return NextResponse.json({ error: 'Dữ liệu softwareErrors không hợp lệ, phải là mảng string' }, { status: 400 });
-        }
-        if (hardwareErrors && !Array.isArray(hardwareErrors)) {
-            return NextResponse.json({ error: 'Dữ liệu hardwareErrors không hợp lệ, phải là mảng string' }, { status: 400 });
-        }
+        const parsedSoftware = parseSubmittedErrors(softwareErrorsConfig !== undefined ? softwareErrorsConfig : softwareErrors);
+        const parsedHardware = parseSubmittedErrors(hardwareErrorsConfig !== undefined ? hardwareErrorsConfig : hardwareErrors);
 
         // Keep existing config to avoid overwriting missing fields
         const existingRule = await prisma.specializedRule.findUnique({ where: { slug } });
         const existingConfig: any = existingRule?.logicConfig || {};
+
+        const finalSoftwareConfig = parsedSoftware !== null 
+            ? parsedSoftware 
+            : normalizeErrors(existingConfig.softwareErrorsConfig || existingConfig.softwareErrors || []);
+        const finalSoftwareVisible = finalSoftwareConfig.filter(e => e.isVisible).map(e => e.name);
+
+        const finalHardwareConfig = parsedHardware !== null 
+            ? parsedHardware 
+            : normalizeErrors(existingConfig.hardwareErrorsConfig || existingConfig.hardwareErrors || []);
+        const finalHardwareVisible = finalHardwareConfig.filter(e => e.isVisible).map(e => e.name);
 
         const resolvedMaxFileSizeMB = maxFileSizeMB !== undefined 
             ? Number(maxFileSizeMB) 
@@ -128,27 +224,29 @@ export async function POST(request: Request) {
 
         const newConfig = {
             ...existingConfig,
-            softwareErrors: softwareErrors || existingConfig.softwareErrors || [],
-            hardwareErrors: hardwareErrors || existingConfig.hardwareErrors || [],
-            assignmentMode: assignmentMode || existingConfig.assignmentMode || 'A',
-            maxConcurrentTasks: maxConcurrentTasks !== undefined ? Number(maxConcurrentTasks) : (existingConfig.maxConcurrentTasks !== undefined ? Number(existingConfig.maxConcurrentTasks) : 2),
-            morningStartTime: morningStartTime !== undefined ? morningStartTime.trim() : (existingConfig.morningStartTime || '07:00'),
-            morningEndTime: morningEndTime !== undefined ? morningEndTime.trim() : (existingConfig.morningEndTime || '11:30'),
-            afternoonStartTime: afternoonStartTime !== undefined ? afternoonStartTime.trim() : (existingConfig.afternoonStartTime || '13:30'),
-            afternoonEndTime: finalAfternoonEnd,
-            officeEndTime: finalAfternoonEnd,
-            holidays: holidays !== undefined && Array.isArray(holidays) ? holidays : (existingConfig.holidays || []),
-            makeupWorkdays: makeupWorkdays !== undefined && Array.isArray(makeupWorkdays) ? makeupWorkdays : (existingConfig.makeupWorkdays || []),
-            noStaffWarningEnabled: noStaffWarningEnabled !== undefined ? Boolean(noStaffWarningEnabled) : (existingConfig.noStaffWarningEnabled !== undefined ? Boolean(existingConfig.noStaffWarningEnabled) : true),
-            noStaffWarningMessage: noStaffWarningMessage !== undefined ? noStaffWarningMessage.trim() : (existingConfig.noStaffWarningMessage || 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!'),
-            maxImageSizeMB: resolvedMaxFileSizeMB,
-            maxFileSizeMB: resolvedMaxFileSizeMB,
-            allowedFileExtensions: allowedFileExtensions !== undefined ? allowedFileExtensions : (existingConfig.allowedFileExtensions || '.jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar'),
-            maBaLength: maBaLength !== undefined ? Number(maBaLength) : (existingConfig.maBaLength || 11),
-            telegramBotToken: telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
-            telegramChatId: telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId,
-            zaloEnabled: zaloEnabled !== undefined ? Boolean(zaloEnabled) : Boolean(existingConfig.zaloEnabled),
-            zaloWebhookUrl: zaloWebhookUrl !== undefined ? zaloWebhookUrl.trim() : (existingConfig.zaloWebhookUrl || ''),
+            softwareErrorsConfig: finalSoftwareConfig,
+            softwareErrors: finalSoftwareVisible,
+            hardwareErrorsConfig: finalHardwareConfig,
+            hardwareErrors: finalHardwareVisible,
+            assignmentMode: isAdmin && assignmentMode !== undefined ? assignmentMode : (existingConfig.assignmentMode || 'A'),
+            maxConcurrentTasks: isAdmin && maxConcurrentTasks !== undefined ? Number(maxConcurrentTasks) : (existingConfig.maxConcurrentTasks !== undefined ? Number(existingConfig.maxConcurrentTasks) : 2),
+            morningStartTime: isAdmin && morningStartTime !== undefined ? morningStartTime.trim() : (existingConfig.morningStartTime || '07:00'),
+            morningEndTime: isAdmin && morningEndTime !== undefined ? morningEndTime.trim() : (existingConfig.morningEndTime || '11:30'),
+            afternoonStartTime: isAdmin && afternoonStartTime !== undefined ? afternoonStartTime.trim() : (existingConfig.afternoonStartTime || '13:30'),
+            afternoonEndTime: isAdmin ? finalAfternoonEnd : (existingConfig.afternoonEndTime || existingConfig.officeEndTime || '16:50'),
+            officeEndTime: isAdmin ? finalAfternoonEnd : (existingConfig.afternoonEndTime || existingConfig.officeEndTime || '16:50'),
+            holidays: isAdmin && holidays !== undefined && Array.isArray(holidays) ? holidays : (existingConfig.holidays || []),
+            makeupWorkdays: isAdmin && makeupWorkdays !== undefined && Array.isArray(makeupWorkdays) ? makeupWorkdays : (existingConfig.makeupWorkdays || []),
+            noStaffWarningEnabled: isAdmin && noStaffWarningEnabled !== undefined ? Boolean(noStaffWarningEnabled) : (existingConfig.noStaffWarningEnabled !== undefined ? Boolean(existingConfig.noStaffWarningEnabled) : true),
+            noStaffWarningMessage: isAdmin && noStaffWarningMessage !== undefined ? noStaffWarningMessage.trim() : (existingConfig.noStaffWarningMessage || 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!'),
+            maxImageSizeMB: isAdmin ? resolvedMaxFileSizeMB : (existingConfig.maxFileSizeMB || existingConfig.maxImageSizeMB || 15),
+            maxFileSizeMB: isAdmin ? resolvedMaxFileSizeMB : (existingConfig.maxFileSizeMB || 15),
+            allowedFileExtensions: isAdmin && allowedFileExtensions !== undefined ? allowedFileExtensions : (existingConfig.allowedFileExtensions || '.jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar'),
+            maBaLength: isAdmin && maBaLength !== undefined ? Number(maBaLength) : (existingConfig.maBaLength || 11),
+            telegramBotToken: isAdmin && telegramBotToken !== undefined ? telegramBotToken : existingConfig.telegramBotToken,
+            telegramChatId: isAdmin && telegramChatId !== undefined ? telegramChatId : existingConfig.telegramChatId,
+            zaloEnabled: isAdmin && zaloEnabled !== undefined ? Boolean(zaloEnabled) : Boolean(existingConfig.zaloEnabled),
+            zaloWebhookUrl: isAdmin && zaloWebhookUrl !== undefined ? zaloWebhookUrl.trim() : (existingConfig.zaloWebhookUrl || ''),
             notificationSound: notificationSound !== undefined ? notificationSound : (existingConfig.notificationSound || { type: 'DEFAULT', url: '', duration: 7 })
         };
 
@@ -167,7 +265,14 @@ export async function POST(request: Request) {
             }
         });
 
-        return NextResponse.json({ success: true, ...newConfig });
+        return NextResponse.json({ 
+            success: true, 
+            ...newConfig,
+            softwareErrors: finalSoftwareVisible,
+            softwareErrorsConfig: finalSoftwareConfig,
+            hardwareErrors: finalHardwareVisible,
+            hardwareErrorsConfig: finalHardwareConfig
+        });
     } catch (error: any) {
         console.error('POST it-request-config error:', error);
         return NextResponse.json({ error: 'Lỗi khi lưu cấu hình' }, { status: 500 });

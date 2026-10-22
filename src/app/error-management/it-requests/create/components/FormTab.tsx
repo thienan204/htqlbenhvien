@@ -190,7 +190,10 @@ export function FormTab({
                                                 size="large"
                                                 className="!rounded-xl"
                                                 placeholder="Chọn trong danh sách hoặc gõ thêm lỗi cần hỗ trợ..." 
-                                                options={softwareErrors.map(e => ({ label: e, value: e }))} 
+                                                options={(softwareErrors || [])
+                                                    .map((e: any) => typeof e === 'string' ? e : e?.name)
+                                                    .filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
+                                                    .map(e => ({ label: e, value: e }))} 
                                             />
                                         </Form.Item>
                                     </div>
@@ -209,7 +212,10 @@ export function FormTab({
                                         </div>
                                         <Form.Item name="ten_loi_hardware" label={<span className="font-semibold text-slate-800">Chọn sự cố cần sửa chữa</span>} rules={[{ required: true, message: 'Vui lòng chọn sự cố' }]} className="mb-0">
                                             <Radio.Group className="!flex !flex-wrap gap-2 sm:gap-3 items-center">
-                                                {hardwareErrors.map((t: string) => (
+                                                {(hardwareErrors || [])
+                                                    .map((t: any) => typeof t === 'string' ? t : t?.name)
+                                                    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+                                                    .map((t: string) => (
                                                     <Radio.Button 
                                                         key={t} 
                                                         value={t} 
