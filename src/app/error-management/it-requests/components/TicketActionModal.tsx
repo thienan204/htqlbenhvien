@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Select, Input, DatePicker, Card, Tag, Button, message, Switch } from 'antd';
-import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined, ShareAltOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import { Ticket, ITUser, VendorItem } from '../types';
@@ -44,6 +44,17 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     let availableUsers = itUsers;
     if (!isManager && isUnassigned) {
         availableUsers = itUsers.filter(u => u.id === user?.id);
+    }
+
+    // Đảm bảo kỹ thuật viên hiện tại của ticket luôn có trong danh sách hiển thị để Select hiển thị chuẩn tên tiếng Việt
+    const displayedUsers: ITUser[] = [...availableUsers];
+    if (ticket?.assigneeId && !displayedUsers.some(u => u.id === ticket.assigneeId)) {
+        displayedUsers.unshift({
+            id: ticket.assigneeId,
+            name: ticket.assigneeName || 'Kỹ thuật viên phụ trách',
+            username: ticket.assigneeName || 'technician',
+            isAvailable: true
+        });
     }
 
     const resizeImage = (file: File): Promise<Blob> => {
@@ -199,8 +210,12 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                 ...values,
                 isFocusTask: Boolean(values.isFocusTask),
                 it_images: finalUrls,
-                vendorName: selectedVendor ? selectedVendor.name : (ticket?.vendorName || null),
-                vendorExpectedReturnAt: values.vendorExpectedReturnAt ? values.vendorExpectedReturnAt.toISOString() : null,
+                vendorId: values.vendorId !== undefined ? values.vendorId : (ticket?.vendorId || null),
+                vendorName: selectedVendor ? selectedVendor.name : (values.vendorName || ticket?.vendorName || null),
+                vendorTicketCode: values.vendorTicketCode !== undefined ? values.vendorTicketCode : (ticket?.vendorTicketCode || null),
+                vendorExpectedReturnAt: values.vendorExpectedReturnAt 
+                    ? values.vendorExpectedReturnAt.toISOString() 
+                    : (ticket?.vendorExpectedReturnAt ? dayjs(ticket.vendorExpectedReturnAt).toISOString() : null),
             };
             await onOk(payload);
         } catch (error: any) {
@@ -215,12 +230,24 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     return (
         <Modal
             title={
-                <div className="flex items-center gap-2 font-bold text-slate-800 text-lg">
-                    <span>⚡ Xử lý Yêu cầu</span>
-                    {ticket?.category === 'HARDWARE' ? (
-                        <Tag color="cyan">Phần cứng / Thiết bị</Tag>
-                    ) : (
-                        <Tag color="blue">Phần mềm / Bệnh án</Tag>
+                <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
+                    <div className="flex items-center gap-2 font-bold text-slate-800 text-lg">
+                        <span>⚡ Xử lý Yêu cầu #{ticket?.id ? ticket.id.slice(-6).toUpperCase() : ''}</span>
+                        {ticket?.category === 'HARDWARE' ? (
+                            <Tag color="cyan">Phần cứng / Thiết bị</Tag>
+                        ) : (
+                            <Tag color="blue">Phần mềm / Bệnh án</Tag>
+                        )}
+                        {ticket?.status === 'RESOLVED' && (
+                            <Tag color="success" className="font-semibold">
+                                Đã hoàn thành
+                            </Tag>
+                        )}
+                    </div>
+                    {ticket?.status === 'RESOLVED' && (
+                        <span className="text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                            ✓ Đang mở xem lại - Có thể đổi trạng thái để mở lại xử lý
+                        </span>
                     )}
                 </div>
             }
@@ -228,30 +255,96 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
             onCancel={handleCancel}
             onOk={() => actionForm.submit()}
             confirmLoading={submitting}
-            okText="Lưu cập nhật"
-            cancelText="Hủy"
+            okText={
+                ticket?.status === 'RESOLVED'
+                    ? (selectedStatus === 'RESOLVED' ? 'Lưu bổ sung ghi chú / ảnh' : 'Tái mở phiếu & Lưu')
+                    : 'Lưu cập nhật'
+            }
+            cancelText="Đóng"
             destroyOnHidden
-            width={640}
+            width={880}
+            style={{ maxWidth: '95vw', top: 20 }}
         >
             <Form form={actionForm} preserve={false} layout="vertical" onFinish={handleFormSubmit} className="mt-3 space-y-3">
-                <Form.Item name="status" label={<span className="font-semibold text-slate-700">Trạng thái xử lý</span>} className="mb-3">
-                    <Select 
-                        size="large" 
-                        className="!rounded-xl"
-                        onChange={(val) => setSelectedStatus(val)}
+                {/* HÀNG 1: TRẠNG THÁI XỬ LÝ & NGƯỜI XỬ LÝ / ĐÔN ĐỐC (2 CỘT RỘNG RÃI) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-2">
+                    <Form.Item 
+                        name="status" 
+                        label={<span className="font-semibold text-slate-700">Trạng thái xử lý</span>} 
+                        className="mb-0"
                     >
-                        <Select.Option value="PENDING">Chờ xử lý</Select.Option>
-                        <Select.Option value="IN_PROGRESS">Đang xử lý</Select.Option>
-                        <Select.Option value="PAUSED">⏸️ Tạm dừng xử lý</Select.Option>
-                        <Select.Option value="WAITING_VENDOR">
-                            <span className="font-medium text-amber-600 flex items-center gap-1.5">
-                                <ShopOutlined /> Chờ đơn vị ngoài xử lý (Gửi đối tác)
-                            </span>
-                        </Select.Option>
-                        <Select.Option value="TRANSFERRING">Chờ chuyển giao</Select.Option>
-                        <Select.Option value="RESOLVED">Hoàn thành</Select.Option>
-                    </Select>
-                </Form.Item>
+                        <Select 
+                            size="large" 
+                            className="!rounded-xl"
+                            onChange={(val) => setSelectedStatus(val)}
+                        >
+                            <Select.Option value="PENDING">Chờ xử lý</Select.Option>
+                            <Select.Option value="IN_PROGRESS">Đang xử lý</Select.Option>
+                            <Select.Option value="PAUSED">⏸️ Tạm dừng xử lý</Select.Option>
+                            <Select.Option value="WAITING_VENDOR">
+                                <span className="font-medium text-amber-600 flex items-center gap-1.5">
+                                    <ShopOutlined /> Chờ đơn vị ngoài xử lý (Gửi đối tác)
+                                </span>
+                            </Select.Option>
+                            <Select.Option value="TRANSFERRING">Chờ chuyển giao</Select.Option>
+                            <Select.Option value="RESOLVED">
+                                <span className="font-semibold text-emerald-700 flex items-center gap-1.5">
+                                    <CheckCircleOutlined /> Hoàn thành
+                                </span>
+                            </Select.Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item 
+                        name="assigneeId" 
+                        label={<span className="font-semibold text-slate-700">Người xử lý / Đôn đốc</span>} 
+                        extra={<span className="text-[11px] text-slate-500">Chọn người khác sẽ vào trạng thái Chờ chuyển giao</span>}
+                        className="mb-0"
+                    >
+                        <Select 
+                            allowClear 
+                            disabled={!canChangeAssignee} 
+                            size="large" 
+                            className="!rounded-xl"
+                            placeholder="Chọn kỹ thuật viên phụ trách"
+                        >
+                            {displayedUsers.map(u => {
+                                let statusBadge = '';
+                                if (u.autoAssignDisabled) {
+                                    statusBadge = `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})`;
+                                } else if (!u.isAvailable) {
+                                    statusBadge = '(🔴 Tắt nhận việc)';
+                                }
+                                return (
+                                    <Select.Option key={u.id} value={u.id}>
+                                        {u.name || u.username} {statusBadge}
+                                    </Select.Option>
+                                );
+                            })}
+                        </Select>
+                    </Form.Item>
+                </div>
+
+                {/* THÔNG TIN BẢO TOÀN ĐỐI TÁC NGOÀI NẾU PHIẾU ĐÃ TỪNG GỬI ĐỐI TÁC */}
+                {selectedStatus !== 'WAITING_VENDOR' && (ticket?.vendorName || ticket?.vendorId) && (
+                    <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 flex items-center justify-between shadow-2xs mb-3">
+                        <div className="flex items-center gap-2">
+                            <ShopOutlined className="text-amber-600 text-base" />
+                            <div>
+                                <span className="text-slate-500">Đơn vị / Đối tác phụ trách: </span>
+                                <strong className="text-amber-950 font-bold">{ticket.vendorName || 'Đơn vị ngoài'}</strong>
+                                {ticket.vendorTicketCode && (
+                                    <span className="text-slate-500 ml-1.5">
+                                        (Mã ticket: <strong className="text-slate-700">{ticket.vendorTicketCode}</strong>)
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <Tag color="cyan" className="m-0 font-medium border-none rounded-full px-2.5 py-0.5">
+                            Lịch sử gửi hãng được bảo toàn
+                        </Tag>
+                    </div>
+                )}
 
                 {/* TÙY CHỌN: ĐI KHOA PHÒNG / XỬ LÝ KÉO DÀI */}
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50/60 border border-purple-200/90 shadow-2xs mb-3">
@@ -385,29 +478,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     </div>
                 )}
 
-                {/* Phân quyền chọn Người xử lý */}
-                <Form.Item 
-                    name="assigneeId" 
-                    label={<span className="font-semibold text-slate-700">Người xử lý / Đôn đốc</span>} 
-                    extra="Nếu bạn chọn người khác, phiếu sẽ vào trạng thái Chờ chuyển giao cho đến khi người đó xác nhận."
-                    className="mb-3"
-                >
-                    <Select allowClear disabled={!canChangeAssignee} className="!rounded-xl">
-                        {availableUsers.map(u => {
-                            let statusBadge = '';
-                            if (u.autoAssignDisabled) {
-                                statusBadge = `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})`;
-                            } else if (!u.isAvailable) {
-                                statusBadge = '(🔴 Tắt nhận việc)';
-                            }
-                            return (
-                                <Select.Option key={u.id} value={u.id}>
-                                    {u.name || u.username} {statusBadge}
-                                </Select.Option>
-                            );
-                        })}
-                    </Select>
-                </Form.Item>
+
                 
                 {/* Ô Ghi chú kỹ thuật & Phản hồi - Hỗ trợ Dán ảnh Ctrl + V */}
                 <Form.Item 

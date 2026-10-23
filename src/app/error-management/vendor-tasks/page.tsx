@@ -114,15 +114,16 @@ function VendorTasksContent() {
     const handleUpdateTicket = async (values: any) => {
         if (!selectedTicket) return;
         try {
+            const isMarkingResolved = values.status === 'RESOLVED';
             const payload: any = {
                 id: selectedTicket.id,
                 status: values.status,
                 it_note: values.it_note,
-                assigneeId: values.assigneeId || null,
-                vendorId: values.vendorId || null,
-                vendorName: values.vendorName || null,
-                vendorTicketCode: values.vendorTicketCode || null,
-                vendorExpectedReturnAt: values.vendorExpectedReturnAt || null,
+                assigneeId: values.assigneeId !== undefined ? values.assigneeId : selectedTicket.assigneeId,
+                vendorId: values.vendorId !== undefined ? values.vendorId : selectedTicket.vendorId,
+                vendorName: values.vendorName !== undefined ? values.vendorName : selectedTicket.vendorName,
+                vendorTicketCode: values.vendorTicketCode !== undefined ? values.vendorTicketCode : selectedTicket.vendorTicketCode,
+                vendorExpectedReturnAt: values.vendorExpectedReturnAt !== undefined ? values.vendorExpectedReturnAt : selectedTicket.vendorExpectedReturnAt,
                 it_images: values.it_images || []
             };
 
@@ -133,7 +134,12 @@ function VendorTasksContent() {
             });
 
             if (res.ok) {
-                message.success('Cập nhật tiến độ thành công!');
+                if (isMarkingResolved) {
+                    message.success('Đã hoàn thành công việc đối tác! Đã chuyển sang tab "Đã hoàn thành / Nhận máy".');
+                    setActiveTab('RESOLVED'); // Tự động chuyển tab để thấy ngay phiếu đã hoàn thành
+                } else {
+                    message.success('Cập nhật tiến độ thành công!');
+                }
                 setIsActionModalVisible(false);
                 fetchTickets();
             } else {
@@ -145,9 +151,12 @@ function VendorTasksContent() {
     };
 
     // Lọc các ticket có liên quan đến Đơn vị / Đối tác ngoài
-    // Bao gồm: Đang chờ đối tác (WAITING_VENDOR) HOẶC Đã hoàn thành mà từng chuyển đối tác (vendorName != null)
+    // Bao gồm: Đang chờ đối tác (WAITING_VENDOR) HOẶC Đã hoàn thành mà từng chuyển đối tác (vendorName/vendorId/vendorSentAt != null)
     const vendorTickets = useMemo(() => {
-        return tickets.filter(t => t.status === 'WAITING_VENDOR' || (t.vendorName && t.status === 'RESOLVED'));
+        return tickets.filter(t => 
+            t.status === 'WAITING_VENDOR' || 
+            ((t.vendorName || t.vendorId || t.vendorSentAt) && t.status === 'RESOLVED')
+        );
     }, [tickets]);
 
     // Tính toán KPI Thống kê
@@ -194,9 +203,17 @@ function VendorTasksContent() {
             result = result.filter(t => t.status === 'RESOLVED');
         }
 
-        // Lọc theo Đối tác
+        // Lọc theo Đối tác (Hỗ trợ so khớp chính xác mã, tên hoặc chuỗi chứa)
         if (selectedVendor !== 'ALL') {
-            result = result.filter(t => t.vendorId === selectedVendor || t.vendorName === selectedVendor);
+            result = result.filter(t => {
+                if (t.vendorId === selectedVendor || t.vendorName === selectedVendor) return true;
+                if (t.vendorName && selectedVendor) {
+                    const vName = t.vendorName.toLowerCase();
+                    const sName = selectedVendor.toLowerCase();
+                    return vName.includes(sName) || sName.includes(vName);
+                }
+                return false;
+            });
         }
 
         // Lọc theo từ khóa tìm kiếm

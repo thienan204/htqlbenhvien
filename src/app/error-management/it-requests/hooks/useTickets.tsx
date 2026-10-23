@@ -620,12 +620,12 @@ export const useTickets = (
                 id: selectedTicket.id,
                 status: values.status,
                 it_note: values.it_note,
-                assigneeId: values.assigneeId || null,
+                assigneeId: values.assigneeId !== undefined ? values.assigneeId : selectedTicket.assigneeId,
                 isFocusTask: values.isFocusTask !== undefined ? values.isFocusTask : selectedTicket.isFocusTask,
-                vendorId: values.vendorId || null,
-                vendorName: values.vendorName || null,
-                vendorTicketCode: values.vendorTicketCode || null,
-                vendorExpectedReturnAt: values.vendorExpectedReturnAt || null,
+                vendorId: values.vendorId !== undefined ? values.vendorId : selectedTicket.vendorId,
+                vendorName: values.vendorName !== undefined ? values.vendorName : selectedTicket.vendorName,
+                vendorTicketCode: values.vendorTicketCode !== undefined ? values.vendorTicketCode : selectedTicket.vendorTicketCode,
+                vendorExpectedReturnAt: values.vendorExpectedReturnAt !== undefined ? values.vendorExpectedReturnAt : selectedTicket.vendorExpectedReturnAt,
                 it_images: values.it_images || []
             };
 
@@ -635,10 +635,10 @@ export const useTickets = (
                     action: 'TRANSFER',
                     transferToId: values.assigneeId,
                     it_note: values.it_note,
-                    vendorId: values.vendorId || null,
-                    vendorName: values.vendorName || null,
-                    vendorTicketCode: values.vendorTicketCode || null,
-                    vendorExpectedReturnAt: values.vendorExpectedReturnAt || null,
+                    vendorId: values.vendorId !== undefined ? values.vendorId : selectedTicket.vendorId,
+                    vendorName: values.vendorName !== undefined ? values.vendorName : selectedTicket.vendorName,
+                    vendorTicketCode: values.vendorTicketCode !== undefined ? values.vendorTicketCode : selectedTicket.vendorTicketCode,
+                    vendorExpectedReturnAt: values.vendorExpectedReturnAt !== undefined ? values.vendorExpectedReturnAt : selectedTicket.vendorExpectedReturnAt,
                     it_images: values.it_images || []
                 };
             }

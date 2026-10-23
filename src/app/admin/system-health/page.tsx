@@ -578,24 +578,37 @@ export default function SystemHealthPage() {
                                         <Card title={<span className="font-bold text-slate-800 text-sm flex items-center gap-2"><HddOutlined className="text-blue-500" /> Bộ Nhớ RAM Node.js (Heap Memory)</span>} className="rounded-2xl border-slate-200 shadow-2xs h-full">
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs text-slate-500">Mức sử dụng RAM Heap:</span>
-                                                    <span className="text-xs font-bold text-slate-700">
-                                                        {memory.heapUsedMB} MB / {memory.heapTotalMB} MB ({memory.percentHeapUsed}%)
+                                                    <span className="text-xs text-slate-500">Mức sử dụng RAM / Giới hạn Heap Node.js:</span>
+                                                    <span className="text-xs font-bold text-emerald-700">
+                                                        {memory.heapUsedMB} MB / {memory.heapLimitMB || 4096} MB ({memory.percentHeapUsed}%)
                                                     </span>
                                                 </div>
                                                 <Progress 
                                                     percent={memory.percentHeapUsed || 0} 
-                                                    status={memory.percentHeapUsed > 85 ? 'exception' : 'active'}
-                                                    strokeColor={memory.percentHeapUsed > 85 ? '#ef4444' : '#3b82f6'}
+                                                    status={memory.percentHeapUsed > 80 ? 'exception' : 'normal'}
+                                                    strokeColor={
+                                                        memory.percentHeapUsed > 80 
+                                                            ? '#ef4444' 
+                                                            : memory.percentHeapUsed > 50 
+                                                                ? '#f59e0b' 
+                                                                : '#10b981'
+                                                    }
                                                 />
-                                                <div className="grid grid-cols-2 gap-3 pt-2 text-xs text-slate-600">
+                                                <div className="grid grid-cols-3 gap-2 pt-2 text-xs text-slate-600">
                                                     <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                                                        <div className="text-slate-400">RSS Memory:</div>
-                                                        <div className="font-bold text-slate-800 text-sm mt-0.5">{memory.rssMB} MB</div>
+                                                        <div className="text-slate-400 text-[11px]">Đã cấp phát:</div>
+                                                        <div className="font-bold text-slate-800 text-xs sm:text-sm mt-0.5">{memory.heapTotalMB} MB</div>
+                                                        <div className="text-[10px] text-slate-400">Heap Total</div>
                                                     </div>
                                                     <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                                                        <div className="text-slate-400">Tiến trình PID:</div>
-                                                        <div className="font-bold text-slate-800 text-sm mt-0.5">{server.pid || 'N/A'}</div>
+                                                        <div className="text-slate-400 text-[11px]">RAM Vật Lý:</div>
+                                                        <div className="font-bold text-slate-800 text-xs sm:text-sm mt-0.5">{memory.rssMB} MB</div>
+                                                        <div className="text-[10px] text-slate-400">RSS Memory</div>
+                                                    </div>
+                                                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                                        <div className="text-slate-400 text-[11px]">Trần giới hạn:</div>
+                                                        <div className="font-bold text-emerald-700 text-xs sm:text-sm mt-0.5">{memory.heapLimitMB || 4096} MB</div>
+                                                        <div className="text-[10px] text-emerald-600 font-semibold">Tối đa ~4GB</div>
                                                     </div>
                                                 </div>
                                             </div>

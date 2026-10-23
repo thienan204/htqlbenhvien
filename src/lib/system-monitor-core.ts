@@ -242,6 +242,7 @@ export function getServerRuntimeInfo() {
     let memory = {
         heapUsedMB: 0,
         heapTotalMB: 0,
+        heapLimitMB: 4096,
         rssMB: 0,
         percentHeapUsed: 0
     };
@@ -251,11 +252,27 @@ export function getServerRuntimeInfo() {
         const toMB = (bytes: number) => Math.round((bytes / 1024 / 1024) * 10) / 10;
         const heapUsedMB = toMB(mem.heapUsed);
         const heapTotalMB = toMB(mem.heapTotal);
+        
+        let heapLimitMB = 4096;
+        try {
+            // Lấy giới hạn bộ nhớ tối đa từ V8 Engine
+            const v8 = require('v8');
+            const stats = v8.getHeapStatistics();
+            if (stats && stats.heap_size_limit) {
+                heapLimitMB = Math.round(stats.heap_size_limit / 1024 / 1024);
+            }
+        } catch (e) {}
+
+        const percentHeapUsed = heapLimitMB > 0 
+            ? Math.round((heapUsedMB / heapLimitMB) * 1000) / 10 
+            : 0;
+
         memory = {
             heapUsedMB,
             heapTotalMB,
+            heapLimitMB,
             rssMB: toMB(mem.rss),
-            percentHeapUsed: heapTotalMB > 0 ? Math.round((heapUsedMB / heapTotalMB) * 100) : 0
+            percentHeapUsed
         };
     }
 
