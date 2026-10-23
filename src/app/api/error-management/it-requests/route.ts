@@ -924,7 +924,7 @@ export async function PUT(request: Request) {
         const { 
             id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields,
             vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images, isFocusTask,
-            pauseReason
+            pauseReason, keepFocusTaskRunning
         } = body;
 
         if (!id) return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
@@ -968,7 +968,8 @@ export async function PUT(request: Request) {
                     where: {
                         assigneeId: user.id,
                         status: 'IN_PROGRESS',
-                        id: { not: id }
+                        id: { not: id },
+                        ...(keepFocusTaskRunning ? { isFocusTask: false } : {})
                     }
                 });
                 for (const oldTicket of existingInProgress) {
@@ -1056,13 +1057,15 @@ export async function PUT(request: Request) {
         }
 
         // Đơn tác vụ: Nếu chuyển sang IN_PROGRESS, tự động tạm dừng (PAUSED) tất cả các việc IN_PROGRESS khác của nhân viên này
+        // (Nếu keepFocusTaskRunning = true thì ngoại lệ giữ các việc tập trung isFocusTask = true tiếp tục chạy song song)
         if (newStatus === 'IN_PROGRESS' && finalAssigneeId) {
             try {
                 const existingInProgress = await prisma.iTRequest.findMany({
                     where: {
                         assigneeId: finalAssigneeId,
                         status: 'IN_PROGRESS',
-                        id: { not: id }
+                        id: { not: id },
+                        ...(keepFocusTaskRunning ? { isFocusTask: false } : {})
                     }
                 });
                 for (const oldTicket of existingInProgress) {

@@ -38,7 +38,12 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
             const res = await fetch(`${getBasePath()}/api/error-management/duty-roster?targetDepartment=${targetDepartment}${userIdParam}`);
             if (res.ok) {
                 const data = await res.json();
-                setItUsers(data.filter((u: ITUser) => u.isAvailable && u.role === targetDepartment));
+                const isManagerOrAdmin = user?.role === 'ADMIN' || (user as any)?.isManager;
+                if (isManagerOrAdmin) {
+                    setItUsers(data.filter((u: ITUser) => u.role === targetDepartment));
+                } else {
+                    setItUsers(data.filter((u: ITUser) => u.isAvailable && u.role === targetDepartment));
+                }
                 if (user) {
                     const me = data.find((u: ITUser) => u.id === user.id);
                     if (me) {

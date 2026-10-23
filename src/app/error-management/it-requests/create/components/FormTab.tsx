@@ -413,11 +413,19 @@ export function FormTab({
                                                     size="large"
                                                     className="!rounded-xl"
                                                 >
-                                                    {itUsers.map((u: any) => (
-                                                        <Select.Option key={u.id} value={u.id}>
-                                                            {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Đang bận: ${u.focusReason || 'Nhiệm vụ riêng'})` : ''}
-                                                        </Select.Option>
-                                                    ))}
+                                                    {itUsers.map((u: any) => {
+                                                        let statusBadge = '';
+                                                        if (u.autoAssignDisabled) {
+                                                            statusBadge = `(🎯 Đang bận: ${u.focusReason || 'Nhiệm vụ riêng'})`;
+                                                        } else if (!u.isAvailable) {
+                                                            statusBadge = '(🔴 Tắt nhận việc)';
+                                                        }
+                                                        return (
+                                                            <Select.Option key={u.id} value={u.id}>
+                                                                {u.name || u.username} {statusBadge}
+                                                            </Select.Option>
+                                                        );
+                                                    })}
                                                 </Select>
                                             </Form.Item>
                                             <Form.Item name="ke_hoach" label={<span className="font-semibold text-purple-800">Kế hoạch / Chỉ đạo thực hiện</span>} className="mb-0">

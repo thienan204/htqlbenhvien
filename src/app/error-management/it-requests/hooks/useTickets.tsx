@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { message, notification, Modal } from 'antd';
+import { message, notification, Modal, Checkbox, Tag } from 'antd';
 import { Ticket } from '../types';
 import { playNotificationSound } from '@/utils/audioUtils';
 import {
@@ -165,16 +165,17 @@ export const useTickets = (
     const prevUnassignedCountRef = useRef<number | null>(null);
     const prevMyPendingCountRef = useRef<number | null>(null);
 
-    const executeReceiveTicket = async (ticket: Ticket) => {
+    const executeReceiveTicket = async (ticket: Ticket, keepFocusTaskRunning?: boolean) => {
         try {
             let payload: any = {};
             if (ticket.status === 'TRANSFERRING' && ticket.transferToId === user?.id) {
-                payload = { id: ticket.id, action: 'ACCEPT_TRANSFER' };
+                payload = { id: ticket.id, action: 'ACCEPT_TRANSFER', keepFocusTaskRunning };
             } else {
                 payload = {
                     id: ticket.id,
                     assigneeId: user?.id,
-                    status: 'IN_PROGRESS'
+                    status: 'IN_PROGRESS',
+                    keepFocusTaskRunning
                 };
             }
             const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
@@ -185,7 +186,7 @@ export const useTickets = (
             if (res.ok) {
                 message.success('Đã bắt đầu xử lý yêu cầu!');
                 notification.destroy('unaccepted-ticket-warning');
-                // Cập nhật ngay lập tức state (Optimistic UI): Việc cũ chuyển sang PAUSED, việc mới sang IN_PROGRESS
+                // Cập nhật ngay lập tức state (Optimistic UI):
                 setTickets(prev => prev.map(t => {
                     if (t.id === ticket.id) {
                         return {
@@ -198,6 +199,9 @@ export const useTickets = (
                         };
                     }
                     if (t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== ticket.id) {
+                        if (keepFocusTaskRunning && t.isFocusTask) {
+                            return t; // Ngoại lệ: Giữ nguyên nhiệm vụ tập trung đang chạy song song
+                        }
                         return {
                             ...t,
                             status: 'PAUSED'
@@ -217,25 +221,52 @@ export const useTickets = (
     const quickReceiveTicket = async (ticket: Ticket) => {
         const activeTicket = tickets.find(t => t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== ticket.id);
         if (activeTicket) {
+            let keepFocusTask = activeTicket.isFocusTask === true;
             Modal.confirm({
-                title: <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG VIỆC HIỆN TẠI ĐỂ XỬ LÝ VIỆC NÀY?</span>,
+                title: activeTicket.isFocusTask ? (
+                    <span className="text-blue-600 font-bold">🎯 ĐANG CÓ NHIỆM VỤ TẬP TRUNG / KÉO DÀI</span>
+                ) : (
+                    <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG VIỆC HIỆN TẠI ĐỂ XỬ LÝ VIỆC NÀY?</span>
+                ),
                 content: (
                     <div className="py-2 text-slate-700 space-y-2 text-xs">
                         <p>Bạn hiện đang có một việc đang xử lý:</p>
-                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
-                            <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                        <div className={`p-2.5 rounded-lg border ${activeTicket.isFocusTask ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <div className="flex items-center justify-between">
+                                <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                                {activeTicket.isFocusTask && (
+                                    <Tag color="purple" className="text-[10px] font-bold">🎯 Nhiệm vụ tập trung</Tag>
+                                )}
+                            </div>
                             <div><b>Lỗi:</b> {activeTicket.ten_loi}</div>
                             <div><b>Khoa:</b> {activeTicket.ten_khoa || activeTicket.ma_khoa}</div>
                         </div>
-                        <p className="text-slate-500 mt-1">
-                            Theo quy định, mỗi kỹ thuật viên chỉ tập trung <strong>1 việc tại một thời điểm</strong>. Phiếu cũ sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> (vẫn lưu lại tiến độ và do bạn phụ trách) để bạn thực hiện việc này.
-                        </p>
+
+                        {activeTicket.isFocusTask ? (
+                            <div className="mt-3 p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                                <Checkbox 
+                                    defaultChecked={keepFocusTask} 
+                                    onChange={(e) => { keepFocusTask = e.target.checked; }}
+                                >
+                                    <span className="text-xs font-semibold text-emerald-800">
+                                        🌟 Ngoại lệ: Giữ việc tập trung chạy song song (Không chuyển sang Tạm dừng)
+                                    </span>
+                                </Checkbox>
+                                <p className="text-[11px] text-emerald-600 mt-1 pl-6">
+                                    Nếu bỏ chọn, nhiệm vụ tập trung sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> như việc thông thường.
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-slate-500 mt-1">
+                                Theo quy định, mỗi kỹ thuật viên chỉ tập trung <strong>1 việc tại một thời điểm</strong>. Phiếu cũ sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> (vẫn lưu lại tiến độ và do bạn phụ trách) để bạn thực hiện việc này.
+                            </p>
+                        )}
                     </div>
                 ),
                 okText: 'Đồng ý & Bắt đầu',
                 cancelText: 'Hủy bỏ',
                 onOk: async () => {
-                    await executeReceiveTicket(ticket);
+                    await executeReceiveTicket(ticket, keepFocusTask);
                 }
             });
         } else {
@@ -249,7 +280,8 @@ export const useTickets = (
             await quickReceiveTicket(found);
         } else {
             const activeTicket = tickets.find(t => t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== id);
-            const doReceive = async () => {
+            let keepFocusTask = activeTicket?.isFocusTask === true;
+            const doReceive = async (keepFocus?: boolean) => {
                 try {
                     const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
                         method: 'PUT',
@@ -257,7 +289,8 @@ export const useTickets = (
                         body: JSON.stringify({
                             id,
                             assigneeId: user?.id,
-                            status: 'IN_PROGRESS'
+                            status: 'IN_PROGRESS',
+                            keepFocusTaskRunning: keepFocus
                         })
                     });
                     if (res.ok) {
@@ -274,6 +307,9 @@ export const useTickets = (
                                 };
                             }
                             if (t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== id) {
+                                if (keepFocus && t.isFocusTask) {
+                                    return t;
+                                }
                                 return { ...t, status: 'PAUSED' };
                             }
                             return t;
@@ -289,23 +325,49 @@ export const useTickets = (
 
             if (activeTicket) {
                 Modal.confirm({
-                    title: <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG VIỆC HIỆN TẠI ĐỂ XỬ LÝ VIỆC NÀY?</span>,
+                    title: activeTicket.isFocusTask ? (
+                        <span className="text-blue-600 font-bold">🎯 ĐANG CÓ NHIỆM VỤ TẬP TRUNG / KÉO DÀI</span>
+                    ) : (
+                        <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG VIỆC HIỆN TẠI ĐỂ XỬ LÝ VIỆC NÀY?</span>
+                    ),
                     content: (
                         <div className="py-2 text-slate-700 space-y-2 text-xs">
                             <p>Bạn hiện đang có một việc đang xử lý:</p>
-                            <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
-                                <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                            <div className={`p-2.5 rounded-lg border ${activeTicket.isFocusTask ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
+                                <div className="flex items-center justify-between">
+                                    <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                                    {activeTicket.isFocusTask && (
+                                        <Tag color="purple" className="text-[10px] font-bold">🎯 Nhiệm vụ tập trung</Tag>
+                                    )}
+                                </div>
                                 <div><b>Lỗi:</b> {activeTicket.ten_loi}</div>
                                 <div><b>Khoa:</b> {activeTicket.ten_khoa || activeTicket.ma_khoa}</div>
                             </div>
-                            <p className="text-slate-500 mt-1">
-                                Phiếu cũ sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> để bạn bắt đầu việc này.
-                            </p>
+
+                            {activeTicket.isFocusTask ? (
+                                <div className="mt-3 p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                                    <Checkbox 
+                                        defaultChecked={keepFocusTask} 
+                                        onChange={(e) => { keepFocusTask = e.target.checked; }}
+                                    >
+                                        <span className="text-xs font-semibold text-emerald-800">
+                                            🌟 Ngoại lệ: Giữ việc tập trung chạy song song (Không chuyển sang Tạm dừng)
+                                        </span>
+                                    </Checkbox>
+                                    <p className="text-[11px] text-emerald-600 mt-1 pl-6">
+                                        Nếu bỏ chọn, nhiệm vụ tập trung sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> như việc thông thường.
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-slate-500 mt-1">
+                                    Phiếu cũ sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> để bạn bắt đầu việc này.
+                                </p>
+                            )}
                         </div>
                     ),
                     okText: 'Đồng ý & Bắt đầu',
                     cancelText: 'Hủy bỏ',
-                    onOk: doReceive
+                    onOk: () => doReceive(keepFocusTask)
                 });
             } else {
                 await doReceive();
@@ -348,25 +410,52 @@ export const useTickets = (
     const handleResumeTicket = async (ticket: Ticket) => {
         const activeTicket = tickets.find(t => t.assigneeId === user?.id && t.status === 'IN_PROGRESS' && t.id !== ticket.id);
         if (activeTicket) {
+            let keepFocusTask = activeTicket.isFocusTask === true;
             Modal.confirm({
-                title: <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG PHIẾU HIỆN TẠI ĐỂ TIẾP TỤC VIỆC NÀY?</span>,
+                title: activeTicket.isFocusTask ? (
+                    <span className="text-blue-600 font-bold">🎯 ĐANG CÓ NHIỆM VỤ TẬP TRUNG / KÉO DÀI</span>
+                ) : (
+                    <span className="text-amber-600 font-bold">⚠️ TẠM DỪNG PHIẾU HIỆN TẠI ĐỂ TIẾP TỤC VIỆC NÀY?</span>
+                ),
                 content: (
                     <div className="py-2 text-slate-700 space-y-2 text-xs">
                         <p>Bạn hiện đang xử lý phiếu:</p>
-                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
-                            <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                        <div className={`p-2.5 rounded-lg border ${activeTicket.isFocusTask ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <div className="flex items-center justify-between">
+                                <div><b>Mã:</b> {activeTicket.ma_ba || activeTicket.id.slice(-6)}</div>
+                                {activeTicket.isFocusTask && (
+                                    <Tag color="purple" className="text-[10px] font-bold">🎯 Nhiệm vụ tập trung</Tag>
+                                )}
+                            </div>
                             <div><b>Lỗi:</b> {activeTicket.ten_loi}</div>
                             <div><b>Khoa:</b> {activeTicket.ten_khoa || activeTicket.ma_khoa}</div>
                         </div>
-                        <p className="text-slate-500 mt-1">
-                            Hệ thống sẽ chuyển phiếu trên về trạng thái <strong>Tạm dừng</strong> để bạn quay lại tiếp tục phiếu này.
-                        </p>
+
+                        {activeTicket.isFocusTask ? (
+                            <div className="mt-3 p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                                <Checkbox 
+                                    defaultChecked={keepFocusTask} 
+                                    onChange={(e) => { keepFocusTask = e.target.checked; }}
+                                >
+                                    <span className="text-xs font-semibold text-emerald-800">
+                                        🌟 Ngoại lệ: Giữ việc tập trung chạy song song (Không chuyển sang Tạm dừng)
+                                    </span>
+                                </Checkbox>
+                                <p className="text-[11px] text-emerald-600 mt-1 pl-6">
+                                    Nếu bỏ chọn, nhiệm vụ tập trung sẽ tự động chuyển sang trạng thái <strong>Tạm dừng</strong> như việc thông thường.
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-slate-500 mt-1">
+                                Hệ thống sẽ chuyển phiếu trên về trạng thái <strong>Tạm dừng</strong> để bạn quay lại tiếp tục phiếu này.
+                            </p>
+                        )}
                     </div>
                 ),
                 okText: 'Đồng ý & Tiếp tục',
                 cancelText: 'Hủy bỏ',
                 onOk: async () => {
-                    await executeReceiveTicket(ticket);
+                    await executeReceiveTicket(ticket, keepFocusTask);
                 }
             });
         } else {

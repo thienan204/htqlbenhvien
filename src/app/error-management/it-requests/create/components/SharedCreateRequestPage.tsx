@@ -156,7 +156,12 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
     const tabItems = [
         {
             key: 'chat',
-            label: <span className="font-medium px-2 py-1 flex items-center gap-2"><MessageOutlined /> Tạo Nhanh (Khuyên dùng)</span>,
+            label: (
+                <span className="font-medium px-1 sm:px-2 py-0.5 sm:py-1 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                    <MessageOutlined />
+                    <span>Tạo Nhanh <span className="hidden sm:inline">(Khuyên dùng)</span></span>
+                </span>
+            ),
             children: (
                 <ChatTab 
                     user={user}
@@ -183,7 +188,12 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         ...(targetDepartment === 'CNTT' ? [
             {
                 key: 'software',
-                label: <span className="font-medium px-2 py-1 flex items-center gap-2"><FileTextOutlined /> Hỗ trợ Bệnh án (Phần mềm)</span>,
+                label: (
+                    <span className="font-medium px-1 sm:px-2 py-0.5 sm:py-1 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                        <FileTextOutlined />
+                        <span>Bệnh án <span className="hidden sm:inline">(Phần mềm)</span></span>
+                    </span>
+                ),
                 children: (
                     <FormTab 
                         form={form}
@@ -211,7 +221,12 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
             },
             {
                 key: 'hardware',
-                label: <span className="font-medium px-2 py-1 flex items-center gap-2"><DesktopOutlined /> Sửa chữa Thiết bị (Phần cứng)</span>,
+                label: (
+                    <span className="font-medium px-1 sm:px-2 py-0.5 sm:py-1 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                        <DesktopOutlined />
+                        <span>Thiết bị <span className="hidden sm:inline">(Phần cứng)</span></span>
+                    </span>
+                ),
                 children: (
                     <FormTab 
                         form={form}
@@ -240,7 +255,12 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         ] : [
             {
                 key: 'hardware',
-                label: <span className="font-medium px-2 py-1 flex items-center gap-2"><ToolOutlined /> Điền Form Yêu cầu</span>,
+                label: (
+                    <span className="font-medium px-1 sm:px-2 py-0.5 sm:py-1 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                        <ToolOutlined />
+                        <span>Điền Form Yêu cầu</span>
+                    </span>
+                ),
                 children: (
                     <FormTab 
                         form={form}
@@ -270,32 +290,34 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
     ];
 
     return (
-        <div className="w-full max-w-[98%] mx-auto px-4 sm:px-[30px] py-4 sm:py-6 space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
+        <div className="w-full max-w-[98%] mx-auto px-2.5 sm:px-[30px] py-3 sm:py-6 space-y-3 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-3.5 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-3 sm:gap-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
                         <BugOutlined />
                     </div>
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-1 leading-tight">{title}</h1>
-                        <p className="text-sm sm:text-base text-slate-500 m-0">{description}</p>
+                        <h1 className="text-lg sm:text-2xl font-bold text-slate-800 mb-0.5 sm:mb-1 leading-tight">{title}</h1>
+                        <p className="text-xs sm:text-base text-slate-500 m-0">{description}</p>
                     </div>
                 </div>
                 <div className="flex gap-2 sm:gap-3 w-full sm:w-auto items-center">
-                    <Link href={backPath}>
-                        <Button size="large" icon={<ArrowLeftOutlined />} className="w-full sm:w-auto">Quay Lại</Button>
+                    <Link href={backPath} className="w-full sm:w-auto">
+                        <Button size="middle" icon={<ArrowLeftOutlined />} className="w-full sm:w-auto h-9 font-medium">Quay Lại</Button>
                     </Link>
                 </div>
             </div>
 
-            <Tabs 
-                activeKey={activeTab} 
-                onChange={handleTabChange}
-                type="card" 
-                className="mt-2"
-                items={tabItems}
-                destroyOnHidden
-            />
+            <div className="overflow-x-auto">
+                <Tabs 
+                    activeKey={activeTab} 
+                    onChange={handleTabChange}
+                    type="card" 
+                    className="mt-1 sm:mt-2"
+                    items={tabItems}
+                    destroyOnHidden
+                />
+            </div>
 
             <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)} centered>
                 <img alt="Preview" style={{ width: '100%', marginTop: '20px', borderRadius: '8px' }} src={previewImage?.startsWith('http') || previewImage?.startsWith('blob') || previewImage?.startsWith('data') ? previewImage : `${getBasePath()}${previewImage}`} />

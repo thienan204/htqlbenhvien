@@ -259,17 +259,19 @@ export function ChatTab({
     };
 
     return (
-        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-inner flex flex-col min-h-[400px]">
+        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-2.5 sm:p-6 shadow-inner flex flex-col min-h-[400px]">
             {/* Thanh thông tin người báo trong Chat Tab */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm mb-4 gap-2">
-                <div className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                    <span>👤 Người báo:</span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-2.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200 shadow-sm mb-3 sm:mb-4 gap-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 w-full flex-1 min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap shrink-0">
+                        👤 Người báo:
+                    </span>
                     {user?.staffId && !isAdmin && user?.role !== 'KHOA' ? (
-                        <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                        <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md text-xs sm:text-sm truncate">
                             {departmentStaff.find((s: any) => s.id === user.staffId)?.ho_ten || 'Tài khoản cá nhân'}
                         </span>
                     ) : (
-                        <div className="flex items-center gap-1 border border-slate-200 rounded bg-slate-50 px-1 py-0.5 min-w-[250px] max-w-full">
+                        <div className="flex items-center gap-1 border border-slate-200 rounded-lg bg-slate-50 px-2 py-0.5 w-full sm:min-w-[240px] sm:max-w-[420px]">
                             <Select
                                 size="small"
                                 open={isSelectOpen}
@@ -288,7 +290,7 @@ export function ChatTab({
                                     setStaffSearchValue('');
                                     setIsSelectOpen(false);
                                 }}
-                                className="flex-1"
+                                className="w-full flex-1 min-w-0"
                                 popupMatchSelectWidth={false}
                                 placeholder="Chọn tên nhân viên"
                                 variant="borderless"
@@ -310,7 +312,7 @@ export function ChatTab({
                             />
                             <Tooltip title="Tìm bằng giọng nói">
                                 <AudioOutlined 
-                                    className={`cursor-pointer text-[16px] px-1 transition-colors ${isSearchListening ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-blue-500'}`}
+                                    className={`cursor-pointer text-base px-1 shrink-0 transition-colors ${isSearchListening ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-blue-500'}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleSearchVoiceInput();
@@ -321,13 +323,13 @@ export function ChatTab({
                     )}
                 </div>
                 {isITStaff && (
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-3 py-1.5 rounded-lg text-blue-900 shadow-xs">
+                    <div className="flex items-center justify-between sm:justify-start gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-3 py-1.5 rounded-lg text-blue-900 shadow-2xs shrink-0 self-stretch md:self-auto">
+                        <span className="text-xs font-bold text-blue-800">⚡ Tôi trực tiếp xử lý</span>
                         <Switch 
                             size="small" 
                             checked={selfAssign} 
                             onChange={setSelfAssign} 
                         />
-                        <span className="text-xs font-bold text-blue-800">⚡ Tôi trực tiếp xử lý</span>
                     </div>
                 )}
             </div>
@@ -337,15 +339,15 @@ export function ChatTab({
                 <Radio.Group 
                     value={chatCategory} 
                     onChange={(e) => setChatCategory(e.target.value)}
-                    className="w-full mb-4 flex rounded-lg p-1 bg-white border border-slate-200 shadow-sm" 
+                    className="w-full mb-3 sm:mb-4 flex rounded-lg p-1 bg-white border border-slate-200 shadow-sm" 
                     optionType="button" 
                     buttonStyle="solid"
                 >
-                    <Radio.Button value="SOFTWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'SOFTWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
+                    <Radio.Button value="SOFTWARE" className={`flex-1 text-center border-none shadow-none font-semibold text-xs sm:text-sm h-9 flex items-center justify-center py-1 ${chatCategory === 'SOFTWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent text-slate-600'}`}>
                         Bệnh án
                     </Radio.Button>
-                    <Radio.Button value="HARDWARE" className={`flex-1 text-center border-none shadow-none font-medium !text-[13px] sm:!text-[14px] h-auto min-h-[40px] flex items-center justify-center py-1 ${chatCategory === 'HARDWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent'}`}>
-                        Thiết bị/Sửa chữa
+                    <Radio.Button value="HARDWARE" className={`flex-1 text-center border-none shadow-none font-semibold text-xs sm:text-sm h-9 flex items-center justify-center py-1 ${chatCategory === 'HARDWARE' ? 'bg-blue-50 text-blue-600' : 'bg-transparent text-slate-600'}`}>
+                        Thiết bị / Sửa chữa
                     </Radio.Button>
                 </Radio.Group>
             ) : null}

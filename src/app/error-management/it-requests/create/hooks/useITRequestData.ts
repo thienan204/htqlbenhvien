@@ -85,7 +85,12 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
                 const res = await fetch(`${getBasePath()}/api/error-management/duty-roster?targetDepartment=${targetDepartment}`);
                 if (res.ok) {
                     const data = await res.json();
-                    setItUsers(data.filter((u: any) => u.isAvailable));
+                    const isManagerOrAdmin = isAdmin;
+                    if (isManagerOrAdmin) {
+                        setItUsers(data.filter((u: any) => u.role === targetDepartment));
+                    } else {
+                        setItUsers(data.filter((u: any) => u.isAvailable && u.role === targetDepartment));
+                    }
                 }
             } catch (error) {
                 console.error(error);

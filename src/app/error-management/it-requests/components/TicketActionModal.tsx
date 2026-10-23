@@ -393,11 +393,19 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     className="mb-3"
                 >
                     <Select allowClear disabled={!canChangeAssignee} className="!rounded-xl">
-                        {availableUsers.map(u => (
-                            <Select.Option key={u.id} value={u.id}>
-                                {u.name || u.username} {u.autoAssignDisabled ? `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})` : ''}
-                            </Select.Option>
-                        ))}
+                        {availableUsers.map(u => {
+                            let statusBadge = '';
+                            if (u.autoAssignDisabled) {
+                                statusBadge = `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})`;
+                            } else if (!u.isAvailable) {
+                                statusBadge = '(🔴 Tắt nhận việc)';
+                            }
+                            return (
+                                <Select.Option key={u.id} value={u.id}>
+                                    {u.name || u.username} {statusBadge}
+                                </Select.Option>
+                            );
+                        })}
                     </Select>
                 </Form.Item>
                 
