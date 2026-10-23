@@ -59,6 +59,7 @@ export function ChatTab({
     const [selfAssign, setSelfAssign] = useState(false);
     const isITStaff = user?.role === targetDepartment || user?.role === 'ADMIN';
     const searchRecognitionRef = useRef<any>(null);
+    const lastPasteTimeRef = useRef<number>(0);
 
     const { baCode, baInfo, hasPaymentRequest, isChecking, isFound } = useCheckBa(chatText, { isChatText: true });
 
@@ -161,6 +162,58 @@ export function ChatTab({
             console.error("Error starting speech recognition", error);
             setIsListening(false);
         }
+    };
+
+    const handlePaste = (e: React.ClipboardEvent) => {
+        const clipboardData = e.clipboardData;
+        if (!clipboardData) return;
+
+        const items = clipboardData.items;
+        if (!items || items.length === 0) return;
+
+        // Thu thập các file ảnh hợp lệ từ clipboard
+        const imageFiles: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    // Chống trùng lặp do clipboard cung cấp nhiều MIME type cho cùng một ảnh
+                    const isDup = imageFiles.some(f => f.size === file.size);
+                    if (!isDup) {
+                        imageFiles.push(file);
+                    }
+                }
+            }
+        }
+
+        if (imageFiles.length === 0) return;
+
+        // Chặn nổi bọt sự kiện lên thẻ cha và chặn trình duyệt chèn dữ liệu text rác
+        e.stopPropagation();
+        e.preventDefault();
+
+        // Chống kích hoạt đúp (debounce guard 500ms)
+        const now = Date.now();
+        if (now - lastPasteTimeRef.current < 500) {
+            return;
+        }
+        lastPasteTimeRef.current = now;
+
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const d = new Date();
+        const timeStr = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+
+        imageFiles.forEach((file, index) => {
+            const ext = (file.type.split('/')[1] || 'png').replace('+xml', '');
+            const customFileName = `anh_dan_${timeStr}_${index + 1}.${ext}`;
+            const renamedFile = new File([file], customFileName, { type: file.type });
+            if (uploadProps && uploadProps.customRequest) {
+                uploadProps.customRequest({ file: renamedFile });
+            }
+        });
+
+        message.success(`Đã dán và đính kèm ${imageFiles.length} ảnh chụp màn hình!`);
     };
 
     const handleCreateFromChat = async () => {
@@ -391,7 +444,10 @@ export function ChatTab({
                 className="mb-2"
             />
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+            <div 
+                onPaste={handlePaste}
+                className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all"
+            >
                 {fileList.length > 0 && (
                     <div className="px-3 pt-2 pb-1">
                         <Upload {...uploadProps} />
@@ -445,7 +501,8 @@ export function ChatTab({
                     <Input.TextArea 
                         value={chatText}
                         onChange={e => setChatText(e.target.value)}
-                        placeholder="Mô tả chi tiết sự cố của bạn ở đây..." 
+                        onPaste={handlePaste}
+                        placeholder="Mô tả chi tiết sự cố của bạn ở đây... (Có thể dán trực tiếp ảnh chụp Ctrl+V)" 
                         autoSize={{ minRows: 2, maxRows: 5 }}
                         className="flex-1 !border-none !shadow-none !ring-0 !bg-transparent text-[16px] py-3 px-2 leading-relaxed"
                         onPressEnter={(e) => {

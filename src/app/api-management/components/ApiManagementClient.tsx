@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Tag, Input, Typography, Collapse, Space, Badge } from 'antd';
-import { SearchOutlined, ApiOutlined, LinkOutlined } from '@ant-design/icons';
+import { Card, Tag, Input, Typography, Collapse, Space, Badge, Button } from 'antd';
+import { SearchOutlined, ApiOutlined, LinkOutlined, DashboardOutlined } from '@ant-design/icons';
 import { ApiEndpoint } from '@/actions/api-discovery';
 
 const { Title, Text } = Typography;
@@ -56,14 +56,25 @@ export function ApiManagementClient({ groupedEndpoints }: Props) {
                         Danh sách này được tự động quét từ mã nguồn. Cập nhật theo thời gian thực.
                     </Text>
                 </div>
-                <Input
-                    prefix={<SearchOutlined className="text-slate-400" />}
-                    placeholder="Tìm kiếm API URL..."
-                    className="max-w-xs rounded-full"
-                    size="large"
-                    allowClear
-                    onChange={(e) => setSearchText(e.target.value.toLowerCase())}
-                />
+                <div className="flex items-center gap-3">
+                    <Button 
+                        type="primary" 
+                        icon={<DashboardOutlined />}
+                        href={`${basePath}/admin/system-health`}
+                        className="bg-emerald-600 hover:!bg-emerald-500 rounded-full font-semibold shadow-xs"
+                        size="large"
+                    >
+                        Giám Sát Vận Hành & Lưu Lượng
+                    </Button>
+                    <Input
+                        prefix={<SearchOutlined className="text-slate-400" />}
+                        placeholder="Tìm kiếm API URL..."
+                        className="max-w-xs rounded-full"
+                        size="large"
+                        allowClear
+                        onChange={(e) => setSearchText(e.target.value.toLowerCase())}
+                    />
+                </div>
             </div>
 
             {categories.map(category => {

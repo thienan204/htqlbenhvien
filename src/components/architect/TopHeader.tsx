@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import {
     AppstoreOutlined, SearchOutlined,
     BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined,
-    MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined
+    MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined, DashboardOutlined
 } from '@ant-design/icons';
 import { Button, Badge, Avatar, Dropdown, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
@@ -112,6 +112,11 @@ const TopHeader = ({
                         <Dropdown menu={{
                             items: [
                                 ...(user.role === 'ADMIN' ? [{
+                                    key: 'system-health',
+                                    label: 'Giám sát Hệ thống & API',
+                                    icon: <DashboardOutlined className="text-emerald-500" />,
+                                    onClick: () => router.push('/admin/system-health')
+                                }, {
                                     key: 'menu-builder',
                                     label: 'Menu Builder',
                                     icon: <AppstoreOutlined />,

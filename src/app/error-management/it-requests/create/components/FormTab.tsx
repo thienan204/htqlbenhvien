@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Form, Input, Select, Radio, Button, Card, Upload, Switch, Alert, Tag, Segmented } from 'antd';
+import { Form, Input, Select, Radio, Button, Card, Upload, Switch, Alert, Tag, Segmented, message } from 'antd';
 import { PictureOutlined, CameraOutlined, LoadingOutlined, FileTextOutlined, DesktopOutlined, AimOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
 import { useCheckBa } from '../hooks/useCheckBa';
@@ -67,6 +67,60 @@ export function FormTab({
             }
         }
     }, [baInfo]);
+
+    const lastPasteTimeRef = useRef<number>(0);
+
+    const handlePaste = (e: React.ClipboardEvent) => {
+        const clipboardData = e.clipboardData;
+        if (!clipboardData) return;
+
+        const items = clipboardData.items;
+        if (!items || items.length === 0) return;
+
+        // Thu thập các file ảnh hợp lệ từ clipboard
+        const imageFiles: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    // Chống trùng lặp do clipboard cung cấp nhiều MIME type cho cùng một ảnh
+                    const isDup = imageFiles.some(f => f.size === file.size);
+                    if (!isDup) {
+                        imageFiles.push(file);
+                    }
+                }
+            }
+        }
+
+        if (imageFiles.length === 0) return;
+
+        // Chặn nổi bọt sự kiện lên thẻ cha và chặn trình duyệt chèn dữ liệu text rác
+        e.stopPropagation();
+        e.preventDefault();
+
+        // Chống kích hoạt đúp (debounce guard 500ms)
+        const now = Date.now();
+        if (now - lastPasteTimeRef.current < 500) {
+            return;
+        }
+        lastPasteTimeRef.current = now;
+
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const d = new Date();
+        const timeStr = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+
+        imageFiles.forEach((file, index) => {
+            const ext = (file.type.split('/')[1] || 'png').replace('+xml', '');
+            const customFileName = `anh_dan_${timeStr}_${index + 1}.${ext}`;
+            const renamedFile = new File([file], customFileName, { type: file.type });
+            if (uploadProps && uploadProps.customRequest) {
+                uploadProps.customRequest({ file: renamedFile });
+            }
+        });
+
+        message.success(`Đã dán và đính kèm ${imageFiles.length} ảnh chụp màn hình!`);
+    };
 
     const normalizeString = (str: string) => {
         return (str || '')
@@ -238,11 +292,16 @@ export function FormTab({
                                     </div>
 
                                     <Form.Item name="ghi_chu" label={<span className="font-semibold text-slate-800">Ghi chú thêm / Mô tả chi tiết (Tuỳ chọn)</span>} className="mb-0">
-                                        <Input.TextArea rows={3} className="!rounded-xl" placeholder="Mô tả cụ thể hoặc cho biết vị trí máy bị lỗi..." />
+                                        <Input.TextArea 
+                                            rows={3} 
+                                            className="!rounded-xl" 
+                                            onPaste={handlePaste}
+                                            placeholder="Mô tả cụ thể hoặc cho biết vị trí máy bị lỗi... (Có thể dán trực tiếp ảnh chụp Ctrl+V)" 
+                                        />
                                     </Form.Item>
 
                                     <Form.Item label={<span className="font-semibold text-slate-800">Đính kèm hình ảnh (Bắt lỗi màn hình, thiết bị)</span>} className="mb-0">
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex flex-col sm:flex-row gap-4" onPaste={handlePaste}>
                                             <div className="hidden sm:block">
                                                 <Upload {...uploadProps}>
                                                     {fileList.length >= 3 ? null : (

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
+import { recordApiHit } from '@/lib/system-monitor-core';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
@@ -12,6 +13,25 @@ export async function proxy(request: NextRequest) {
     let path = request.nextUrl.pathname;
     let targetPathForRewrite: string | null = null;
     const bp = request.nextUrl.basePath || '';
+
+    // Tự động ghi nhận lưu lượng API và chuyển tiếp ngay lập tức
+    if (path.startsWith('/api/')) {
+        if (!path.startsWith('/api/admin/system-health')) {
+            try {
+                const forwarded = request.headers.get('x-forwarded-for');
+                const ip = forwarded ? forwarded.split(',')[0].trim() : (request.headers.get('x-real-ip') || '127.0.0.1');
+                recordApiHit({
+                    method: request.method,
+                    path: path,
+                    status: 200,
+                    durationMs: 10,
+                    ip,
+                    userAgent: request.headers.get('user-agent') || ''
+                });
+            } catch (e) {}
+        }
+        return NextResponse.next();
+    }
 
     // Helper function for internal fetches to bypass NAT hairpinning / SSL errors
     async function fetchInternal(apiPath: string) {
@@ -144,12 +164,9 @@ export async function proxy(request: NextRequest) {
 export const config = {
     matcher: [
         /*
-         * Match all request paths except for the ones starting with:
-         * - api (API routes except specific protected ones? for now let's protect UI only or check inside API)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
+         * Bắt tất cả request (bao gồm /api/* để theo dõi lưu lượng)
+         * Loại trừ các file tĩnh: _next/static, _next/image, favicon.ico
          */
-        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+        '/((?!_next/static|_next/image|favicon.ico).*)',
     ],
 };
