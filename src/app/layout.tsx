@@ -17,8 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kiểm tra lỗi BHXH",
-  description: "Công cụ kiểm tra và phân tích lỗi hồ sơ Bảo Hiểm Xã Hội",
+  title: "Hệ thống Quản lý Bệnh viện - BVĐK Lộc Sơn",
+  description: "Công cụ quản lý, báo lỗi CNTT và kiểm tra hồ sơ Bệnh viện Đa khoa Lộc Sơn",
+  manifest: "/manifest.json",
 };
 
 import prisma from "@/lib/prisma";
@@ -26,6 +27,7 @@ import MainLayout from "@/components/architect/MainLayout";
 import { getCurrentUser } from "@/actions/auth";
 import { AuthProvider } from "@/contexts/AuthContext";
 import FetchInterceptor from "@/components/FetchInterceptor";
+import DesktopShortcutPrompt from "@/components/DesktopShortcutPrompt";
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -106,6 +108,7 @@ export default async function RootLayout({
           <App>
             <AuthProvider user={user} guestPermissions={guestPermissions}>
               <FetchInterceptor />
+              <DesktopShortcutPrompt />
               {/* Main Layout Wrapper */}
               <MainLayout rules={rules} menus={menus} adminOnlyPaths={adminOnlyPaths}>
                 {children}

@@ -285,8 +285,9 @@ export default function AgencyPortalPage() {
                 </Dragger>
 
                 {loading && (
-                    <div className="text-center mt-4">
-                        <Spin tip="Đang xử lý dữ liệu import, vui lòng chờ..." />
+                    <div className="flex flex-col items-center justify-center mt-4 gap-2">
+                        <Spin size="large" />
+                        <span className="text-xs text-slate-500 font-medium">Đang xử lý dữ liệu import, vui lòng chờ...</span>
                     </div>
                 )}
 

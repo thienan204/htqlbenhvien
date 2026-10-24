@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ đồ Trình tự Tương tác Toàn Hệ thống | BVĐK Lạng Sơn</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Mermaid JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mermaid { display: flex; justify-content: center; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    BV
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">
+                        BỆNH VIỆN ĐA KHOA LẠNG SƠN
+                    </h1>
+                    <p class="text-xs text-blue-600 font-medium">Sơ đồ Kiến trúc & Sequence Diagrams Tương tác Toàn Hệ thống</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="#master-diagram" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition-all">
+                    Sơ đồ Tổng thể
+                </a>
+                <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                    v2.5 Full System
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-12">
+
+        <!-- Banner Hướng dẫn tương tác -->
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10 max-w-3xl">
+                <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
+                    Interactive Architecture Map
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mt-3">
+                    Bản đồ Trình tự Tương tác Toàn Hệ thống HTQLBV
+                </h2>
+                <p class="text-blue-100 text-sm mt-2 leading-relaxed">
+                    Bấm trực tiếp vào bất kỳ khối phân hệ nào trên <strong>Sơ đồ Tổng thể</strong> hoặc thanh điều hướng bên dưới để xem biểu đồ trình tự (Sequence Diagram) chi tiết từng bước trao đổi dữ liệu giữa Người dùng, Giao diện Web, Backend API và Cơ sở dữ liệu PostgreSQL.
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Navigation Pills -->
+        <div class="flex flex-wrap items-center gap-2 pb-2">
+            <span class="text-xs font-bold text-slate-500 uppercase mr-1">Chuyển nhanh:</span>
+            <a href="#seq-auth" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                🔐 1. Xác thực & Phân quyền
+            </a>
+            <a href="#seq-staff" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                👥 2. Nhân sự & Khoa phòng
+            </a>
+            <a href="#seq-xml" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                📄 3. Bóc tách XML 1-5 (QĐ 130)
+            </a>
+            <a href="#seq-rules" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                ⚡ 4. Chuyên đề Trùng lặp BHYT
+            </a>
+            <a href="#seq-it" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                💻 5. Yêu cầu Kỹ thuật 1 việc
+            </a>
+            <a href="#seq-notif" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                🔔 6. Chat & Cảnh báo Tức thì
+            </a>
+            <a href="#seq-feedback" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                📬 7. Hòm thư QR Mobile
+            </a>
+            <a href="#seq-doc" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                📚 8. Tủ sách Hướng dẫn
+            </a>
+        </div>
+
+        <!-- 1. MASTER ARCHITECTURE DIAGRAM -->
+        <section id="master-diagram" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-800">
+                        1. Sơ đồ Kiến trúc & Luồng Điều hướng Tổng thể Toàn Hệ thống
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Click vào khối chức năng để trượt ngay tới Sequence Diagram chi tiết</p>
+                </div>
+                <span class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-semibold border border-blue-200">
+                    Master Flow
+                </span>
+            </div>
+
+            <!-- Mermaid Master Diagram Container -->
+            <div class="py-6 overflow-x-auto">
+                <pre class="mermaid">
+flowchart TD
+    classDef auth fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
+    classDef staff fill:#fef3c7,stroke:#d97706,stroke-width:2px;
+    classDef xml fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
+    classDef it fill:#f3e8ff,stroke:#9333ea,stroke-width:2px;
+    classDef notif fill:#ffedd5,stroke:#ea580c,stroke-width:2px;
+    classDef feedback fill:#ffe4e6,stroke:#e11d48,stroke-width:2px;
+    classDef doc fill:#f1f5f9,stroke:#475569,stroke-width:2px;
+    classDef core fill:#ffffff,stroke:#0f172a,stroke-width:3px;
+
+    User["👥 Người dùng (Bác sĩ, Điều dưỡng, CNTT, KHTH, Bệnh nhân)"] --> Gateway["🔐 CỔNG ĐĂNG NHẬP & KIỂM SOÁT PHÂN QUYỀN"]:::core
+
+    Gateway --> S1["1. Xác thực & Phân quyền RBAC"]:::auth
+    Gateway --> S2["2. Quản lý Nhân sự & Khoa phòng"]:::staff
+    Gateway --> S3["3. Bóc tách & Kiểm tra XML 1-5 (QĐ 130)"]:::xml
+    Gateway --> S4["4. Kiểm tra Chuyên đề Trùng lặp BHYT"]:::xml
+    Gateway --> S5["5. Yêu cầu Kỹ thuật & Tiếp nhận 1 việc"]:::it
+    Gateway --> S6["6. Chat Đa kênh & Cảnh báo Tức thì"]:::notif
+    Gateway --> S7["7. Hòm thư Góp ý 3 Kênh (QR Mobile)"]:::feedback
+    Gateway --> S8["8. Tủ sách Hướng dẫn & Nhật ký Thay đổi"]:::doc
+
+    S1 --> DB[("🗄️ CƠ SỞ DỮ LIỆU POSTGRESQL (PRISMA ORM)")]:::core
+    S2 --> DB
+    S3 --> DB
+    S4 --> DB
+    S5 --> DB
+    S6 --> DB
+    S7 --> DB
+    S8 --> DB
+
+    click S1 href "#seq-auth" "Xem chi tiết Sequence Xác thực & Phân quyền"
+    click S2 href "#seq-staff" "Xem chi tiết Sequence Quản lý Nhân sự & Khoa phòng"
+    click S3 href "#seq-xml" "Xem chi tiết Sequence Bóc tách & Kiểm tra XML"
+    click S4 href "#seq-rules" "Xem chi tiết Sequence Kiểm tra Chuyên đề Trùng lặp"
+    click S5 href "#seq-it" "Xem chi tiết Sequence Tiếp nhận Yêu cầu 1 việc"
+    click S6 href "#seq-notif" "Xem chi tiết Sequence Chat & Cảnh báo Tức thì"
+    click S7 href "#seq-feedback" "Xem chi tiết Sequence Hòm thư Góp ý & QR Bệnh nhân"
+    click S8 href "#seq-doc" "Xem chi tiết Sequence Tủ sách Hướng dẫn"
+                </pre>
+            </div>
+        </section>
+
+        <!-- 2. CHI TIẾT TỪNG SEQUENCE DIAGRAM -->
+        <div class="space-y-10">
+
+            <!-- 2.1. AUTH & RBAC -->
+            <section id="seq-auth" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-md border border-sky-200 uppercase">
+                            Phân hệ 1
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Xác thực Đăng nhập & Ma trận Phân quyền Đa cấp độ (Auth & RBAC)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User as Cán bộ Nhân viên / Bác sĩ
+    participant UI as Giao diện Đăng nhập (/login)
+    participant Proxy as Middleware / Proxy Guard (proxy.ts)
+    participant AuthAPI as API Xác thực (/api/auth/login)
+    participant DB as PostgreSQL (User & Role & Permission)
+
+    User->>UI: Nhập tài khoản, mật khẩu (hoặc CCCD / Mã NV)
+    UI->>AuthAPI: POST /api/auth/login { username, password }
+    AuthAPI->>DB: Query User theo username kèm Roles & Permissions
+    DB-->>AuthAPI: Trả về thông tin User + Hash Password + Ma trận quyền
+    AuthAPI->>AuthAPI: So khớp bcrypt/argon2 mật khẩu
+    
+    alt Mật khẩu không đúng hoặc tài khoản bị khóa
+        AuthAPI-->>UI: Trả về lỗi 401: Sai mật khẩu hoặc tài khoản đã tắt
+        UI-->>User: Báo lỗi đỏ trên màn hình đăng nhập
+    else Xác thực thành công
+        AuthAPI->>AuthAPI: Sinh JWT Token (userId, role, ma_khoa, permissions)
+        AuthAPI-->>UI: Đặt Set-Cookie (httpOnly, secure) & Trả về thông tin cơ bản
+        UI-->>User: Chuyển hướng tới Trang Chủ hoặc Trang trước đó
+    end
+
+    Note over User, DB: Khi người dùng truy cập một tính năng cụ thể (ví dụ: /staff hoặc /admin)
+    User->>Proxy: Yêu cầu mở trang /staff
+    Proxy->>Proxy: Giải mã JWT Cookie từ Request
+    alt Chưa đăng nhập hoặc Token hết hạn
+        Proxy-->>User: Chuyển hướng ngay về /login?redirect=/staff
+    else Đã đăng nhập
+        Proxy->>Proxy: Kiểm tra ma trận quyền MenuPermission ('MENU_STAFF', 'VIEW')
+        alt Không có quyền truy cập
+            Proxy-->>User: Hiển thị trang 403 Forbidden: Bạn không có quyền truy cập
+        else Có quyền hợp lệ
+            Proxy-->>User: Tải giao diện và dữ liệu tính năng bình thường
+        end
+    end
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.2. STAFF & DEPARTMENT -->
+            <section id="seq-staff" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200 uppercase">
+                            Phân hệ 2
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quản lý Nhân sự, Khoa Phòng & Chứng chỉ Hành nghề (Staff & Department)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor Admin as Phòng Tổ chức Cán bộ / Admin
+    participant UI as Quản lý Nhân sự (/staff & /departments)
+    participant API as Backend API (/api/staff & /api/departments)
+    participant DB as PostgreSQL (Staff, Department, PracticingCertificate)
+
+    Admin->>UI: Thêm mới hoặc Cập nhật thông tin Bác sĩ / Nhân viên
+    UI->>UI: Validate form (Mã NV, Họ tên, Mã Khoa, Số CCHN, Ngày cấp, Phạm vi CM)
+    UI->>API: POST/PUT /api/staff { data }
+    API->>API: Kiểm tra trùng lặp Số CCHN hoặc Mã NV
+    API->>DB: Upsert dữ liệu Staff & PracticingCertificate
+    DB-->>API: Lưu thành công
+    API-->>UI: Phản hồi thành công
+    UI-->>Admin: Hiển thị nhân viên trong danh sách Khoa/Phòng
+
+    Note over Admin, DB: Đồng bộ phục vụ Giám định BHYT & Xếp lịch trực
+    Admin->>UI: Mở Lịch trực lâm sàng (/clinical-scheduling)
+    UI->>API: GET /api/duty-roster?month=10&year=2026&ma_khoa=K01
+    API->>DB: Lấy danh sách ca trực theo phân công khoa
+    DB-->>API: Trả về bảng lịch trực
+    API-->>UI: Render bảng phân ca trực động
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.3. CHECK XML -->
+            <section id="seq-xml" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 uppercase">
+                            Phân hệ 3
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Bóc tách & Kiểm tra Hồ sơ XML BHYT theo QĐ 130/QĐ-BYT (Check XML)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor BHYT as Cán bộ BHYT / KHTH
+    participant UI as Giao diện Kiểm tra XML (/xml-checker)
+    participant Worker as Trình duyệt Parser (Web Worker / Sax)
+    participant API as Backend API (/api/xml/upload & validate)
+    participant DB as PostgreSQL (Xml1..Xml5, XmlError)
+
+    BHYT->>UI: Kéo thả tệp XML hoặc file nén .ZIP vào ô tải lên
+    UI->>Worker: Khởi chạy luồng bóc tách dữ liệu ngầm (không đơ giao diện)
+    Worker->>Worker: Đọc thẻ XML1 (MA_LK, MA_BN, NGAY_VAO, NGAY_RA...)
+    Worker->>Worker: Đọc thẻ XML2 (Thuốc), XML3 (DVKT, VTYT)
+    Worker-->>UI: Tiến trình hoàn thành 100% bóc tách
+    
+    UI->>API: Gửi dữ liệu đối soát lên Server
+    API->>API: So khớp định dạng chuẩn Quyết định 130/QĐ-BYT
+    API->>API: Kiểm tra mã danh mục dùng chung (Mã thuốc, Mã DVKT, Mã ICD10)
+    API->>DB: Lưu các bản ghi lỗi phát hiện (XmlError)
+    DB-->>API: Hoàn tất lưu vết lỗi
+    API-->>UI: Trả về danh sách lỗi vi phạm kèm dòng & cột cụ thể
+    UI-->>BHYT: Hiển thị bảng lỗi trực quan, cho phép sửa nhanh hoặc xuất Excel
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.4. SPECIALIZED RULES ENGINE -->
+            <section id="seq-rules" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-green-700 bg-green-50 px-2.5 py-0.5 rounded-md border border-green-200 uppercase">
+                            Phân hệ 4
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Động cơ Kiểm tra Chuyên đề Trùng lặp BHYT (Specialized Rules Engine)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor GiamDinh as Cán bộ Giám định / KHTH
+    participant UI as Chuyên đề BHYT (/kiem-tra-chuyen-de)
+    participant RuleEngine as Động cơ Quy tắc Chuyên đề (SpecializedRuleRunner)
+    participant DB as CSDL Hồ sơ Bệnh án & Lịch trực
+    participant Export as Bộ trích xuất Báo cáo ExcelJS
+
+    GiamDinh->>UI: Chọn quy tắc: "Kiểm tra trùng Bác sĩ khám" & "Trùng Giường"
+    GiamDinh->>UI: Bấm "Chạy kiểm tra chuyên đề"
+    UI->>RuleEngine: Truyền dữ liệu hồ sơ XML và bộ quy tắc SpecializedRule
+    
+    par Kiểm tra Trùng Bác sĩ
+        RuleEngine->>RuleEngine: Gom nhóm theo CCHN Bác sĩ + Mốc thời gian khám
+        RuleEngine->>RuleEngine: Phát hiện 2 hồ sơ khác nhau có thời gian khám gối nhau
+    and Kiểm tra Trùng Giường bệnh
+        RuleEngine->>RuleEngine: Gom nhóm theo Mã Khoa + Số Giường + Ngày nằm viện
+        RuleEngine->>RuleEngine: Phát hiện 2 bệnh nhân nằm cùng 1 giường cùng lúc
+    and Kiểm tra Trùng Dịch vụ kỹ thuật
+        RuleEngine->>RuleEngine: So sánh mã dịch vụ kỹ thuật trùng lặp trong đợt điều trị
+    end
+
+    RuleEngine-->>UI: Trả về kết quả phân tích vi phạm chi tiết
+    UI-->>GiamDinh: Hiển thị bảng tổng hợp hồ sơ nghi vấn xuất toán
+    GiamDinh->>UI: Bấm "Xuất Excel Báo cáo chuyên đề"
+    UI->>Export: Sinh file Excel gồm nhiều Sheet kèm công thức và định dạng màu
+    Export-->>GiamDinh: Tải về máy tính file Excel báo cáo hoàn chỉnh
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.5. IT REQUESTS -->
+            <section id="seq-it" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200 uppercase">
+                            Phân hệ 5
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quản lý Yêu cầu Kỹ thuật & Tiếp nhận 1 Việc Tập trung (IT Requests)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor KP as Khoa/Phòng gặp sự cố
+    actor KTV as Kỹ thuật viên CNTT
+    participant UI as Trang Quản lý Yêu cầu (/error-management/it-requests)
+    participant API as API Yêu cầu (/api/error-management/it-requests)
+    participant DB as PostgreSQL (ITRequest, RequestLog)
+
+    KP->>UI: Tạo phiếu yêu cầu (Mã BA, Chọn Lỗi thường gặp, Ảnh chụp)
+    UI->>API: POST /api/error-management/it-requests
+    API->>DB: Tạo Ticket mới (Status = PENDING, assigneeId = null)
+    DB-->>API: Lưu thành công
+    API-->>UI: Hoàn tất
+    UI-->>KP: Báo tạo phiếu thành công, hiển thị trên bảng theo dõi
+
+    Note over KTV, DB: KTV đang có Việc A (Status = IN_PROGRESS)
+    KTV->>UI: Bấm "Nhận việc" tại Việc B (Status = PENDING)
+    UI->>UI: Phát hiện KTV đang có việc A đang chạy
+    UI->>KTV: Hộp thoại: "Phiếu cũ sẽ tự động chuyển sang TẠM DỪNG để bắt đầu việc này?"
+    KTV->>UI: Bấm "Đồng ý & Bắt đầu"
+    UI->>API: PUT /api/error-management/it-requests (Chuyển A -> PAUSED, B -> IN_PROGRESS, assigneeId = KTV)
+    API->>DB: Chạy Transaction cập nhật trạng thái cả 2 ticket
+    DB-->>API: Cập nhật thành công
+    API-->>UI: Trả về danh sách mới
+    UI-->>KTV: Bắt đầu bấm giờ việc B, việc A chuyển sang trạng thái Tạm dừng
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.6. REAL-TIME NOTIFICATIONS -->
+            <section id="seq-notif" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200 uppercase">
+                            Phân hệ 6
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Hệ thống Chat Đa kênh & Cảnh báo Thời gian thực (Real-time Notification)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor KP as Khoa/Phòng
+    actor KTV as Kỹ thuật viên CNTT
+    participant UI_KP as Khung Chat Khoa
+    participant UI_KTV as Màn hình KTV (useTickets Polling 5s)
+    participant API_Msg as API Messages (/api/.../it-requests/[id]/messages)
+    participant API_QR as API Mẫu câu (/api/.../quick-replies)
+    participant DB as CSDL PostgreSQL
+    participant Push as Web Push Notification Engine
+
+    opt Admin lưu mẫu câu dùng chung
+        KTV->>API_QR: POST /quick-replies (Lưu danh sách câu mẫu chung toàn viện)
+        API_QR->>DB: Upsert SpecializedRule (slug = it-request-quick-replies)
+    end
+
+    KP->>UI_KP: Chọn Mẫu câu nhanh hoặc gõ tin nhắn -> Gửi
+    UI_KP->>API_Msg: POST /messages { content, channel: 'INTERNAL' }
+    API_Msg->>DB: Lưu RequestMessage (readBy = [KP.id])
+    API_Msg->>Push: Bắn Web Push Notification tới KTV phụ trách
+    API_Msg-->>UI_KP: Hiển thị tin nhắn đã gửi
+
+    Note over UI_KTV, API_Msg: Chu kỳ Polling 5 giây phát hiện tin mới
+    UI_KTV->>DB: Lấy danh sách ticket kèm unreadMessageCount
+    DB-->>UI_KTV: unreadMessageCount của phiếu tăng lên
+    UI_KTV->>UI_KTV: Kích hoạt cảnh báo Đa kênh tức thì:
+    par Cảnh báo KTV
+        UI_KTV->>KTV: 🔊 Phát chuông âm thanh (playNotificationSound)
+        UI_KTV->>KTV: 💬 Hiện Popup Antd góc dưới (kèm nút "Mở xem trao đổi")
+        UI_KTV->>KTV: 🖥️ Bắn Desktop Windows Notification ngoài màn hình
+        UI_KTV->>KTV: 🚨 Nhấp nháy Tab: "💬 (1) Tin nhắn mới từ Khoa!"
+        UI_KTV->>KTV: 🔴 Hiện Badge đỏ trên nút Chat của dòng phiếu
+    end
+
+    KTV->>UI_KTV: Bấm vào thông báo -> Mở ngay TicketChatModal (Polling 2s)
+    UI_KTV->>API_Msg: GET /messages (Tự động cập nhật readBy cho KTV)
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.7. FEEDBACK QR -->
+            <section id="seq-feedback" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200 uppercase">
+                            Phân hệ 7
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Hòm thư Góp ý 3 Kênh & Khảo sát Người bệnh qua QR Mobile (Feedback)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor BN as Bệnh nhân / Thân nhân
+    actor Admin as Ban Giám đốc / Tổ Quản lý Chất lượng
+    participant Mobile as Điện thoại Quét QR (/gop-y-benh-nhan)
+    participant AdminUI as Quản trị Hòm thư (/admin/feedbacks)
+    participant API as Backend API Campaigns & Feedbacks
+    participant DB as PostgreSQL (PatientCampaign, Policy, Feedback)
+
+    BN->>Mobile: Quét mã QR dán tại Giường bệnh / Bàn khám
+    Mobile->>API: GET /api/patient-campaigns/check?id=...
+    API->>DB: Kiểm tra đợt khảo sát (isActive, startDate, endDate)
+    
+    alt Đợt khảo sát ĐÃ HẾT HẠN hoặc ĐANG TẮT
+        DB-->>API: isActive = false hoặc quá hạn ngày kết thúc
+        API-->>Mobile: Trả về trạng thái kết thúc
+        Mobile-->>BN: Thông báo: "Chương trình khảo sát đã kết thúc. Xin cảm ơn!"
+    else Đợt khảo sát ĐANG CÒN HIỆU LỰC
+        DB-->>API: Hợp lệ
+        API-->>Mobile: Trả về thông tin đợt & Bộ câu hỏi đánh giá
+        BN->>Mobile: Đánh giá số sao (1-5 sao), chọn tiêu chí hài lòng, gửi ý kiến
+        BN->>Mobile: Bấm "Gửi ý kiến đóng góp"
+        Mobile->>API: POST /api/patient-campaigns/submit { data }
+        API->>DB: Lưu bản ghi PatientFeedbackRecord
+        DB-->>API: Lưu thành công
+        Mobile-->>BN: Màn hình cảm ơn và ghi nhận ý kiến
+    end
+
+    Admin->>AdminUI: Vào trang Quản trị Hòm thư góp ý (/admin/feedbacks)
+    AdminUI->>API: GET dữ liệu 3 kênh (Bệnh nhân, Chính sách, Chức năng)
+    API->>DB: Query tổng hợp số liệu
+    DB-->>API: Trả về danh sách
+    AdminUI-->>Admin: Xem biểu đồ tỷ lệ hài lòng, duyệt ý kiến, xuất báo cáo Excel
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2.8. FEATURE DOC DRAWER -->
+            <section id="seq-doc" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 uppercase">
+                            Phân hệ 8
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Tủ sách Hướng dẫn Sử dụng & Quản lý Thay đổi (FeatureDocDrawer)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User as Nhân viên Y tế
+    actor Admin as Quản trị viên Chức năng
+    participant FloatBtn as Nút Sách nổi góc phải (w-9 h-9)
+    participant Drawer as Ngăn kéo FeatureDocDrawer (size 760px)
+    participant API as API (/api/page-instructions & /api/feature-change-logs)
+    participant DB as PostgreSQL (PageInstruction, FeatureChangeLog)
+
+    User->>FloatBtn: Bấm vào nút sách nhỏ gọn góc dưới phải
+    FloatBtn->>Drawer: Mở ngăn kéo trượt từ cạnh phải
+    Drawer->>API: GET /api/page-instructions?pageId={currentCleanPath}
+    Drawer->>API: GET /api/feature-change-logs?pageId={currentCleanPath}
+    API->>DB: Lấy tài liệu hướng dẫn & lịch sử cập nhật của trang hiện tại
+    DB-->>API: Trả về nội dung
+    API-->>Drawer: Dữ liệu HTML hướng dẫn & danh sách phiên bản
+    Drawer-->>User: Hiển thị 3 Tabs: Hướng dẫn sử dụng | Nhật ký thay đổi | Đóng góp ý kiến
+
+    opt Khi Quản trị viên cần cập nhật tài liệu
+        Admin->>Drawer: Bấm nút "Chỉnh sửa tài liệu"
+        Drawer-->>Admin: Mở trình soạn thảo WYSIWYG JoditEditor
+        Admin->>Drawer: Soạn thảo văn bản, chèn ảnh, bảng biểu -> Bấm "Lưu"
+        Drawer->>API: POST /api/page-instructions { pageId, content }
+        API->>DB: Upsert PageInstruction
+        DB-->>API: Lưu thành công
+        Drawer-->>Admin: Báo thành công, tài liệu cập nhật ngay cho toàn viện
+    end
+                    </pre>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Floating Back to Top Button -->
+    <a href="#" class="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-xl transition-all duration-300 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </a>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-20 py-8 text-center text-xs text-slate-500">
+        <p>© 2026 Bệnh viện Đa khoa Lạng Sơn. Hệ thống Quản trị & Quản lý Chất lượng Bệnh viện (HTQLBV).</p>
+        <p class="mt-1">Xây dựng trên nền tảng Next.js, Prisma, PostgreSQL & TailwindCSS.</p>
+    </footer>
+
+    <script>
+        // Khởi tạo Mermaid Render với cấu hình đẹp mắt
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                showSequenceNumbers: true,
+                actorMargin: 50,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: false
+            }
+        });
+    </script>
+</body>
+</html>

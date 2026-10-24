@@ -1077,7 +1077,7 @@ export default function XmlSuaBaPage() {
                     </span>
                 }
                 open={isSaveModalOpen}
-                destroyOnClose
+                destroyOnHidden
                 onCancel={() => setIsSaveModalOpen(false)}
                 onOk={handleConfirmSavePreEdit}
                 confirmLoading={isSaving}

@@ -9,6 +9,7 @@ import { Ticket } from '../types';
 import { getBasePath } from '@/utils/config';
 import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
 import { getDefaultPagination } from '@/utils/pagination';
+import { TicketCardList } from './TicketCardList';
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -26,6 +27,7 @@ interface TicketTableProps {
     onEditClick?: (ticket: Ticket) => void;
     onChatClick?: (ticket: Ticket) => void;
     targetDepartment?: string;
+    viewMode?: 'AUTO' | 'TABLE' | 'CARD';
 }
 
 export const TicketTable: React.FC<TicketTableProps> = ({
@@ -43,7 +45,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     onProcessClick,
     onEditClick,
     onChatClick,
-    targetDepartment = 'CNTT'
+    targetDepartment = 'CNTT',
+    viewMode = 'AUTO'
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -627,24 +630,56 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     ];
 
     return (
-        <Table 
-            bordered
-            dataSource={tickets} 
-            columns={columns}
-            rowKey="id" 
-            loading={loading}
-            pagination={getDefaultPagination({ 
-                current: currentPage,
-                pageSize: pageSize,
-                unit: 'yêu cầu',
-                onChange: (page, size) => {
-                    setCurrentPage(page);
-                    setPageSize(size);
-                }
-            })}
-            scroll={{ x: 1390 }}
-            sticky
-            rowClassName={(record) => record.status === 'RESOLVED' ? 'bg-green-50/50' : ''}
-        />
+        <div className="w-full">
+            {/* 1. DẠNG THẺ (CARD VIEW): Hiển thị khi viewMode === 'CARD' hoặc tự động trên mobile / tablet nhỏ (< md) */}
+            <div className={viewMode === 'CARD' ? 'block p-2 sm:p-3' : viewMode === 'TABLE' ? 'hidden' : 'block md:hidden p-2 sm:p-3'}>
+                <TicketCardList 
+                    tickets={tickets}
+                    loading={loading}
+                    departments={departments}
+                    user={user}
+                    hasPermission={hasPermission}
+                    assignmentMode={assignmentMode}
+                    onFetchTickets={onFetchTickets}
+                    onDeleteTicket={onDeleteTicket}
+                    onReceiveTicket={onReceiveTicket}
+                    onPauseTicket={onPauseTicket}
+                    onResumeTicket={onResumeTicket}
+                    onProcessClick={onProcessClick}
+                    onEditClick={onEditClick}
+                    onChatClick={onChatClick}
+                    targetDepartment={targetDepartment}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={(page, size) => {
+                        setCurrentPage(page);
+                        setPageSize(size);
+                    }}
+                />
+            </div>
+
+            {/* 2. DẠNG BẢNG (DESKTOP TABLE): Hiển thị khi viewMode === 'TABLE' hoặc tự động trên màn hình lớn (>= md) */}
+            <div className={viewMode === 'TABLE' ? 'block' : viewMode === 'CARD' ? 'hidden' : 'hidden md:block'}>
+                <Table 
+                    bordered
+                    dataSource={tickets} 
+                    columns={columns}
+                    rowKey="id" 
+                    loading={loading}
+                    pagination={getDefaultPagination({ 
+                        current: currentPage,
+                        pageSize: pageSize,
+                        unit: 'yêu cầu',
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        }
+                    })}
+                    scroll={{ x: 1390 }}
+                    sticky
+                    rowClassName={(record) => record.status === 'RESOLVED' ? 'bg-green-50/50' : ''}
+                />
+            </div>
+        </div>
     );
 };

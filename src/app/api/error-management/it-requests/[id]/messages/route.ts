@@ -133,18 +133,37 @@ export async function POST(request: Request, context: any) {
                 notifyUserIds.push(nguoi_bao_id);
             }
         } else {
-            // Khoa replied -> Notify Assignee
+            // Khoa replied -> Notify Assignee phụ trách phiếu
             if (ticket.assigneeId && ticket.assigneeId !== user.id) {
                 notifyUserIds.push(ticket.assigneeId);
+            } else if (!ticket.assigneeId) {
+                // Nếu chưa phân công: Gửi tới các tài khoản phụ trách phòng kỹ thuật tương ứng
+                try {
+                    const deptRole = ticket.targetDepartment || 'CNTT';
+                    const staffUsers = await prisma.user.findMany({
+                        where: { role: { in: [deptRole, 'ADMIN'] }, isActive: true },
+                        select: { id: true }
+                    });
+                    notifyUserIds = staffUsers.map(u => u.id).filter(uid => uid !== user.id);
+                } catch (e) {
+                    console.error('Error getting department staff users for notification:', e);
+                }
             }
         }
 
         if (notifyUserIds.length > 0) {
+            const senderName = user.name || user.username;
+            const notifTitle = channel === 'VENDOR' 
+                ? `Trao đổi Đối tác: ${vendorName || 'Công ty ngoài'}` 
+                : `💬 Tin nhắn từ Khoa [${ticket.ma_khoa}]`;
+            const snippet = newMessage.content ? (newMessage.content.length > 60 ? `${newMessage.content.slice(0, 60)}...` : newMessage.content) : '[Hình ảnh]';
+            const notifBody = `${senderName}: ${snippet} (BA: ${ticket.ma_ba || 'Khác'})`;
+
             await sendPushNotification(
                 notifyUserIds, 
-                channel === 'VENDOR' ? `Trao đổi Đối tác: ${vendorName || 'Công ty ngoài'}` : 'Tin nhắn mới từ Hỗ trợ', 
-                `${user.name || user.username} vừa phản hồi trong BA: ${ticket.ma_ba}`, 
-                `/error-management/it-requests`
+                notifTitle, 
+                notifBody, 
+                `/error-management/it-requests?highlight=${ticket.id}`
             );
         }
 

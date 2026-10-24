@@ -34,9 +34,10 @@ export async function PUT(req: Request, context: any) {
                 permissionCode: data.permissionCode,
                 isActive: data.isActive,
                 isAdminOnly: data.isAdminOnly !== undefined ? Boolean(data.isAdminOnly) : false,
+                status: data.status !== undefined ? data.status : 'OFFICIAL',
                 isSpecialGroup: data.isSpecialGroup,
                 showInPaths: data.showInPaths || [],
-            }
+            } as any
         });
         
         return NextResponse.json(updatedMenu);

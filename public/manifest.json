@@ -1,0 +1,22 @@
+{
+  "name": "Báo Lỗi & Hỗ Trợ CNTT - BVĐK Lộc Sơn",
+  "short_name": "Báo lỗi CNTT",
+  "description": "Hệ thống Quản lý Yêu cầu & Báo hỏng CNTT - Bệnh viện Đa khoa Lộc Sơn",
+  "start_url": "./error-management/it-requests",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "./logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

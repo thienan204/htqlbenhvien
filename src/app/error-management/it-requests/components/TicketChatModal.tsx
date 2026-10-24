@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Drawer, Input, Button, Spin, message, Tabs, Tag, AutoComplete, Tooltip, Badge } from 'antd';
-import { SendOutlined, ShopOutlined, GlobalOutlined, UserOutlined } from '@ant-design/icons';
+import { Drawer, Input, Button, Spin, message, Tabs, Tag, AutoComplete, Tooltip, Badge, Modal, Switch, Popconfirm } from 'antd';
+import { 
+    SendOutlined, ShopOutlined, GlobalOutlined, UserOutlined, 
+    ThunderboltOutlined, SettingOutlined, PlusOutlined, EditOutlined, 
+    DeleteOutlined, ReloadOutlined, CloudUploadOutlined, CloudDownloadOutlined 
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Ticket } from '../types';
 import { getBasePath } from '@/utils/config';
@@ -26,6 +30,22 @@ interface ChatMessage {
     createdAt: string;
 }
 
+export interface QuickReplyTemplate {
+    id: string;
+    text: string;
+    isActive: boolean;
+    isDefault?: boolean;
+}
+
+const DEFAULT_QUICK_REPLIES: QuickReplyTemplate[] = [
+    { id: 'qr-1', text: 'Đã xong, Khoa kiểm tra lại giúp nhé!', isActive: true, isDefault: true },
+    { id: 'qr-2', text: 'Đã xử lý xong lỗi.', isActive: true, isDefault: true },
+    { id: 'qr-3', text: 'Đang kiểm tra và xử lý...', isActive: true, isDefault: true },
+    { id: 'qr-4', text: 'Khoa khởi động lại máy tính/phần mềm giúp CNTT.', isActive: true, isDefault: true },
+    { id: 'qr-5', text: 'Đã liên hệ đối tác phần mềm để phối hợp xử lý.', isActive: true, isDefault: true },
+    { id: 'qr-6', text: 'Khoa vui lòng gửi thêm ảnh chụp màn hình hoặc mã bệnh án.', isActive: true, isDefault: true },
+];
+
 const COMMON_VENDORS = [
     { value: 'VNPT HIS' },
     { value: 'VNPT LIS / PACS' },
@@ -44,6 +64,146 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
     const [vendorName, setVendorName] = useState<string>('');
     const [vendorContact, setVendorContact] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<any>(null);
+
+    // Mẫu câu trả lời nhanh (Quick Replies)
+    const [quickReplies, setQuickReplies] = useState<QuickReplyTemplate[]>([]);
+    const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+    const [newReplyText, setNewReplyText] = useState('');
+    const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+    const [editingReplyText, setEditingReplyText] = useState('');
+
+    // Khóa lưu trữ mẫu câu theo từng tài khoản riêng biệt
+    const storageKey = `it_request_quick_replies_${user?.username || user?.id || 'default'}`;
+    const [savingGlobal, setSavingGlobal] = useState(false);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+    // Tải mẫu câu: ưu tiên cấu hình cá nhân trong local, nếu chưa có thì lấy mẫu dùng chung từ hệ thống
+    const loadQuickReplies = async () => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setQuickReplies(parsed);
+                    return;
+                }
+            }
+
+            // Nếu tài khoản chưa cấu hình riêng, lấy mẫu chung toàn viện từ API CSDL
+            setLoadingTemplates(true);
+            const res = await fetch(`${getBasePath()}/api/error-management/quick-replies`);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.templates) && data.templates.length > 0) {
+                    setQuickReplies(data.templates);
+                    return;
+                }
+            }
+            setQuickReplies(DEFAULT_QUICK_REPLIES);
+        } catch {
+            setQuickReplies(DEFAULT_QUICK_REPLIES);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    useEffect(() => {
+        loadQuickReplies();
+    }, [storageKey]);
+
+    const saveQuickReplies = (list: QuickReplyTemplate[]) => {
+        setQuickReplies(list);
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(list));
+        } catch (e) {
+            console.error('Failed to save quick replies:', e);
+        }
+    };
+
+    const handleToggleReplyActive = (id: string, checked: boolean) => {
+        const updated = quickReplies.map(r => r.id === id ? { ...r, isActive: checked } : r);
+        saveQuickReplies(updated);
+    };
+
+    const handleAddQuickReply = () => {
+        if (!newReplyText.trim()) return;
+        const newItem: QuickReplyTemplate = {
+            id: 'qr-' + Date.now(),
+            text: newReplyText.trim(),
+            isActive: true,
+            isDefault: false
+        };
+        saveQuickReplies([...quickReplies, newItem]);
+        setNewReplyText('');
+        message.success('Đã thêm mẫu câu mới!');
+    };
+
+    const handleDeleteQuickReply = (id: string) => {
+        saveQuickReplies(quickReplies.filter(r => r.id !== id));
+        message.success('Đã xóa mẫu câu!');
+    };
+
+    const handleUpdateQuickReply = (id: string) => {
+        if (!editingReplyText.trim()) return;
+        saveQuickReplies(quickReplies.map(r => r.id === id ? { ...r, text: editingReplyText.trim() } : r));
+        setEditingReplyId(null);
+        setEditingReplyText('');
+        message.success('Đã cập nhật mẫu câu!');
+    };
+
+    const handleResetToAdminDefaults = async () => {
+        try {
+            setLoadingTemplates(true);
+            // Xóa cấu hình cá nhân ở local để nhận lại mẫu chung từ server
+            localStorage.removeItem(storageKey);
+            const res = await fetch(`${getBasePath()}/api/error-management/quick-replies`);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.templates) && data.templates.length > 0) {
+                    setQuickReplies(data.templates);
+                    message.success('Đã tải lại mẫu câu mặc định từ Admin!');
+                    return;
+                }
+            }
+            setQuickReplies(DEFAULT_QUICK_REPLIES);
+            message.success('Đã khôi phục các mẫu câu mặc định!');
+        } catch {
+            setQuickReplies(DEFAULT_QUICK_REPLIES);
+            message.success('Đã khôi phục các mẫu câu mặc định!');
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    const handleSaveGlobalTemplates = async () => {
+        try {
+            setSavingGlobal(true);
+            const res = await fetch(`${getBasePath()}/api/error-management/quick-replies`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ templates: quickReplies })
+            });
+            if (res.ok) {
+                message.success('Đã lưu làm mẫu câu dùng chung cho toàn viện thành công!');
+            } else {
+                const err = await res.json();
+                message.error(err.error || 'Không thể lưu mẫu câu dùng chung');
+            }
+        } catch (e) {
+            console.error('Error saving global quick replies:', e);
+            message.error('Lỗi kết nối khi lưu mẫu câu dùng chung');
+        } finally {
+            setSavingGlobal(false);
+        }
+    };
+
+    const handleSelectQuickReply = (textToInsert: string) => {
+        setText((prev) => (prev ? `${prev} ${textToInsert}` : textToInsert));
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 50);
+    };
 
     const fetchMessages = async () => {
         if (!ticket) return;
@@ -76,7 +236,8 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                 setActiveChannel('INTERNAL');
             }
             fetchMessages();
-            const interval = setInterval(fetchMessages, 4000); 
+            // Polling tin nhắn 2 giây khi đang mở khung chat
+            const interval = setInterval(fetchMessages, 2000); 
             return () => clearInterval(interval);
         } else {
             setMessages([]);
@@ -309,8 +470,43 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
 
             {/* Input Bar */}
             <div className="p-3 bg-white border-t flex flex-col gap-2 shadow-sm">
+                {/* Dải mẫu câu trả lời nhanh (Quick Replies) - Dàn hàng đầy đủ, không cắt ngắn chữ */}
+                <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <Tooltip title="Mẫu câu trả lời nhanh cá nhân (Click để điền nhanh)">
+                        <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 shrink-0 mr-0.5">
+                            <ThunderboltOutlined className="text-amber-500" />
+                            <span>Mẫu:</span>
+                        </div>
+                    </Tooltip>
+                    
+                    {/* Hiển thị đầy đủ tất cả mẫu câu đang ở trạng thái Hiện (isActive === true) */}
+                    {quickReplies.filter(r => r.isActive).map(r => (
+                        <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => handleSelectQuickReply(r.text)}
+                            className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 border border-slate-200 hover:border-blue-300 transition-all text-left shadow-2xs cursor-pointer"
+                            title={r.text}
+                        >
+                            {r.text}
+                        </button>
+                    ))}
+
+                    {/* Nút Cấu hình / Quản lý Mẫu câu cho tài khoản này */}
+                    <Tooltip title="Tùy chỉnh Mẫu câu của bạn (Thêm mới, Bật/Tắt Hiện/Ẩn, Sửa/Xóa)">
+                        <Button
+                            size="small"
+                            type="text"
+                            icon={<SettingOutlined />}
+                            onClick={() => setIsManageModalOpen(true)}
+                            className="text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-full h-6 w-6 flex items-center justify-center p-0 ml-auto"
+                        />
+                    </Tooltip>
+                </div>
+
                 <div className="flex gap-2 items-end">
                     <Input.TextArea
+                        ref={inputRef}
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder={
@@ -336,6 +532,171 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                     />
                 </div>
             </div>
+
+            {/* Modal Quản lý Mẫu câu Trả lời nhanh (Hỗ trợ Hiện/Ẩn, Thêm mới, Sửa, Xóa) */}
+            <Modal
+                title={
+                    <div className="flex items-center gap-2 text-slate-800">
+                        <ThunderboltOutlined className="text-amber-500 text-lg" />
+                        <span>Quản lý Mẫu câu Trả lời nhanh</span>
+                    </div>
+                }
+                open={isManageModalOpen}
+                onCancel={() => {
+                    setIsManageModalOpen(false);
+                    setEditingReplyId(null);
+                }}
+                footer={[
+                    <Button 
+                        key="reset" 
+                        icon={<CloudDownloadOutlined />} 
+                        onClick={handleResetToAdminDefaults}
+                        loading={loadingTemplates}
+                        title="Xóa cấu hình cá nhân để tải lại mẫu chuẩn từ Admin"
+                    >
+                        Tải lại mẫu Admin
+                    </Button>,
+                    ...(isITAdmin ? [
+                        <Popconfirm
+                            key="save-global"
+                            title="Lưu làm mẫu chung cho toàn viện?"
+                            description="Tất cả các tài khoản chưa tự tạo mẫu riêng sẽ tự động thấy và dùng danh sách này."
+                            onConfirm={handleSaveGlobalTemplates}
+                            okText="Đồng ý lưu"
+                            cancelText="Hủy"
+                        >
+                            <Button 
+                                type="primary" 
+                                ghost 
+                                icon={<CloudUploadOutlined />} 
+                                loading={savingGlobal}
+                                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                            >
+                                Lưu mẫu chung toàn viện
+                            </Button>
+                        </Popconfirm>
+                    ] : []),
+                    <Button key="close" type="primary" onClick={() => setIsManageModalOpen(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                width={620}
+                destroyOnHidden
+            >
+                <div className="space-y-4 py-2">
+                    <p className="text-xs text-slate-500 m-0 leading-relaxed">
+                        Mỗi tài khoản có thể tự tạo và cấu hình mẫu câu riêng (lưu trữ trên trình duyệt này). Bạn có thể <strong>Bật / Tắt (Hiện / Ẩn)</strong> hoặc thêm các câu trả lời thường dùng. Chỉ những câu đang Bật mới xuất hiện trên thanh chat để điền nhanh.
+                    </p>
+
+                    {/* Thêm mới câu mẫu */}
+                    <div className="flex gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <Input
+                            placeholder="Nhập nội dung mẫu câu mới (ví dụ: Đã xử lý xong, Đang kiểm tra...)"
+                            value={newReplyText}
+                            onChange={(e) => setNewReplyText(e.target.value)}
+                            onPressEnter={handleAddQuickReply}
+                            className="rounded-lg text-xs sm:text-sm"
+                        />
+                        <Button 
+                            type="primary" 
+                            icon={<PlusOutlined />} 
+                            onClick={handleAddQuickReply}
+                            disabled={!newReplyText.trim()}
+                            className="bg-blue-600 shrink-0"
+                        >
+                            Thêm
+                        </Button>
+                    </div>
+
+                    {/* Danh sách mẫu câu */}
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                        {quickReplies.map((item, index) => (
+                            <div 
+                                key={item.id} 
+                                className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border transition-all ${
+                                    item.isActive ? 'bg-white border-slate-200 shadow-2xs' : 'bg-slate-50/70 border-slate-200 opacity-60'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                    <span className="text-xs font-semibold text-slate-400 w-4 text-center shrink-0">
+                                        {index + 1}
+                                    </span>
+                                    {editingReplyId === item.id ? (
+                                        <div className="flex items-center gap-1.5 flex-1">
+                                            <Input
+                                                size="small"
+                                                value={editingReplyText}
+                                                onChange={(e) => setEditingReplyText(e.target.value)}
+                                                onPressEnter={() => handleUpdateQuickReply(item.id)}
+                                                className="text-xs"
+                                                autoFocus
+                                            />
+                                            <Button size="small" type="primary" onClick={() => handleUpdateQuickReply(item.id)}>
+                                                Lưu
+                                            </Button>
+                                            <Button size="small" onClick={() => setEditingReplyId(null)}>
+                                                Hủy
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-xs sm:text-sm m-0 break-words leading-snug ${item.isActive ? 'text-slate-800 font-medium' : 'text-slate-400 line-through'}`}>
+                                                {item.text}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Tooltip title={item.isActive ? "Đang Hiện trên thanh chat (Bấm để Ẩn)" : "Đang Ẩn (Bấm để Hiện)"}>
+                                        <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                                            <span className="text-[11px] font-medium text-slate-600">
+                                                {item.isActive ? 'Hiện' : 'Ẩn'}
+                                            </span>
+                                            <Switch
+                                                size="small"
+                                                checked={item.isActive}
+                                                onChange={(checked) => handleToggleReplyActive(item.id, checked)}
+                                            />
+                                        </div>
+                                    </Tooltip>
+
+                                    {editingReplyId !== item.id && (
+                                        <Button
+                                            size="small"
+                                            type="text"
+                                            icon={<EditOutlined />}
+                                            onClick={() => {
+                                                setEditingReplyId(item.id);
+                                                setEditingReplyText(item.text);
+                                            }}
+                                            className="text-slate-400 hover:text-blue-600"
+                                            title="Sửa nội dung"
+                                        />
+                                    )}
+
+                                    <Popconfirm
+                                        title="Xóa mẫu câu này?"
+                                        onConfirm={() => handleDeleteQuickReply(item.id)}
+                                        okText="Xóa"
+                                        cancelText="Hủy"
+                                        okButtonProps={{ danger: true }}
+                                    >
+                                        <Button
+                                            size="small"
+                                            type="text"
+                                            danger
+                                            icon={<DeleteOutlined />}
+                                            className="text-slate-400 hover:text-red-500"
+                                            title="Xóa mẫu câu"
+                                        />
+                                    </Popconfirm>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </Modal>
         </Drawer>
     );
 };

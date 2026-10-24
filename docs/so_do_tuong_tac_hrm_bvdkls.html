@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ đồ Trình tự & Kế hoạch Phát triển HRM | BVĐK Lạng Sơn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mermaid { display: flex; justify-content: center; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    HR
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">
+                        BỆNH VIỆN ĐA KHOA LẠNG SƠN
+                    </h1>
+                    <p class="text-xs text-blue-600 font-medium">Phân hệ Quản trị Nhân sự Y tế (HRM) - Quy mô 1.500 Cán bộ Nhân viên</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="#master-diagram" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition-all">
+                    Sơ đồ Tổng thể
+                </a>
+                <span class="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                    1.500 Nhân sự
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-12">
+
+        <!-- Banner -->
+        <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10 max-w-3xl">
+                <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
+                    Hospital Human Resources Architecture
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mt-3">
+                    Kiến trúc Phân hệ Quản trị Nhân sự Y tế Chuyên sâu
+                </h2>
+                <p class="text-blue-100 text-sm mt-2 leading-relaxed">
+                    Hệ thống tích hợp toàn diện: Hồ sơ nhân sự 360°, Phân quyền phạm vi hành nghề (chống xuất toán BHYT), Đào tạo liên tục CME, Chấm công ca kíp 24/24, Nghỉ phép trực tuyến và Lương phụ cấp phẫu thuật thủ thuật (QĐ 73/2011/QĐ-TTg).
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="flex flex-wrap items-center gap-2 pb-2">
+            <span class="text-xs font-bold text-slate-500 uppercase mr-1">Phân hệ HR:</span>
+            <a href="#seq-privilege" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                🩺 1. Phạm vi Hành nghề & Kỹ thuật
+            </a>
+            <a href="#seq-leave" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                📝 2. Quản lý Nghỉ phép Online
+            </a>
+            <a href="#seq-cme" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                🎓 3. Đào tạo CME & Tín chỉ
+            </a>
+            <a href="#seq-attendance" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                ⏰ 4. Chấm công & Ca trực 24/24
+            </a>
+            <a href="#seq-payroll" class="text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                💰 5. Lương & Phụ cấp QĐ 73
+            </a>
+            <a href="#roadmap" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl font-medium shadow-2xs transition-all">
+                🚀 Kế hoạch Triển khai 6 Module
+            </a>
+        </div>
+
+        <!-- Master Diagram -->
+        <section id="master-diagram" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-800">
+                        Sơ đồ Kiến trúc Tổng thể Phân hệ Quản trị Nhân sự (HRM)
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Click vào từng khối để trượt đến Sequence Diagram chi tiết</p>
+                </div>
+                <span class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-semibold border border-blue-200">
+                    Master HR Flow
+                </span>
+            </div>
+
+            <div class="py-6 overflow-x-auto">
+                <pre class="mermaid">
+flowchart TD
+    classDef m1 fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
+    classDef m2 fill:#fef3c7,stroke:#d97706,stroke-width:2px;
+    classDef m3 fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
+    classDef m4 fill:#f3e8ff,stroke:#9333ea,stroke-width:2px;
+    classDef m5 fill:#ffe4e6,stroke:#e11d48,stroke-width:2px;
+    classDef m6 fill:#ffedd5,stroke:#ea580c,stroke-width:2px;
+    classDef core fill:#ffffff,stroke:#0f172a,stroke-width:3px;
+
+    HR["👥 PHÂN HỆ QUẢN TRỊ NHÂN SỰ TOÀN DIỆN (HRM)<br/>1.500 Cán bộ Nhân viên BVĐK Lạng Sơn"]:::core
+
+    HR --> P1["1. Hồ sơ Nhân sự 360° & Hợp đồng"]:::m1
+    HR --> P2["2. Phạm vi Hành nghề & Phân quyền Kỹ thuật"]:::m2
+    HR --> P3["3. Đào tạo Liên tục (CME) & Bồi dưỡng"]:::m3
+    HR --> P4["4. Phân ca & Chấm công Lâm sàng 24/24"]:::m4
+    HR --> P5["5. Quản lý Nghỉ phép Trực tuyến Đa cấp"]:::m5
+    HR --> P6["6. Tiền lương & Phụ cấp Phẫu thuật (QĐ 73)"]:::m6
+
+    P1 --> DB[("🗄️ CƠ SỞ DỮ LIỆU POSTGRESQL (PRISMA)")]:::core
+    P2 --> DB
+    P3 --> DB
+    P4 --> DB
+    P5 --> DB
+    P6 --> DB
+
+    P2 -.-> BHYT["🛡️ Cảnh báo Chống Xuất toán BHYT (XML3)"]:::m3
+
+    click P2 href "#seq-privilege" "Xem Sequence Phạm vi Hành nghề & Kỹ thuật"
+    click P5 href "#seq-leave" "Xem Sequence Quản lý Nghỉ phép Online"
+    click P3 href "#seq-cme" "Xem Sequence Đào tạo CME"
+    click P4 href "#seq-attendance" "Xem Sequence Chấm công Ca trực"
+    click P6 href "#seq-payroll" "Xem Sequence Lương & Phụ cấp QĐ 73"
+                </pre>
+            </div>
+        </section>
+
+        <!-- Detailed Sequences -->
+        <div class="space-y-10">
+
+            <!-- 1. PRIVILEGE -->
+            <section id="seq-privilege" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200 uppercase">
+                            Quy trình 1
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quản lý Phạm vi Hành nghề & Phân quyền Kỹ thuật Lâm sàng (Chống xuất toán BHYT)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor BS as Bác sĩ Lâm sàng
+    actor TCCB as Phòng Tổ chức Cán bộ / KHTH
+    actor GiamDoc as Ban Giám đốc Bệnh viện
+    participant UI as Giao diện Phân quyền Kỹ thuật (/hr/clinical-privileges)
+    participant API as API Scope & Privileges
+    participant DB as PostgreSQL (Staff, Privilege, Service)
+    participant XMLChecker as Module Giám định BHYT & Check XML
+
+    TCCB->>UI: Lập danh sách đề xuất phân quyền kỹ thuật cho Bác sĩ BS
+    UI->>DB: Tải danh mục kỹ thuật Mẫu 05 BHYT & Lịch sử đào tạo CME của BS
+    DB-->>UI: Hiển thị các gói kỹ thuật đã hoàn thành
+    TCCB->>UI: Phân quyền mức độ: [Độc lập thực hiện] hoặc [Có giám sát]
+    TCCB->>GiamDoc: Trình Hội đồng chuyên môn & Giám đốc ký Quyết định phê duyệt
+    GiamDoc->>UI: Phê duyệt online & Ban hành Quyết định
+    UI->>API: POST /api/hr/privileges/approve
+    API->>DB: Lưu bảng StaffClinicalPrivilege (status = APPROVED, validFrom, validTo)
+    DB-->>API: Lưu thành công
+    API-->>UI: Cập nhật phạm vi hành nghề của Bác sĩ thành công
+
+    Note over BS, XMLChecker: Khi Bác sĩ chỉ định hoặc thực hiện kỹ thuật trên bệnh nhân
+    BS->>XMLChecker: Đứng tên Phẫu thuật viên/Chỉ định dịch vụ kỹ thuật trong XML3
+    XMLChecker->>DB: Kiểm tra chéo: Mã Bác sĩ + Mã Dịch vụ kỹ thuật
+    alt Bác sĩ nằm ngoài danh mục được Giám đốc phê duyệt
+        DB-->>XMLChecker: Không tìm thấy phân quyền hợp lệ!
+        XMLChecker-->>BS: ⚠️ CẢNH BÁO ĐỎ: Bác sĩ chưa được phê duyệt kỹ thuật này (Nguy cơ xuất toán BHYT 100%)
+    else Đã được phê duyệt hợp lệ
+        DB-->>XMLChecker: Phân quyền hợp lệ (Độc lập thực hiện)
+        XMLChecker-->>BS: ✅ Hồ sơ hợp lệ, sẵn sàng gửi cổng Giám định BHYT
+    end
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 2. LEAVE -->
+            <section id="seq-leave" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200 uppercase">
+                            Quy trình 2
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quy trình Nộp & Phê duyệt Đơn Nghỉ phép Trực tuyến Đa cấp (Leave Management)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor NV as Nhân viên Y tế
+    actor TruongKhoa as Trưởng Khoa / Điều dưỡng Trưởng
+    actor TCCB as Phòng Tổ chức Cán bộ
+    participant UI as Ứng dụng Nhân sự (/hr/leaves)
+    participant API as API Nghỉ phép (/api/hr/leaves)
+    participant DB as PostgreSQL (StaffLeave, LeaveBalance)
+    participant Timekeeping as Bảng Chấm công Tháng
+
+    NV->>UI: Mở form xin nghỉ phép (Chọn loại phép: Phép năm, Thai sản, Nghỉ ốm...)
+    UI->>API: GET /api/hr/leaves/balance?staffId=...
+    API->>DB: Kiểm tra số ngày phép còn lại trong quỹ phép năm
+    DB-->>API: Trả về: Còn 8/14 ngày phép
+    API-->>UI: Hiển thị quỹ phép còn lại
+    NV->>UI: Chọn ngày nghỉ (Từ ngày - Đến ngày) & Nhập lý do, người bàn giao công việc
+    NV->>UI: Bấm "Nộp đơn nghỉ phép"
+    UI->>API: POST /api/hr/leaves
+    API->>DB: Tạo bản ghi StaffLeave (Status = PENDING_DEPARTMENT)
+    DB-->>API: Lưu thành công
+    API-->>UI: Nộp đơn thành công
+
+    Note over TruongKhoa, TCCB: Trưởng Khoa duyệt cấp 1
+    TruongKhoa->>UI: Xem danh sách đơn nghỉ phép chờ duyệt của khoa
+    TruongKhoa->>UI: Bấm "Duyệt đơn"
+    UI->>API: PUT /api/hr/leaves/[id]/approve-dept
+    API->>DB: Cập nhật status = PENDING_HR
+
+    Note over TCCB, Timekeeping: Phòng TCCB duyệt cấp cuối
+    TCCB->>UI: Phòng TCCB xác nhận duyệt chính thức
+    UI->>API: PUT /api/hr/leaves/[id]/approve-hr
+    API->>DB: Cập nhật status = APPROVED, Trừ quỹ phép năm trong LeaveBalance
+    API->>Timekeeping: Tự động ghi nhận ký hiệu "P" (Nghỉ phép) vào ngày đó trên Bảng chấm công
+    API-->>UI: Hoàn tất phê duyệt
+    UI-->>NV: Nhận thông báo: Đơn nghỉ phép đã được duyệt thành công!
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 3. CME -->
+            <section id="seq-cme" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 uppercase">
+                            Quy trình 3
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quy trình Đào tạo Y khoa Liên tục (CME) & Bồi dưỡng Chuyên môn
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor BS as Bác sĩ / Điều dưỡng
+    actor TCCB as Phòng TCCB / Trung tâm Đào tạo
+    participant UI as Quản lý Đào tạo (/hr/cme)
+    participant API as API CME (/api/hr/cme)
+    participant DB as PostgreSQL (CmeCourse, StaffCmeProgress)
+
+    BS->>UI: Tải lên chứng chỉ CME vừa hoàn thành (Ảnh chụp/PDF, Số tiết đào tạo, Đơn vị cấp)
+    UI->>API: POST /api/hr/cme/submit
+    API->>DB: Lưu bản ghi CmeRecord (Status = PENDING)
+    DB-->>API: Lưu thành công
+    API-->>UI: Thông báo nộp chứng chỉ thành công
+
+    TCCB->>UI: Xem danh sách chứng chỉ chờ thẩm tra
+    TCCB->>UI: Đối chiếu mã chứng chỉ & Bấm "Duyệt hợp lệ"
+    UI->>API: PUT /api/hr/cme/[id]/verify
+    API->>DB: Cập nhật Status = VERIFIED, Cộng dồn số tiết vào bảng StaffCmeProgress
+    DB-->>API: Cập nhật thành công
+    
+    Note over BS, DB: Hệ thống tự động tính lũy kế giờ tín chỉ CME
+    UI->>API: GET /api/hr/cme/my-status
+    API->>DB: Tính tổng: Đã đạt 36/48 giờ tín chỉ quy định
+    DB-->>UI: Trả về thanh tiến độ đạt 75%
+    UI-->>BS: Hiển thị: Còn thiếu 12 giờ CME trong chu kỳ 2 năm để duy trì CCHN
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 4. ATTENDANCE -->
+            <section id="seq-attendance" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200 uppercase">
+                            Quy trình 4
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quy trình Chấm công Phân ca Lâm sàng & Kíp trực 24/24
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor NV as Nhân viên Y tế
+    actor MayChamCong as Máy Vân tay / Khuôn mặt / Web QR
+    actor TruongKhoa as Điều dưỡng trưởng Khoa
+    participant UI as Bảng Chấm công (/hr/attendance)
+    participant API as API Chấm công (/api/hr/attendance)
+    participant DB as PostgreSQL (DailyAttendance, MonthlyTimesheet)
+
+    NV->>MayChamCong: Quẹt vân tay / Nhận diện khuôn mặt ca vào/ra
+    MayChamCong->>API: POST /api/hr/attendance/sync (Thời gian, Mã NV, DeviceId)
+    API->>DB: Lưu bản ghi quẹt công gốc (RawLog)
+    
+    Note over API, DB: Động cơ xử lý đối chiếu với Lịch trực lâm sàng (DutyRoster)
+    API->>DB: So sánh giờ vào/ra với Ca làm việc (Ca hành chính, Ca đêm, Trực 24h)
+    API->>DB: Ghi nhận kết quả chấm công ngày (Đúng giờ, Đi muộn, Về sớm, Tăng ca)
+    
+    TruongKhoa->>UI: Cuối tháng mở Bảng chấm công tổng hợp của Khoa
+    UI->>API: GET /api/hr/attendance/monthly?ma_khoa=K01&month=10
+    API->>DB: Tính toán tổng ngày công: Công hành chính (X), Trực (T), Phép (P), Ốm (Ô)
+    DB-->>UI: Trả về Bảng chấm công dạng lưới Matrix 1-31 ngày
+    TruongKhoa->>UI: Xác nhận và ký duyệt bảng công khoa phòng chuyển Phòng TCCB
+                    </pre>
+                </div>
+            </section>
+
+            <!-- 5. PAYROLL -->
+            <section id="seq-payroll" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200 uppercase">
+                            Quy trình 5
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 mt-1">
+                            Quy trình Tính Lương Ngạch bậc & Phụ cấp Phẫu thuật - Thủ thuật (QĐ 73/2011)
+                        </h3>
+                    </div>
+                    <a href="#master-diagram" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                        ⬆ Về Sơ đồ Tổng thể
+                    </a>
+                </div>
+                <div class="py-6 overflow-x-auto">
+                    <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor KTT as Kế toán Tiền lương / Phòng TCKT
+    participant UI as Giao diện Tính lương (/hr/payroll)
+    participant Engine as Động cơ Tính lương (PayrollCalculator)
+    participant DB as PostgreSQL (Staff, Ngạch bậc, Chấm công)
+    participant XMLDB as Dữ liệu Ca mổ (XML3 / PTTT)
+    participant BankExport as Bộ xuất file Ngân hàng & Phiếu lương
+
+    KTT->>UI: Chọn tháng tính lương (ví dụ: Tháng 10/2026)
+    KTT->>UI: Bấm "Khởi tạo bảng lương tháng"
+    UI->>Engine: Kích hoạt tiến trình tính toán lương cho 1.500 nhân sự
+    
+    par 1. Đọc dữ liệu Công chuẩn
+        Engine->>DB: Lấy tổng số ngày công làm việc từ Bảng chấm công tháng
+    and 2. Tính Lương Ngạch bậc
+        Engine->>DB: Lấy Hệ số lương × Mức lương cơ sở (2.340.000đ)
+    and 3. Tính Phụ cấp Ưu đãi nghề
+        Engine->>DB: Tỷ lệ ưu đãi nghề (20%, 40%, 70%, 100% theo vị trí)
+    and 4. Tính Phụ cấp Ca mổ (QĐ 73/2011/QĐ-TTg)
+        Engine->>XMLDB: Tổng hợp số ca phẫu thuật/thủ thuật loại ĐB, 1, 2, 3 đứng tên KTV
+        XMLDB-->>Engine: Trả về số tiền phụ cấp mổ tương ứng từng Bác sĩ/KTV
+    and 5. Khấu trừ Pháp định
+        Engine->>Engine: Khấu trừ BHXH (8%), BHYT (1.5%), BHTN (1%), Thuế TNCN
+    end
+
+    Engine->>DB: Lưu chi tiết bảng lương 1.500 nhân viên vào StaffSalaryDetail
+    DB-->>UI: Hoàn tất tính toán bảng lương tháng
+    UI-->>KTT: Hiển thị bảng tổng hợp lương toàn viện, cho phép điều chỉnh
+    KTT->>UI: Bấm "Chốt bảng lương & Phát hành phiếu lương"
+    UI->>BankExport: Xuất file chuyển khoản ngân hàng (Vietcombank/BIDV)
+    UI->>DB: Bật trạng thái xem Phiếu lương điện tử cho từng tài khoản nhân viên
+                    </pre>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- 3. ROADMAP -->
+        <section id="roadmap" class="glass-card rounded-3xl p-6 sm:p-8 shadow-sm">
+            <h3 class="text-xl font-bold text-slate-800 pb-4 border-b border-slate-100">
+                🚀 Kế hoạch Triển khai Chi tiết Từng Module (Roadmap)
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                
+                <!-- Card 1 -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">Tuần 1 - 2</span>
+                        <span class="text-xs text-slate-400 font-semibold">Module 1</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base mt-2">Hồ sơ Nhân sự 360°</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Quản lý 1.500 hồ sơ cán bộ, hợp đồng lao động, quá trình công tác và cảnh báo đến kỳ nâng bậc lương định kỳ.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">Tuần 2 - 3</span>
+                        <span class="text-xs text-slate-400 font-semibold">Module 2</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base mt-2">Phạm vi Hành nghề (CCHN)</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Phân quyền kỹ thuật độc lập / có giám sát và liên thông kiểm tra chéo với module Check XML BHYT để chống xuất toán.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">Tuần 3 - 4</span>
+                        <span class="text-xs text-slate-400 font-semibold">Module 3</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base mt-2">Đào tạo Liên tục (CME)</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Quản lý chứng chỉ đào tạo bắt buộc, theo dõi thanh tiến độ số giờ tín chỉ CME hàng năm của từng Bác sĩ.
+                    </p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">Tuần 4 - 5</span>
+                        <span class="text-xs text-slate-400 font-semibold">Module 4</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base mt-2">Chấm công & Ca trực 24/24</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Kết nối máy chấm công vân tay/khuôn mặt, đối chiếu lịch trực lâm sàng và tự động tổng hợp bảng công tháng.
+                    </p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg">Tuần 5 - 6</span>
+                        <span class="text-xs text-slate-400 font-semibold">Module 5</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base mt-2">Nghỉ phép Trực tuyến</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Nộp đơn nghỉ phép online, phê duyệt đa cấp (Trưởng khoa ➔ Phòng TCCB), tự động trừ quỹ phép năm và cập nhật bảng công.
+                    </p>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg">Tuần 6 - 7</span>
+                        <span class="text-xs text-slate-400 font-semibold">Module 6</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base mt-2">Tiền lương & Phụ cấp QĐ 73</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Tính toán tự động phụ cấp ca mổ theo Quyết định 73, lương ngạch bậc, xuất file Excel ngân hàng và gửi phiếu lương điện tử.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Floating Back to Top Button -->
+    <a href="#" class="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-xl transition-all duration-300 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </a>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-20 py-8 text-center text-xs text-slate-500">
+        <p>© 2026 Bệnh viện Đa khoa Lạng Sơn. Phân hệ Quản trị Nhân sự Y tế (HRM).</p>
+        <p class="mt-1">Tuân thủ nghiêm ngặt quy tắc cách ly mã nguồn và an toàn CSDL.</p>
+    </footer>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+            sequence: { showSequenceNumbers: true, actorMargin: 50, mirrorActors: false }
+        });
+    </script>
+</body>
+</html>

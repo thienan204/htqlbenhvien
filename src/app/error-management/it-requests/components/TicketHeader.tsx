@@ -61,11 +61,11 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                     <p className="text-sm sm:text-base text-slate-500 m-0">{description}</p>
                 </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-stretch sm:items-center mt-4 sm:mt-0">
+            <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto items-stretch sm:items-center mt-3 sm:mt-0">
                 {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-50 px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg border border-slate-200 w-full sm:w-auto">
-                            <span className="text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
+                    <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-start">
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                            <span className="text-xs sm:text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
                             <Switch 
                                 checked={isAvailable}
                                 loading={togglingAvailability}
@@ -139,17 +139,17 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                             >
                                 <button
                                     type="button"
-                                    className={`px-3 py-1.5 rounded-xl sm:rounded-lg border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-all shadow-sm ${
+                                    className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-all shadow-sm ${
                                         autoAssignDisabled
                                             ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100 ring-2 ring-amber-400/20'
-                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
+                                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
                                     }`}
                                     title="Chế độ tập trung - Miễn nhận việc tự động và tự tạo yêu cầu theo dõi"
                                 >
                                     <AimOutlined className={autoAssignDisabled ? 'text-amber-600 text-base animate-pulse' : 'text-slate-400 text-base'} />
                                     <span>
                                         {autoAssignDisabled 
-                                            ? (focusReason ? `🎯 Tập trung: ${focusReason}` : '🎯 Đang tập trung')
+                                            ? (focusReason ? `🎯 ${focusReason}` : '🎯 Đang tập trung')
                                             : '🎯 Chế độ tập trung'
                                         }
                                     </span>
@@ -161,59 +161,67 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                             icon={<SettingOutlined />} 
                             onClick={onOpenSettings} 
                             title="Cài đặt cảnh báo"
-                            size="large"
-                            className="text-slate-500 hover:text-blue-500"
+                            size="middle"
+                            className="text-slate-500 hover:text-blue-500 rounded-xl"
                         />
                     </div>
                 )}
-                {isAdmin && (
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <Link href={`/error-management/config?targetDepartment=${targetDepartment}`} className="w-full sm:w-auto">
+
+                {/* Hàng nút thao tác chính - Tự động xếp hàng ngang như Ảnh 2 */}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+                    {isAdmin && (
+                        <Link href={`/error-management/config?targetDepartment=${targetDepartment}`} className="shrink-0">
                             <Button 
                                 type="default" 
-                                size="large" 
+                                size="middle" 
                                 icon={<SettingOutlined />} 
-                                className="w-full text-slate-600 border-slate-200 hover:text-blue-600 hover:border-blue-400"
+                                className="text-slate-600 border-slate-200 hover:text-blue-600 hover:border-blue-400 rounded-xl"
+                                title="Cấu hình hệ thống"
                             >
-                                Cấu hình
+                                <span>Cấu hình</span>
                             </Button>
                         </Link>
-                        {onDeleteAll && user?.role === 'ADMIN' && (
-                            <Popconfirm
-                                title="Xóa toàn bộ dữ liệu"
-                                description="Bạn có chắc chắn muốn xóa toàn bộ Yêu cầu xử lý không? Hành động này không thể hoàn tác!"
-                                onConfirm={onDeleteAll}
-                                okText="Xóa tất cả"
-                                cancelText="Hủy"
-                                okButtonProps={{ danger: true }}
-                            >
-                                <Button 
-                                    danger 
-                                    size="large" 
-                                    icon={<DeleteOutlined />} 
-                                    className="w-full sm:w-auto"
-                                >
-                                    Xóa tất cả
-                                </Button>
-                            </Popconfirm>
-                        )}
-                    </div>
-                )}
-                {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
-                    <Link href={`/error-management/vendor-tasks?targetDepartment=${targetDepartment}`} className="w-full sm:w-auto">
-                        <Button 
-                            type="default"
-                            size="large"
-                            icon={<ShopOutlined />}
-                            className="w-full font-medium text-amber-700 bg-amber-50/80 border-amber-300 hover:bg-amber-100 hover:border-amber-400"
+                    )}
+                    {onDeleteAll && user?.role === 'ADMIN' && (
+                        <Popconfirm
+                            title="Xóa toàn bộ dữ liệu"
+                            description="Bạn có chắc chắn muốn xóa toàn bộ Yêu cầu xử lý không? Hành động này không thể hoàn tác!"
+                            onConfirm={onDeleteAll}
+                            okText="Xóa tất cả"
+                            cancelText="Hủy"
+                            okButtonProps={{ danger: true }}
                         >
-                            🏢 Việc gửi ngoài
-                        </Button>
-                    </Link>
-                )}
-                <Button className="w-full sm:w-auto" type="primary" size="large" icon={<PlusOutlined />} onClick={onCreateRequest}>
-                    Tạo Yêu Cầu
-                </Button>
+                            <Button 
+                                danger 
+                                size="middle" 
+                                icon={<DeleteOutlined />} 
+                                className="rounded-xl shrink-0"
+                                title="Xóa tất cả dữ liệu"
+                            />
+                        </Popconfirm>
+                    )}
+                    {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
+                        <Link href={`/error-management/vendor-tasks?targetDepartment=${targetDepartment}`} className="flex-1 sm:flex-initial">
+                            <Button 
+                                type="default"
+                                size="middle"
+                                icon={<ShopOutlined />}
+                                className="w-full sm:w-auto font-medium text-amber-700 bg-amber-50/80 border-amber-300 hover:bg-amber-100 rounded-xl whitespace-nowrap"
+                            >
+                                <span>🏢 Việc gửi ngoài</span>
+                            </Button>
+                        </Link>
+                    )}
+                    <Button 
+                        className="flex-1 sm:flex-initial rounded-xl whitespace-nowrap shadow-sm" 
+                        type="primary" 
+                        size="middle" 
+                        icon={<PlusOutlined />} 
+                        onClick={onCreateRequest}
+                    >
+                        <span>Tạo Yêu Cầu</span>
+                    </Button>
+                </div>
             </div>
         </div>
     );

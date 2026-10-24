@@ -1,12 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import * as Icons from '@ant-design/icons';
+import { Tag } from 'antd';
 import { usePathname } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
 import { useAuth } from '@/contexts/AuthContext';
+import { SYSTEM_CONFIG } from '@/config/systemVersion';
+import SystemVersionModal from '../common/SystemVersionModal';
 
 interface SidebarClientProps {
     rules: any[]; 
@@ -40,6 +43,7 @@ const isMenuAdmin = (menu: any, rules: any[], allMenus: any[], adminOnlyPaths: s
 export default function SidebarClient({ rules, menus = [], isOpen, adminMode = false, adminOnlyPaths = [] }: SidebarClientProps) {
     const { user, hasPermission } = useAuth();
     const pathname = usePathname();
+    const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
 
     const allRootMenus = menus.filter(m => !m.parentId).sort((a, b) => a.order - b.order);
     
@@ -120,7 +124,12 @@ export default function SidebarClient({ rules, menus = [], isOpen, adminMode = f
                                 {visibleChildren.map(child => (
                                     <Link key={child.id} href={child.path || '#'} className={getLinkClass(child.path)}>
                                         {renderIcon(child.icon)}
-                                        <span>{child.title}</span>
+                                        <span className="flex-1 truncate">{child.title}</span>
+                                        {child.status === 'TESTING' && (
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">
+                                                Thử nghiệm
+                                            </span>
+                                        )}
                                     </Link>
                                 ))}
 
@@ -141,6 +150,27 @@ export default function SidebarClient({ rules, menus = [], isOpen, adminMode = f
                 })}
 
             </div>
+
+            {/* Version Footer */}
+            <div className="p-3 border-t border-slate-100 bg-slate-50/80">
+                <div 
+                    onClick={() => setIsVersionModalOpen(true)}
+                    className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm cursor-pointer transition-all"
+                >
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
+                            BV
+                        </div>
+                        <div>
+                            <div className="text-[11px] font-bold text-slate-700">BVĐK Lạng Sơn</div>
+                            <div className="text-[10px] text-slate-400">Phiên bản {SYSTEM_CONFIG.version}</div>
+                        </div>
+                    </div>
+                    <span className="text-[10px] font-semibold text-blue-600 hover:underline">Chi tiết</span>
+                </div>
+            </div>
+
+            <SystemVersionModal open={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
         </div>
     );
 }

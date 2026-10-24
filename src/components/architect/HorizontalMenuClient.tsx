@@ -112,11 +112,21 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
                         <Link href={child.path} className="flex items-center gap-2 py-1 text-inherit hover:text-inherit">
                             {renderIcon(child.icon)}
                             <span className={isActive ? 'text-blue-600 font-semibold' : ''}>{child.title}</span>
+                            {child.status === 'TESTING' && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 border border-amber-300 ml-1">
+                                    Thử nghiệm
+                                </span>
+                            )}
                         </Link>
                     ) : (
                         <div className="flex items-center gap-2 py-1">
                             {renderIcon(child.icon)}
                             <span className={isActive ? 'text-blue-600 font-semibold' : ''}>{child.title}</span>
+                            {child.status === 'TESTING' && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 border border-amber-300 ml-1">
+                                    Thử nghiệm
+                                </span>
+                            )}
                         </div>
                     )
                 };

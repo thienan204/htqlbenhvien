@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, Segmented, message, Modal, DatePicker, Button, Tooltip, Select } from 'antd';
-import { CalendarOutlined } from '@ant-design/icons';
+import { Card, Segmented, message, Modal, DatePicker, Button, Tooltip, Select, Dropdown } from 'antd';
+import { CalendarOutlined, AppstoreOutlined, TableOutlined, LayoutOutlined, DesktopOutlined, DownOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +37,8 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>([dayjs().startOf('day'), dayjs().endOf('day')]);
     const [togglingAvailability, setTogglingAvailability] = useState(false);
+    const [viewMode, setViewMode] = useState<'AUTO' | 'CARD' | 'TABLE'>('AUTO');
+    const [onlyUnread, setOnlyUnread] = useState(false);
 
     const [togglingFocusMode, setTogglingFocusMode] = useState(false);
 
@@ -77,7 +79,11 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         handleResumeTicket
     } = useTickets(user, isAdmin, targetDepartment, {
         onSelectTicket: handleSelectTicket,
-        onNavigateToMyTickets: handleNavigateToMyTickets
+        onNavigateToMyTickets: handleNavigateToMyTickets,
+        onOpenChat: (ticket: Ticket) => {
+            setSelectedTicket(ticket);
+            setIsChatVisible(true);
+        }
     });
 
     // Lắng nghe URL params tab/status từ thông báo Windows (chuyển sang danh sách việc của tôi chờ xử lý, không mở modal)
@@ -185,13 +191,20 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         };
     }, [tickets, isAdmin, user, dateRange]);
 
+    const unreadTicketsCount = useMemo(() => {
+        return baseTickets.filter(t => (t.unreadMessageCount || 0) > 0).length;
+    }, [baseTickets]);
+
     const filteredTickets = useMemo(() => {
         let result = baseTickets;
         if (statusFilter !== 'ALL') {
             result = result.filter(t => t.status === statusFilter);
         }
+        if (onlyUnread) {
+            result = result.filter(t => (t.unreadMessageCount || 0) > 0);
+        }
         return result;
-    }, [baseTickets, statusFilter]);
+    }, [baseTickets, statusFilter, onlyUnread]);
 
     const handleToggleAvailability = async (checked: boolean) => {
         if (!user) return;
@@ -376,14 +389,13 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 targetDepartment={targetDepartment}
             />
 
-            {/* Thanh bộ lọc gom trên 1 dòng duy nhất */}
-            <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-                {/* Cụm bên trái: Phân loại phạm vi (Admin) + Select Trạng thái */}
-                <div className="flex flex-wrap items-center gap-2.5">
+            {/* Thanh bộ lọc: 1 hàng ngang duy nhất chuẩn như Ảnh 2 */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
+                {/* Cụm bên trái: Tabs phân loại + Hộp chọn trạng thái */}
+                <div className="flex flex-wrap items-center gap-2">
                     {isAdmin && (
-                        <div className="flex bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0 overflow-x-auto scrollbar-hide">
+                        <div className="flex items-center bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
                             <Segmented 
-                                className="min-w-max"
                                 options={[
                                     {
                                         label: (
@@ -517,36 +529,114 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                             ]}
                         />
                     </div>
+
+                    {/* Nút lọc Tin chưa đọc - Vị trí viền đỏ Hình 2 */}
+                    <Button
+                        type={onlyUnread ? 'primary' : 'default'}
+                        onClick={() => setOnlyUnread(!onlyUnread)}
+                        className={`rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm shrink-0 px-3 h-[38px] ${
+                            onlyUnread 
+                                ? 'bg-amber-600 hover:bg-amber-500 border-amber-600 text-white' 
+                                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                        }`}
+                        title="Bấm để chỉ lọc các yêu cầu có tin nhắn thảo luận chưa đọc"
+                    >
+                        <MessageOutlined className={onlyUnread ? 'text-white' : 'text-amber-500'} />
+                        <span>Tin chưa đọc</span>
+                        <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
+                            unreadTicketsCount > 0 
+                                ? onlyUnread ? 'bg-white text-amber-700' : 'bg-amber-100 text-amber-700' 
+                                : 'bg-slate-100 text-slate-500'
+                        }`}>
+                            {unreadTicketsCount}
+                        </span>
+                    </Button>
                 </div>
 
-                {/* Cụm bên phải: Bộ lọc theo khoảng ngày (Mặc định: Ngày hiện tại) */}
-                <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
-                    <Tooltip title="Chọn khoảng ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
-                        <DatePicker.RangePicker 
-                            value={dateRange}
-                            onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
-                            format="DD/MM/YYYY"
-                            allowClear
-                            placeholder={['Từ ngày', 'Đến ngày']}
-                            className="rounded-lg text-xs sm:text-sm font-medium w-[220px] sm:w-[240px]"
-                        />
-                    </Tooltip>
-                    <Button 
-                        size="small"
-                        type={dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'primary' : 'default'}
-                        onClick={() => setDateRange([dayjs().startOf('day'), dayjs().endOf('day')])}
-                        className={`text-xs rounded-lg ${dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                {/* Cụm bên phải: Bộ lọc khoảng ngày + Nút bấm chọn chế độ hiển thị (Click vào mới hiện) */}
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                        <Tooltip title="Chọn khoảng ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                            <DatePicker.RangePicker 
+                                value={dateRange}
+                                onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
+                                format="DD/MM/YYYY"
+                                allowClear
+                                placeholder={['Từ ngày', 'Đến ngày']}
+                                className="rounded-lg text-xs font-medium w-[190px] sm:w-[220px]"
+                            />
+                        </Tooltip>
+                        <Button 
+                            size="small"
+                            type={dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'primary' : 'default'}
+                            onClick={() => setDateRange([dayjs().startOf('day'), dayjs().endOf('day')])}
+                            className={`text-xs rounded-lg px-2 ${dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                        >
+                            Hôm nay
+                        </Button>
+                        <Button 
+                            size="small"
+                            type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
+                            onClick={() => setDateRange(null)}
+                            className={`text-xs rounded-lg px-2 ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                        >
+                            Tất cả
+                        </Button>
+                    </div>
+
+                    {/* Nút Chế độ hiển thị: Click vào hiện Dropdown để chọn */}
+                    <Dropdown
+                        menu={{
+                            items: [
+                                {
+                                    key: 'AUTO',
+                                    icon: <DesktopOutlined />,
+                                    label: (
+                                        <div className="flex items-center justify-between gap-4 py-0.5">
+                                            <span>Tự động theo thiết bị</span>
+                                            {viewMode === 'AUTO' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                        </div>
+                                    )
+                                },
+                                {
+                                    key: 'CARD',
+                                    icon: <AppstoreOutlined />,
+                                    label: (
+                                        <div className="flex items-center justify-between gap-4 py-0.5">
+                                            <span>Dạng Thẻ (Card View)</span>
+                                            {viewMode === 'CARD' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                        </div>
+                                    )
+                                },
+                                {
+                                    key: 'TABLE',
+                                    icon: <TableOutlined />,
+                                    label: (
+                                        <div className="flex items-center justify-between gap-4 py-0.5">
+                                            <span>Dạng Bảng (Table View)</span>
+                                            {viewMode === 'TABLE' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                        </div>
+                                    )
+                                }
+                            ],
+                            selectedKeys: [viewMode],
+                            onClick: ({ key }) => setViewMode(key as any),
+                        }}
+                        trigger={['click']}
+                        placement="bottomRight"
                     >
-                        Hôm nay
-                    </Button>
-                    <Button 
-                        size="small"
-                        type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
-                        onClick={() => setDateRange(null)}
-                        className={`text-xs rounded-lg ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                    >
-                        Tất cả
-                    </Button>
+                        <Button 
+                            size="middle"
+                            className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2.5 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center gap-1.5"
+                            title="Chọn chế độ hiển thị: Tự động / Dạng Thẻ / Dạng Bảng"
+                        >
+                            {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600" /> : <DesktopOutlined className="text-slate-500" />}
+                            <span className="hidden sm:inline font-medium text-slate-700">
+                                {viewMode === 'CARD' ? 'Thẻ' : viewMode === 'TABLE' ? 'Bảng' : 'Tự động'}
+                            </span>
+                            <DownOutlined className="text-[9px] text-slate-400" />
+                        </Button>
+                    </Dropdown>
                 </div>
             </div>
 
@@ -579,6 +669,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         setIsEditModalVisible(true);
                     }}
                     targetDepartment={targetDepartment}
+                    viewMode={viewMode}
                 />
             </Card>
 

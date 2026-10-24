@@ -148,6 +148,7 @@ const closeNativeNotification = () => {
 export interface UseTicketsCallbacks {
     onSelectTicket?: (ticket: Ticket) => void;
     onNavigateToMyTickets?: () => void;
+    onOpenChat?: (ticket: Ticket) => void;
 }
 
 export const useTickets = (
@@ -164,6 +165,7 @@ export const useTickets = (
 
     const prevUnassignedCountRef = useRef<number | null>(null);
     const prevMyPendingCountRef = useRef<number | null>(null);
+    const prevUnreadMapRef = useRef<Record<string, number> | null>(null);
 
     const executeReceiveTicket = async (ticket: Ticket, keepFocusTaskRunning?: boolean) => {
         try {
@@ -565,6 +567,62 @@ export const useTickets = (
                     closeNativeNotification();
                 }
 
+                // 4. Cảnh báo tin nhắn mới từ Khoa phòng tới kỹ thuật viên phụ trách
+                if (isPolling && prevUnreadMapRef.current !== null) {
+                    const newMsgTicket = data.find((t: any) => {
+                        const isRelevant = t.assigneeId === user?.id || (!t.assigneeId && (isAdmin || user?.role === 'CNTT'));
+                        if (!isRelevant) return false;
+                        const prevCount = prevUnreadMapRef.current?.[t.id] || 0;
+                        return (t.unreadMessageCount || 0) > prevCount;
+                    });
+
+                    if (newMsgTicket) {
+                        playNotificationSound(targetDepartment, user?.id);
+
+                        notification.info({
+                            key: `new-msg-${newMsgTicket.id}`,
+                            message: `💬 Tin nhắn mới từ Khoa [${newMsgTicket.ma_khoa}]!`,
+                            description: (
+                                <div className="space-y-1.5 pt-1">
+                                    <div className="text-xs text-slate-700">
+                                        Phiếu: <strong>{newMsgTicket.ma_ba || newMsgTicket.ten_loi}</strong>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            notification.destroy(`new-msg-${newMsgTicket.id}`);
+                                            callbacksRef.current?.onOpenChat?.(newMsgTicket);
+                                        }}
+                                        className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium px-2.5 py-1 rounded-md cursor-pointer transition-all shadow-xs"
+                                    >
+                                        Mở xem trao đổi
+                                    </button>
+                                </div>
+                            ),
+                            placement: 'bottomRight',
+                            duration: 10
+                        });
+
+                        showNativeNotification(
+                            `💬 Tin nhắn mới từ Khoa [${newMsgTicket.ma_khoa}]`,
+                            `Phiếu: ${newMsgTicket.ma_ba || newMsgTicket.ten_loi}. Bấm để xem trao đổi!`,
+                            `/error-management/it-requests?highlight=${newMsgTicket.id}`,
+                            () => {
+                                callbacksRef.current?.onOpenChat?.(newMsgTicket);
+                            }
+                        );
+
+                        startTitleBlink(`💬 (1) Tin nhắn mới từ Khoa!`);
+                    }
+                }
+
+                // Cập nhật bản đồ số tin chưa đọc của các ticket
+                const currentUnreadMap: Record<string, number> = {};
+                data.forEach((t: any) => {
+                    currentUnreadMap[t.id] = t.unreadMessageCount || 0;
+                });
+                prevUnreadMapRef.current = currentUnreadMap;
+
                 prevUnassignedCountRef.current = unassignedTickets.length;
                 prevMyPendingCountRef.current = myPendingTickets.length;
             }
@@ -606,9 +664,10 @@ export const useTickets = (
     }, [user, isAdmin]);
 
     useEffect(() => {
+        // Cập nhật tự động 5 giây mỗi lần để CNTT thấy ngay tin nhắn và việc mới
         const interval = setInterval(() => {
             fetchTickets(true);
-        }, 15000);
+        }, 5000);
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, isAdmin]);

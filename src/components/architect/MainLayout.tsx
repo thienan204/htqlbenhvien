@@ -7,6 +7,7 @@ import TopHeader from './TopHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import GlobalInstructionDrawer from './GlobalInstructionDrawer';
 import GlobalTicketNotification from '@/components/notifications/GlobalTicketNotification';
+import FeatureFeedbackModal from '../common/FeatureFeedbackModal';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -20,6 +21,7 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [menuLayout, setMenuLayout] = useState<'horizontal' | 'vertical'>('horizontal');
     const [adminMode, setAdminMode] = useState<boolean>(false);
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState<boolean>(false);
     const pathname = usePathname();
 
     useEffect(() => {
@@ -96,6 +98,15 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
         localStorage.setItem('adminMode', mode.toString());
     };
 
+    const isPatientPortal = pathname?.includes('/gop-y-benh-nhan');
+    if (isPatientPortal) {
+        return (
+            <div className="min-h-screen bg-slate-100">
+                {children}
+            </div>
+        );
+    }
+
     return (
         <>
             <SidebarClient 
@@ -133,9 +144,57 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
                     ${(isSidebarOpen && menuLayout === 'vertical') ? 'lg:pl-[280px] pl-0' : 'pl-0'}
                 `}
             >
+                {/* Banner cảnh báo nếu chức năng đang thử nghiệm */}
+                {(() => {
+                    const cleanPath = pathname?.replace('/htqlbenhvien', '') || '';
+                    if (!cleanPath || cleanPath === '/') return null;
+                    const matched = menus?.find(m => m.path && (cleanPath === m.path || cleanPath.startsWith(m.path)));
+                    if (matched?.status === 'TESTING') {
+                        return (
+                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900 flex items-center justify-between shadow-xs">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-amber-800 bg-amber-200/90 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide border border-amber-300">
+                                        ⚠️ Thử nghiệm (Beta)
+                                    </span>
+                                    <span>
+                                        Chức năng <strong>{matched.title}</strong> đang trong giai đoạn <strong>THỬ NGHIỆM</strong>.
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-[11px] text-amber-700 hidden md:block">
+                                        Xem <strong>Tài liệu & Lịch sử thay đổi</strong> trên thanh tiêu đề để nắm quy trình.
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFeedbackOpen(true)}
+                                        className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer border-none"
+                                    >
+                                        <span>💬 Góp ý thử nghiệm</span>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
+
                 {children}
             </div>
             
+            {/* Modal Góp ý Thử nghiệm / Chính sách */}
+            {(() => {
+                const cleanPath = pathname?.replace('/htqlbenhvien', '') || '';
+                const matched = menus?.find(m => m.path && (cleanPath === m.path || cleanPath.startsWith(m.path)));
+                return (
+                    <FeatureFeedbackModal 
+                        open={isFeedbackOpen} 
+                        onClose={() => setIsFeedbackOpen(false)} 
+                        currentTitle={matched?.title || 'Chức năng thử nghiệm'} 
+                        pagePath={matched?.path || cleanPath} 
+                    />
+                );
+            })()}
+
             <GlobalInstructionDrawer />
             <GlobalTicketNotification />
         </>

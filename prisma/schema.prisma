@@ -611,11 +611,105 @@ model Menu {
   permissionCode String?
   isActive       Boolean  @default(true)
   isAdminOnly    Boolean  @default(false)
+  status         String   @default("OFFICIAL")
   isSpecialGroup String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   targetPath     String?
   showInPaths    String[] @default([])
+}
+
+model FeatureChangeLog {
+  id          String   @id @default(cuid())
+  pagePath    String
+  version     String   @default("v1.0.0")
+  title       String
+  changeType  String   @default("UPDATE")
+  status      String   @default("TESTING")
+  content     String   @db.Text
+  reason      String?  @db.Text
+  author      String?  @default("Phòng CNTT")
+  documentUrl String?
+  appliedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([pagePath])
+}
+
+model FeatureFeedback {
+  id                String    @id @default(cuid())
+  targetScope       String    @default("FEATURE") // 'FEATURE' (Chức năng phần mềm), 'POLICY' (Chính sách/Quy chế BV), 'REGULATION' (Quy trình chuyên môn), 'INNOVATION' (Sáng kiến), 'PATIENT' (Góp ý bệnh nhân)
+  pagePath          String?   // Đường dẫn trang thử nghiệm (nếu là FEATURE)
+  featureName       String?   // Tên chức năng thử nghiệm hoặc tên module
+  policyTitle       String?   // Tên quy định / chính sách / văn bản (nếu là POLICY / REGULATION)
+  policyId          String?   // ID liên kết với HospitalPolicy
+  campaignId        String?   // ID liên kết với PatientFeedbackCampaign
+  isPatientFeedback Boolean   @default(false)
+  patientPhone      String?   // SĐT bệnh nhân nếu để lại
+  isAnonymous       Boolean   @default(false) // Ẩn danh
+  treatmentArea     String?   // Buồng bệnh / Khu vực khám
+  userId            String?
+  userName          String?   // Tên người gửi góp ý (tự động điền theo tài khoản hoặc tên bệnh nhân)
+  department        String?   // Tên khoa phòng
+  feedbackType      String    @default("SUGGESTION") // 'BUG', 'SUGGESTION', 'UI', 'POLICY_CHANGE', 'SERVICE', 'WAITING_TIME', 'ATTITUDE', 'FACILITY'
+  rating            Int?      @default(5) // Đánh giá độ hài lòng từ 1 đến 5 sao ⭐
+  content           String    @db.Text // Nội dung góp ý chi tiết
+  imageUrl          String?   // Ảnh chụp màn hình lỗi / tài liệu đính kèm (nếu có)
+  attachmentUrl     String?   // File văn bản/tài liệu đính kèm (PDF, Word, Excel, ZIP)
+  attachmentName    String?   // Tên file đính kèm
+  status            String    @default("PENDING") // 'PENDING' (Chờ tiếp nhận), 'PROCESSING' (Đang xử lý/điều chỉnh), 'RESOLVED' (Đã tiếp thu/hoàn thiện), 'REJECTED' (Không áp dụng)
+  adminNote         String?   @db.Text // Ý kiến phản hồi / giải trình của Phòng CNTT hoặc Ban Giám đốc
+  respondedBy       String?   // Cán bộ tiếp nhận phản hồi
+  respondedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([pagePath])
+  @@index([targetScope])
+  @@index([policyId])
+  @@index([campaignId])
+  @@index([status])
+}
+
+model HospitalPolicy {
+  id                String    @id @default(cuid())
+  code              String?   // Số hiệu văn bản (vd: 125/QĐ-BVĐKLS)
+  title             String    // Tên chính sách / Quy chế dự thảo
+  category          String    @default("POLICY") // 'POLICY' (Chính sách BV), 'INTERNAL_EXPENSE' (Chi tiêu nội bộ), 'REGULATION' (Quy trình chuyên môn), 'OTHER'
+  summary           String?   @db.Text // Tóm tắt nội dung
+  fileUrl           String?   // File văn bản tải lên (PDF, Word)
+  fileName          String?
+  fileSize          Int?
+  startDate         DateTime  @default(now())
+  endDate           DateTime? // Hạn chót lấy ý kiến
+  isActive          Boolean   @default(true) // Công tắc Bật/Tắt hiệu lực
+  status            String    @default("OPEN") // 'OPEN' (Đang lấy ý kiến), 'CLOSED' (Đã kết thúc), 'FINALIZED' (Đã ban hành)
+  targetDepartments String?   @default("ALL") // Khoa phòng lấy ý kiến (ALL hoặc danh sách mã khoa)
+  qrCodeKey         String    @unique @default(cuid())
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([status])
+}
+
+model PatientFeedbackCampaign {
+  id                String    @id @default(cuid())
+  name              String    // Tên điểm / Đợt góp ý (vd: "Hòm thư góp ý Khoa Khám bệnh", "Khảo sát ý kiến Buồng bệnh Khoa Ngoại")
+  department        String?   // Khoa phòng phụ trách
+  location          String?   // Vị trí dán mã QR (Bàn tiếp đón, Cửa buồng bệnh...)
+  description       String?   @db.Text
+  startDate         DateTime  @default(now())
+  endDate           DateTime?
+  isActive          Boolean   @default(true) // Công tắc Bật/Tắt hiệu lực
+  qrCodeKey         String    @unique @default(cuid())
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([isActive])
 }
 
 model DashboardCard {

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tree, Card, Button, Form, Input, Select, Switch, message, Modal, Spin, Popconfirm, Tooltip, Divider, AutoComplete, Tag } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined, ReloadOutlined, EditOutlined, DragOutlined } from '@ant-design/icons';
+import { Tree, Card, Button, Form, Input, Select, Switch, message, Modal, Spin, Popconfirm, Tooltip, Divider, AutoComplete, Tag, Radio, Tabs, Alert } from 'antd';
+import { PlusOutlined, DeleteOutlined, SaveOutlined, ReloadOutlined, EditOutlined, DragOutlined, BookOutlined, SettingOutlined } from '@ant-design/icons';
 import type { TreeDataNode, TreeProps } from 'antd';
 import * as Icons from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
@@ -20,6 +20,7 @@ interface MenuNode {
     permissionCode: string | null;
     isActive: boolean;
     isAdminOnly?: boolean;
+    status?: string;
     isSpecialGroup: string | null;
     showInPaths?: string[];
     children?: MenuNode[];
@@ -217,7 +218,10 @@ export default function MenuBuilderPage() {
                 setSelectedNode(node);
                 setIsEditing(true);
                 setIsCreating(false);
-                form.setFieldsValue(node);
+                form.setFieldsValue({
+                    ...node,
+                    status: node.status || 'OFFICIAL'
+                });
             }
         } else {
             setSelectedNode(null);
@@ -235,6 +239,7 @@ export default function MenuBuilderPage() {
             parentId,
             isActive: true,
             isAdminOnly: false,
+            status: 'TESTING',
             order: 0
         });
     };
@@ -337,6 +342,11 @@ export default function MenuBuilderPage() {
                                                     Quản trị
                                                 </Tag>
                                             )}
+                                            {nodeData.status === 'TESTING' && (
+                                                <Tag color="warning" className="text-[10px] py-0 px-1.5 leading-4 border-amber-300 ml-1">
+                                                    Thử nghiệm
+                                                </Tag>
+                                            )}
                                             {nodeData.permissionCode && (
                                                 <span className="ml-auto text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded border border-blue-100 hidden sm:inline-block">
                                                     {nodeData.permissionCode}
@@ -364,114 +374,205 @@ export default function MenuBuilderPage() {
                             }
                         >
                             <Form form={form} layout="vertical">
-                                <Form.Item name="title" label="Tên Menu" rules={[{ required: true, message: 'Vui lòng nhập tên menu' }]}>
-                                    <Input placeholder="Ví dụ: Đọc dữ liệu Excel" />
-                                </Form.Item>
-                                
-                                <Form.Item name="path" label="Đường dẫn hiển thị (URL Alias)">
-                                    <Input placeholder="Ví dụ: /doc-file-excel-1 (Bỏ trống nếu là Nhóm)" />
-                                </Form.Item>
+                                <Tabs
+                                    type="card"
+                                    items={[
+                                        {
+                                            key: 'basic',
+                                            label: (
+                                                <span className="flex items-center gap-1.5 font-medium">
+                                                    <SettingOutlined />
+                                                    Cấu hình Menu
+                                                </span>
+                                            ),
+                                            children: (
+                                                <div className="pt-2">
+                                                    <Form.Item name="title" label="Tên Menu" rules={[{ required: true, message: 'Vui lòng nhập tên menu' }]}>
+                                                        <Input placeholder="Ví dụ: Đọc dữ liệu Excel" />
+                                                    </Form.Item>
+                                                    
+                                                    <Form.Item name="path" label="Đường dẫn hiển thị (URL Alias)">
+                                                        <Input placeholder="Ví dụ: /doc-file-excel-1 (Bỏ trống nếu là Nhóm)" />
+                                                    </Form.Item>
 
-                                <Form.Item name="targetPath" label={
-                                    <span>
-                                        Đường dẫn gốc (Target URL)
-                                        <Tooltip title="Nếu bạn điền URL Alias khác với mặc định, hãy nhập Đường dẫn gốc vào đây để hệ thống hiển thị đúng nội dung.">
-                                            <Icons.QuestionCircleOutlined className="ml-2 text-gray-400" />
-                                        </Tooltip>
-                                    </span>
-                                }>
-                                    <AutoComplete 
-                                        options={availablePaths}
-                                        placeholder="Chọn hoặc tìm kiếm route (VD: /xml-checker, lịch lâm sàng, excel...)" 
-                                        filterOption={(inputValue, option) => {
-                                            const search = (inputValue || '').trim().toLowerCase();
-                                            const val = ((option?.value as string) || '').toLowerCase();
-                                            const lbl = ((option?.label as string) || '').toLowerCase();
-                                            return val.includes(search) || lbl.includes(search);
-                                        }}
-                                        allowClear
-                                    />
-                                </Form.Item>
+                                                    <Form.Item name="targetPath" label={
+                                                        <span>
+                                                            Đường dẫn gốc (Target URL)
+                                                            <Tooltip title="Nếu bạn điền URL Alias khác với mặc định, hãy nhập Đường dẫn gốc vào đây để hệ thống hiển thị đúng nội dung.">
+                                                                <Icons.QuestionCircleOutlined className="ml-2 text-gray-400" />
+                                                            </Tooltip>
+                                                        </span>
+                                                    }>
+                                                        <AutoComplete 
+                                                            options={availablePaths}
+                                                            placeholder="Chọn hoặc tìm kiếm route (VD: /xml-checker, lịch lâm sàng, excel...)" 
+                                                            filterOption={(inputValue, option) => {
+                                                                const search = (inputValue || '').trim().toLowerCase();
+                                                                const val = ((option?.value as string) || '').toLowerCase();
+                                                                const lbl = ((option?.label as string) || '').toLowerCase();
+                                                                return val.includes(search) || lbl.includes(search);
+                                                            }}
+                                                            allowClear
+                                                        />
+                                                    </Form.Item>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Form.Item name="icon" label="Biểu tượng (Icon)">
-                                        <Select placeholder="Chọn Icon" allowClear showSearch>
-                                            {ICON_LIST.map(icon => {
-                                                const IconCmp = (Icons as any)[icon];
-                                                return (
-                                                    <Option key={icon} value={icon}>
-                                                        <div className="flex items-center gap-3">
-                                                            {IconCmp && <IconCmp className="text-lg text-slate-500" />}
-                                                            <span>{icon}</span>
-                                                        </div>
-                                                    </Option>
-                                                )
-                                            })}
-                                        </Select>
-                                    </Form.Item>
-                                    
-                                    <Form.Item name="parentId" label="Menu Cha (Nhóm)">
-                                        <Select placeholder="Root (Menu Cấp 1)" allowClear>
-                                            {menus.filter(m => m.id !== selectedNode?.id && m.parentId === null).map(m => (
-                                                <Option key={m.id} value={m.id}>{m.title}</Option>
-                                            ))}
-                                        </Select>
-                                    </Form.Item>
-                                </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <Form.Item name="icon" label="Biểu tượng (Icon)">
+                                                            <Select placeholder="Chọn Icon" allowClear showSearch>
+                                                                {ICON_LIST.map(icon => {
+                                                                    const IconCmp = (Icons as any)[icon];
+                                                                    return (
+                                                                        <Option key={icon} value={icon}>
+                                                                            <div className="flex items-center gap-3">
+                                                                                {IconCmp && <IconCmp className="text-lg text-slate-500" />}
+                                                                                <span>{icon}</span>
+                                                                            </div>
+                                                                        </Option>
+                                                                    )
+                                                                })}
+                                                            </Select>
+                                                        </Form.Item>
+                                                        
+                                                        <Form.Item name="parentId" label="Menu Cha (Nhóm)">
+                                                            <Select placeholder="Root (Menu Cấp 1)" allowClear>
+                                                                {menus.filter(m => m.id !== selectedNode?.id && m.parentId === null).map(m => (
+                                                                    <Option key={m.id} value={m.id}>{m.title}</Option>
+                                                                ))}
+                                                            </Select>
+                                                        </Form.Item>
+                                                    </div>
 
-                                <Form.Item 
-                                    name="permissionCode" 
-                                    label="Mã Phân Quyền (Permission Code)"
-                                    tooltip="Mã này sẽ xuất hiện trong phần Quản lý Role để tích chọn cấp quyền. Ví dụ: MENU_DOC_FILE_EXCEL"
-                                >
-                                    <Input placeholder="Ví dụ: MENU_TEST" style={{ textTransform: 'uppercase' }} />
-                                </Form.Item>
+                                                    <Form.Item 
+                                                        name="status" 
+                                                        label="Trạng thái Vận hành Chức năng"
+                                                        tooltip="Chọn Thử nghiệm đối với chức năng mới đang triển khai, Chính thức đối với chức năng đã nghiệm thu"
+                                                    >
+                                                        <Radio.Group buttonStyle="solid" className="w-full grid grid-cols-2 text-center">
+                                                            <Radio.Button value="OFFICIAL" className="text-xs font-semibold">
+                                                                🟢 Hoạt động chính thức
+                                                            </Radio.Button>
+                                                            <Radio.Button value="TESTING" className="text-xs font-semibold">
+                                                                🟡 Thử nghiệm (Beta)
+                                                            </Radio.Button>
+                                                        </Radio.Group>
+                                                    </Form.Item>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Form.Item name="isActive" label="Trạng thái hiển thị" valuePropName="checked">
-                                        <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
-                                    </Form.Item>
-                                    <Form.Item 
-                                        name="isAdminOnly" 
-                                        label="Phân loại Menu" 
-                                        valuePropName="checked"
-                                        tooltip="Bật nếu menu này chỉ dành cho Quản trị viên (sẽ hiển thị ở chế độ Quản trị và chỉ ADMIN được vào)"
-                                    >
-                                        <Switch checkedChildren="Quản trị" unCheckedChildren="Người dùng" />
-                                    </Form.Item>
-                                </div>
+                                                    <Form.Item 
+                                                        name="permissionCode" 
+                                                        label="Mã Phân Quyền (Permission Code)"
+                                                        tooltip="Mã này sẽ xuất hiện trong phần Quản lý Role để tích chọn cấp quyền. Ví dụ: MENU_DOC_FILE_EXCEL"
+                                                    >
+                                                        <Input placeholder="Ví dụ: MENU_TEST" style={{ textTransform: 'uppercase' }} />
+                                                    </Form.Item>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Form.Item 
-                                        name="isSpecialGroup" 
-                                        label="Loại Menu Đặc Biệt"
-                                        tooltip="Dùng để tự động tải các danh sách chuyên đề vào nhóm này"
-                                    >
-                                        <Select placeholder="Bình thường" allowClear>
-                                            <Option value="SPECIALIZED_RULES">Nhóm Danh Sách Chuyên Đề</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <Form.Item name="isActive" label="Trạng thái hiển thị" valuePropName="checked">
+                                                            <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
+                                                        </Form.Item>
+                                                        <Form.Item 
+                                                            name="isAdminOnly" 
+                                                            label="Phân loại Menu" 
+                                                            valuePropName="checked"
+                                                            tooltip="Bật nếu menu này chỉ dành cho Quản trị viên (sẽ hiển thị ở chế độ Quản trị và chỉ ADMIN được vào)"
+                                                        >
+                                                            <Switch checkedChildren="Quản trị" unCheckedChildren="Người dùng" />
+                                                        </Form.Item>
+                                                    </div>
 
-                                <Form.Item 
-                                    name="showInPaths" 
-                                    label="Hiển thị khi truy cập các Module (URL) nào?"
-                                    tooltip="Nhập tiền tố URL (VD: /xml-checker) rồi ấn Enter. Để trống nếu muốn hiển thị ở mọi nơi (giữ tính tương thích)."
-                                >
-                                    <Select
-                                        mode="tags"
-                                        placeholder="VD: /xml-checker (ấn Enter để thêm)"
-                                        style={{ width: '100%' }}
-                                        tokenSeparators={[',']}
-                                        options={[
-                                            { value: '/xml-checker', label: '/xml-checker (Kiểm tra XML)' },
-                                            { value: '/error-management', label: '/error-management (Xử lý Lỗi IT)' },
-                                            { value: '/staff', label: '/staff (Quản lý Nhân sự)' },
-                                            { value: '/chuyen-de', label: '/chuyen-de (Chuyên đề)' }
-                                        ]}
-                                    />
-                                </Form.Item>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <Form.Item 
+                                                            name="isSpecialGroup" 
+                                                            label="Loại Menu Đặc Biệt"
+                                                            tooltip="Dùng để tự động tải các danh sách chuyên đề vào nhóm này"
+                                                        >
+                                                            <Select placeholder="Bình thường" allowClear>
+                                                                <Option value="SPECIALIZED_RULES">Nhóm Danh Sách Chuyên Đề</Option>
+                                                            </Select>
+                                                        </Form.Item>
+                                                    </div>
 
+                                                    <Form.Item 
+                                                        name="showInPaths" 
+                                                        label="Hiển thị khi truy cập các Module (URL) nào?"
+                                                        tooltip="Nhập tiền tố URL (VD: /xml-checker) rồi ấn Enter. Để trống nếu muốn hiển thị ở mọi nơi (giữ tính tương thích)."
+                                                    >
+                                                        <Select
+                                                            mode="tags"
+                                                            placeholder="VD: /xml-checker (ấn Enter để thêm)"
+                                                            style={{ width: '100%' }}
+                                                            tokenSeparators={[',']}
+                                                            options={[
+                                                                { value: '/xml-checker', label: '/xml-checker (Kiểm tra XML)' },
+                                                                { value: '/error-management', label: '/error-management (Xử lý Lỗi IT)' },
+                                                                { value: '/staff', label: '/staff (Quản lý Nhân sự)' },
+                                                                { value: '/chuyen-de', label: '/chuyen-de (Chuyên đề)' }
+                                                            ]}
+                                                        />
+                                                    </Form.Item>
+                                                </div>
+                                            )
+                                        },
+                                        {
+                                            key: 'doc',
+                                            label: (
+                                                <span className="flex items-center gap-1.5 font-medium text-indigo-600">
+                                                    <BookOutlined />
+                                                    Tài liệu & Hướng dẫn sử dụng
+                                                </span>
+                                            ),
+                                            children: (
+                                                <div className="pt-2">
+                                                    <Alert
+                                                        type="info"
+                                                        showIcon
+                                                        title="Quy định bắt buộc tài liệu hướng dẫn"
+                                                        description="Mỗi chức năng khi tạo mới bắt buộc phải có tài liệu và hướng dẫn sử dụng kèm theo để khoa phòng có thể tra cứu và vận hành ngay."
+                                                        className="mb-3 text-xs"
+                                                    />
+
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="text-xs font-semibold text-slate-700">Nội dung Hướng dẫn (HTML / Text):</span>
+                                                        <Button 
+                                                            size="small" 
+                                                            type="dashed"
+                                                            onClick={() => {
+                                                                const title = form.getFieldValue('title') || 'Chức năng mới';
+                                                                const template = `<h3>TÀI LIỆU & HƯỚNG DẪN SỬ DỤNG: ${title.toUpperCase()}</h3>
+<p><em>(Quy trình vận hành chuẩn SOP - Bệnh viện Đa khoa Lạng Sơn)</em></p>
+<h4>I. Mục đích & Phạm vi áp dụng:</h4>
+<p>Chức năng <strong>${title}</strong> phục vụ công tác chuyên môn, hỗ trợ các khoa phòng bệnh viện thực hiện quản lý và tác nghiệp chính xác.</p>
+<h4>II. Đối tượng sử dụng:</h4>
+<p>Cán bộ, Bác sĩ, Điều dưỡng, Nhân viên khoa phòng và bộ phận CNTT liên quan.</p>
+<h4>III. Quy trình thao tác từng bước:</h4>
+<ol>
+  <li><strong>Bước 1:</strong> Đăng nhập hệ thống và bấm chọn menu <strong>${title}</strong>.</li>
+  <li><strong>Bước 2:</strong> Thiết lập các bộ lọc hoặc kiểm tra danh sách hiển thị trên màn hình.</li>
+  <li><strong>Bước 3:</strong> Thực hiện nhập dữ liệu theo đúng biểu mẫu quy định.</li>
+  <li><strong>Bước 4:</strong> Bấm nút <strong>Lưu / Xác nhận</strong> để hoàn tất quy trình.</li>
+</ol>
+<h4>IV. Lưu ý & Đầu mối hỗ trợ kỹ thuật:</h4>
+<p>Mọi vướng mắc về mặt phần mềm, vui lòng liên hệ <strong>Phòng Công nghệ Thông tin</strong> (Ext: 115).</p>`;
+                                                                form.setFieldsValue({ initialInstruction: template });
+                                                                message.success('Đã tự động tạo khung tài liệu SOP chuẩn bệnh viện!');
+                                                            }}
+                                                            className="text-xs text-blue-600 border-blue-300"
+                                                        >
+                                                            ⚡ Tự động sinh mẫu tài liệu theo tên Menu
+                                                        </Button>
+                                                    </div>
+
+                                                    <Form.Item name="initialInstruction">
+                                                        <Input.TextArea 
+                                                            rows={10} 
+                                                            placeholder="Nhập nội dung tài liệu hướng dẫn sử dụng cho chức năng này (hoặc bấm nút Sinh mẫu tự động ở trên)..." 
+                                                            className="font-mono text-xs"
+                                                        />
+                                                    </Form.Item>
+                                                </div>
+                                            )
+                                        }
+                                    ]}
+                                />
                                 <Form.Item name="order" hidden><Input /></Form.Item>
 
                                 <Divider className="my-4" />

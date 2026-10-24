@@ -4,13 +4,18 @@ import React, { useState } from 'react';
 import {
     AppstoreOutlined, SearchOutlined,
     BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined,
-    MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined, DashboardOutlined
+    MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined, DashboardOutlined,
+    QrcodeOutlined, BookOutlined, InfoCircleOutlined
 } from '@ant-design/icons';
 import { Button, Badge, Avatar, Dropdown, Tooltip } from 'antd';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import EditProfileModal from '../profile/EditProfileModal';
 import ChangePasswordModal from '../profile/ChangePasswordModal';
+import PageQRCodeModal from '../common/PageQRCodeModal';
+import SystemVersionModal from '../common/SystemVersionModal';
+import FeatureDocDrawer from '../shared/FeatureDocDrawer';
+import { SYSTEM_CONFIG } from '@/config/systemVersion';
 import { getBasePath } from '@/utils/config';
 import HorizontalMenuClient from './HorizontalMenuClient';
 import Link from 'next/link';
@@ -42,9 +47,19 @@ const TopHeader = ({
 }: TopHeaderProps) => {
     const router = useRouter();
     const { user } = useAuth();
+    const pathname = usePathname();
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [profileInitialTab, setProfileInitialTab] = useState('1');
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+    const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+    const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
+
+    const getCurrentTitle = () => {
+        if (!pathname || pathname === '/' || pathname === '/htqlbenhvien') return 'Trang Chủ Hệ Thống';
+        const match = menus?.find((m: any) => m.path && (pathname === m.path || pathname.startsWith(m.path)));
+        return match?.title || '';
+    };
 
     return (
         <div
@@ -94,6 +109,26 @@ const TopHeader = ({
                         </button>
                     </div>
                 )}
+
+                {/* Nút tạo mã QR Code động cho trang */}
+                <Tooltip title="Mã QR trang này">
+                    <Button
+                        shape="circle"
+                        icon={<QrcodeOutlined className="text-slate-600 text-[17px]" />}
+                        className="border-none shadow-none bg-slate-100 hover:bg-blue-50 hover:text-blue-600 shrink-0"
+                        onClick={() => setIsQrModalOpen(true)}
+                    />
+                </Tooltip>
+
+                {/* Nút Tài liệu & Lịch sử thay đổi */}
+                <Tooltip title="Tài liệu & Lịch sử thay đổi">
+                    <Button
+                        shape="circle"
+                        icon={<BookOutlined className="text-slate-600 text-[17px]" />}
+                        className="border-none shadow-none bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 shrink-0"
+                        onClick={() => setIsDocDrawerOpen(true)}
+                    />
+                </Tooltip>
 
                 {onToggleLayout && (
                     <Tooltip title={`Chuyển sang menu ${menuLayout === 'horizontal' ? 'dọc' : 'ngang'}`}>
@@ -148,6 +183,12 @@ const TopHeader = ({
                                     onClick: () => setIsChangePasswordOpen(true)
                                 },
                                 {
+                                    key: 'system-version',
+                                    label: `Phiên bản: ${SYSTEM_CONFIG.version}`,
+                                    icon: <InfoCircleOutlined className="text-blue-500" />,
+                                    onClick: () => setIsVersionModalOpen(true)
+                                },
+                                {
                                     type: 'divider' as const
                                 },
                                 {
@@ -157,7 +198,7 @@ const TopHeader = ({
                                     danger: true,
                                     onClick: async () => {
                                         try {
-                                            await fetch('/api/auth/logout', { method: 'POST' });
+                                             await fetch('/api/auth/logout', { method: 'POST' });
                                         } catch(e) {}
                                         window.location.href = getBasePath() + '/login';
                                     }
@@ -192,6 +233,22 @@ const TopHeader = ({
                         Đăng nhập
                     </Button>
                 )}
+
+                {/* Modals & Drawer */}
+                <PageQRCodeModal 
+                    open={isQrModalOpen} 
+                    onClose={() => setIsQrModalOpen(false)} 
+                    currentTitle={getCurrentTitle()} 
+                />
+                <SystemVersionModal 
+                    open={isVersionModalOpen} 
+                    onClose={() => setIsVersionModalOpen(false)} 
+                />
+                <FeatureDocDrawer 
+                    open={isDocDrawerOpen} 
+                    onClose={() => setIsDocDrawerOpen(false)} 
+                    currentTitle={getCurrentTitle()} 
+                />
             </div>
         </div>
     );
