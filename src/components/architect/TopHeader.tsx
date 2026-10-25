@@ -5,7 +5,7 @@ import {
     AppstoreOutlined, SearchOutlined,
     BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined,
     MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined, DashboardOutlined,
-    QrcodeOutlined, BookOutlined, InfoCircleOutlined
+    QrcodeOutlined, BookOutlined, InfoCircleOutlined, SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { Button, Badge, Avatar, Dropdown, Tooltip } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
@@ -15,6 +15,7 @@ import ChangePasswordModal from '../profile/ChangePasswordModal';
 import PageQRCodeModal from '../common/PageQRCodeModal';
 import SystemVersionModal from '../common/SystemVersionModal';
 import FeatureDocDrawer from '../shared/FeatureDocDrawer';
+import PasskeyManagementModal from '../common/PasskeyManagementModal';
 import { SYSTEM_CONFIG } from '@/config/systemVersion';
 import { getBasePath } from '@/utils/config';
 import HorizontalMenuClient from './HorizontalMenuClient';
@@ -51,6 +52,7 @@ const TopHeader = ({
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [profileInitialTab, setProfileInitialTab] = useState('1');
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [isPasskeyModalOpen, setIsPasskeyModalOpen] = useState(false);
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
     const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
@@ -183,6 +185,12 @@ const TopHeader = ({
                                     onClick: () => setIsChangePasswordOpen(true)
                                 },
                                 {
+                                    key: 'passkey',
+                                    label: 'Sinh trắc học (Passkey)',
+                                    icon: <SafetyCertificateOutlined className="text-cyan-600" />,
+                                    onClick: () => setIsPasskeyModalOpen(true)
+                                },
+                                {
                                     key: 'system-version',
                                     label: `Phiên bản: ${SYSTEM_CONFIG.version}`,
                                     icon: <InfoCircleOutlined className="text-blue-500" />,
@@ -227,6 +235,7 @@ const TopHeader = ({
 
                         <EditProfileModal open={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} initialTab={profileInitialTab} />
                         <ChangePasswordModal open={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
+                        <PasskeyManagementModal open={isPasskeyModalOpen} onClose={() => setIsPasskeyModalOpen(false)} />
                     </>
                 ) : (
                     <Button type="primary" onClick={() => router.push('/login')} className="bg-blue-500 hover:bg-blue-600 font-bold shadow-md shadow-blue-200 border-none">

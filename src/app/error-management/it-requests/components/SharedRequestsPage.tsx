@@ -372,7 +372,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     };
 
     return (
-        <div className="w-full max-w-[98%] mx-auto px-4 sm:px-[30px] py-4 sm:py-6 space-y-4 sm:space-y-6">
+        <div className="w-full max-w-full sm:max-w-[98%] mx-auto px-3 sm:px-[30px] py-3 sm:py-6 space-y-3 sm:space-y-6 overflow-x-hidden">
             <TicketHeader 
                 user={user}
                 isAdmin={isAdmin}
@@ -389,63 +389,69 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 targetDepartment={targetDepartment}
             />
 
-            {/* Thanh bộ lọc: 1 hàng ngang duy nhất chuẩn như Ảnh 2 */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
-                {/* Cụm bên trái: Tabs phân loại + Hộp chọn trạng thái */}
-                <div className="flex flex-wrap items-center gap-2">
-                    {isAdmin && (
-                        <div className="flex items-center bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
-                            <Segmented 
-                                options={[
-                                    {
-                                        label: (
-                                            <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                                <span>Tất cả Yêu cầu</span>
-                                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
-                                                    {filterModeCounts.ALL}
-                                                </span>
-                                            </div>
-                                        ),
-                                        value: 'ALL'
-                                    },
-                                    {
-                                        label: (
-                                            <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                                <span>Việc của tôi</span>
-                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.MINE > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                    {filterModeCounts.MINE}
-                                                </span>
-                                            </div>
-                                        ),
-                                        value: 'MINE'
-                                    },
-                                    ...(assignmentMode !== 'C' ? [{
-                                        label: (
-                                            <div className="flex items-center gap-1.5 px-1 py-0.5">
-                                                <span>Chờ nhận việc (Trống)</span>
-                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                    {filterModeCounts.UNASSIGNED}
-                                                </span>
-                                            </div>
-                                        ),
-                                        value: 'UNASSIGNED'
-                                    }] : [])
-                                ]}
-                                value={filterMode}
-                                onChange={(val: any) => {
-                                    setFilterMode(val);
-                                    setStatusFilter('ALL');
-                                }}
-                            />
-                        </div>
-                    )}
+            {/* Thanh bộ lọc: Tối ưu responsive đầy đủ cho cả Mobile và Desktop */}
+            <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 w-full">
+                {/* 1. Tabs phân loại Segmented */}
+                {isAdmin && (
+                    <div className="w-full sm:w-auto flex items-center bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm overflow-x-auto">
+                        <Segmented 
+                            block
+                            className="w-full sm:w-auto"
+                            options={[
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-center gap-1 sm:gap-1.5 px-0.5 sm:px-1 py-0.5 whitespace-nowrap">
+                                            <span className="hidden sm:inline">Tất cả Yêu cầu</span>
+                                            <span className="sm:hidden font-medium text-xs">Tất cả</span>
+                                            <span className="text-[11px] sm:text-xs px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                                                {filterModeCounts.ALL}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'ALL'
+                                },
+                                {
+                                    label: (
+                                        <div className="flex items-center justify-center gap-1 sm:gap-1.5 px-0.5 sm:px-1 py-0.5 whitespace-nowrap">
+                                            <span className="hidden sm:inline">Việc của tôi</span>
+                                            <span className="sm:hidden font-medium text-xs">Của tôi</span>
+                                            <span className={`text-[11px] sm:text-xs px-1.5 py-0.2 rounded-full font-semibold ${filterModeCounts.MINE > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {filterModeCounts.MINE}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'MINE'
+                                },
+                                ...(assignmentMode !== 'C' ? [{
+                                    label: (
+                                        <div className="flex items-center justify-center gap-1 sm:gap-1.5 px-0.5 sm:px-1 py-0.5 whitespace-nowrap">
+                                            <span className="hidden sm:inline">Chờ nhận việc (Trống)</span>
+                                            <span className="sm:hidden font-medium text-xs">Chờ nhận</span>
+                                            <span className={`text-[11px] sm:text-xs px-1.5 py-0.2 rounded-full font-semibold ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {filterModeCounts.UNASSIGNED}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'UNASSIGNED'
+                                }] : [])
+                            ]}
+                            value={filterMode}
+                            onChange={(val: any) => {
+                                setFilterMode(val);
+                                setStatusFilter('ALL');
+                            }}
+                        />
+                    </div>
+                )}
 
+                {/* 2. Hộp chọn Trạng thái & Nút lọc Tin chưa đọc */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                     {/* Hộp chọn Trạng thái xử lý (Select) */}
-                    <div className="flex items-center bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                    <div className="flex-1 min-w-0 sm:flex-initial flex items-center bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm">
                         <Select
                             value={statusFilter}
                             onChange={(val) => setStatusFilter(val)}
-                            className="w-[185px] sm:w-[215px]"
+                            className="w-full sm:w-[215px]"
                             variant="borderless"
                             popupMatchSelectWidth={225}
                             options={[
@@ -530,11 +536,11 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         />
                     </div>
 
-                    {/* Nút lọc Tin chưa đọc - Vị trí viền đỏ Hình 2 */}
+                    {/* Nút lọc Tin chưa đọc */}
                     <Button
                         type={onlyUnread ? 'primary' : 'default'}
                         onClick={() => setOnlyUnread(!onlyUnread)}
-                        className={`rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm shrink-0 px-3 h-[38px] ${
+                        className={`rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm shrink-0 px-2.5 sm:px-3 h-[38px] ${
                             onlyUnread 
                                 ? 'bg-amber-600 hover:bg-amber-500 border-amber-600 text-white' 
                                 : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
@@ -542,7 +548,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         title="Bấm để chỉ lọc các yêu cầu có tin nhắn thảo luận chưa đọc"
                     >
                         <MessageOutlined className={onlyUnread ? 'text-white' : 'text-amber-500'} />
-                        <span>Tin chưa đọc</span>
+                        <span className="whitespace-nowrap">Tin chưa đọc</span>
                         <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
                             unreadTicketsCount > 0 
                                 ? onlyUnread ? 'bg-white text-amber-700' : 'bg-amber-100 text-amber-700' 
@@ -553,9 +559,9 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     </Button>
                 </div>
 
-                {/* Cụm bên phải: Bộ lọc khoảng ngày + Nút bấm chọn chế độ hiển thị (Click vào mới hiện) */}
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                {/* 3. Bộ lọc khoảng ngày + Nút bấm chọn chế độ hiển thị (Click vào mới hiện) */}
+                <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full sm:w-auto">
+                    <div className="flex-1 min-w-0 sm:flex-initial flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm">
                         <Tooltip title="Chọn khoảng ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
                             <DatePicker.RangePicker 
                                 value={dateRange}
@@ -563,14 +569,14 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 format="DD/MM/YYYY"
                                 allowClear
                                 placeholder={['Từ ngày', 'Đến ngày']}
-                                className="rounded-lg text-xs font-medium w-[190px] sm:w-[220px]"
+                                className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[220px]"
                             />
                         </Tooltip>
                         <Button 
                             size="small"
                             type={dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'primary' : 'default'}
                             onClick={() => setDateRange([dayjs().startOf('day'), dayjs().endOf('day')])}
-                            className={`text-xs rounded-lg px-2 ${dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
                         >
                             Hôm nay
                         </Button>
@@ -578,7 +584,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                             size="small"
                             type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
                             onClick={() => setDateRange(null)}
-                            className={`text-xs rounded-lg px-2 ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
                         >
                             Tất cả
                         </Button>
@@ -627,7 +633,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     >
                         <Button 
                             size="middle"
-                            className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2.5 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center gap-1.5"
+                            className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2.5 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center gap-1.5 shrink-0"
                             title="Chọn chế độ hiển thị: Tự động / Dạng Thẻ / Dạng Bảng"
                         >
                             {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600" /> : <DesktopOutlined className="text-slate-500" />}

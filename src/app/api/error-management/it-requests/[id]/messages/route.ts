@@ -57,7 +57,59 @@ export async function GET(request: Request, context: any) {
             console.error('Error marking messages as read:', e);
         }
 
-        return NextResponse.json(messages);
+        // Bổ sung thông tin Khoa/Phòng và vai trò thực tế của người gửi
+        const senderIds = Array.from(new Set(messages.map(m => m.senderId).filter(Boolean)));
+        let senders: any[] = [];
+        if (senderIds.length > 0) {
+            senders = await prisma.user.findMany({
+                where: { id: { in: senderIds } },
+                select: { id: true, name: true, username: true, role: true, ma_khoa: true }
+            });
+        }
+
+        const maKhoaSet = new Set<string>();
+        if (ticket.ma_khoa) maKhoaSet.add(ticket.ma_khoa);
+        senders.forEach(s => { if (s.ma_khoa) maKhoaSet.add(s.ma_khoa); });
+
+        let departments: any[] = [];
+        if (maKhoaSet.size > 0) {
+            departments = await prisma.department.findMany({
+                where: { ma_khoa: { in: Array.from(maKhoaSet) } },
+                select: { ma_khoa: true, ten_khoa: true }
+            });
+        }
+        const deptMap = new Map(departments.map(d => [d.ma_khoa, d.ten_khoa]));
+        const senderMap = new Map(senders.map(s => [s.id, s]));
+
+        const enrichedMessages = messages.map(msg => {
+            const sender = senderMap.get(msg.senderId);
+            const role = sender?.role || '';
+            let senderDepartment = '';
+
+            if (msg.isSystem) {
+                senderDepartment = 'Hệ thống';
+            } else if (msg.vendorName || msg.channel === 'VENDOR' || role === 'VENDOR') {
+                senderDepartment = msg.vendorName ? `Đối tác ${msg.vendorName}` : 'Đối tác ngoài';
+            } else if (['ADMIN', 'CNTT'].includes(role)) {
+                senderDepartment = 'Phòng CNTT';
+            } else if (role === 'VTYT') {
+                senderDepartment = 'Phòng Vật tư Y tế';
+            } else if (role === 'HCQT') {
+                senderDepartment = 'Phòng Hành chính Quản trị';
+            } else if (sender?.ma_khoa) {
+                senderDepartment = deptMap.get(sender.ma_khoa) || sender.ma_khoa;
+            } else if (ticket.ma_khoa) {
+                senderDepartment = deptMap.get(ticket.ma_khoa) || ticket.ma_khoa;
+            }
+
+            return {
+                ...msg,
+                senderRole: role,
+                senderDepartment
+            };
+        });
+
+        return NextResponse.json(enrichedMessages);
     } catch (error) {
         console.error('Error GET it-request messages:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -212,7 +264,28 @@ export async function POST(request: Request, context: any) {
             ma_khoa: ticket.ma_khoa
         });
 
-        return NextResponse.json(newMessage);
+        let senderDepartment = '';
+        if (['ADMIN', 'CNTT'].includes(user.role)) {
+            senderDepartment = 'Phòng CNTT';
+        } else if (user.role === 'VTYT') {
+            senderDepartment = 'Phòng Vật tư Y tế';
+        } else if (user.role === 'HCQT') {
+            senderDepartment = 'Phòng Hành chính Quản trị';
+        } else if (user.role === 'VENDOR' || safeChannel === 'VENDOR') {
+            senderDepartment = vendorName ? `Đối tác ${vendorName}` : 'Đối tác ngoài';
+        } else if (user.ten_khoa) {
+            senderDepartment = user.ten_khoa;
+        } else if (user.ma_khoa) {
+            senderDepartment = user.ma_khoa;
+        } else if (ticket.ma_khoa) {
+            senderDepartment = ticket.ma_khoa;
+        }
+
+        return NextResponse.json({
+            ...newMessage,
+            senderRole: user.role,
+            senderDepartment
+        });
     } catch (error) {
         console.error('Error POST it-request messages:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

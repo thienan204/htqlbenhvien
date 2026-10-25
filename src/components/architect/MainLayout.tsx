@@ -107,6 +107,30 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
         );
     }
 
+    // Helper tìm Menu khớp chính xác và cụ thể nhất (hỗ trợ cả path, targetPath và tránh bị menu cha đè)
+    const getMatchedMenu = (currentPath: string) => {
+        if (!currentPath || currentPath === '/' || !menus || menus.length === 0) return null;
+        const candidates = menus.filter(m => {
+            const p = m.path || m.targetPath;
+            if (!p) return false;
+            return currentPath === p || currentPath.startsWith(p + '/') || (p !== '/' && currentPath.startsWith(p));
+        });
+        if (candidates.length === 0) return null;
+        candidates.sort((a, b) => {
+            const isExactA = a.path === currentPath || a.targetPath === currentPath;
+            const isExactB = b.path === currentPath || b.targetPath === currentPath;
+            if (isExactA && !isExactB) return -1;
+            if (!isExactA && isExactB) return 1;
+            const lenA = Math.max(a.path?.length || 0, a.targetPath?.length || 0);
+            const lenB = Math.max(b.path?.length || 0, b.targetPath?.length || 0);
+            return lenB - lenA;
+        });
+        return candidates[0];
+    };
+
+    const cleanPath = pathname?.replace('/htqlbenhvien', '') || '';
+    const currentMatchedMenu = getMatchedMenu(cleanPath);
+
     return (
         <>
             <SidebarClient 
@@ -145,55 +169,41 @@ export default function MainLayout({ children, rules, menus = [], adminOnlyPaths
                 `}
             >
                 {/* Banner cảnh báo nếu chức năng đang thử nghiệm */}
-                {(() => {
-                    const cleanPath = pathname?.replace('/htqlbenhvien', '') || '';
-                    if (!cleanPath || cleanPath === '/') return null;
-                    const matched = menus?.find(m => m.path && (cleanPath === m.path || cleanPath.startsWith(m.path)));
-                    if (matched?.status === 'TESTING') {
-                        return (
-                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900 flex items-center justify-between shadow-xs">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-amber-800 bg-amber-200/90 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide border border-amber-300">
-                                        ⚠️ Thử nghiệm (Beta)
-                                    </span>
-                                    <span>
-                                        Chức năng <strong>{matched.title}</strong> đang trong giai đoạn <strong>THỬ NGHIỆM</strong>.
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-[11px] text-amber-700 hidden md:block">
-                                        Xem <strong>Tài liệu & Lịch sử thay đổi</strong> trên thanh tiêu đề để nắm quy trình.
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsFeedbackOpen(true)}
-                                        className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer border-none"
-                                    >
-                                        <span>💬 Góp ý thử nghiệm</span>
-                                    </button>
-                                </div>
+                {currentMatchedMenu?.status === 'TESTING' && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900 flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-amber-800 bg-amber-200/90 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide border border-amber-300">
+                                ⚠️ Thử nghiệm (Beta)
+                            </span>
+                            <span>
+                                Chức năng <strong>{currentMatchedMenu.title}</strong> đang trong giai đoạn <strong>THỬ NGHIỆM</strong>.
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-[11px] text-amber-700 hidden md:block">
+                                Xem <strong>Tài liệu & Lịch sử thay đổi</strong> trên thanh tiêu đề để nắm quy trình.
                             </div>
-                        );
-                    }
-                    return null;
-                })()}
+                            <button
+                                type="button"
+                                onClick={() => setIsFeedbackOpen(true)}
+                                className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer border-none"
+                            >
+                                <span>💬 Góp ý thử nghiệm</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {children}
             </div>
             
             {/* Modal Góp ý Thử nghiệm / Chính sách */}
-            {(() => {
-                const cleanPath = pathname?.replace('/htqlbenhvien', '') || '';
-                const matched = menus?.find(m => m.path && (cleanPath === m.path || cleanPath.startsWith(m.path)));
-                return (
-                    <FeatureFeedbackModal 
-                        open={isFeedbackOpen} 
-                        onClose={() => setIsFeedbackOpen(false)} 
-                        currentTitle={matched?.title || 'Chức năng thử nghiệm'} 
-                        pagePath={matched?.path || cleanPath} 
-                    />
-                );
-            })()}
+            <FeatureFeedbackModal 
+                open={isFeedbackOpen} 
+                onClose={() => setIsFeedbackOpen(false)} 
+                currentTitle={currentMatchedMenu?.title || 'Chức năng thử nghiệm'} 
+                pagePath={currentMatchedMenu?.path || currentMatchedMenu?.targetPath || cleanPath} 
+            />
 
             <GlobalInstructionDrawer />
             <GlobalTicketNotification />

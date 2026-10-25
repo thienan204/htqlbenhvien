@@ -21,47 +21,75 @@ export async function POST(request: Request) {
         let finalStaffId: string | null = null;
         let finalPermissions: string[] = [];
 
-        // Hardcode admin account bypass
-        if (username.toLowerCase() === 'admin' && password === '123456') {
-            finalUserId = 'admin-hardcoded';
-            finalUserName = 'Quản trị viên';
-            finalRole = 'ADMIN';
-            finalPermissions = ['*']; // ADMIN has all permissions
-        } else {
-            const user = await prisma.user.findFirst({
-                where: {
-                    OR: [
-                        { username: { equals: username, mode: 'insensitive' } },
-                        { userHIS: { equals: username, mode: 'insensitive' } },
-                        { staff: { cccd: { equals: username, mode: 'insensitive' } } },
-                        { staff: { ma_nv: { equals: username, mode: 'insensitive' } } }
-                    ]
-                },
-            });
+        const trimmedUser = username.trim();
+        const windowStart = new Date(Date.now() - 15 * 60 * 1000);
 
-            if (!user) {
-                return NextResponse.json({ error: 'Tài khoản hoặc mật khẩu không đúng' }, { status: 401 });
+        // 1. Kiểm tra giới hạn số lần thử sai (Brute-force protection)
+        const recentFails = await prisma.loginAttempt.count({
+            where: {
+                username: { equals: trimmedUser, mode: 'insensitive' },
+                success: false,
+                createdAt: { gte: windowStart }
             }
+        });
 
-            if (!user.isActive) {
-                return NextResponse.json({ error: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.' }, { status: 403 });
-            }
-
-            const isValid = await bcrypt.compare(password, user.password);
-
-            if (!isValid) {
-                return NextResponse.json({ error: 'Tài khoản hoặc mật khẩu không đúng' }, { status: 401 });
-            }
-
-            finalUserId = user.id;
-            finalUserName = user.name || user.username;
-            finalRole = user.role;
-            finalMaKhoa = user.ma_khoa;
-            finalStaffId = user.staffId;
-
-            // We no longer fetch permissions here to avoid stale data in JWT.
-            // Permissions will be fetched on-the-fly by the server action `getCurrentUser`.
+        if (recentFails >= 5) {
+            return NextResponse.json({ 
+                error: 'Tài khoản tạm thời bị khóa 15 phút do nhập sai mật khẩu quá 5 lần liên tiếp.' 
+            }, { status: 429 });
         }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { username: { equals: trimmedUser, mode: 'insensitive' } },
+                    { userHIS: { equals: trimmedUser, mode: 'insensitive' } },
+                    { staff: { cccd: { equals: trimmedUser, mode: 'insensitive' } } },
+                    { staff: { ma_nv: { equals: trimmedUser, mode: 'insensitive' } } }
+                ]
+            },
+        });
+
+        if (!user) {
+            await prisma.loginAttempt.create({
+                data: { username: trimmedUser, success: false }
+            });
+            const remaining = 5 - (recentFails + 1);
+            return NextResponse.json({ 
+                error: remaining > 0 ? `Tài khoản hoặc mật khẩu không đúng. Còn ${remaining} lần thử.` : 'Tài khoản đã bị tạm khóa 15 phút.' 
+            }, { status: 401 });
+        }
+
+        if (!user.isActive) {
+            return NextResponse.json({ error: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.' }, { status: 403 });
+        }
+
+        const isValid = await bcrypt.compare(password, user.password);
+
+        if (!isValid) {
+            await prisma.loginAttempt.create({
+                data: { username: trimmedUser, success: false }
+            });
+            const remaining = 5 - (recentFails + 1);
+            return NextResponse.json({ 
+                error: remaining > 0 ? `Tài khoản hoặc mật khẩu không đúng. Còn ${remaining} lần thử.` : 'Tài khoản đã bị tạm khóa 15 phút.' 
+            }, { status: 401 });
+        }
+
+        // Đăng nhập thành công -> Xóa các lần thử sai trước đó
+        await prisma.loginAttempt.deleteMany({
+            where: {
+                username: { equals: trimmedUser, mode: 'insensitive' },
+                success: false
+            }
+        });
+
+        finalUserId = user.id;
+        finalUserName = user.name || user.username;
+        finalRole = user.role;
+        finalMaKhoa = user.ma_khoa;
+        finalStaffId = user.staffId;
+
 
         // Create JWT
         const alg = 'HS256';

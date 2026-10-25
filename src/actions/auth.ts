@@ -38,7 +38,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         let finalTenKhoa: string | undefined = undefined;
         let ma_nv: string | undefined = undefined;
         let cccd: string | undefined = undefined;
-        
+
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
             isManager = true;
@@ -51,15 +51,15 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 if (roleRecord && roleRecord.permissions) {
                     permissions = roleRecord.permissions;
                 }
-                
+
                 const userRecord = await prisma.user.findUnique({
                     where: { id: payload.id as string },
-                    include: { 
+                    include: {
                         staff: {
                             include: {
                                 certificates: true
                             }
-                        } 
+                        }
                     }
                 });
                 if (userRecord?.staff?.chuc_vu_id) {
@@ -68,13 +68,13 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
                     ma_cchn = userRecord.staff.certificates[0].so_cchn;
                 }
-                
+
                 if (userRecord) {
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
                     ma_nv = userRecord.staff?.ma_nv || undefined;
                     cccd = userRecord.staff?.cccd || undefined;
                 }
-                
+
                 if (payload.ma_khoa) {
                     const dept = await prisma.department.findUnique({ where: { ma_khoa: payload.ma_khoa as string } });
                     if (dept) {
@@ -138,7 +138,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
         let finalTenKhoa: string | undefined = undefined;
         let ma_nv: string | undefined = undefined;
         let cccd: string | undefined = undefined;
-        
+
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
             isManager = true;
@@ -151,15 +151,15 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                 if (roleRecord && roleRecord.permissions) {
                     permissions = roleRecord.permissions;
                 }
-                
+
                 const userRecord = await prisma.user.findUnique({
                     where: { id: payload.id as string },
-                    include: { 
+                    include: {
                         staff: {
                             include: {
                                 certificates: true
                             }
-                        } 
+                        }
                     }
                 });
                 if (userRecord?.staff?.chuc_vu_id) {
@@ -168,13 +168,13 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
                     ma_cchn = userRecord.staff.certificates[0].so_cchn;
                 }
-                
+
                 if (userRecord) {
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
                     ma_nv = userRecord.staff?.ma_nv || undefined;
                     cccd = userRecord.staff?.cccd || undefined;
                 }
-                
+
                 if (payload.ma_khoa) {
                     const dept = await prisma.department.findUnique({ where: { ma_khoa: payload.ma_khoa as string } });
                     if (dept) {
@@ -207,81 +207,143 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
 
 import bcrypt from 'bcryptjs';
 
+// Cấu hình bảo vệ chống Brute-force đăng nhập (Giai đoạn 1)
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
+export async function setAuthCookie(payload: {
+    id: string;
+    username: string;
+    role: string;
+    ma_khoa?: string | null;
+    staffId?: string | null;
+}) {
+    const alg = 'HS256';
+    const secret = new TextEncoder().encode(JWT_SECRET);
+
+    const token = await new jose.SignJWT({
+        id: payload.id,
+        username: payload.username,
+        role: payload.role,
+        ma_khoa: payload.ma_khoa,
+        staffId: payload.staffId
+    })
+        .setProtectedHeader({ alg })
+        .setIssuedAt()
+        .setExpirationTime('24h') // Token valid for 24 hours
+        .sign(secret);
+
+    const isHttps = process.env.NEXTAUTH_URL?.startsWith('https') || false;
+
+    const cookieStore = await cookies();
+    cookieStore.set({
+        name: 'auth_token',
+        value: token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production' && isHttps,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 // 24 hours
+    });
+
+    return token;
+}
+
 export async function loginAction(username: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
         if (!username || !password) {
             return { success: false, error: 'Vui lòng nhập đầy đủ thông tin' };
         }
 
-        let finalUserId = '';
-        let finalUserName = '';
-        let finalRole = 'USER';
-        let finalMaKhoa = null;
-        let finalStaffId: string | null = null;
+        const trimmedUser = username.trim();
+        const windowStart = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000);
 
-        if (username.toLowerCase() === 'admin' && password === '123456') {
-            finalUserId = 'admin-hardcoded';
-            finalUserName = 'Quản trị viên';
-            finalRole = 'ADMIN';
-        } else {
-            const user = await prisma.user.findFirst({
+        // 1. Kiểm tra giới hạn số lần thử sai (Brute-force protection)
+        const recentFails = await prisma.loginAttempt.count({
+            where: {
+                username: { equals: trimmedUser, mode: 'insensitive' },
+                success: false,
+                createdAt: { gte: windowStart }
+            }
+        });
+
+        if (recentFails >= MAX_LOGIN_ATTEMPTS) {
+            const latest = await prisma.loginAttempt.findFirst({
                 where: {
-                    OR: [
-                        { username: { equals: username, mode: 'insensitive' } },
-                        { userHIS: { equals: username, mode: 'insensitive' } },
-                        { staff: { cccd: { equals: username, mode: 'insensitive' } } },
-                        { staff: { ma_nv: { equals: username, mode: 'insensitive' } } }
-                    ]
+                    username: { equals: trimmedUser, mode: 'insensitive' },
+                    success: false,
+                    createdAt: { gte: windowStart }
                 },
+                orderBy: { createdAt: 'desc' }
             });
+            const elapsed = latest ? Date.now() - latest.createdAt.getTime() : 0;
+            const remainingMins = Math.max(1, Math.ceil((LOCKOUT_MINUTES * 60 * 1000 - elapsed) / 60000));
 
-            if (!user) {
-                return { success: false, error: 'Tài khoản hoặc mật khẩu không đúng' };
-            }
-
-            if (!user.isActive) {
-                return { success: false, error: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.' };
-            }
-
-            const isValid = await bcrypt.compare(password, user.password);
-
-            if (!isValid) {
-                return { success: false, error: 'Tài khoản hoặc mật khẩu không đúng' };
-            }
-
-            finalUserId = user.id;
-            finalUserName = user.name || user.username;
-            finalRole = user.role;
-            finalMaKhoa = user.ma_khoa;
-            finalStaffId = user.staffId;
+            return {
+                success: false,
+                error: `Tài khoản tạm thời bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng thử lại sau ${remainingMins} phút hoặc liên hệ quản trị viên.`
+            };
         }
 
-        const alg = 'HS256';
-        const secret = new TextEncoder().encode(JWT_SECRET);
+        // 2. Tìm người dùng trong cơ sở dữ liệu (hỗ trợ username, userHIS, CCCD, Mã NV)
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { username: { equals: trimmedUser, mode: 'insensitive' } },
+                    { userHIS: { equals: trimmedUser, mode: 'insensitive' } },
+                    { staff: { cccd: { equals: trimmedUser, mode: 'insensitive' } } },
+                    { staff: { ma_nv: { equals: trimmedUser, mode: 'insensitive' } } }
+                ]
+            },
+        });
 
-        const token = await new jose.SignJWT({
-            id: finalUserId,
-            username: username,
-            role: finalRole,
-            ma_khoa: finalMaKhoa,
-            staffId: finalStaffId
-        })
-            .setProtectedHeader({ alg })
-            .setIssuedAt()
-            .setExpirationTime('24h') // Token valid for 24 hours
-            .sign(secret);
+        if (!user) {
+            await prisma.loginAttempt.create({
+                data: { username: trimmedUser, success: false }
+            });
+            const remaining = MAX_LOGIN_ATTEMPTS - (recentFails + 1);
+            return {
+                success: false,
+                error: remaining > 0
+                    ? `Tài khoản hoặc mật khẩu không đúng. Còn ${remaining} lần thử.`
+                    : `Tài khoản đã bị tạm khóa 15 phút do nhập sai mật khẩu quá 5 lần.`
+            };
+        }
 
-        const isHttps = process.env.NEXTAUTH_URL?.startsWith('https') || false;
+        if (!user.isActive) {
+            return { success: false, error: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.' };
+        }
 
-        const cookieStore = await cookies();
-        cookieStore.set({
-            name: 'auth_token',
-            value: token,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' && isHttps,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24 // 24 hours
+        const isValid = await bcrypt.compare(password, user.password);
+
+        if (!isValid) {
+            await prisma.loginAttempt.create({
+                data: { username: trimmedUser, success: false }
+            });
+            const remaining = MAX_LOGIN_ATTEMPTS - (recentFails + 1);
+            return {
+                success: false,
+                error: remaining > 0
+                    ? `Tài khoản hoặc mật khẩu không đúng. Còn ${remaining} lần thử.`
+                    : `Tài khoản đã bị tạm khóa 15 phút do nhập sai mật khẩu quá 5 lần.`
+            };
+        }
+
+        // 3. Đăng nhập thành công -> Xóa các lần thử sai trước đó
+        await prisma.loginAttempt.deleteMany({
+            where: {
+                username: { equals: trimmedUser, mode: 'insensitive' },
+                success: false
+            }
+        });
+
+        // 4. Cấp phiên đăng nhập JWT
+        await setAuthCookie({
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            ma_khoa: user.ma_khoa,
+            staffId: user.staffId
         });
 
         return { success: true };
@@ -290,3 +352,4 @@ export async function loginAction(username: string, password: string): Promise<{
         return { success: false, error: 'Lỗi máy chủ' };
     }
 }
+

@@ -101,15 +101,16 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
 
         const childItems = [
             ...visibleChildren.map(child => {
-                const isActive = child.path === '/' ? pathname === '/' : (child.path && pathname.startsWith(child.path));
+                const linkPath = child.path || child.targetPath;
+                const isActive = linkPath === '/' ? pathname === '/' : (linkPath && pathname.startsWith(linkPath));
                 if (isActive) {
                     activeKeys.push(child.id);
                     activeKeys.push(group.id);
                 }
                 return {
                     key: child.id,
-                    label: child.path ? (
-                        <Link href={child.path} className="flex items-center gap-2 py-1 text-inherit hover:text-inherit">
+                    label: linkPath ? (
+                        <Link href={linkPath} className="flex items-center gap-2 py-1 text-inherit hover:text-inherit">
                             {renderIcon(child.icon)}
                             <span className={isActive ? 'text-blue-600 font-semibold' : ''}>{child.title}</span>
                             {child.status === 'TESTING' && (

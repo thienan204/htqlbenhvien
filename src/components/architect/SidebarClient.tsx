@@ -121,17 +121,20 @@ export default function SidebarClient({ rules, menus = [], isOpen, adminMode = f
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">{group.title}</p>
                             
                             <div className="space-y-1">
-                                {visibleChildren.map(child => (
-                                    <Link key={child.id} href={child.path || '#'} className={getLinkClass(child.path)}>
-                                        {renderIcon(child.icon)}
-                                        <span className="flex-1 truncate">{child.title}</span>
-                                        {child.status === 'TESTING' && (
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">
-                                                Thử nghiệm
-                                            </span>
-                                        )}
-                                    </Link>
-                                ))}
+                                {visibleChildren.map(child => {
+                                    const linkPath = child.path || child.targetPath || '#';
+                                    return (
+                                        <Link key={child.id} href={linkPath} className={getLinkClass(child.path || child.targetPath)}>
+                                            {renderIcon(child.icon)}
+                                            <span className="flex-1 truncate">{child.title}</span>
+                                            {child.status === 'TESTING' && (
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">
+                                                    Thử nghiệm
+                                                </span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
 
                                 {/* Chèn thêm danh sách quy tắc nếu là nhóm đặc biệt */}
                                 {canSeeSpecial && rules.map((rule) => (

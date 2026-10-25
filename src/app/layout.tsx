@@ -28,6 +28,7 @@ import { getCurrentUser } from "@/actions/auth";
 import { AuthProvider } from "@/contexts/AuthContext";
 import FetchInterceptor from "@/components/FetchInterceptor";
 import DesktopShortcutPrompt from "@/components/DesktopShortcutPrompt";
+import SessionTimeoutManager from "@/components/common/SessionTimeoutManager";
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -107,6 +108,7 @@ export default async function RootLayout({
         <AntdRegistry>
           <App>
             <AuthProvider user={user} guestPermissions={guestPermissions}>
+              {user && <SessionTimeoutManager timeoutMinutes={30} warningMinutes={2} />}
               <FetchInterceptor />
               <DesktopShortcutPrompt />
               {/* Main Layout Wrapper */}

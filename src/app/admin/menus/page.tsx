@@ -366,11 +366,16 @@ export default function MenuBuilderPage() {
                             title={isCreating ? "Thêm Menu Mới" : "Chỉnh Sửa Menu"} 
                             className="shadow-sm rounded-xl sticky top-24"
                             extra={
-                                isEditing && (
-                                    <Popconfirm title="Bạn có chắc chắn muốn xóa Menu này (và tất cả menu con)?" onConfirm={handleDelete} okText="Xóa" cancelText="Hủy">
-                                        <Button danger icon={<DeleteOutlined />} type="text">Xóa</Button>
-                                    </Popconfirm>
-                                )
+                                <div className="flex items-center gap-2">
+                                    <Button type="primary" onClick={handleSave} icon={<SaveOutlined />} loading={loading} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
+                                        Lưu thay đổi
+                                    </Button>
+                                    {isEditing && (
+                                        <Popconfirm title="Bạn có chắc chắn muốn xóa Menu này (và tất cả menu con)?" onConfirm={handleDelete} okText="Xóa" cancelText="Hủy">
+                                            <Button danger icon={<DeleteOutlined />} type="text">Xóa</Button>
+                                        </Popconfirm>
+                                    )}
+                                </div>
                             }
                         >
                             <Form form={form} layout="vertical">
