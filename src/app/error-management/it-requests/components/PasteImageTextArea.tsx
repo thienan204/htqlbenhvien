@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Input, Image as AntImage, Button, message } from 'antd';
 import { CloseCircleFilled, PaperClipOutlined } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
+import { DetectedLinkBar } from '@/components/common/LinkifiedText';
 
 export interface AttachmentItem {
     id: string;
@@ -118,6 +119,9 @@ export const PasteImageTextArea: React.FC<PasteImageTextAreaProps> = ({
                     className="!rounded-xl text-[13px] leading-relaxed pr-8"
                 />
             </div>
+
+            {/* Hiển thị các liên kết phát hiện được trong nội dung để click mở ngay */}
+            <DetectedLinkBar text={value} />
 
             {/* Thanh công cụ và đính kèm tệp */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">

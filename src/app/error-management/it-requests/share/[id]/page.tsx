@@ -20,6 +20,7 @@ import {
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { getBasePath } from '@/utils/config';
+import { renderTextWithLinks } from '@/components/common/LinkifiedText';
 
 export default function TicketSharePage() {
     const params = useParams();
@@ -221,8 +222,8 @@ export default function TicketSharePage() {
                     }
                 >
                     <div className="space-y-3">
-                        <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200/70 text-slate-800 text-[14px] leading-relaxed whitespace-pre-wrap font-medium">
-                            {ticket.it_note || 'Đề nghị đơn vị đối tác kiểm tra và phối hợp khắc phục sự cố.'}
+                        <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200/70 text-slate-800 text-[14px] leading-relaxed whitespace-pre-wrap font-medium break-all">
+                            {ticket.it_note ? renderTextWithLinks(ticket.it_note) : 'Đề nghị đơn vị đối tác kiểm tra và phối hợp khắc phục sự cố.'}
                         </div>
 
                         {ticket.assigneeName && (
@@ -257,8 +258,8 @@ export default function TicketSharePage() {
                     <div className="space-y-4">
                         <div>
                             <div className="text-xs text-slate-400 font-medium">Tên sự cố / Mô tả lỗi:</div>
-                            <div className="text-base font-bold text-slate-900 mt-0.5">
-                                {ticket.ten_loi}
+                            <div className="text-base font-bold text-slate-900 mt-0.5 break-all">
+                                {renderTextWithLinks(ticket.ten_loi)}
                             </div>
                         </div>
 

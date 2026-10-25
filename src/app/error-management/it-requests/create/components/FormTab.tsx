@@ -4,6 +4,7 @@ import { PictureOutlined, CameraOutlined, LoadingOutlined, FileTextOutlined, Des
 import { getBasePath } from '@/utils/config';
 import { useCheckBa } from '../hooks/useCheckBa';
 import { BaPaymentStatusAlert } from './BaPaymentStatusAlert';
+import { DetectedLinkBar } from '@/components/common/LinkifiedText';
 
 interface FormTabProps {
     form: any;
@@ -52,6 +53,7 @@ export function FormTab({
 }: FormTabProps) {
     const [inputMaBa, setInputMaBa] = useState<string>('');
     const { baCode, baInfo, hasPaymentRequest, isChecking, isFound, triggerCheck } = useCheckBa(inputMaBa);
+    const watchedGhiChu = Form.useWatch('ghi_chu', form);
 
     useEffect(() => {
         if (savedStaffId && !form.getFieldValue('nguoi_bao_id')) {
@@ -303,6 +305,9 @@ export function FormTab({
                                                 placeholder="Mô tả cụ thể hoặc cho biết vị trí máy bị lỗi... (Có thể dán trực tiếp ảnh chụp Ctrl+V vào đây)" 
                                             />
                                         </Form.Item>
+
+                                        {/* Hiển thị các liên kết phát hiện được trong ghi chú để click mở ngay */}
+                                        <DetectedLinkBar text={watchedGhiChu} />
 
                                         <Form.Item label={<span className="font-semibold text-slate-800 text-xs sm:text-sm">Đính kèm ảnh minh họa lỗi</span>} className="mb-0">
                                             <div className="flex flex-col gap-3" onPaste={handlePaste}>

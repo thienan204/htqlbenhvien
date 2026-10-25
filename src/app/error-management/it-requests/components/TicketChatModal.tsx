@@ -12,6 +12,7 @@ import {
 import dayjs from 'dayjs';
 import { Ticket } from '../types';
 import { getBasePath } from '@/utils/config';
+import { renderTextWithLinks, DetectedLinkBar } from '@/components/common/LinkifiedText';
 
 interface TicketChatModalProps {
     visible: boolean;
@@ -725,7 +726,7 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                                         </div>
                                         <div className="flex-1 leading-relaxed">
                                             <div className="font-semibold text-amber-900 mb-0.5">Sự kiện hệ thống</div>
-                                            <div className="whitespace-pre-wrap text-slate-800">{msg.content}</div>
+                                            <div className="whitespace-pre-wrap text-slate-800">{renderTextWithLinks(msg.content)}</div>
                                             <div className="text-[10px] text-amber-800/70 mt-1 flex items-center gap-2">
                                                 <span>{msg.senderName || 'Hệ thống'}</span>
                                                 <span>• {dayjs(msg.createdAt).format('HH:mm DD/MM/YYYY')}</span>
@@ -769,7 +770,16 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                                                 : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-xs'
                                             : 'bg-white text-slate-800 rounded-tl-xs border border-slate-200/90'
                                     }`}>
-                                        {msg.content && <div className="whitespace-pre-wrap">{msg.content}</div>}
+                                        {msg.content && (
+                                            <div className="whitespace-pre-wrap">
+                                                {renderTextWithLinks(
+                                                    msg.content,
+                                                    isMe 
+                                                        ? "text-white underline font-semibold hover:text-blue-100 inline-flex items-center gap-0.5 break-all" 
+                                                        : undefined
+                                                )}
+                                            </div>
+                                        )}
                                         {msg.imageUrl && (
                                             <div className="mt-2 rounded-xl overflow-hidden border border-white/20">
                                                 <AntImage 
@@ -891,6 +901,9 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                         className={`!h-[38px] !rounded-xl ${activeChannel === 'VENDOR' ? 'bg-amber-600 hover:bg-amber-500' : ''}`}
                     />
                 </div>
+
+                {/* Hiển thị các liên kết phát hiện được trong nội dung trao đổi để click mở ngay */}
+                <DetectedLinkBar text={text} className="mt-1" />
             </div>
 
             {/* Modal Quản lý Mẫu câu Trả lời nhanh (Hỗ trợ Hiện/Ẩn, Thêm mới, Sửa, Xóa) */}

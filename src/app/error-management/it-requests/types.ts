@@ -19,6 +19,7 @@ export interface Ticket {
     hasXml?: boolean;
     ten_khoa?: string;
     nguoi_bao?: string;
+    sdt?: string | null;
     createdAt: string;
     updatedAt: string;
     startedAt?: string | null;

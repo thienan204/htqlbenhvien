@@ -10,6 +10,7 @@ import { getBasePath } from '@/utils/config';
 import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
 import { getDefaultPagination } from '@/utils/pagination';
 import { TicketCardList } from './TicketCardList';
+import { renderTextWithLinks } from '@/components/common/LinkifiedText';
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -162,16 +163,16 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             render: (text: string, record: Ticket) => {
                 const hasDetails = !!record.ma_ba || (record.dynamicFields && Object.keys(record.dynamicFields).length > 0);
                 return (
-                    <div>
-                        <div className="font-medium text-slate-800 flex items-center gap-1.5 flex-wrap">
+                    <div className="min-w-0 max-w-full">
+                        <div className="font-medium text-slate-800 flex items-center gap-1.5 flex-wrap min-w-0">
                             {record.isFocusTask && (
                                 <Tooltip title="Việc xử lý tại khoa phòng / kéo dài (Kỹ thuật viên đang tạm ngưng nhận chia việc tự động)">
-                                    <Tag color="purple" className="m-0 font-bold border-purple-300 bg-purple-50 text-purple-700 shadow-2xs inline-flex items-center gap-1 cursor-default">
+                                    <Tag color="purple" className="m-0 font-bold border-purple-300 bg-purple-50 text-purple-700 shadow-2xs inline-flex items-center gap-1 cursor-default shrink-0">
                                         <span>🚶 Đi khoa phòng / Kéo dài</span>
                                     </Tag>
                                 </Tooltip>
                             )}
-                            <span>{text}</span>
+                            <span className="min-w-0 break-all">{renderTextWithLinks(text)}</span>
                         </div>
                         {hasDetails && (
                             <div className="mt-1.5 flex flex-col gap-2">
@@ -377,15 +378,17 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 const hasImages = Array.isArray(record.it_images) && record.it_images.length > 0;
                 const pauseReason = record.dynamicFields?.['Lý do tạm dừng'] || record.dynamicFields?.['pauseReason'];
                 return (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0 max-w-full">
                         {text ? (
-                            <div className="text-slate-700 whitespace-pre-wrap leading-relaxed">{text}</div>
+                            <div className="text-slate-700 whitespace-pre-wrap leading-relaxed break-all">
+                                {renderTextWithLinks(text)}
+                            </div>
                         ) : (
                             (!pauseReason || record.status !== 'PAUSED') && <div className="text-slate-400 italic">-</div>
                         )}
                         {record.status === 'PAUSED' && pauseReason && (
-                            <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 leading-relaxed">
-                                ⏸️ <b>Lý do tạm dừng:</b> {pauseReason}
+                            <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 leading-relaxed break-all">
+                                ⏸️ <b>Lý do tạm dừng:</b> {renderTextWithLinks(pauseReason)}
                             </div>
                         )}
                         {hasImages && (

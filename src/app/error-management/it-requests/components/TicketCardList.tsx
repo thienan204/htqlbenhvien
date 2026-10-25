@@ -29,6 +29,7 @@ import { Ticket } from '../types';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { getBasePath } from '@/utils/config';
 import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
+import { renderTextWithLinks } from '@/components/common/LinkifiedText';
 
 interface TicketCardListProps {
     tickets: Ticket[];
@@ -206,7 +207,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                     const attachments = Array.from(new Set(rawAttachments)).filter(Boolean);
 
                     // Trích xuất số điện thoại
-                    const phone = ticket.dynamicFields?.['SĐT'] || ticket.dynamicFields?.['Số điện thoại'] || '';
+                    const phone = ticket.dynamicFields?.['SĐT'] || ticket.dynamicFields?.['Số điện thoại'] || ticket.sdt || '';
 
                     // Màu sắc viền theo trạng thái
                     let borderColor = 'border-slate-200';
@@ -260,7 +261,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                             {/* HÀNG 2: TIÊU ĐỀ LỖI & MÃ HỒ SƠ / BỆNH ÁN */}
                             <div>
                                 <div className="font-semibold text-slate-900 text-sm sm:text-base leading-snug">
-                                    {ticket.ten_loi}
+                                    {renderTextWithLinks(ticket.ten_loi)}
                                 </div>
                                 
                                 {ticket.ma_ba && (
@@ -277,7 +278,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 <div className="flex items-center gap-1.5 min-w-0">
                                     <UserOutlined className="text-slate-400 shrink-0" />
                                     <span className="text-slate-500">Người báo:</span>
-                                    <strong className="text-slate-700 truncate">{ticket.nguoi_bao || 'Cán bộ y tế'}</strong>
+                                    <strong className="text-slate-700 truncate" title={ticket.nguoi_bao || ticket.dynamicFields?.['Người báo'] || ticket.dynamicFields?.['nguoi_bao'] || 'Chưa rõ'}>
+                                        {ticket.nguoi_bao || ticket.dynamicFields?.['Người báo'] || ticket.dynamicFields?.['nguoi_bao'] || 'Chưa rõ'}
+                                    </strong>
                                 </div>
 
                                 {phone && (

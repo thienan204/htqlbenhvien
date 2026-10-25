@@ -82,7 +82,7 @@ export async function GET(request: Request) {
                 },
                 messages: {
                     orderBy: { createdAt: 'asc' },
-                    select: { id: true, channel: true, senderId: true, readBy: true }
+                    select: { id: true, channel: true, senderId: true, senderName: true, readBy: true }
                 }
             }
         });
@@ -109,6 +109,19 @@ export async function GET(request: Request) {
             return acc;
         }, {});
 
+        // Tra cứu thông tin người báo cáo từ bảng Staff nếu phiếu có lưu nguoi_bao_id
+        const staffIds = requests
+            .map(r => (r.dynamicFields as any)?.nguoi_bao_id)
+            .filter(Boolean) as string[];
+        let staffMap = new Map<string, { ho_ten: string; so_dien_thoai: string | null }>();
+        if (staffIds.length > 0) {
+            const staffs = await prisma.staff.findMany({
+                where: { id: { in: staffIds } },
+                select: { id: true, ho_ten: true, so_dien_thoai: true }
+            });
+            staffMap = new Map(staffs.map(s => [s.id, { ho_ten: s.ho_ten, so_dien_thoai: s.so_dien_thoai }]));
+        }
+
         const maBaList = requests.map(req => req.ma_ba).filter(Boolean) as string[];
         const existingXmls = await prisma.xml1.findMany({
             where: { MA_LK: { in: maBaList } },
@@ -126,8 +139,15 @@ export async function GET(request: Request) {
                 m.senderId !== user.id && (!m.readBy || !m.readBy.includes(user.id))
             );
 
+            const dyn = (req.dynamicFields as any) || {};
+            const staffInfo = dyn.nguoi_bao_id ? staffMap.get(dyn.nguoi_bao_id) : null;
+            const nguoiBao = dyn['Người báo'] || dyn['nguoi_bao'] || dyn['nguoi_bao_ten'] || staffInfo?.ho_ten || allMessages[0]?.senderName || null;
+            const phone = dyn['SĐT'] || dyn['Số điện thoại'] || staffInfo?.so_dien_thoai || null;
+
             return {
                 ...req,
+                nguoi_bao: nguoiBao,
+                sdt: phone,
                 assigneeName: req.assigneeId ? assigneeMap[req.assigneeId]?.name : 'Chưa phân công',
                 assigneePhone: req.assigneeId ? assigneeMap[req.assigneeId]?.phone : null,
                 transferToName: req.transferToId ? assigneeMap[req.transferToId]?.name : null,

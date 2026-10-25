@@ -33,6 +33,7 @@ import { TicketChatModal } from '../it-requests/components/TicketChatModal';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { getBasePath } from '@/utils/config';
 import { copyTicketShareLink, copyTicketZaloMessage } from '../it-requests/utils/shareUtils';
+import { renderTextWithLinks } from '@/components/common/LinkifiedText';
 
 function VendorTasksContent() {
     const router = useRouter();
@@ -301,14 +302,14 @@ function VendorTasksContent() {
                 const dept = departments.find(d => d.ma_khoa === record.ma_khoa);
                 const sdt = record.dynamicFields?.['SĐT'];
                 return (
-                    <div className="space-y-1.5">
-                        <div className="font-semibold text-slate-800 flex items-center gap-1.5 flex-wrap">
+                    <div className="space-y-1.5 min-w-0 max-w-full">
+                        <div className="font-semibold text-slate-800 flex items-center gap-1.5 flex-wrap min-w-0">
                             {record.category === 'HARDWARE' ? (
-                                <Tag color="cyan" className="m-0 text-[11px] font-medium">Phần cứng</Tag>
+                                <Tag color="cyan" className="m-0 text-[11px] font-medium shrink-0">Phần cứng</Tag>
                             ) : (
-                                <Tag color="blue" className="m-0 text-[11px] font-medium">Phần mềm</Tag>
+                                <Tag color="blue" className="m-0 text-[11px] font-medium shrink-0">Phần mềm</Tag>
                             )}
-                            <span>{record.ten_loi}</span>
+                            <span className="min-w-0 break-all">{renderTextWithLinks(record.ten_loi)}</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                             <span className="font-medium text-slate-700">🏥 {dept?.ten_khoa || record.ma_khoa}</span>
@@ -330,9 +331,9 @@ function VendorTasksContent() {
             render: (_: any, record: Ticket) => {
                 const hasImages = Array.isArray(record.it_images) && record.it_images.length > 0;
                 return (
-                    <div className="space-y-2">
-                        <div className="text-slate-700 italic text-sm whitespace-pre-wrap bg-amber-50/50 p-2 rounded-lg border border-amber-100">
-                            {record.it_note || <span className="text-slate-400">Chưa có ghi chú kỹ thuật</span>}
+                    <div className="space-y-2 min-w-0 max-w-full">
+                        <div className="text-slate-700 italic text-sm whitespace-pre-wrap break-all bg-amber-50/50 p-2 rounded-lg border border-amber-100">
+                            {record.it_note ? renderTextWithLinks(record.it_note) : <span className="text-slate-400">Chưa có ghi chú kỹ thuật</span>}
                         </div>
                         {hasImages && (
                             <div className="flex flex-wrap items-center gap-2 pt-1">

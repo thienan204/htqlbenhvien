@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
 import { useCheckBa } from '../hooks/useCheckBa';
 import { BaPaymentStatusAlert } from './BaPaymentStatusAlert';
+import { DetectedLinkBar } from '@/components/common/LinkifiedText';
 
 interface ChatTabProps {
     user: any;
@@ -537,6 +538,9 @@ export function ChatTab({
                         />
                     </div>
                 </div>
+
+                {/* Hiển thị các liên kết phát hiện được trong nội dung để click mở ngay */}
+                <DetectedLinkBar text={chatText} className="mt-2.5" />
             </div>
             
             {!savedStaffId && departmentStaff.length > 0 && (
