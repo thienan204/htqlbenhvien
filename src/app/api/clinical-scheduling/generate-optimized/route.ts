@@ -223,12 +223,14 @@ export async function POST(request: Request) {
         const staffTracker: Record<string, { start: number, end: number }[]> = {};
         const patientTracker: Record<string, { start: number, end: number }[]> = {};
         const machineTracker: Record<string, { start: number, end: number }[]> = {};
+        const machineUsageCount: Record<string, number> = {};
 
         availableStaff.forEach(s => {
             staffTracker[s.id] = [];
         });
         availableMachines.forEach((m: any) => {
             machineTracker[m.MA_MAY] = [];
+            machineUsageCount[m.MA_MAY] = 0;
         });
 
         const scheduledResults = [];
@@ -267,6 +269,7 @@ export async function POST(request: Request) {
             if (ma_may) {
                 if (!machineTracker[ma_may]) machineTracker[ma_may] = [];
                 machineTracker[ma_may].push({ start: sStart, end: sEnd });
+                machineUsageCount[ma_may] = (machineUsageCount[ma_may] || 0) + 1;
             }
             if (ma_ba) {
                 if (!patientTracker[ma_ba]) patientTracker[ma_ba] = [];
@@ -496,14 +499,31 @@ export async function POST(request: Request) {
                         let selectedMachine = null;
                         if (u.requiredMachineCode) {
                             machineFree = false;
-                            for (const machine of u.capableMachines) {
-                                if (!machine.MA_MAY) continue;
+                            // Tìm tất cả các máy rảnh trong số các máy phù hợp
+                            const freeMachines = u.capableMachines.filter((machine: any) => {
+                                if (!machine.MA_MAY) return false;
                                 const mTracker = machineTracker[machine.MA_MAY as string];
-                                if (isSlotFree(mTracker, currentTime, u.requiredTime + u.currentServiceBufferTime)) {
-                                    machineFree = true;
-                                    selectedMachine = machine;
-                                    break;
+                                return isSlotFree(mTracker, currentTime, u.requiredTime + u.currentServiceBufferTime);
+                            });
+
+                            if (freeMachines.length > 0) {
+                                // Tìm mức sử dụng ít nhất trong số các máy đang rảnh
+                                let minUsage = Infinity;
+                                for (const m of freeMachines) {
+                                    const code = m.MA_MAY as string;
+                                    const usage = machineUsageCount[code] || 0;
+                                    if (usage < minUsage) minUsage = usage;
                                 }
+
+                                // Lọc nhóm máy có số lần sử dụng ít nhất (Cân bằng tải)
+                                const leastUsedMachines = freeMachines.filter(
+                                    (m: any) => (machineUsageCount[m.MA_MAY as string] || 0) === minUsage
+                                );
+
+                                // Bốc ngẫu nhiên 1 máy trong nhóm máy ít sử dụng nhất
+                                const randomIndex = Math.floor(Math.random() * leastUsedMachines.length);
+                                selectedMachine = leastUsedMachines[randomIndex];
+                                machineFree = true;
                             }
                         }
                         if (!machineFree) continue;
@@ -589,6 +609,7 @@ export async function POST(request: Request) {
                         
                         if (winner.selectedMachine && winner.selectedMachine.MA_MAY) {
                             machineTracker[winner.selectedMachine.MA_MAY].push({ start: finalTime, end: endTime + winner.currentServiceBufferTime });
+                            machineUsageCount[winner.selectedMachine.MA_MAY] = (machineUsageCount[winner.selectedMachine.MA_MAY] || 0) + 1;
                         }
 
                         scheduledResults.push({

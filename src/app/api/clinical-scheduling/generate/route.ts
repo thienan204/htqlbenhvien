@@ -222,13 +222,24 @@ export async function POST(request: Request) {
         const staffTracker: Record<string, { start: number, end: number }[]> = {};
         const patientTracker: Record<string, { start: number, end: number }[]> = {};
         const machineTracker: Record<string, { start: number, end: number }[]> = {};
+        const machineUsageCount: Record<string, number> = {};
 
         availableStaff.forEach(s => {
             staffTracker[s.id] = [];
         });
         availableMachines.forEach((m: any) => {
             machineTracker[m.MA_MAY] = [];
+            machineUsageCount[m.MA_MAY] = 0;
         });
+
+        // Nạp trước số lần sử dụng máy từ các lịch đã lưu trước đó (nếu có)
+        if (Array.isArray(savedSchedules)) {
+            savedSchedules.forEach((s: any) => {
+                if (s.ma_may) {
+                    machineUsageCount[s.ma_may] = (machineUsageCount[s.ma_may] || 0) + 1;
+                }
+            });
+        }
 
         const scheduledResults = [];
         const failedResults = [];
@@ -393,6 +404,9 @@ export async function POST(request: Request) {
 
             if (matchedSavedSchedule) {
                 const sStart = parseTime(matchedSavedSchedule.bat_dau);
+                if (matchedSavedSchedule.ma_may) {
+                    machineUsageCount[matchedSavedSchedule.ma_may] = (machineUsageCount[matchedSavedSchedule.ma_may] || 0) + 1;
+                }
                 
                 scheduledResults.push({
                     ...task,
@@ -513,15 +527,31 @@ export async function POST(request: Request) {
                         
                         if (requiredMachineCode) {
                             machineFree = false;
-                            // Tìm 1 máy rảnh trong số các máy phù hợp (máy luôn bị giam đủ thời gian + buffer)
-                            for (const machine of capableMachines) {
-                                if (!machine.MA_MAY) continue;
+                            // Tìm tất cả các máy rảnh trong số các máy phù hợp (máy luôn bị giam đủ thời gian + buffer)
+                            const freeMachines = capableMachines.filter((machine: any) => {
+                                if (!machine.MA_MAY) return false;
                                 const mTracker = machineTracker[machine.MA_MAY as string];
-                                if (isSlotFree(mTracker, currentTime, requiredTime + currentServiceBufferTime)) {
-                                    machineFree = true;
-                                    selectedMachine = machine;
-                                    break;
+                                return isSlotFree(mTracker, currentTime, requiredTime + currentServiceBufferTime);
+                            });
+
+                            if (freeMachines.length > 0) {
+                                // Tìm mức sử dụng ít nhất trong số các máy đang rảnh
+                                let minUsage = Infinity;
+                                for (const m of freeMachines) {
+                                    const code = m.MA_MAY as string;
+                                    const usage = machineUsageCount[code] || 0;
+                                    if (usage < minUsage) minUsage = usage;
                                 }
+
+                                // Lọc nhóm máy có số lần sử dụng ít nhất (Cân bằng tải)
+                                const leastUsedMachines = freeMachines.filter(
+                                    (m: any) => (machineUsageCount[m.MA_MAY as string] || 0) === minUsage
+                                );
+
+                                // Bốc ngẫu nhiên 1 máy trong nhóm máy ít sử dụng nhất
+                                const randomIndex = Math.floor(Math.random() * leastUsedMachines.length);
+                                selectedMachine = leastUsedMachines[randomIndex];
+                                machineFree = true;
                             }
                         }
 
@@ -581,6 +611,7 @@ export async function POST(request: Request) {
                 // Máy móc bị giam 100% thời gian (kể cả làm song song), cộng thêm buffer time để máy được vệ sinh/nghỉ ngơi
                 if (finalMachine && finalMachine.MA_MAY) {
                     machineTracker[finalMachine.MA_MAY as string].push({ start: finalTime, end: endTime + currentServiceBufferTime });
+                    machineUsageCount[finalMachine.MA_MAY as string] = (machineUsageCount[finalMachine.MA_MAY as string] || 0) + 1;
                 }
 
                 scheduledResults.push({
