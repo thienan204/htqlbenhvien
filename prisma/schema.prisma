@@ -237,6 +237,7 @@ model SystemCategory {
   name              String
   description       String?
   bhyt_code         String?
+  level             String?
   isActive          Boolean                 @default(true)
   order             Int                     @default(0)
   createdAt         DateTime                @default(now())

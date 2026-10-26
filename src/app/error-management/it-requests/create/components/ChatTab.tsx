@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switch, Alert, Tag, Modal } from 'antd';
-import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined, PaperClipOutlined, CheckOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { getBasePath } from '@/utils/config';
 import { useCheckBa } from '../hooks/useCheckBa';
@@ -26,6 +26,8 @@ interface ChatTabProps {
     setActiveTab: (tab: string) => void;
     targetDepartment?: string;
     maBaLength?: number;
+    isManager?: boolean;
+    itUsers?: any[];
 }
 
 export function ChatTab({
@@ -46,9 +48,13 @@ export function ChatTab({
     setActiveTab,
     form,
     targetDepartment = 'CNTT',
-    maBaLength = 11
+    maBaLength = 11,
+    isManager: isManagerProp,
+    itUsers = []
 }: ChatTabProps) {
     const router = useRouter();
+    const isManager = Boolean(user?.isManager || user?.role === 'ADMIN' || isManagerProp);
+    const [targetAssigneeId, setTargetAssigneeId] = useState<string | null>(null);
     const [chatText, setChatText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [chatLoading, setChatLoading] = useState(false);
@@ -165,6 +171,53 @@ export function ChatTab({
         }
     };
 
+    // Tách danh sách các mục từ chatText dựa theo dấu phẩy
+    const getSelectedItems = (text: string): string[] => {
+        if (!text || !text.trim()) return [];
+        return text
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+    };
+
+    const isItemSelected = (reply: string): boolean => {
+        const target = reply.trim();
+        if (!target) return false;
+        const items = getSelectedItems(chatText);
+        return items.some(item => item.toLowerCase() === target.toLowerCase());
+    };
+
+    const handleToggleQuickReply = (reply: string) => {
+        const target = reply.trim();
+        if (!target) return;
+
+        let items = getSelectedItems(chatText);
+        const existingIndex = items.findIndex(item => item.toLowerCase() === target.toLowerCase());
+
+        if (existingIndex >= 0) {
+            // Đã chọn -> Bỏ chọn
+            items.splice(existingIndex, 1);
+        } else {
+            // Chưa chọn -> Thêm vào danh sách
+            items.push(target);
+        }
+
+        setChatText(items.join(', '));
+    };
+
+    const currentRepliesList = (chatCategory === 'SOFTWARE' ? softwareErrors : hardwareErrors)
+        ?.map((item: any) => typeof item === 'string' ? item : item?.name)
+        ?.filter((reply: any): reply is string => typeof reply === 'string' && reply.trim().length > 0) || [];
+
+    const handleClearSelectedReplies = () => {
+        const currentSuggestions = currentRepliesList.map((r: string) => r.trim().toLowerCase());
+        const items = getSelectedItems(chatText);
+        const remaining = items.filter(item => !currentSuggestions.includes(item.toLowerCase()));
+        setChatText(remaining.join(', '));
+    };
+
+    const selectedRepliesCount = currentRepliesList.filter((reply: string) => isItemSelected(reply)).length;
+
     const handlePaste = (e: React.ClipboardEvent) => {
         const clipboardData = e.clipboardData;
         if (!clipboardData) return;
@@ -267,7 +320,7 @@ export function ChatTab({
                     category: category,
                     ten_loi: chatText,
                     ma_khoa: isAdmin ? (staff?.ma_khoa || user?.ma_khoa || departments[0]?.ma_khoa) : 'KHOA_HIENTAI', 
-                    assigneeId: (isITStaff && selfAssign) ? user?.id : null,
+                    assigneeId: (isITStaff && selfAssign) ? user?.id : (isManager ? targetAssigneeId : null),
                     selfAssign: Boolean(isITStaff && selfAssign),
                     dynamicFields: dynamicObj,
                     nguoi_bao_id: staffId,
@@ -386,6 +439,38 @@ export function ChatTab({
                         />
                     </div>
                 )}
+
+                {isManager && !isITStaff && (
+                    <div className="flex items-center gap-1.5 border border-purple-200 bg-purple-50/70 px-2.5 py-1 rounded-lg text-xs shrink-0 w-full sm:w-auto">
+                        <span className="font-semibold text-purple-900 whitespace-nowrap">👑 Gửi đến:</span>
+                        <Select
+                            size="small"
+                            allowClear
+                            placeholder="Tự động phân công kỹ thuật"
+                            value={targetAssigneeId || undefined}
+                            onChange={(val) => setTargetAssigneeId(val || null)}
+                            className="w-full sm:min-w-[210px]"
+                            popupMatchSelectWidth={false}
+                        >
+                            {itUsers.filter((u: any) => u.isLeader).length > 0 && (
+                                <Select.OptGroup label="👑 Lãnh đạo phòng CNTT (Chỉ đạo trực tiếp)">
+                                    {itUsers.filter((u: any) => u.isLeader).map((u: any) => (
+                                        <Select.Option key={u.id} value={u.id}>
+                                            ⭐ {u.name || u.username} ({u.chuc_vu || 'Lãnh đạo'})
+                                        </Select.Option>
+                                    ))}
+                                </Select.OptGroup>
+                            )}
+                            <Select.OptGroup label="🛠️ Nhân viên Kỹ thuật CNTT">
+                                {itUsers.filter((u: any) => !u.isLeader).map((u: any) => (
+                                    <Select.Option key={u.id} value={u.id}>
+                                        {u.name || u.username}
+                                    </Select.Option>
+                                ))}
+                            </Select.OptGroup>
+                        </Select>
+                    </div>
+                )}
             </div>
 
             {/* Category Selection for Chat Tab */}
@@ -413,27 +498,47 @@ export function ChatTab({
                     </div>
                     <div className="bg-white p-3 sm:p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-[14px] sm:text-[15px] text-slate-700 max-w-[85%]">
                         Chào bạn! Bạn đang gặp sự cố gì? 
-                        <br/><span className="text-slate-500 text-[13px] mt-1 block">Hãy chọn nhanh gợi ý bên dưới, đọc vào Micro, hoặc gõ chữ nhé.</span>
+                        <br/>
+                        <span className="text-slate-500 text-[13px] mt-1 block">
+                            Hãy chọn nhanh gợi ý bên dưới <em>(có thể chọn nhiều việc)</em>, đọc vào Micro, hoặc gõ chữ nhé.
+                        </span>
                     </div>
                 </div>
             </div>
 
+            {/* Header gợi ý & nút Bỏ chọn nếu có */}
+            <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="text-xs font-semibold text-slate-600">Gợi ý sự cố phổ biến:</span>
+                {selectedRepliesCount > 0 && (
+                    <button 
+                        type="button"
+                        onClick={handleClearSelectedReplies}
+                        className="text-xs text-blue-600 hover:text-red-600 font-medium transition-colors cursor-pointer"
+                    >
+                        Bỏ chọn ({selectedRepliesCount})
+                    </button>
+                )}
+            </div>
+
             {/* Quick Replies */}
             <div className="flex flex-wrap gap-2 mb-2">
-                {(chatCategory === 'SOFTWARE' ? softwareErrors : hardwareErrors)
-                    ?.map((item: any) => typeof item === 'string' ? item : item?.name)
-                    ?.filter((reply: any): reply is string => typeof reply === 'string' && reply.trim().length > 0)
-                    ?.map((reply: string) => (
-                    <div 
-                        key={reply} 
-                        onClick={() => setChatText(reply)}
-                        className={`max-w-full whitespace-normal leading-relaxed text-center px-4 py-2 rounded-2xl text-[13px] font-medium border cursor-pointer transition-colors shadow-sm
-                            ${chatText === reply ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}
-                        `}
-                    >
-                        {reply}
-                    </div>
-                ))}
+                {currentRepliesList.map((reply: string) => {
+                    const selected = isItemSelected(reply);
+                    return (
+                        <div 
+                            key={reply} 
+                            onClick={() => handleToggleQuickReply(reply)}
+                            className={`max-w-full whitespace-normal leading-relaxed text-center px-3.5 py-1.5 rounded-2xl text-[13px] font-medium border cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 select-none
+                                ${selected 
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-semibold' 
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'}
+                            `}
+                        >
+                            {selected && <CheckOutlined className="text-xs shrink-0" />}
+                            <span>{reply}</span>
+                        </div>
+                    );
+                })}
             </div>
 
             <BaPaymentStatusAlert

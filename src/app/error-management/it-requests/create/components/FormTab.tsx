@@ -491,19 +491,40 @@ export function FormTab({
                                                     size="middle"
                                                     className="!rounded-xl"
                                                 >
-                                                    {itUsers.map((u: any) => {
-                                                        let statusBadge = '';
-                                                        if (u.autoAssignDisabled) {
-                                                            statusBadge = `(🎯 Bận: ${u.focusReason || 'Việc riêng'})`;
-                                                        } else if (!u.isAvailable) {
-                                                            statusBadge = '(🔴 Tắt)';
-                                                        }
-                                                        return (
-                                                            <Select.Option key={u.id} value={u.id}>
-                                                                {u.name || u.username} {statusBadge}
-                                                            </Select.Option>
-                                                        );
-                                                    })}
+                                                    {itUsers.filter((u: any) => u.isLeader).length > 0 && (
+                                                        <Select.OptGroup label="👑 Lãnh đạo phòng CNTT (Chỉ đạo trực tiếp)">
+                                                            {itUsers.filter((u: any) => u.isLeader).map((u: any) => {
+                                                                let statusBadge = '';
+                                                                if (u.autoAssignDisabled) {
+                                                                    statusBadge = `(🎯 Bận: ${u.focusReason || 'Việc riêng'})`;
+                                                                } else if (!u.isAvailable) {
+                                                                    statusBadge = '(🔴 Tắt nhận việc)';
+                                                                } else {
+                                                                    statusBadge = '(🟢 Sẵn sàng)';
+                                                                }
+                                                                return (
+                                                                    <Select.Option key={u.id} value={u.id}>
+                                                                        ⭐ {u.name || u.username} ({u.chuc_vu || 'Lãnh đạo'}) {statusBadge}
+                                                                    </Select.Option>
+                                                                );
+                                                            })}
+                                                        </Select.OptGroup>
+                                                    )}
+                                                    <Select.OptGroup label="🛠️ Nhân viên Kỹ thuật CNTT">
+                                                        {itUsers.filter((u: any) => !u.isLeader).map((u: any) => {
+                                                            let statusBadge = '';
+                                                            if (u.autoAssignDisabled) {
+                                                                statusBadge = `(🎯 Bận: ${u.focusReason || 'Việc riêng'})`;
+                                                            } else if (!u.isAvailable) {
+                                                                statusBadge = '(🔴 Tắt)';
+                                                            }
+                                                            return (
+                                                                <Select.Option key={u.id} value={u.id}>
+                                                                    {u.name || u.username} {statusBadge}
+                                                                </Select.Option>
+                                                            );
+                                                        })}
+                                                    </Select.OptGroup>
                                                 </Select>
                                             </Form.Item>
 

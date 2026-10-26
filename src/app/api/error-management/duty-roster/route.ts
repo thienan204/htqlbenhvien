@@ -29,10 +29,41 @@ export async function GET(request: Request) {
                 isAvailable: true,
                 dutyOrder: true,
                 autoAssignDisabled: true,
-                focusReason: true
+                focusReason: true,
+                staff: {
+                    select: {
+                        ho_ten: true,
+                        chuc_vu_ref: {
+                            select: {
+                                name: true,
+                                code: true,
+                                level: true
+                            }
+                        }
+                    }
+                }
             }
         });
-        return NextResponse.json(users);
+
+        const formatted = users.map(u => {
+            const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
+            const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
+            const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
+            return {
+                id: u.id,
+                username: u.username,
+                name: u.name || u.staff?.ho_ten || u.username,
+                role: u.role,
+                isAvailable: u.isAvailable,
+                dutyOrder: u.dutyOrder,
+                autoAssignDisabled: u.autoAssignDisabled,
+                focusReason: u.focusReason,
+                isLeader,
+                chuc_vu: u.staff?.chuc_vu_ref?.name || (isLeader ? 'Lãnh đạo' : 'Kỹ thuật viên')
+            };
+        });
+
+        return NextResponse.json(formatted);
     } catch (error) {
         console.error('Error fetching duty roster:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

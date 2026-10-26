@@ -40,7 +40,7 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
         maBaLength,
         savedStaffId,
         setSavedStaffId
-    } = useITRequestData(isAdmin, user?.role, user?.ma_khoa, user?.staffId, form, targetDepartment);
+    } = useITRequestData(isAdmin, user?.role, user?.ma_khoa, user?.staffId, form, targetDepartment, isManager);
 
     const {
         fileList,
@@ -166,6 +166,8 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
                 <ChatTab 
                     user={user}
                     isAdmin={isAdmin}
+                    isManager={isManager}
+                    itUsers={itUsers}
                     softwareErrors={softwareErrors}
                     hardwareErrors={hardwareErrors}
                     departmentStaff={departmentStaff}

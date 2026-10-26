@@ -6,7 +6,7 @@
     "name": "Administrator",
     "role": "ADMIN",
     "createdAt": "2026-03-16T02:24:42.705Z",
-    "updatedAt": "2026-10-25T02:12:58.653Z",
+    "updatedAt": "2026-10-26T21:52:11.268Z",
     "dutyOrder": 1,
     "isAvailable": false,
     "autoAssignDisabled": false,

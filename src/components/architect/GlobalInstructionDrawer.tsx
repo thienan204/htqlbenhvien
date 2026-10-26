@@ -79,17 +79,13 @@ export default function GlobalInstructionDrawer() {
 
     return (
         <>
-            <div style={{
-                position: 'fixed',
-                bottom: 32,
-                right: 32,
-                zIndex: 999,
-                animation: 'pulse 2s infinite'
-            }}>
+            <div 
+                className="hidden md:block fixed bottom-6 right-6 z-[999]"
+            >
                 <style>{`
-                    @keyframes pulse {
-                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7); }
-                        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(24, 144, 255, 0); }
+                    @keyframes subtle-pulse {
+                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4); }
+                        70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(24, 144, 255, 0); }
                         100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
                     }
                 `}</style>
@@ -97,9 +93,16 @@ export default function GlobalInstructionDrawer() {
                     <Button 
                         type="primary" 
                         shape="circle" 
-                        icon={<BookOutlined style={{ fontSize: 24 }} />} 
-                        size="large"
-                        style={{ width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        icon={<BookOutlined style={{ fontSize: 18 }} />} 
+                        className="bg-blue-600 hover:bg-blue-700 shadow-md border-none flex items-center justify-center transition-all hover:scale-105"
+                        style={{ 
+                            width: 40, 
+                            height: 40, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            animation: 'subtle-pulse 2.5s infinite' 
+                        }}
                         onClick={() => setOpen(true)}
                     />
                 </Tooltip>

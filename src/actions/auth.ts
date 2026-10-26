@@ -6,6 +6,9 @@ import prisma from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
+import { calculateUserHierarchy, UserLevel } from '@/utils/userHierarchy';
+export type { UserLevel };
+
 export type UserPayload = {
     id: string;
     username: string;
@@ -14,11 +17,18 @@ export type UserPayload = {
     ten_khoa?: string;
     staffId?: string;
     isManager?: boolean;
+    userLevel?: UserLevel;
+    chuc_vu?: string;
+    chuc_vu_code?: string;
+    isDirector?: boolean;
+    isDeptLeader?: boolean;
+    isITLeader?: boolean;
     ma_cchn?: string;
     name?: string;
     permissions?: any[];
     ma_nv?: string;
     cccd?: string;
+    isAvailable?: boolean;
 };
 
 export async function getCurrentUser(): Promise<UserPayload | null> {
@@ -32,16 +42,19 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         const { payload } = await jose.jwtVerify(token, secret);
 
         let permissions: any = [];
-        let isManager = false;
         let ma_cchn: string | undefined = undefined;
         let finalName: string | undefined = undefined;
         let finalTenKhoa: string | undefined = undefined;
         let ma_nv: string | undefined = undefined;
         let cccd: string | undefined = undefined;
+        let chucVuName: string | undefined = undefined;
+        let chucVuCode: string | undefined = undefined;
+
+        let isAvailable = false;
+        let hierarchy = calculateUserHierarchy(payload.role as string, null, payload.ma_khoa as string);
 
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
-            isManager = true;
             finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
         } else {
             try {
@@ -57,14 +70,20 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                     include: {
                         staff: {
                             include: {
-                                certificates: true
+                                certificates: true,
+                                chuc_vu_ref: true
                             }
                         }
                     }
                 });
-                if (userRecord?.staff?.chuc_vu_id) {
-                    isManager = true;
+
+                if (userRecord?.staff?.chuc_vu_ref) {
+                    chucVuName = userRecord.staff.chuc_vu_ref.name;
+                    chucVuCode = userRecord.staff.chuc_vu_ref.code;
+                    const explicitLevel = (userRecord.staff.chuc_vu_ref as any).level;
+                    hierarchy = calculateUserHierarchy(payload.role as string, chucVuCode, payload.ma_khoa as string, explicitLevel);
                 }
+
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
                     ma_cchn = userRecord.staff.certificates[0].so_cchn;
                 }
@@ -73,6 +92,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
                     ma_nv = userRecord.staff?.ma_nv || undefined;
                     cccd = userRecord.staff?.cccd || undefined;
+                    isAvailable = userRecord.isAvailable ?? false;
                 }
 
                 if (payload.ma_khoa) {
@@ -93,12 +113,19 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             ma_khoa: payload.ma_khoa as string | undefined,
             staffId: payload.staffId as string | undefined,
             permissions,
-            isManager,
+            isManager: hierarchy.isManager,
+            userLevel: hierarchy.userLevel,
+            chuc_vu: chucVuName,
+            chuc_vu_code: chucVuCode,
+            isDirector: hierarchy.isDirector,
+            isDeptLeader: hierarchy.isDeptLeader,
+            isITLeader: hierarchy.isITLeader,
             ma_cchn,
             name: finalName,
             ten_khoa: finalTenKhoa,
             ma_nv,
-            cccd
+            cccd,
+            isAvailable
         };
     } catch (error) {
         return null; // Invalid or expired token
@@ -132,16 +159,19 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
         const { payload } = await jose.jwtVerify(token, secret);
 
         let permissions: any = [];
-        let isManager = false;
         let ma_cchn: string | undefined = undefined;
         let finalName: string | undefined = undefined;
         let finalTenKhoa: string | undefined = undefined;
         let ma_nv: string | undefined = undefined;
         let cccd: string | undefined = undefined;
+        let chucVuName: string | undefined = undefined;
+        let chucVuCode: string | undefined = undefined;
+
+        let isAvailable = false;
+        let hierarchy = calculateUserHierarchy(payload.role as string, null, payload.ma_khoa as string);
 
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
-            isManager = true;
             finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
         } else {
             try {
@@ -157,14 +187,20 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                     include: {
                         staff: {
                             include: {
-                                certificates: true
+                                certificates: true,
+                                chuc_vu_ref: true
                             }
                         }
                     }
                 });
-                if (userRecord?.staff?.chuc_vu_id) {
-                    isManager = true;
+
+                if (userRecord?.staff?.chuc_vu_ref) {
+                    chucVuName = userRecord.staff.chuc_vu_ref.name;
+                    chucVuCode = userRecord.staff.chuc_vu_ref.code;
+                    const explicitLevel = (userRecord.staff.chuc_vu_ref as any).level;
+                    hierarchy = calculateUserHierarchy(payload.role as string, chucVuCode, payload.ma_khoa as string, explicitLevel);
                 }
+
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
                     ma_cchn = userRecord.staff.certificates[0].so_cchn;
                 }
@@ -173,6 +209,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
                     ma_nv = userRecord.staff?.ma_nv || undefined;
                     cccd = userRecord.staff?.cccd || undefined;
+                    isAvailable = userRecord.isAvailable ?? false;
                 }
 
                 if (payload.ma_khoa) {
@@ -193,12 +230,19 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
             ma_khoa: payload.ma_khoa as string | undefined,
             staffId: payload.staffId as string | undefined,
             permissions,
-            isManager,
+            isManager: hierarchy.isManager,
+            userLevel: hierarchy.userLevel,
+            chuc_vu: chucVuName,
+            chuc_vu_code: chucVuCode,
+            isDirector: hierarchy.isDirector,
+            isDeptLeader: hierarchy.isDeptLeader,
+            isITLeader: hierarchy.isITLeader,
             ma_cchn,
             name: finalName,
             ten_khoa: finalTenKhoa,
             ma_nv,
-            cccd
+            cccd,
+            isAvailable
         };
     } catch (error) {
         return null;

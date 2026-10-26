@@ -84,6 +84,27 @@ export async function POST(request: Request) {
             }
         });
 
+        // Quy định bệnh viện: Lãnh đạo phòng CNTT mặc định không nhận việc tự động khi đăng nhập
+        if (user.role === 'CNTT' && user.staffId) {
+            try {
+                const staff = await prisma.staff.findUnique({
+                    where: { id: user.staffId },
+                    include: { chuc_vu_ref: true }
+                });
+                const explicitLevel = (staff?.chuc_vu_ref as any)?.level;
+                const cvCode = (staff?.chuc_vu_ref?.code || '').toUpperCase();
+                const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
+                if (isLeader) {
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { isAvailable: false }
+                    });
+                }
+            } catch (errLeader) {
+                console.error('Lỗi kiểm tra lãnh đạo CNTT khi login:', errLeader);
+            }
+        }
+
         finalUserId = user.id;
         finalUserName = user.name || user.username;
         finalRole = user.role;

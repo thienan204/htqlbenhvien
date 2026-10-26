@@ -996,6 +996,7 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
             {/* Floating Quick Action Button if uncontrolled */}
             {openProp === undefined && (
                 <div 
+                    className="hidden md:block"
                     style={{
                         position: 'fixed',
                         bottom: 20,

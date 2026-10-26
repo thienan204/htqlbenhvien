@@ -214,6 +214,7 @@ export default function SystemCategoriesPage() {
                 const codeIndex = headers.findIndex((h: string) => typeof h === 'string' && h.trim().toLowerCase() === 'code');
                 const descIndex = headers.findIndex((h: string) => typeof h === 'string' && h.trim().toLowerCase() === 'description');
                 const orderIndex = headers.findIndex((h: string) => typeof h === 'string' && h.trim().toLowerCase() === 'order');
+                const levelIndex = headers.findIndex((h: string) => typeof h === 'string' && h.trim().toLowerCase() === 'level');
 
                 if (nameIndex === -1) {
                     message.error('File Excel cần có ít nhất cột "name" (Tên hiển thị)');
@@ -245,6 +246,7 @@ export default function SystemCategoriesPage() {
                         name,
                         code,
                         description: descIndex !== -1 && row[descIndex] ? String(row[descIndex]) : '',
+                        level: levelIndex !== -1 && row[levelIndex] ? String(row[levelIndex]).trim() : undefined,
                         order: orderIndex !== -1 && row[orderIndex] ? Number(row[orderIndex]) : 0,
                         isActive: true
                     });
@@ -328,6 +330,17 @@ export default function SystemCategoriesPage() {
                 </div>
             )
         },
+        ...(selectedType === 'CHUC_VU' ? [{
+            title: 'Cấp bậc (Level)',
+            dataIndex: 'level',
+            key: 'level',
+            render: (val: string) => {
+                if (val === 'LEVEL_1_BGD') return <Tag color="gold" className="font-semibold">👑 Level 1 (Ban Giám Đốc)</Tag>;
+                if (val === 'LEVEL_2_LEADER') return <Tag color="blue" className="font-semibold">🎖️ Level 2 (Lãnh đạo Khoa/Phòng)</Tag>;
+                if (val === 'LEVEL_3_STAFF') return <Tag color="default">👤 Level 3 (Nhân viên)</Tag>;
+                return <Tag color="orange">Tự động (Theo tên)</Tag>;
+            }
+        }] : []),
         {
             title: 'Mô tả',
             dataIndex: 'description',
@@ -443,6 +456,17 @@ export default function SystemCategoriesPage() {
                         span: 24
                     },
                     { id: 'name', label: 'Tên hiển thị', type: 'input', required: true, span: 24 },
+                    ...(selectedType === 'CHUC_VU' ? [{
+                        id: 'level',
+                        label: 'Cấp bậc phân quyền (Level bệnh viện)',
+                        type: 'select' as const,
+                        options: [
+                            { value: 'LEVEL_1_BGD', label: '👑 Level 1 - Ban Giám Đốc (Cao nhất)' },
+                            { value: 'LEVEL_2_LEADER', label: '🎖️ Level 2 - Lãnh đạo Khoa / Phòng' },
+                            { value: 'LEVEL_3_STAFF', label: '👤 Level 3 - Nhân viên' },
+                        ],
+                        span: 24
+                    }] : []),
                     ...(selectedType === 'WARD' ? [{
                         id: 'parentId',
                         label: 'Thuộc Tỉnh / Thành phố',

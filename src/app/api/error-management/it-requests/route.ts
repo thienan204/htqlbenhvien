@@ -520,19 +520,37 @@ export async function POST(request: Request) {
                         id: true,
                         name: true,
                         username: true,
-                        dutyOrder: true
+                        dutyOrder: true,
+                        staff: {
+                            select: {
+                                chuc_vu_ref: {
+                                    select: { code: true, level: true }
+                                }
+                            }
+                        }
                     },
                     orderBy: {
                         dutyOrder: 'asc'
                     }
                 });
 
-                if (availableUsers.length > 0) {
+                // Quy định bệnh viện: Nhân viên khoa phòng (!isManager) gửi lên -> CHỈ chia cho Nhân viên Kỹ thuật, LOẠI BỎ Lãnh đạo CNTT
+                let poolUsers = availableUsers;
+                if (!isManager) {
+                    poolUsers = poolUsers.filter(u => {
+                        const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
+                        const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
+                        const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
+                        return !isLeader;
+                    });
+                }
+
+                if (poolUsers.length > 0) {
                     // Mốc bắt đầu của ca trực / khung hành chính hiện tại
                     const shiftStart = currentShift.startTime;
 
                     // Tính tải chi tiết và lấy công việc hiện tại của từng nhân viên
-                    const candidatesRaw = await Promise.all(availableUsers.map(async (u) => {
+                    const candidatesRaw = await Promise.all(poolUsers.map(async (u) => {
                         const staffName = u.name || u.username;
 
                         // 0. Lấy chi tiết công việc đang xử lý trực tiếp (IN_PROGRESS) nếu có

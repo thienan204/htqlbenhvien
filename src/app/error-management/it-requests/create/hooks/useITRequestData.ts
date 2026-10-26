@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getBasePath } from '@/utils/config';
 
-export function useITRequestData(isAdmin: boolean, userRole: string | undefined, userMaKhoa: string | undefined, userStaffId: string | undefined, form: any, targetDepartment: string = 'CNTT') {
+export function useITRequestData(isAdmin: boolean, userRole: string | undefined, userMaKhoa: string | undefined, userStaffId: string | undefined, form: any, targetDepartment: string = 'CNTT', isManager: boolean = false) {
     const [softwareErrors, setSoftwareErrors] = useState<string[]>([]);
     const [hardwareErrors, setHardwareErrors] = useState<string[]>([]);
     const [allStaffs, setAllStaffs] = useState<any[]>([]);
@@ -102,7 +102,7 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
                 fetchConfiguredFields();
                 fetchStaffs();
                 fetchDepartments();
-                if (isAdmin) {
+                if (isAdmin || isManager) {
                     fetchITUsers();
                 }
             } catch (e) {
