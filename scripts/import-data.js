@@ -24,18 +24,23 @@ async function importData(modelName, filename) {
     for (const item of data) {
         try {
             let whereClause = { id: item.id };
+            const updateData = { ...item };
+            delete updateData.id;
+
             if (modelName === 'department') whereClause = { ma_khoa: item.ma_khoa };
             else if (modelName === 'user') whereClause = { username: item.username };
-            else if (modelName === 'staff') whereClause = { ma_bac_si: item.ma_bac_si };
+            else if (modelName === 'staff') whereClause = { ma_nv: item.ma_nv };
             else if (modelName === 'role') whereClause = { code: item.code };
             else if (modelName === 'warehouse') whereClause = { code: item.code };
             else if (modelName === 'equipment') whereClause = { ma_vttb: item.ma_vttb };
             else if (modelName === 'inventoryVoucher') whereClause = { voucher_code: item.voucher_code };
             else if (modelName === 'pageInstruction') whereClause = { pageId: item.pageId };
+            else if (modelName === 'formConfig') whereClause = { formId: item.formId };
+            else if (modelName === 'systemCategory') whereClause = { type_code: { type: item.type, code: item.code } };
 
             await prisma[modelName].upsert({
                 where: whereClause,
-                update: item,
+                update: updateData,
                 create: item
             });
         } catch (error) {
