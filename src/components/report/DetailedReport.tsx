@@ -58,6 +58,8 @@ interface ReportRow {
     don_gia_bh: string;
     ma_khoa: string;
     ten_khoa: string;
+    ma_khoa_rv?: string;
+    ten_khoa_rv?: string;
     chi_tiet_loi: string;
     ten_quy_tac: string;
     rule_name: string;
@@ -68,6 +70,24 @@ interface ReportRow {
     nguoi_thuc_hien: string;
     isError: boolean;
 }
+
+const getMaKhoaRv = (record: ExtendedHosoRecord) => {
+    // 1. Ưu tiên tìm trong XML7 (MA_KHOA_RV)
+    const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
+    if (xml7Group) {
+        const xml7List = getXmlDataList(xml7Group);
+        const firstXml7 = xml7List?.[xml7List.length - 1] || xml7List?.[0] || (xml7Group.data as any)?.CHITIEU_DU_LIEU_GIAY_RA_VIEN?.GIAY_RA_VIEN || (xml7Group.data as any)?.GIAY_RA_VIEN || xml7Group.data;
+        const target = Array.isArray(firstXml7) ? (firstXml7[firstXml7.length - 1] || firstXml7[0]) : firstXml7;
+        const val = renderValue(target?.MA_KHOA_RV || target?.ma_khoa_rv);
+        if (val && val.trim() !== '') return val.trim();
+    }
+    // 2. Không có XML7 thì tìm trong XML1 (MA_KHOA_RV hoặc MA_KHOA)
+    const valXml1Rv = renderValue(record.summary?.MA_KHOA_RV);
+    if (valXml1Rv && valXml1Rv.trim() !== '') return valXml1Rv.trim();
+    const valXml1 = renderValue(record.summary?.MA_KHOA);
+    if (valXml1 && valXml1.trim() !== '') return valXml1.trim();
+    return '';
+};
 
 export default function DetailedReport() {
     const searchParams = useSearchParams();
@@ -155,6 +175,8 @@ export default function DetailedReport() {
                 records.forEach((record) => {
                     const errors = record.validationResults.filter(v => v.isError);
                     const ngayVaoNoiTru = formatDateTime(record.summary?.NGAY_VAO_NOI_TRU);
+                    const maKhoaRv = getMaKhoaRv(record);
+                    const tenKhoaRv = departments[maKhoaRv] || '';
 
                     if (errors.length === 0) {
                         rows.push({
@@ -178,6 +200,8 @@ export default function DetailedReport() {
                             don_gia_bh: '',
                             ma_khoa: renderValue(record.summary?.MA_KHOA),
                             ten_khoa: departments[renderValue(record.summary?.MA_KHOA)] || '',
+                            ma_khoa_rv: maKhoaRv,
+                            ten_khoa_rv: tenKhoaRv,
                             chi_tiet_loi: '',
                             ten_quy_tac: '',
                             rule_name: '',
@@ -244,6 +268,8 @@ export default function DetailedReport() {
                                 don_gia_bh: donGiaBh,
                                 ma_khoa: maKhoa,
                                 ten_khoa: departments[maKhoa] || '',
+                                ma_khoa_rv: maKhoaRv,
+                                ten_khoa_rv: tenKhoaRv,
                                 chi_tiet_loi: `[${err.xmlType}] ${err.message || err.ruleName}`,
                                 ten_quy_tac: `[${err.xmlType}] ${err.ruleName || 'Quy tắc chưa đặt tên'}`,
                                 rule_name: err.ruleName || '',
@@ -422,6 +448,8 @@ export default function DetailedReport() {
                 ten_dv: item.ten_dv || '',
                 don_gia_bh: item.don_gia_bh || '',
                 ten_khoa: resolveTenKhoa(item.ma_khoa),
+                ma_khoa_rv: item.ma_khoa_rv || '',
+                ten_khoa_rv: item.ma_khoa_rv ? resolveTenKhoa(item.ma_khoa_rv) : (item.ten_khoa_rv || ''),
                 ma_doituong_kcb: item.ma_doituong_kcb || '',
                 chi_tiet_loi: item.chi_tiet_loi || 'Lỗi XML',
                 sourceType: 'XML'
@@ -478,6 +506,8 @@ export default function DetailedReport() {
                 { header: 'Tên quy tắc', key: 'ten_quy_tac', width: 30 },
                 { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
                 { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
+                { header: 'Mã Khoa RV', key: 'ma_khoa_rv', width: 12 },
+                { header: 'Tên Khoa RV', key: 'ten_khoa_rv', width: 25 },
                 { header: 'Họ tên', key: 'ho_ten', width: 25 },
                 { header: 'Mã Bệnh Chính', key: 'ma_benh_chinh', width: 15 },
                 { header: 'Mã Bệnh KT', key: 'ma_benh_kt', width: 15 },
@@ -592,6 +622,17 @@ export default function DetailedReport() {
             key: 'ten_khoa',
             width: 200,
             render: (_: any, record: ReportRow) => <span className="text-slate-600">{resolveTenKhoa(record.ma_khoa)}</span>
+        },
+        {
+            title: 'Khoa RV',
+            dataIndex: 'ma_khoa_rv',
+            key: 'ma_khoa_rv',
+            width: 160,
+            render: (_: any, record: ReportRow) => (
+                <span className="text-slate-600 text-xs" title={record.ma_khoa_rv ? `${record.ma_khoa_rv} - ${resolveTenKhoa(record.ma_khoa_rv)}` : ''}>
+                    {record.ma_khoa_rv ? `${record.ma_khoa_rv} - ${resolveTenKhoa(record.ma_khoa_rv)}` : '-'}
+                </span>
+            )
         },
         { title: 'Họ tên', dataIndex: 'ho_ten', key: 'ho_ten', width: 180, onCell: createOnCell('ho_ten') },
         { title: 'Mã Bệnh Chính', dataIndex: 'ma_benh_chinh', key: 'ma_benh_chinh', width: 120, onCell: createOnCell('ma_benh_chinh') },

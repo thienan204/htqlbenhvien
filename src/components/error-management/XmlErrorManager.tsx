@@ -35,6 +35,7 @@ export default function XmlErrorManager() {
     const initialSourceType = searchParams.get('sourceType') || 'XML';
     const paramKhoa = searchParams.get('ma_khoa');
     const paramDetail = searchParams.get('detail');
+    const paramStatus = searchParams.get('status');
 
     const [errors, setErrors] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -43,7 +44,7 @@ export default function XmlErrorManager() {
     const [staffList, setStaffList] = useState<any[]>([]);
     const [deptFilter, setDeptFilter] = useState<string>(paramKhoa || 'ALL');
     const [chuyenDeFilter, setChuyenDeFilter] = useState<string>('ALL'); // Lọc chuyên đề
-    const [statusFilter, setStatusFilter] = useState<string>('ALL'); // Lọc trạng thái
+    const [statusFilter, setStatusFilter] = useState<string>(paramStatus || 'ALL'); // Lọc trạng thái
     const [searchText, setSearchText] = useState<string>('');
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     
@@ -383,6 +384,8 @@ export default function XmlErrorManager() {
             { header: 'Mã BN', key: 'ma_bn', width: 14 },
             { header: 'Mã Khoa', key: 'ma_khoa', width: 10 },
             { header: 'Tên Khoa', key: 'ten_khoa', width: 25 },
+            { header: 'Mã Khoa RV', key: 'ma_khoa_rv', width: 12 },
+            { header: 'Tên Khoa RV', key: 'ten_khoa_rv', width: 25 },
             { header: 'Họ tên', key: 'ho_ten', width: 25 },
             { header: 'Ngày vào', key: 'ngay_vao', width: 16 },
             { header: 'Ngày ra', key: 'ngay_ra', width: 16 },
@@ -415,6 +418,8 @@ export default function XmlErrorManager() {
                 ma_bn: row.ma_bn,
                 ma_khoa: row.ma_khoa,
                 ten_khoa: row.ten_khoa || departments[row.ma_khoa] || '',
+                ma_khoa_rv: row.ma_khoa_rv || '',
+                ten_khoa_rv: row.ten_khoa_rv || departments[row.ma_khoa_rv] || '',
                 ho_ten: row.ho_ten,
                 ngay_vao: safeDateStr(row.ngay_vao),
                 ngay_ra: safeDateStr(row.ngay_ra),
@@ -515,8 +520,23 @@ export default function XmlErrorManager() {
             render: (text: string) => <span className="font-semibold text-blue-600">{text || '-'}</span>
         },
         { title: 'Mã BN', dataIndex: 'ma_bn', key: 'ma_bn', width: 100 },
-        { title: 'Họ Tên BN', dataIndex: 'ho_ten', key: 'ho_ten', width: 160, className: 'uppercase font-bold text-blue-800' },
-        { title: 'Khoa', dataIndex: 'ten_khoa', key: 'ten_khoa', width: 150, ellipsis: true },
+        {
+            title: 'Khoa / Khoa RV',
+            key: 'khoa_info',
+            width: 160,
+            render: (_: any, record: any) => (
+                <div className="flex flex-col gap-0.5">
+                    <span className="font-medium text-slate-800 text-xs" title={`Khoa: ${record.ten_khoa || record.ma_khoa || '-'}`}>
+                        {record.ten_khoa || record.ma_khoa || '-'}
+                    </span>
+                    {(record.ten_khoa_rv || record.ma_khoa_rv) && (
+                        <span className="text-[11px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200 inline-block w-fit" title={`Khoa ra viện: ${record.ten_khoa_rv || record.ma_khoa_rv}`}>
+                            RV: {record.ten_khoa_rv || record.ma_khoa_rv}
+                        </span>
+                    )}
+                </div>
+            )
+        },
         {
             title: 'Tên DV / Thuốc', dataIndex: 'ten_dv', key: 'ten_dv', width: 220, ellipsis: true,
             render: (text: string) => <span className="font-medium">{text || '-'}</span>
@@ -814,7 +834,7 @@ export default function XmlErrorManager() {
             {/* Header & Stats */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 leading-tight">Danh sách Lỗi Hồ sơ</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 leading-tight">Danh sách hồ sơ lỗi XML</h1>
                     <p className="text-slate-500 m-0">Quản lý và giải trình các lỗi quét từ hệ thống XML / Chuyên đề</p>
                 </div>
                 
@@ -847,7 +867,7 @@ export default function XmlErrorManager() {
                         }}
                         className="font-medium custom-tabs m-0 [&_.ant-tabs-nav]:!mb-0 [&_.ant-tabs-content-holder]:!hidden"
                         items={[
-                            { key: 'XML', label: '📄 Lỗi XML' },
+                            { key: 'XML', label: '📄 Lỗi hồ sơ XML' },
                             { key: 'CHUYEN_DE', label: '⏱️ Lỗi Chuyên đề trùng thời gian' }
                         ]}
                     />

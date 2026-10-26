@@ -55,6 +55,8 @@ export async function POST(req: NextRequest) {
                 nguoi_th: e.nguoi_th || null,
                 ten_nguoi_th: e.ten_nguoi_th || null,
                 ten_khoa: e.ten_khoa || null,
+                ma_khoa_rv: e.ma_khoa_rv || null,
+                ten_khoa_rv: e.ten_khoa_rv || null,
                 chi_tiet_loi: e.chi_tiet_loi || null,
                 khoang_thoi_gian_trung: e.khoang_thoi_gian_trung || null,
                 sourceType: e.sourceType || 'XML',

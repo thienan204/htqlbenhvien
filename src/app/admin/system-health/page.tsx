@@ -192,6 +192,7 @@ export default function SystemHealthPage() {
     const hisCount = (apiTraffic.topEndpoints || []).filter((e: any) => getApiCategoryInfo(e.path).key === 'HIS').length;
     const extCount = (apiTraffic.topEndpoints || []).filter((e: any) => getApiCategoryInfo(e.path).key === 'EXTENSION').length;
     const mobileCount = (apiTraffic.topEndpoints || []).filter((e: any) => getApiCategoryInfo(e.path).key === 'MOBILE').length;
+    const patientCount = (apiTraffic.topEndpoints || []).filter((e: any) => getApiCategoryInfo(e.path).key === 'PATIENT').length;
     const internalCount = (apiTraffic.topEndpoints || []).filter((e: any) => !getApiCategoryInfo(e.path).isExternal).length;
 
     const renderFilterBar = (totalItems: number, currentFilteredCount: number, labelName: string) => (
@@ -214,6 +215,7 @@ export default function SystemHealthPage() {
                             ), 
                             value: 'EXTERNAL' 
                         },
+                        { label: <span>👥 Bệnh nhân ({patientCount})</span>, value: 'PATIENT' },
                         { label: <span>🩺 HIS ({hisCount})</span>, value: 'HIS' },
                         { label: <span>🧩 Tiện ích Ext ({extCount})</span>, value: 'EXTENSION' },
                         { label: <span>📱 Mobile ({mobileCount})</span>, value: 'MOBILE' },
@@ -721,7 +723,7 @@ export default function SystemHealthPage() {
                                     title={
                                         <div className="flex items-center justify-between py-1 flex-wrap gap-2">
                                             <span className="font-bold text-slate-800 text-sm">
-                                                Top 15 API Được Truy Cập Nhiều Nhất Trong Ngày
+                                                Thống Kê Chi Tiết Các API Được Truy Cập Trong Ngày
                                             </span>
                                             {sourceFilter !== 'ALL' && (
                                                 <Tag color="processing" closable onClose={() => setSourceFilter('ALL')} className="text-xs font-normal">
@@ -737,7 +739,7 @@ export default function SystemHealthPage() {
                                         dataSource={filteredTopEndpoints} 
                                         columns={topEndpointsColumns} 
                                         rowKey={(record) => `${record.method}-${record.path}`}
-                                        pagination={{ pageSize: 8, size: 'small' }}
+                                        pagination={{ pageSize: 10, size: 'small', showSizeChanger: true, pageSizeOptions: ['10', '20', '50'] }}
                                         size="middle"
                                         locale={{ emptyText: <Empty description="Không có API nào phù hợp với bộ lọc" /> }}
                                     />

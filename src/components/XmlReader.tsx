@@ -825,6 +825,27 @@ export default function XmlReader() {
             const errors = record.validationResults.filter(v => v.isError);
             if (errors.length > 0) {
                 const ngayVaoNoiTru = record.summary?.NGAY_VAO_NOI_TRU;
+                // Trích xuất mã khoa ra viện (Ưu tiên XML7 -> XML1)
+                const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
+                let maKhoaRv = '';
+                if (xml7Group) {
+                    const xml7List = getXmlDataList(xml7Group);
+                    const firstXml7 = xml7List?.[xml7List.length - 1] || xml7List?.[0] || (xml7Group.data as any)?.CHITIEU_DU_LIEU_GIAY_RA_VIEN?.GIAY_RA_VIEN || (xml7Group.data as any)?.GIAY_RA_VIEN || xml7Group.data;
+                    const target = Array.isArray(firstXml7) ? (firstXml7[firstXml7.length - 1] || firstXml7[0]) : firstXml7;
+                    const val = renderValue(target?.MA_KHOA_RV || target?.ma_khoa_rv);
+                    if (val && val.trim() !== '') maKhoaRv = val.trim();
+                }
+                if (!maKhoaRv) {
+                    const valXml1Rv = renderValue(record.summary?.MA_KHOA_RV);
+                    if (valXml1Rv && valXml1Rv.trim() !== '') {
+                        maKhoaRv = valXml1Rv.trim();
+                    } else {
+                        const valXml1 = renderValue(record.summary?.MA_KHOA);
+                        if (valXml1 && valXml1.trim() !== '') maKhoaRv = valXml1.trim();
+                    }
+                }
+                const tenKhoaRv = departments[maKhoaRv] || '';
+
                 errors.forEach(err => {
                     let code = '';
                     let name = '';
@@ -866,6 +887,9 @@ export default function XmlReader() {
                         ma_lk: renderValue(record.summary?.MA_LK),
                         ma_bn: renderValue(record.summary?.MA_BN),
                         ma_khoa: maKhoa,
+                        ten_khoa: departments[maKhoa] || '',
+                        ma_khoa_rv: maKhoaRv,
+                        ten_khoa_rv: tenKhoaRv,
                         ho_ten: renderValue(record.summary?.HO_TEN),
                         ma_the: renderValue(record.summary?.MA_THE_BHYT),
                         ngay_vao: record.summary?.NGAY_VAO,

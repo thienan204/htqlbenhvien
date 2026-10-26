@@ -630,6 +630,8 @@ model XmlErrorRecord {
   itRequestId            String?
   itRequestPingCount     Int       @default(0)
   itResolved             Boolean   @default(false)
+  ma_khoa_rv             String?
+  ten_khoa_rv            String?
 }
 
 model Role {

@@ -23,6 +23,25 @@ interface SpecializedRuleRunnerProps {
     rule: any;
 }
 
+const extractMaKhoaRv = (record: ExtendedHosoRecord | any): string => {
+    if (!record) return '';
+    // 1. Ưu tiên tìm trong XML7 (MA_KHOA_RV)
+    const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
+    if (xml7Group) {
+        const xml7List = getXmlDataList(xml7Group);
+        const firstXml7 = xml7List?.[xml7List.length - 1] || xml7List?.[0] || (xml7Group.data as any)?.CHITIEU_DU_LIEU_GIAY_RA_VIEN?.GIAY_RA_VIEN || (xml7Group.data as any)?.GIAY_RA_VIEN || xml7Group.data;
+        const target = Array.isArray(firstXml7) ? (firstXml7[firstXml7.length - 1] || firstXml7[0]) : firstXml7;
+        const val = target?.MA_KHOA_RV || target?.ma_khoa_rv;
+        if (val && String(val).trim() !== '') return String(val).trim();
+    }
+    // 2. Không có XML7 thì tìm trong XML1 (MA_KHOA_RV hoặc MA_KHOA)
+    const valXml1Rv = record.summary?.MA_KHOA_RV;
+    if (valXml1Rv && String(valXml1Rv).trim() !== '') return String(valXml1Rv).trim();
+    const valXml1 = record.summary?.MA_KHOA;
+    if (valXml1 && String(valXml1).trim() !== '') return String(valXml1).trim();
+    return '';
+};
+
 export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerProps) {
     const { user } = useAuth();
     const [records, setRecords] = useState<ExtendedHosoRecord[]>([]);
@@ -260,6 +279,20 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 return isNaN(parsed.getTime()) ? null : parsed;
             };
 
+            // Tìm mã khoa ra viện
+            let maKhoaRv = item.MA_KHOA_RV || item.ma_khoa_rv || '';
+            let tenKhoaRv = item.TEN_KHOA_RV || item.ten_khoa_rv || '';
+            if (!maKhoaRv && (item.recordId || item.MA_LK || item.ma_lk)) {
+                const rec = records.find(r => r.id === item.recordId || r.summary?.MA_LK === (item.MA_LK || item.ma_lk));
+                if (rec) {
+                    maKhoaRv = extractMaKhoaRv(rec);
+                    tenKhoaRv = deptMap[maKhoaRv] || '';
+                }
+            }
+            if (maKhoaRv && !tenKhoaRv) {
+                tenKhoaRv = deptMap[maKhoaRv] || '';
+            }
+
             return {
                 ma_lk: item.MA_LK || item.ma_lk || "",
                 ma_bn: item.MA_BN || item.ma_bn || "",
@@ -276,6 +309,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 don_gia_bh: item.DON_GIA || item.don_gia_bh || "",
                 ma_may: item.KEY_VALUE ? String(item.KEY_VALUE).split('-')[0] : (item.ma_may || ""),
                 ten_khoa: item.TEN_KHOA || item.ten_khoa || "",
+                ma_khoa_rv: maKhoaRv,
+                ten_khoa_rv: tenKhoaRv,
                 ma_doituong_kcb: item.MA_DOITUONG_KCB || item.ma_doituong_kcb || "",
                 ma_bac_si: item.MA_BAC_SI || item.MA_BS || "",
                 ten_bac_si: item.TEN_BAC_SI || item.TEN_BS || "",
@@ -483,14 +518,9 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
 
                             const startTime = fields?.startTime ? item[fields.startTime] : item.NGAY_YL;
                             const endTime = fields?.endTime ? item[fields.endTime] : item.NGAY_KQ;
-                            const getMaKhoaRV = () => {
-                                const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
-                                if (xml7Group && xml7Group.data && xml7Group.data.length > 0) {
-                                    return xml7Group.data[0].MA_KHOA_RV || '';
-                                }
-                                return '';
-                            };
-                            const deptCode = getMaKhoaRV() || (fields?.department ? item[fields.department] : (item.MA_KHOA || record.summary?.MA_KHOA));
+                            const maKhoaRv = extractMaKhoaRv(record);
+                            const tenKhoaRv = deptMap[maKhoaRv] || '';
+                            const deptCode = maKhoaRv || (fields?.department ? item[fields.department] : (item.MA_KHOA || record.summary?.MA_KHOA));
                             const maBs = item.MA_BS || item.MA_BAC_SI || '';
                             const nguoiThucHien = item.NGUOI_THUC_HIEN || '';
 
@@ -504,6 +534,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                     HO_TEN: record.summary?.HO_TEN,
                                     MA_KHOA: deptCode,
                                     TEN_KHOA: deptMap[deptCode] || '', // Lookup department name
+                                    MA_KHOA_RV: maKhoaRv,
+                                    TEN_KHOA_RV: tenKhoaRv,
                                     MA_BAC_SI: maBs,
                                     TEN_BAC_SI: staffMap[maBs]?.ho_ten || '',
                                     TRINH_DO: staffMap[maBs]?.trinh_do || '',
@@ -1153,14 +1185,9 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                 }
                             }
 
-                            const getMaKhoaRV = () => {
-                                const xml7Group = record.groups?.find((g: any) => g.type === 'XML7');
-                                if (xml7Group && xml7Group.data && xml7Group.data.length > 0) {
-                                    return xml7Group.data[0].MA_KHOA_RV || '';
-                                }
-                                return '';
-                            };
-                            const deptCode = getMaKhoaRV() || item.MA_KHOA || record.summary?.MA_KHOA || '';
+                            const maKhoaRv = extractMaKhoaRv(record);
+                            const tenKhoaRv = deptMap[maKhoaRv] || '';
+                            const deptCode = maKhoaRv || item.MA_KHOA || record.summary?.MA_KHOA || '';
                             const isThuoc = group.type === 'XML2';
 
                             list.push({
@@ -1171,6 +1198,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                 HO_TEN: record.summary?.HO_TEN,
                                 MA_KHOA: deptCode,
                                 TEN_KHOA: deptMap[deptCode] || '',
+                                MA_KHOA_RV: maKhoaRv,
+                                TEN_KHOA_RV: tenKhoaRv,
                                 MA_BS: maBs,
                                 TEN_BAC_SI: staffMap[maBs]?.ho_ten || '',
                                 TRINH_DO: staffMap[maBs]?.trinh_do || '',
@@ -1387,6 +1416,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         { title: 'Họ Tên', dataIndex: 'HO_TEN', key: 'HO_TEN', width: 200, className: 'uppercase font-medium' },
         { title: 'Mã Khoa', dataIndex: 'MA_KHOA', key: 'MA_KHOA', width: 100, className: 'font-bold text-blue-700' },
         { title: 'Tên Khoa', dataIndex: 'TEN_KHOA', key: 'TEN_KHOA', width: 200, className: 'text-slate-500' },
+        { title: 'Khoa RV', dataIndex: 'TEN_KHOA_RV', key: 'TEN_KHOA_RV', width: 160, ellipsis: true, render: (t: string, r: any) => t || r.MA_KHOA_RV || '-' },
         { title: 'Mã Bác sĩ', dataIndex: 'MA_BAC_SI', key: 'MA_BAC_SI', width: 120, className: 'font-bold text-purple-600' },
         { title: 'Tên Bác sĩ', dataIndex: 'TEN_BAC_SI', key: 'TEN_BAC_SI', width: 200, className: 'font-medium text-purple-700' },
         { title: 'Trình độ', dataIndex: 'TRINH_DO', key: 'TRINH_DO', width: 120 },

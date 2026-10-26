@@ -306,8 +306,8 @@
   },
   {
     "value": "/error-management/xml-errors",
-    "label": "/error-management/xml-errors (Lỗi XML)",
-    "title": "Lỗi XML"
+    "label": "/error-management/xml-errors (Danh sách hồ sơ lỗi XML)",
+    "title": "Danh sách hồ sơ lỗi XML"
   },
   {
     "value": "/error-management/xml-summary",

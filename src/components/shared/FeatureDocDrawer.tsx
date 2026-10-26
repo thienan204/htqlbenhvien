@@ -11,7 +11,7 @@ import {
     SaveOutlined, PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, 
     FileTextOutlined, WarningOutlined, CloseOutlined, ReloadOutlined, SafetyCertificateOutlined,
     MessageOutlined, StarFilled, SendOutlined, CheckOutlined, SyncOutlined,
-    ApartmentOutlined, ExportOutlined
+    ApartmentOutlined, ExportOutlined, ShareAltOutlined, CopyOutlined
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
@@ -179,7 +179,88 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
     // State for Sequence Diagram Tab
     const [selectedDiagram, setSelectedDiagram] = useState<string>('overview');
 
+    // State for Zalo Share Modal
+    const [isZaloModalOpen, setIsZaloModalOpen] = useState(false);
+    const [customZaloMessage, setCustomZaloMessage] = useState('');
+
     const isAdmin = user?.role === 'ADMIN';
+
+    const generateZaloMessage = () => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const fullUrl = `${origin}${getBasePath()}${cleanPath}`;
+        
+        if (cleanPath.includes('it-requests')) {
+            return [
+                `🏥 BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN`,
+                `📢 THÔNG BÁO: CHẠY THỬ NGHIỆM HỆ THỐNG GỬI YÊU CẦU HỖ TRỢ CNTT TRỰC TUYẾN`,
+                `--------------------------------------------------`,
+                `Kính gửi: Lãnh đạo các Khoa, Phòng cùng toàn thể Cán bộ nhân viên bệnh viện.`,
+                ``,
+                `Nhằm đẩy mạnh công tác CHUYỂN ĐỔI SỐ và nâng cao chất lượng phục vụ công tác khám chữa bệnh, Phòng Công nghệ Thông tin đã hoàn thiện và CHÍNH THỨC ĐƯA VÀO CHẠY THỬ NGHIỆM chức năng "GỬI YÊU CẦU HỖ TRỢ KỸ THUẬT TRỰC TUYẾN" trên Hệ thống Quản lý Bệnh viện.`,
+                ``,
+                `🌟 CÁC LỢI ÍCH NỔI BẬT:`,
+                `1️⃣ KHÔNG LO TRÔI TIN: Thay thế hoàn toàn việc gọi điện thoại bận máy hay nhắn tin Zalo cá nhân dễ bị quên, sót việc.`,
+                `2️⃣ TIẾP NHẬN TỨC THỜI: Khi Khoa/Phòng gửi yêu cầu, kỹ thuật viên CNTT sẽ tiếp nhận xử lý ngay.`,
+                `3️⃣ MINH BẠCH THÔNG TIN: Hiển thị ngay TÊN KỸ THUẬT VIÊN và SỐ ĐIỆN THOẠI phụ trách để Khoa/Phòng tiện liên hệ trực tiếp.`,
+                `4️⃣ TÍCH HỢP CHAT TRỰC TIẾP 2 CHIỀU:`,
+                `   • Có giao diện Chatbot thông minh giúp tạo yêu cầu cực nhanh chỉ trong vài câu chat.`,
+                `   • Có khung Chat trao đổi trực tiếp trên từng phiếu: Khoa/Phòng và nhân viên CNTT có thể nhắn tin, gửi ảnh hiện trường và thảo luận tiến độ xử lý ngay trong hệ thống.`,
+                `5️⃣ LƯU VẾT LỊCH SỬ: Dễ dàng theo dõi tiến độ (Chờ tiếp nhận ➔ Đang xử lý ➔ Đã hoàn thành); có chuông thông báo tự động khi xử lý xong.`,
+                ``,
+                `--------------------------------------------------`,
+                `🔐 THÔNG TIN ĐĂNG NHẬP MẶC ĐỊNH CHO TẤT CẢ NHÂN VIÊN:`,
+                `• Tên đăng nhập (Username): SỐ CĂN CƯỚC CÔNG DÂN (CCCD) của bạn`,
+                `• Mật khẩu mặc định (Password): 123456`,
+                `*(Khuyến nghị: Sau khi đăng nhập lần đầu, đồng chí nên đổi mật khẩu để bảo mật tài khoản cá nhân).*`,
+                ``,
+                `--------------------------------------------------`,
+                `🔗 ĐƯỜNG DẪN TRUY CẬP TRỰC TIẾP:`,
+                `👉 ${fullUrl}`,
+                ``,
+                `📌 3 BƯỚC GỬI YÊU CẦU ĐƠN GIẢN (CHỈ MẤT 30 GIÂY):`,
+                `• Bước 1: Mở link trên ➔ Đăng nhập bằng số CCCD và mật khẩu 123456.`,
+                `• Bước 2: Tại tab "Tạo Nhanh", gõ nội dung sự cố hoặc chọn nhanh lỗi (Phần mềm HIS, Bệnh án, Máy in, Mạng...). Có thể chụp/dán ảnh lỗi hoặc chat trực tiếp.`,
+                `• Bước 3: Nhấn "Gửi yêu cầu". Hệ thống cấp mã phiếu và hiển thị ngay Nhân viên CNTT tiếp nhận.`,
+                ``,
+                `--------------------------------------------------`,
+                `💡 XIN Ý KIẾN ĐÓNG GÓP TỪ CÁC KHOA / PHÒNG:`,
+                `Hiện tại chức năng đang trong giai đoạn CHẠY THỬ NGHIỆM toàn viện. Phòng CNTT rất mong nhận được những phản hồi, đóng góp ý kiến quý báu từ các đồng chí Trưởng/Phó khoa, Điều dưỡng trưởng, Bác sĩ và nhân viên các khoa/phòng:`,
+                `👉 Các đồng chí vui lòng gửi ý kiến tại nút "Góp ý" (biểu tượng hộp thư góp ý trên góc phải màn hình) hoặc nhắn tin trực tiếp trong phần Chat của từng phiếu yêu cầu.`,
+                ``,
+                `Mọi ý kiến đóng góp của Khoa/Phòng sẽ là cơ sở quan trọng để Phòng CNTT tiếp tục cải tiến và nâng cao chất lượng phục vụ ngày một tốt hơn!`,
+                ``,
+                `Trân trọng cảm ơn!`,
+                `--------------------------------------------------`,
+                `Phòng Công nghệ Thông tin - Bệnh viện Đa khoa tỉnh Lạng Sơn`
+            ].join('\n');
+        }
+
+        return [
+            `🏥 BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN`,
+            `📢 THÔNG BÁO TÍNH NĂNG MỚI: ${(currentTitle || cleanPath).toUpperCase()}`,
+            `--------------------------------------------------`,
+            `Kính gửi các Khoa/Phòng và Cán bộ nhân viên bệnh viện,`,
+            ``,
+            `Hệ thống Quản lý Bệnh viện đã cập nhật tính năng: "${currentTitle || cleanPath}".`,
+            `🔗 Đường dẫn truy cập: ${fullUrl}`,
+            `🔐 Đăng nhập: Số CCCD | Mật khẩu mặc định: 123456`,
+            ``,
+            `Trân trọng cảm ơn!`
+        ].join('\n');
+    };
+
+    const handleOpenZaloModal = () => {
+        setCustomZaloMessage(generateZaloMessage());
+        setIsZaloModalOpen(true);
+    };
+
+    const handleCopyZalo = () => {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(customZaloMessage)
+                .then(() => message.success('Đã sao chép nội dung thông báo Zalo vào bộ nhớ tạm!'))
+                .catch(() => message.error('Không thể sao chép tin nhắn'));
+        }
+    };
 
     // Load data when opened or path changed
     useEffect(() => {
@@ -403,48 +484,57 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
             children: (
                 <div className="py-2">
                     {/* Header Action */}
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 flex-wrap gap-2">
                         <div>
                             <div className="text-sm font-bold text-slate-800">
                                 {instruction?.title || `Tài liệu hướng dẫn: ${currentTitle || cleanPath}`}
                             </div>
                             <div className="text-xs text-slate-500">Đường dẫn: <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-600">{cleanPath}</code></div>
                         </div>
-                        {isAdmin && !isEditingGuide && (
+                        <Space wrap>
                             <Button 
-                                type="primary" 
-                                icon={<EditOutlined />} 
-                                onClick={() => setIsEditingGuide(true)}
-                                className="bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs"
+                                icon={<ShareAltOutlined />}
+                                onClick={handleOpenZaloModal}
+                                className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-semibold shadow-2xs"
                             >
-                                Sửa tài liệu
+                                📢 Chia sẻ Zalo
                             </Button>
-                        )}
-                        {isAdmin && isEditingGuide && (
-                            <Space>
-                                <Button 
-                                    onClick={() => handleGenerateTemplate()} 
-                                    className="text-xs border-blue-300 text-blue-600"
-                                >
-                                    Tạo mẫu chuẩn SOP
-                                </Button>
-                                <Button 
-                                    onClick={() => setIsEditingGuide(false)} 
-                                    className="text-xs"
-                                >
-                                    Hủy
-                                </Button>
+                            {isAdmin && !isEditingGuide && (
                                 <Button 
                                     type="primary" 
-                                    icon={<SaveOutlined />} 
-                                    loading={savingGuide} 
-                                    onClick={handleSaveGuide}
-                                    className="bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs"
+                                    icon={<EditOutlined />} 
+                                    onClick={() => setIsEditingGuide(true)}
+                                    className="bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs"
                                 >
-                                    Lưu tài liệu
+                                    Sửa tài liệu
                                 </Button>
-                            </Space>
-                        )}
+                            )}
+                            {isAdmin && isEditingGuide && (
+                                <Space>
+                                    <Button 
+                                        onClick={() => handleGenerateTemplate()} 
+                                        className="text-xs border-blue-300 text-blue-600"
+                                    >
+                                        Tạo mẫu chuẩn SOP
+                                    </Button>
+                                    <Button 
+                                        onClick={() => setIsEditingGuide(false)} 
+                                        className="text-xs"
+                                    >
+                                        Hủy
+                                    </Button>
+                                    <Button 
+                                        type="primary" 
+                                        icon={<SaveOutlined />} 
+                                        loading={savingGuide} 
+                                        onClick={handleSaveGuide}
+                                        className="bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs"
+                                    >
+                                        Lưu tài liệu
+                                    </Button>
+                                </Space>
+                            )}
+                        </Space>
                     </div>
 
                     {loadingGuide ? (
@@ -492,113 +582,6 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
                                     )}
                                 </div>
                             )}
-                        </div>
-                    )}
-                </div>
-            )
-        },
-        {
-            key: 'changelog',
-            label: (
-                <span className="flex items-center gap-1.5 font-medium">
-                    <HistoryOutlined className="text-amber-500" />
-                    Tài liệu & Lịch sử thay đổi
-                    {changeLogs.length > 0 && (
-                        <span className="ml-1 bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                            {changeLogs.length}
-                        </span>
-                    )}
-                </span>
-            ),
-            children: (
-                <div className="py-2">
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                        <div>
-                            <div className="text-sm font-bold text-slate-800">Nhật ký thay đổi chức năng (Change Log)</div>
-                            <div className="text-xs text-slate-500">Ghi nhận các đợt cập nhật, điều chỉnh quy trình và nghiệm thu</div>
-                        </div>
-                        <Button 
-                            icon={<ReloadOutlined />} 
-                            onClick={fetchChangeLogs} 
-                            loading={loadingLogs}
-                            size="small"
-                        />
-                    </div>
-
-                    {loadingLogs ? (
-                        <div className="flex flex-col justify-center items-center py-16 gap-2.5">
-                            <Spin size="large" />
-                            <span className="text-xs text-slate-500 font-medium">Đang tải lịch sử thay đổi...</span>
-                        </div>
-                    ) : changeLogs.length === 0 ? (
-                        <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6">
-                            <HistoryOutlined className="text-4xl text-slate-300 mb-2" />
-                            <div className="text-sm font-semibold text-slate-700">Chưa có bản ghi thay đổi nào</div>
-                            <p className="text-xs text-slate-500 mt-1">Khi chức năng có sửa đổi hoặc cập nhật mới, quản trị viên có thể ghi nhận tại tab "Tạo thay đổi mới".</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {changeLogs.map((log) => {
-                                const isTesting = log.status === 'TESTING';
-                                return (
-                                    <div 
-                                        key={log.id} 
-                                        className={`p-4 rounded-xl border transition-all ${isTesting ? 'bg-amber-50/40 border-amber-200' : 'bg-white border-slate-200 shadow-sm'}`}
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="font-bold text-slate-800 text-sm">{log.version} - {log.title}</span>
-                                                    {isTesting ? (
-                                                        <Tag color="warning" className="text-[11px] font-semibold border-amber-300">
-                                                            ⚠️ Đang Thử Nghiệm (Beta)
-                                                        </Tag>
-                                                    ) : (
-                                                        <Tag color="success" className="text-[11px] font-semibold border-emerald-300">
-                                                            ✓ Chính thức Nghiệm thu
-                                                        </Tag>
-                                                    )}
-                                                    <Tag color="blue" className="text-[10px]">{log.changeType}</Tag>
-                                                </div>
-                                                <div className="text-xs text-slate-400 mt-1">
-                                                    Ngày áp dụng: {new Date(log.appliedAt).toLocaleDateString('vi-VN')} | Người phụ trách: <span className="text-slate-600 font-medium">{log.author || 'Phòng CNTT'}</span>
-                                                </div>
-                                            </div>
-
-                                            {isAdmin && (
-                                                <Popconfirm 
-                                                    title={`Bạn có chắc muốn chuyển trạng thái sang "${isTesting ? 'Chính thức nghiệm thu' : 'Thử nghiệm'}"?`}
-                                                    onConfirm={() => handleToggleStatus(log.id, log.status)}
-                                                    okText="Xác nhận"
-                                                    cancelText="Hủy"
-                                                >
-                                                    <Button size="small" type={isTesting ? "primary" : "default"} className={isTesting ? "bg-emerald-600 text-xs" : "text-xs"}>
-                                                        {isTesting ? 'Nghiệm thu chính thức' : 'Chuyển về Thử nghiệm'}
-                                                    </Button>
-                                                </Popconfirm>
-                                            )}
-                                        </div>
-
-                                        {log.reason && (
-                                            <div className="mt-2.5 p-2 bg-slate-100/70 rounded-lg text-xs text-slate-700">
-                                                <strong>Lý do thay đổi:</strong> {log.reason}
-                                            </div>
-                                        )}
-
-                                        <div className="mt-2 text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-white/70 p-3 rounded-lg border border-slate-100">
-                                            {log.content}
-                                        </div>
-
-                                        {log.documentUrl && (
-                                            <div className="mt-2 text-xs">
-                                                <a href={log.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                                                    <FileTextOutlined /> Xem tài liệu văn bản đính kèm
-                                                </a>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
                         </div>
                     )}
                 </div>
@@ -910,7 +893,114 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
                     </Form>
                 </div>
             )
-        }] : [])
+        }] : []),
+        {
+            key: 'changelog',
+            label: (
+                <span className="flex items-center gap-1.5 font-medium">
+                    <HistoryOutlined className="text-amber-500" />
+                    Tài liệu & Lịch sử thay đổi
+                    {changeLogs.length > 0 && (
+                        <span className="ml-1 bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                            {changeLogs.length}
+                        </span>
+                    )}
+                </span>
+            ),
+            children: (
+                <div className="py-2">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <div className="text-sm font-bold text-slate-800">Nhật ký thay đổi chức năng (Change Log)</div>
+                            <div className="text-xs text-slate-500">Ghi nhận các đợt cập nhật, điều chỉnh quy trình và nghiệm thu</div>
+                        </div>
+                        <Button 
+                            icon={<ReloadOutlined />} 
+                            onClick={fetchChangeLogs} 
+                            loading={loadingLogs}
+                            size="small"
+                        />
+                    </div>
+
+                    {loadingLogs ? (
+                        <div className="flex flex-col justify-center items-center py-16 gap-2.5">
+                            <Spin size="large" />
+                            <span className="text-xs text-slate-500 font-medium">Đang tải lịch sử thay đổi...</span>
+                        </div>
+                    ) : changeLogs.length === 0 ? (
+                        <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6">
+                            <HistoryOutlined className="text-4xl text-slate-300 mb-2" />
+                            <div className="text-sm font-semibold text-slate-700">Chưa có bản ghi thay đổi nào</div>
+                            <p className="text-xs text-slate-500 mt-1">Khi chức năng có sửa đổi hoặc cập nhật mới, quản trị viên có thể ghi nhận tại tab "Tạo thay đổi mới".</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {changeLogs.map((log) => {
+                                const isTesting = log.status === 'TESTING';
+                                return (
+                                    <div 
+                                        key={log.id} 
+                                        className={`p-4 rounded-xl border transition-all ${isTesting ? 'bg-amber-50/40 border-amber-200' : 'bg-white border-slate-200 shadow-sm'}`}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-bold text-slate-800 text-sm">{log.version} - {log.title}</span>
+                                                    {isTesting ? (
+                                                        <Tag color="warning" className="text-[11px] font-semibold border-amber-300">
+                                                            ⚠️ Đang Thử Nghiệm (Beta)
+                                                        </Tag>
+                                                    ) : (
+                                                        <Tag color="success" className="text-[11px] font-semibold border-emerald-300">
+                                                            ✓ Chính thức Nghiệm thu
+                                                        </Tag>
+                                                    )}
+                                                    <Tag color="blue" className="text-[10px]">{log.changeType}</Tag>
+                                                </div>
+                                                <div className="text-xs text-slate-400 mt-1">
+                                                    Ngày áp dụng: {new Date(log.appliedAt).toLocaleDateString('vi-VN')} | Người phụ trách: <span className="text-slate-600 font-medium">{log.author || 'Phòng CNTT'}</span>
+                                                </div>
+                                            </div>
+
+                                            {isAdmin && (
+                                                <Popconfirm 
+                                                    title={`Bạn có chắc muốn chuyển trạng thái sang "${isTesting ? 'Chính thức nghiệm thu' : 'Thử nghiệm'}"?`}
+                                                    onConfirm={() => handleToggleStatus(log.id, log.status)}
+                                                    okText="Xác nhận"
+                                                    cancelText="Hủy"
+                                                >
+                                                    <Button size="small" type={isTesting ? "primary" : "default"} className={isTesting ? "bg-emerald-600 text-xs" : "text-xs"}>
+                                                        {isTesting ? 'Nghiệm thu chính thức' : 'Chuyển về Thử nghiệm'}
+                                                    </Button>
+                                                </Popconfirm>
+                                            )}
+                                        </div>
+
+                                        {log.reason && (
+                                            <div className="mt-2.5 p-2 bg-slate-100/70 rounded-lg text-xs text-slate-700">
+                                                <strong>Lý do thay đổi:</strong> {log.reason}
+                                            </div>
+                                        )}
+
+                                        <div className="mt-2 text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-white/70 p-3 rounded-lg border border-slate-100">
+                                            {log.content}
+                                        </div>
+
+                                        {log.documentUrl && (
+                                            <div className="mt-2 text-xs">
+                                                <a href={log.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                                    <FileTextOutlined /> Xem tài liệu văn bản đính kèm
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )
+        }
     ];
 
     return (
@@ -1029,6 +1119,66 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
                 pagePath={cleanPath}
                 onSuccess={fetchFeedbacks}
             />
+
+            {/* Modal Xem trước & Sao chép Thông báo Zalo Toàn Viện */}
+            <Modal
+                title={
+                    <div className="flex items-center gap-2 text-slate-800 font-bold">
+                        <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <ShareAltOutlined />
+                        </span>
+                        <div>
+                            <div>Nội Dung Thông Báo Gửi Zalo Toàn Viện</div>
+                            <div className="text-xs text-slate-500 font-normal">
+                                Sao chép nội dung dưới đây để gửi vào các nhóm Zalo Khoa/Phòng
+                            </div>
+                        </div>
+                    </div>
+                }
+                open={isZaloModalOpen}
+                onCancel={() => setIsZaloModalOpen(false)}
+                width={650}
+                footer={[
+                    <Button key="close" onClick={() => setIsZaloModalOpen(false)} className="rounded-xl">
+                        Đóng
+                    </Button>,
+                    <Button
+                        key="zalo_web"
+                        href="https://chat.zalo.me/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        icon={<ExportOutlined />}
+                        className="rounded-xl border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                    >
+                        Mở Zalo Web
+                    </Button>,
+                    <Button
+                        key="copy"
+                        type="primary"
+                        icon={<CopyOutlined />}
+                        onClick={handleCopyZalo}
+                        className="bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl"
+                    >
+                        Sao chép tin nhắn Zalo
+                    </Button>
+                ]}
+            >
+                <div className="py-2 space-y-2">
+                    <Alert
+                        message="Mẹo gửi nhanh"
+                        description="Bấm nút 'Sao chép tin nhắn Zalo', sau đó mở nhóm Zalo Khoa/Phòng và nhấn phím Ctrl + V để dán và gửi đi."
+                        type="info"
+                        showIcon
+                        className="rounded-xl text-xs mb-2"
+                    />
+                    <TextArea
+                        rows={14}
+                        value={customZaloMessage}
+                        onChange={(e) => setCustomZaloMessage(e.target.value)}
+                        className="font-mono text-xs p-3 leading-relaxed rounded-xl border-slate-300"
+                    />
+                </div>
+            </Modal>
         </>
     );
 }

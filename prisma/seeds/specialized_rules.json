@@ -19,6 +19,40 @@
     "updatedAt": "2026-10-12T12:30:09.281Z"
   },
   {
+    "id": "cmvm5cus90002vefhxbx2qjkq",
+    "name": "Mẫu câu trả lời nhanh dùng chung toàn viện",
+    "slug": "it-request-quick-replies",
+    "description": "Danh sách mẫu câu trả lời nhanh dùng chung cho toàn bộ nhân viên/khoa phòng",
+    "isActive": true,
+    "order": 0,
+    "ruleType": "SYSTEM_CONFIG",
+    "logicConfig": {
+      "templates": [
+        {
+          "id": "qr-1",
+          "text": "Đã xong, Khoa kiểm tra lại giúp nhé!",
+          "isActive": true,
+          "isDefault": true
+        },
+        {
+          "id": "qr-2",
+          "text": "Đã xử lý xong lỗi.",
+          "isActive": true,
+          "isDefault": true
+        },
+        {
+          "id": "qr-3",
+          "text": "Đang kiểm tra và xử lý...",
+          "isActive": true,
+          "isDefault": true
+        }
+      ]
+    },
+    "sqlQuery": null,
+    "createdAt": "2026-10-24T08:38:36.245Z",
+    "updatedAt": "2026-10-24T08:38:36.245Z"
+  },
+  {
     "id": "cmqqt69ug0001cgoylimnzrlz",
     "name": "Cấu hình trường động cho IT Request",
     "slug": "it-request-fields-config",
@@ -27,22 +61,78 @@
     "order": 0,
     "ruleType": "SYSTEM_CONFIG",
     "logicConfig": {
+      "holidays": [],
+      "maBaLength": 11,
+      "zaloEnabled": false,
+      "maxFileSizeMB": 10,
+      "officeEndTime": "17:00",
       "assignmentMode": "C",
       "hardwareErrors": [
         "Thay mực máy in",
         "Máy tính không lên",
         "Mất mạng internnet"
       ],
+      "makeupWorkdays": [],
       "maxImageSizeMB": 10,
+      "morningEndTime": "11:30",
       "softwareErrors": [
+        "Lấy lại BN",
         "Huỷ ký số giấy ra viện",
-        "Huỷ ký số lãnh đạo BA",
-        "Lấy lại BN"
-      ]
+        "Huỷ ký số lãnh đạo BA"
+      ],
+      "telegramChatId": "",
+      "zaloWebhookUrl": "",
+      "afternoonEndTime": "17:00",
+      "morningStartTime": "07:00",
+      "telegramBotToken": "",
+      "notificationSound": {
+        "url": "",
+        "type": "DEFAULT",
+        "duration": 7
+      },
+      "afternoonStartTime": "13:30",
+      "maxConcurrentTasks": 2,
+      "hardwareErrorsConfig": [
+        {
+          "id": "err_0_1792633545566",
+          "name": "Thay mực máy in",
+          "isVisible": true
+        },
+        {
+          "id": "err_1_1792633545566",
+          "name": "Máy tính không lên",
+          "isVisible": true
+        },
+        {
+          "id": "err_2_1792633545566",
+          "name": "Mất mạng internnet",
+          "isVisible": true
+        }
+      ],
+      "softwareErrorsConfig": [
+        {
+          "id": "err_0_1792633545566",
+          "name": "Lấy lại BN",
+          "isVisible": true
+        },
+        {
+          "id": "err_1_1792633545566",
+          "name": "Huỷ ký số giấy ra viện",
+          "isVisible": true
+        },
+        {
+          "id": "err_2_1792633545566",
+          "name": "Huỷ ký số lãnh đạo BA",
+          "isVisible": true
+        }
+      ],
+      "allowedFileExtensions": ".jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar",
+      "noStaffWarningEnabled": true,
+      "noStaffWarningMessage": "Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ! \nSĐT thoại trực CNTT: 02053.600.553"
     },
     "sqlQuery": null,
     "createdAt": "2026-06-23T15:37:52.985Z",
-    "updatedAt": "2026-06-24T08:22:52.710Z"
+    "updatedAt": "2026-10-22T01:45:45.571Z"
   },
   {
     "id": "cml7t7c6c0000ook5q6yqi80x",

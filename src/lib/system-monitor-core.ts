@@ -179,7 +179,7 @@ export function recordApiHit(data: {
         };
 
         store.recentLogs.unshift(logItem);
-        if (store.recentLogs.length > 100) {
+        if (store.recentLogs.length > 300) {
             store.recentLogs.pop();
         }
     } catch (err) {
@@ -198,10 +198,10 @@ export function getApiMetrics() {
         ? Math.round((successCount / totalToday) * 1000) / 10 
         : 100;
 
-    // Sắp xếp top endpoint có số lượt gọi nhiều nhất
+    // Sắp xếp các endpoint theo số lượt gọi (hỗ trợ hiển thị đầy đủ lên đến 100 endpoint)
     const topEndpoints = Object.values(store.endpointsMap)
         .sort((a, b) => b.hitCount - a.hitCount)
-        .slice(0, 15);
+        .slice(0, 100);
 
     // Tính tốc độ trung bình toàn hệ thống
     const totalDuration = topEndpoints.reduce((sum, ep) => sum + ep.totalDurationMs, 0);
