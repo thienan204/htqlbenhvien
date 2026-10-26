@@ -15,6 +15,11 @@
     "title": "Cấu hình thẻ Dashboard"
   },
   {
+    "value": "/admin/feedbacks",
+    "label": "/admin/feedbacks (Feedbacks)",
+    "title": "/admin/feedbacks"
+  },
+  {
     "value": "/admin/instructions",
     "label": "/admin/instructions (Quản lý hướng dẫn)",
     "title": "Quản lý hướng dẫn"
@@ -38,6 +43,11 @@
     "value": "/admin/paths-config",
     "label": "/admin/paths-config (Cấu hình đường dẫn bảo vệ)",
     "title": "Cấu hình đường dẫn bảo vệ"
+  },
+  {
+    "value": "/admin/system-health",
+    "label": "/admin/system-health (System Health)",
+    "title": "/admin/system-health"
   },
   {
     "value": "/api-management",
@@ -328,6 +338,21 @@
     "value": "/excel-rules",
     "label": "/excel-rules (Quy tắc kiểm tra Excel)",
     "title": "Quy tắc kiểm tra Excel"
+  },
+  {
+    "value": "/gop-y-benh-nhan",
+    "label": "/gop-y-benh-nhan (Gop Y Benh Nhan)",
+    "title": "/gop-y-benh-nhan"
+  },
+  {
+    "value": "/gop-y-chinh-sach",
+    "label": "/gop-y-chinh-sach (Gop Y Chinh Sach)",
+    "title": "/gop-y-chinh-sach"
+  },
+  {
+    "value": "/he-thong/so-do-kien-truc",
+    "label": "/he-thong/so-do-kien-truc (So Do Kien Truc)",
+    "title": "/he-thong/so-do-kien-truc"
   },
   {
     "value": "/huong-dan",
