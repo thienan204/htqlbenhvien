@@ -31,6 +31,7 @@ async function importData(modelName, filename) {
             else if (modelName === 'warehouse') whereClause = { code: item.code };
             else if (modelName === 'equipment') whereClause = { ma_vttb: item.ma_vttb };
             else if (modelName === 'inventoryVoucher') whereClause = { voucher_code: item.voucher_code };
+            else if (modelName === 'pageInstruction') whereClause = { pageId: item.pageId };
 
             await prisma[modelName].upsert({
                 where: whereClause,
@@ -86,6 +87,11 @@ async function main() {
     await importData('mau04Catalog', 'mau04_catalogs.json');
     await importData('mau05Catalog', 'mau05_catalogs.json');
     await importData('mau06Catalog', 'mau06_catalogs.json');
+
+    // 7. Hướng dẫn sử dụng & Lịch sử cập nhật
+    await importData('pageInstruction', 'page_instructions.json');
+    await importData('featureChangeLog', 'feature_change_logs.json');
+    await importData('featureFeedback', 'feature_feedbacks.json');
 
     console.log('🎉 Nhập dữ liệu thành công!');
 }

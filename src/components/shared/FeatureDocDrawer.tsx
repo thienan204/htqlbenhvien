@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBasePath } from '@/utils/config';
 import FeatureFeedbackModal from '../common/FeatureFeedbackModal';
 import MermaidViewer from '../common/MermaidViewer';
+import { IT_REQUEST_GUIDE_HTML, getItRequestZaloText } from '@/config/itRequestGuideContent';
 
 const DRAWER_DIAGRAMS: Record<string, { title: string; chart: string; desc: string }> = {
     overview: {
@@ -190,49 +191,7 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
         const fullUrl = `${origin}${getBasePath()}${cleanPath}`;
         
         if (cleanPath.includes('it-requests')) {
-            return [
-                `🏥 BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN`,
-                `📢 THÔNG BÁO: CHẠY THỬ NGHIỆM HỆ THỐNG GỬI YÊU CẦU HỖ TRỢ CNTT TRỰC TUYẾN`,
-                `--------------------------------------------------`,
-                `Kính gửi: Lãnh đạo các Khoa, Phòng cùng toàn thể Cán bộ nhân viên bệnh viện.`,
-                ``,
-                `Nhằm đẩy mạnh công tác CHUYỂN ĐỔI SỐ và nâng cao chất lượng phục vụ công tác khám chữa bệnh, Phòng Công nghệ Thông tin đã hoàn thiện và CHÍNH THỨC ĐƯA VÀO CHẠY THỬ NGHIỆM chức năng "GỬI YÊU CẦU HỖ TRỢ KỸ THUẬT TRỰC TUYẾN" trên Hệ thống Quản lý Bệnh viện.`,
-                ``,
-                `🌟 CÁC LỢI ÍCH NỔI BẬT:`,
-                `1️⃣ KHÔNG LO TRÔI TIN: Thay thế hoàn toàn việc gọi điện thoại bận máy hay nhắn tin Zalo cá nhân dễ bị quên, sót việc.`,
-                `2️⃣ TIẾP NHẬN TỨC THỜI: Khi Khoa/Phòng gửi yêu cầu, kỹ thuật viên CNTT sẽ tiếp nhận xử lý ngay.`,
-                `3️⃣ MINH BẠCH THÔNG TIN: Hiển thị ngay TÊN KỸ THUẬT VIÊN và SỐ ĐIỆN THOẠI phụ trách để Khoa/Phòng tiện liên hệ trực tiếp.`,
-                `4️⃣ TÍCH HỢP CHAT TRỰC TIẾP 2 CHIỀU:`,
-                `   • Có giao diện Chatbot thông minh giúp tạo yêu cầu cực nhanh chỉ trong vài câu chat.`,
-                `   • Có khung Chat trao đổi trực tiếp trên từng phiếu: Khoa/Phòng và nhân viên CNTT có thể nhắn tin, gửi ảnh hiện trường và thảo luận tiến độ xử lý ngay trong hệ thống.`,
-                `5️⃣ LƯU VẾT LỊCH SỬ: Dễ dàng theo dõi tiến độ (Chờ tiếp nhận ➔ Đang xử lý ➔ Đã hoàn thành); có chuông thông báo tự động khi xử lý xong.`,
-                ``,
-                `--------------------------------------------------`,
-                `🔐 THÔNG TIN ĐĂNG NHẬP MẶC ĐỊNH CHO TẤT CẢ NHÂN VIÊN:`,
-                `• Tên đăng nhập (Username): SỐ CĂN CƯỚC CÔNG DÂN (CCCD) của bạn`,
-                `• Mật khẩu mặc định (Password): 123456`,
-                `*(Khuyến nghị: Sau khi đăng nhập lần đầu, đồng chí nên đổi mật khẩu để bảo mật tài khoản cá nhân).*`,
-                ``,
-                `--------------------------------------------------`,
-                `🔗 ĐƯỜNG DẪN TRUY CẬP TRỰC TIẾP:`,
-                `👉 ${fullUrl}`,
-                ``,
-                `📌 3 BƯỚC GỬI YÊU CẦU ĐƠN GIẢN (CHỈ MẤT 30 GIÂY):`,
-                `• Bước 1: Mở link trên ➔ Đăng nhập bằng số CCCD và mật khẩu 123456.`,
-                `• Bước 2: Tại tab "Tạo Nhanh", gõ nội dung sự cố hoặc chọn nhanh lỗi (Phần mềm HIS, Bệnh án, Máy in, Mạng...). Có thể chụp/dán ảnh lỗi hoặc chat trực tiếp.`,
-                `• Bước 3: Nhấn "Gửi yêu cầu". Hệ thống cấp mã phiếu và hiển thị ngay Nhân viên CNTT tiếp nhận.`,
-                ``,
-                `--------------------------------------------------`,
-                `💡 XIN Ý KIẾN ĐÓNG GÓP TỪ CÁC KHOA / PHÒNG:`,
-                `Hiện tại chức năng đang trong giai đoạn CHẠY THỬ NGHIỆM toàn viện. Phòng CNTT rất mong nhận được những phản hồi, đóng góp ý kiến quý báu từ các đồng chí Trưởng/Phó khoa, Điều dưỡng trưởng, Bác sĩ và nhân viên các khoa/phòng:`,
-                `👉 Các đồng chí vui lòng gửi ý kiến tại nút "Góp ý" (biểu tượng hộp thư góp ý trên góc phải màn hình) hoặc nhắn tin trực tiếp trong phần Chat của từng phiếu yêu cầu.`,
-                ``,
-                `Mọi ý kiến đóng góp của Khoa/Phòng sẽ là cơ sở quan trọng để Phòng CNTT tiếp tục cải tiến và nâng cao chất lượng phục vụ ngày một tốt hơn!`,
-                ``,
-                `Trân trọng cảm ơn!`,
-                `--------------------------------------------------`,
-                `Phòng Công nghệ Thông tin - Bệnh viện Đa khoa tỉnh Lạng Sơn`
-            ].join('\n');
+            return getItRequestZaloText(fullUrl);
         }
 
         return [
@@ -276,18 +235,47 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
         try {
             const bPath = getBasePath();
             const res = await fetch(`${bPath}/api/page-instructions?pageId=${encodeURIComponent(cleanPath)}`);
+            const isItRequest = cleanPath.includes('it-requests');
             if (res.ok) {
                 const data = await res.json();
-                if (data.data) {
-                    setInstruction(data.data);
-                    setGuideContent(data.data.content || '');
+                let guideData = data.data;
+                if (guideData) {
+                    let content = guideData.content || '';
+                    if (isItRequest && (!content || !content.includes('Thông Tin Đăng Nhập Mặc Định Cho Nhân Viên'))) {
+                        content = IT_REQUEST_GUIDE_HTML;
+                        guideData = { ...guideData, title: 'Hướng dẫn Tạo Yêu Cầu Hỗ Trợ Kỹ Thuật CNTT', content };
+                    }
+                    setInstruction(guideData);
+                    setGuideContent(content);
+                } else if (isItRequest) {
+                    const fallbackObj = {
+                        title: 'Hướng dẫn Tạo Yêu Cầu Hỗ Trợ Kỹ Thuật CNTT',
+                        content: IT_REQUEST_GUIDE_HTML
+                    };
+                    setInstruction(fallbackObj);
+                    setGuideContent(IT_REQUEST_GUIDE_HTML);
                 } else {
                     setInstruction(null);
                     setGuideContent('');
                 }
+            } else if (isItRequest) {
+                const fallbackObj = {
+                    title: 'Hướng dẫn Tạo Yêu Cầu Hỗ Trợ Kỹ Thuật CNTT',
+                    content: IT_REQUEST_GUIDE_HTML
+                };
+                setInstruction(fallbackObj);
+                setGuideContent(IT_REQUEST_GUIDE_HTML);
             }
         } catch (e) {
             console.error('Error fetching guide:', e);
+            if (cleanPath.includes('it-requests')) {
+                const fallbackObj = {
+                    title: 'Hướng dẫn Tạo Yêu Cầu Hỗ Trợ Kỹ Thuật CNTT',
+                    content: IT_REQUEST_GUIDE_HTML
+                };
+                setInstruction(fallbackObj);
+                setGuideContent(IT_REQUEST_GUIDE_HTML);
+            }
         } finally {
             setLoadingGuide(false);
         }

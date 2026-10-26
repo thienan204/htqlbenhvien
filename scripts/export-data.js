@@ -67,6 +67,9 @@ async function main() {
     const mau04Catalogs = await prisma.mau04Catalog.findMany({ orderBy: { id: 'asc' } });
     const mau05Catalogs = await prisma.mau05Catalog.findMany({ orderBy: { id: 'asc' } });
     const mau06Catalogs = await prisma.mau06Catalog.findMany({ orderBy: { id: 'asc' } });
+    const pageInstructions = await prisma.pageInstruction.findMany({ orderBy: { id: 'asc' } });
+    const featureChangeLogs = await prisma.featureChangeLog.findMany({ orderBy: { id: 'asc' } });
+    const featureFeedbacks = await prisma.featureFeedback.findMany({ orderBy: { id: 'asc' } });
 
     // Write to files
     const seedsDir = path.join(__dirname, '../prisma/seeds');
@@ -137,6 +140,9 @@ async function main() {
         { name: 'mau04_catalogs.json', data: mau04Catalogs },
         { name: 'mau05_catalogs.json', data: mau05Catalogs },
         { name: 'mau06_catalogs.json', data: mau06Catalogs },
+        { name: 'page_instructions.json', data: pageInstructions },
+        { name: 'feature_change_logs.json', data: featureChangeLogs },
+        { name: 'feature_feedbacks.json', data: featureFeedbacks },
     ];
 
     for (const exp of additionalExports) {
