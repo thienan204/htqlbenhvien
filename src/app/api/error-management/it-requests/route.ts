@@ -523,9 +523,7 @@ export async function POST(request: Request) {
                         dutyOrder: true,
                         staff: {
                             select: {
-                                chuc_vu_ref: {
-                                    select: { code: true, level: true }
-                                }
+                                chuc_vu_ref: true
                             }
                         }
                     },
@@ -535,10 +533,10 @@ export async function POST(request: Request) {
                 });
 
                 // Quy định bệnh viện: Nhân viên khoa phòng (!isManager) gửi lên -> CHỈ chia cho Nhân viên Kỹ thuật, LOẠI BỎ Lãnh đạo CNTT
-                let poolUsers = availableUsers;
+                let poolUsers: any[] = availableUsers;
                 if (!isManager) {
-                    poolUsers = poolUsers.filter(u => {
-                        const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
+                    poolUsers = poolUsers.filter((u: any) => {
+                        const explicitLevel = u.staff?.chuc_vu_ref?.level;
                         const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
                         const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
                         return !isLeader;

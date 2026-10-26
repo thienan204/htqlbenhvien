@@ -33,13 +33,7 @@ export async function GET(request: Request) {
                 staff: {
                     select: {
                         ho_ten: true,
-                        chuc_vu_ref: {
-                            select: {
-                                name: true,
-                                code: true,
-                                level: true
-                            }
-                        }
+                        chuc_vu_ref: true
                     }
                 }
             }
