@@ -52,6 +52,63 @@ api-*.txt
 desktop-client/node_modules/
 desktop-client/dist/
 
-# backups
+# backups & dumps
 /backups/
 *.sql.gz
+*.dump
+*.sql
+!prisma/**/*.sql
+
+# temp and scratch files
+scratch/
+scratch*.*
+temp/
+temp_*.*
+*.tmp
+
+# debug and logs
+*.log
+api-*.txt
+*.txt
+!clarification.txt
+!README.md
+!DEPLOYMENT.md
+
+# root test & ad-hoc scripts
+check-*.js
+check_*.js
+check_*.ts
+fix*.py
+fix*.js
+read_*.js
+patch-ui*.js
+seed-*.js
+seed_*.js
+seed_*.cjs
+update_*.js
+update_*.cjs
+update_*.sql
+add_*.js
+add_*.cjs
+script*.cjs
+delStaff.js
+get-menus.cjs
+get_depts.js
+import_categories.ts
+import_icd10.js
+init_service_chapters.cjs
+insert_menus.ts
+migrate-cchn.js
+export_departments.ts
+export_sql*.js
+extract_tables.py
+restore.ps1
+
+# sample test data at root
+mau*.xml
+test_xml*.xml
+*.xlsx
+extracted_*.json
+icd10_headers.json
+db-output.json
+menus.json
