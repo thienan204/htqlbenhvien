@@ -1,3 +1,8 @@
+export const UserLevel = {
+    LEVEL_1_BGD: 'LEVEL_1_BGD',
+    LEVEL_2_LEADER: 'LEVEL_2_LEADER',
+    LEVEL_3_STAFF: 'LEVEL_3_STAFF'
+} as const;
 export type UserLevel = 'LEVEL_1_BGD' | 'LEVEL_2_LEADER' | 'LEVEL_3_STAFF';
 
 export function calculateUserHierarchy(

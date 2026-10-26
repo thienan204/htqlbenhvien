@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
-import { calculateUserHierarchy, UserLevel } from '@/utils/userHierarchy';
+import { calculateUserHierarchy } from '@/utils/userHierarchy';
 
 export type UserPayload = {
     id: string;
@@ -16,7 +16,7 @@ export type UserPayload = {
     ten_khoa?: string;
     staffId?: string;
     isManager?: boolean;
-    userLevel?: UserLevel;
+    userLevel?: 'LEVEL_1_BGD' | 'LEVEL_2_LEADER' | 'LEVEL_3_STAFF';
     chuc_vu?: string;
     chuc_vu_code?: string;
     isDirector?: boolean;
