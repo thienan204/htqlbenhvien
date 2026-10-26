@@ -33,6 +33,7 @@ echo ""
 echo "🗄️ Bước 3: Chạy cấu hình Database và Fix phân quyền..."
 docker exec -u root htqlbenhvien-app chown -R 1001:1001 /app/public/uploads
 docker exec htqlbenhvien-app npx -y prisma@5.22.0 db push --skip-generate
+docker exec htqlbenhvien-app node -e "const { PrismaClient } = require('@prisma/client'); const p = new PrismaClient(); async function r() { await p.systemCategory.updateMany({ where: { type: 'CHUC_VU', code: { contains: 'GIAM_OC' }, level: null }, data: { level: 'LEVEL_1_BGD' } }); await p.systemCategory.updateMany({ where: { type: 'CHUC_VU', NOT: { code: { contains: 'GIAM_OC' } }, level: null }, data: { level: 'LEVEL_2_LEADER' } }); } r().finally(() => p.\$disconnect());"
 
 echo ""
 echo "==================================================="
