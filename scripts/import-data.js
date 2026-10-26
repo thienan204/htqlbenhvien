@@ -28,15 +28,51 @@ async function importData(modelName, filename) {
             delete updateData.id;
 
             if (modelName === 'department') whereClause = { ma_khoa: item.ma_khoa };
-            else if (modelName === 'user') whereClause = { username: item.username };
-            else if (modelName === 'staff') whereClause = { ma_nv: item.ma_nv };
             else if (modelName === 'role') whereClause = { code: item.code };
             else if (modelName === 'warehouse') whereClause = { code: item.code };
             else if (modelName === 'equipment') whereClause = { ma_vttb: item.ma_vttb };
             else if (modelName === 'inventoryVoucher') whereClause = { voucher_code: item.voucher_code };
             else if (modelName === 'pageInstruction') whereClause = { pageId: item.pageId };
             else if (modelName === 'formConfig') whereClause = { formId: item.formId };
-            else if (modelName === 'systemCategory') whereClause = { type_code: { type: item.type, code: item.code } };
+            else if (modelName === 'systemCategory') {
+                await prisma.systemCategory.upsert({
+                    where: { type_code: { type: item.type, code: item.code } },
+                    update: updateData,
+                    create: item
+                });
+                continue;
+            }
+            else if (modelName === 'staff') {
+                const staffWhere = item.ma_nv ? { ma_nv: item.ma_nv } : { id: item.id };
+                await prisma.staff.upsert({
+                    where: staffWhere,
+                    update: updateData,
+                    create: item
+                });
+                continue;
+            }
+            else if (modelName === 'user') {
+                try {
+                    await prisma.user.upsert({
+                        where: { username: item.username },
+                        update: updateData,
+                        create: item
+                    });
+                } catch (uErr) {
+                    if (uErr.message && uErr.message.includes('staffId')) {
+                        const { staffId, ...updateWithoutStaff } = updateData;
+                        const { staffId: sId, ...createWithoutStaff } = item;
+                        await prisma.user.upsert({
+                            where: { username: item.username },
+                            update: updateWithoutStaff,
+                            create: createWithoutStaff
+                        });
+                    } else {
+                        throw uErr;
+                    }
+                }
+                continue;
+            }
 
             await prisma[modelName].upsert({
                 where: whereClause,
