@@ -87,10 +87,18 @@ async function importData(modelName, filename) {
 }
 
 async function main() {
-    console.log('Bắt đầu import toàn bộ dữ liệu cấu hình và master data...');
+    const importAll = process.argv.includes('--all') || process.argv.includes('--full');
     
-    // Lưu ý: Import theo thứ tự để tránh lỗi khoá ngoại (Foreign Key)
-    // 1. Dữ liệu gốc không phụ thuộc
+    console.log('===================================================');
+    if (importAll) {
+        console.log('📦 Chế độ: IMPORT TOÀN BỘ (Dành cho khởi tạo server mới tinh)');
+    } else {
+        console.log('⚙️ Chế độ an toàn: CHỈ import Cấu hình hệ thống, Menu, Danh mục, Quy tắc & Hướng dẫn');
+        console.log('💡 (Để import toàn bộ dữ liệu mẫu cả User/Phiếu yêu cầu: node scripts/import-data.js --all)');
+    }
+    console.log('===================================================');
+    
+    // 1. Dữ liệu cấu hình & danh mục hệ thống (Luôn an toàn để cập nhật)
     await importData('department', 'departments.json');
     await importData('role', 'roles.json');
     await importData('menu', 'menus.json');
@@ -98,43 +106,43 @@ async function main() {
     await importData('dashboardCard', 'dashboard_cards.json');
     await importData('formConfig', 'form_configs.json');
     
-    // 2. Import rules
+    // 2. Quy tắc nghiệp vụ (Rules)
     await importData('validationRule', 'rules.json');
     await importData('draftRule', 'drafts.json');
     await importData('specializedRule', 'specialized_rules.json');
     await importData('duplicateRule', 'duplicate_rules.json');
 
-    // 3. Nhân sự và Tài khoản (Phụ thuộc Department, SystemCategory)
-    await importData('staff', 'staff.json');
-    await importData('user', 'users.json');
-    await importData('practicingCertificate', 'practicing_certificates.json');
-
-    // 4. Quản lý kho, Vật tư, Trang thiết bị
-    await importData('warehouse', 'warehouses.json');
-    await importData('inventoryVoucher', 'inventory_vouchers.json');
-    await importData('equipment', 'equipments.json');
-    await importData('inventoryVoucherDetail', 'inventory_voucher_details.json');
-    await importData('maintenanceLog', 'maintenance_logs.json');
-
-    // 5. Yêu cầu IT, Lỗi XML
-    await importData('iTRequest', 'it_requests.json');
-    await importData('requestMessage', 'request_messages.json');
-    await importData('xmlErrorRecord', 'xml_error_records.json');
-
-    // 6. Dữ liệu Catalog (Báo cáo)
-    await importData('departmentCatalog', 'department_catalogs.json');
-    await importData('mau02Catalog', 'mau02_catalogs.json');
-    await importData('mau03Catalog', 'mau03_catalogs.json');
-    await importData('mau04Catalog', 'mau04_catalogs.json');
-    await importData('mau05Catalog', 'mau05_catalogs.json');
-    await importData('mau06Catalog', 'mau06_catalogs.json');
-
-    // 7. Hướng dẫn sử dụng & Lịch sử cập nhật
+    // 3. Hướng dẫn sử dụng & Lịch sử cập nhật
     await importData('pageInstruction', 'page_instructions.json');
     await importData('featureChangeLog', 'feature_change_logs.json');
     await importData('featureFeedback', 'feature_feedbacks.json');
 
-    console.log('🎉 Nhập dữ liệu thành công!');
+    // 4. Dữ liệu nghiệp vụ vận hành (Chỉ import khi có cờ --all khi dựng server mới)
+    if (importAll) {
+        console.log('\n--- Đang import dữ liệu nghiệp vụ (User, Staff, Thiết bị, Phiếu yêu cầu)... ---');
+        await importData('staff', 'staff.json');
+        await importData('user', 'users.json');
+        await importData('practicingCertificate', 'practicing_certificates.json');
+
+        await importData('warehouse', 'warehouses.json');
+        await importData('inventoryVoucher', 'inventory_vouchers.json');
+        await importData('equipment', 'equipments.json');
+        await importData('inventoryVoucherDetail', 'inventory_voucher_details.json');
+        await importData('maintenanceLog', 'maintenance_logs.json');
+
+        await importData('iTRequest', 'it_requests.json');
+        await importData('requestMessage', 'request_messages.json');
+        await importData('xmlErrorRecord', 'xml_error_records.json');
+
+        await importData('departmentCatalog', 'department_catalogs.json');
+        await importData('mau02Catalog', 'mau02_catalogs.json');
+        await importData('mau03Catalog', 'mau03_catalogs.json');
+        await importData('mau04Catalog', 'mau04_catalogs.json');
+        await importData('mau05Catalog', 'mau05_catalogs.json');
+        await importData('mau06Catalog', 'mau06_catalogs.json');
+    }
+
+    console.log('\n🎉 Hoàn tất quá trình nhập dữ liệu!');
 }
 
 main()
