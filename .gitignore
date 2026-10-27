@@ -44,6 +44,7 @@ api-*.txt
 # custom test & debug scripts
 /scripts/
 !scripts/generate-routes.js
+!scripts/generate-build-info.js
 *debug*.js
 *test*.js
 *.log
