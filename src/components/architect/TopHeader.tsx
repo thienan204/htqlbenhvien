@@ -56,6 +56,16 @@ const TopHeader = ({
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
     const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
+    const [hasNewVersion, setHasNewVersion] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const lastSeen = localStorage.getItem('htql_last_seen_version');
+            if (lastSeen !== SYSTEM_CONFIG.version) {
+                setHasNewVersion(true);
+            }
+        }
+    }, []);
 
     const isITUser = user?.role === 'CNTT' || (user as any)?.isITLeader;
     const [receivingDuty, setReceivingDuty] = useState(user?.isAvailable ?? false);
@@ -255,9 +265,24 @@ const TopHeader = ({
                                 },
                                 {
                                     key: 'system-version',
-                                    label: `Phiên bản: ${SYSTEM_CONFIG.version}`,
-                                    icon: <InfoCircleOutlined className="text-blue-500" />,
-                                    onClick: () => setIsVersionModalOpen(true)
+                                    label: (
+                                        <div className="flex items-center justify-between w-full gap-2">
+                                            <span>Phiên bản: {SYSTEM_CONFIG.version}</span>
+                                            {hasNewVersion && (
+                                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
+                                                    MỚI
+                                                </span>
+                                            )}
+                                        </div>
+                                    ),
+                                    icon: <InfoCircleOutlined className={hasNewVersion ? "text-red-500" : "text-blue-500"} />,
+                                    onClick: () => {
+                                        setIsVersionModalOpen(true);
+                                        if (typeof window !== 'undefined') {
+                                            localStorage.setItem('htql_last_seen_version', SYSTEM_CONFIG.version);
+                                            setHasNewVersion(false);
+                                        }
+                                    }
                                 },
                                 {
                                     type: 'divider' as const
@@ -290,9 +315,11 @@ const TopHeader = ({
                                         </div>
                                     )}
                                 </div>
-                                <Avatar size="large" className="bg-blue-500 border-2 border-white shadow-sm">
-                                    {((user as any).name || user.username)?.[0]?.toUpperCase()}
-                                </Avatar>
+                                <Badge dot={hasNewVersion} offset={[-2, 2]}>
+                                    <Avatar size="large" className="bg-blue-500 border-2 border-white shadow-sm">
+                                        {((user as any).name || user.username)?.[0]?.toUpperCase()}
+                                    </Avatar>
+                                </Badge>
                             </div>
                         </Dropdown>
 

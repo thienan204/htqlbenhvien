@@ -27,8 +27,9 @@ if [ -f .env.backup ]; then
 fi
 
 echo ""
-echo "🔧 Đảm bảo thư mục Upload tồn tại..."
+echo "🔧 Đảm bảo thư mục Upload tồn tại và cập nhật phiên bản..."
 mkdir -p public/uploads
+node scripts/generate-build-info.js 2>/dev/null || true
 
 echo ""
 echo "🏗️ Bước 2: Build lại hệ thống với Code mới..."
