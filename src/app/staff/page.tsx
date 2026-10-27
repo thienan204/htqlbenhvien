@@ -19,6 +19,7 @@ export default function StaffPage() {
     const [searchText, setSearchText] = useState('');
     const [filterDept, setFilterDept] = useState<string | null>(null);
     const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
+    const [filterDegree, setFilterDegree] = useState<string | null>(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
     const [isTemplateConfigOpen, setIsTemplateConfigOpen] = useState(false);
@@ -203,6 +204,7 @@ export default function StaffPage() {
 
     const uniqueDepartments = Array.from(new Set(staffList.map(s => s.department?.ten_khoa || s.ma_khoa))).filter(Boolean);
     const uniqueJobTitles = Array.from(new Set(staffList.map(s => s.chuc_danh_ref?.name))).filter(Boolean);
+    const uniqueDegrees = Array.from(new Set(staffList.map(s => s.trinh_do_ref?.name))).filter(Boolean);
 
     // Normalize vietnamese string for better search
     const normalizeString = (str: string) => {
@@ -230,7 +232,8 @@ export default function StaffPage() {
                           (s.certificates && s.certificates.some((c: any) => c.so_cchn.toLowerCase().includes(searchText.toLowerCase())));
         const matchDept = filterDept ? (s.department?.ten_khoa === filterDept || s.ma_khoa === filterDept) : true;
         const matchJobTitle = filterJobTitle ? (s.chuc_danh_ref?.name === filterJobTitle) : true;
-        return matchText && matchDept && matchJobTitle;
+        const matchDegree = filterDegree ? (s.trinh_do_ref?.name === filterDegree) : true;
+        return matchText && matchDept && matchJobTitle && matchDegree;
     });
 
     return (
@@ -386,6 +389,23 @@ export default function StaffPage() {
                         value={filterJobTitle}
                         onChange={setFilterJobTitle}
                         options={uniqueJobTitles.map(jt => ({ label: String(jt), value: String(jt) }))}
+                        filterOption={(input, option) => {
+                            const rawLabel = option?.label as string ?? '';
+                            const optionLabel = normalizeString(rawLabel);
+                            const searchInput = normalizeString(input);
+                            const initials = getInitials(rawLabel);
+                            return optionLabel.includes(searchInput) || initials.includes(searchInput);
+                        }}
+                    />
+                    <Select
+                        placeholder="Lọc Trình độ"
+                        allowClear
+                        showSearch
+                        size="large"
+                        className="min-w-[200px]"
+                        value={filterDegree}
+                        onChange={setFilterDegree}
+                        options={uniqueDegrees.map(deg => ({ label: String(deg), value: String(deg) }))}
                         filterOption={(input, option) => {
                             const rawLabel = option?.label as string ?? '';
                             const optionLabel = normalizeString(rawLabel);
