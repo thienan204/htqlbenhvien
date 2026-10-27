@@ -97,8 +97,46 @@ Quy trình tự động của `restore.sh`:
 
 ---
 
-## 4. KHUYẾN NGHỊ SAO LƯU NGOẠI VI (OFFSITE BACKUP)
+## 4. TỰ ĐỘNG ĐỒNG BỘ BACKUP VỀ MÁY TÍNH WINDOWS (OFFSITE BACKUP)
 
-Để phòng chống rủi ro hỏng hóc phần cứng máy chủ hoặc sự cố mạng diện rộng của bệnh viện, định kỳ hàng tuần / hàng tháng:
-1. Đăng nhập qua SFTP / WinSCP / FileZilla vào máy chủ.
-2. Tải thư mục `backups/` về máy tính làm việc cá nhân hoặc sao chép vào ổ cứng mạng (NAS) của Phòng Công nghệ Thông tin.
+Để phòng chống rủi ro hỏng hóc máy chủ chính, hệ thống cung cấp sẵn file `sync-backup-from-server.bat` để tự động kéo bản sao lưu từ Server về ổ `D:\Backup_BVDKLS` trên máy tính cá nhân.
+
+### Bước 1: Cấu hình SSH Key để không cần gõ mật khẩu (Chỉ làm 1 lần)
+1. Mở cửa sổ **Command Prompt (CMD)** hoặc **PowerShell** trên máy tính Windows, gõ:
+   ```cmd
+   ssh-keygen -t rsa -b 4096
+   ```
+   *(Nhấn `Enter` 3 lần khi được hỏi để tạo khóa mặc định)*
+
+2. Đẩy khóa lên Server Linux:
+   - Cách 1 (Nếu Windows có lệnh `ssh-copy-id`):
+     ```cmd
+     ssh-copy-id root@192.168.3.98
+     ```
+   - Cách 2 (Nếu không có lệnh trên): Mở file `C:\Users\Tên_Bạn\.ssh\id_rsa.pub`, copy toàn bộ nội dung và dán vào cuối file `~/.ssh/authorized_keys` trên Server Linux.
+3. Kiểm tra bằng cách gõ: `ssh root@192.168.3.98`. Nếu vào được luôn mà không hỏi mật khẩu là đã thành công 100%!
+
+---
+
+### Bước 2: Chạy kiểm tra file `sync-backup-from-server.bat`
+1. Mở file `sync-backup-from-server.bat` kiểm tra các thông số ở đầu file:
+   - `SERVER_IP`: IP máy chủ (mặc định: `192.168.3.98`)
+   - `SERVER_USER`: Tài khoản SSH (mặc định: `root`)
+   - `REMOTE_BACKUP_DIR`: Thư mục lưu backup trên server (mặc định: `/root/htqlbenhvien/backups`)
+   - `LOCAL_BACKUP_DIR`: Thư mục lưu trên máy tính (mặc định: `D:\Backup_BVDKLS`)
+2. Nhấp đúp chuột vào file `sync-backup-from-server.bat` để chạy thử: Toàn bộ bản sao lưu trên server sẽ được tải về ổ `D:\Backup_BVDKLS`.
+
+---
+
+### Bước 3: Đặt lịch tự động hàng ngày qua Windows Task Scheduler
+Để máy tính tự động tải mỗi ngày mà không cần bấm chuột:
+1. Nhấn phím `Windows + R`, gõ `taskschd.msc` và nhấn `Enter`.
+2. Chọn menu bên phải: **Create Basic Task...**
+   - **Name**: `DongBoBackup_BenhVien`
+   - **Trigger**: Chọn `Daily` (Hàng ngày) -> Đặt giờ chạy lúc **02:00:00 AM** (chạy sau khi server backup lúc 01:00 AM).
+   - **Action**: Chọn `Start a program`.
+   - **Program/script**: Bấm *Browse* trỏ tới file `sync-backup-from-server.bat`.
+   - **Add arguments**: Điền `/quiet` (để script chạy ngầm không cần dừng chờ bấm phím).
+3. Bấm **Finish** để hoàn tất.
+
+*Từ nay về sau, mỗi ngày máy tính Windows sẽ tự động lưu trữ một bản sao lưu mới nhất và tự động xóa các bản cũ hơn 30 ngày để tiết kiệm dung lượng.*
