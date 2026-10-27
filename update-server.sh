@@ -5,6 +5,12 @@ echo "🚀 BẮT ĐẦU CẬP NHẬT MÃ NGUỒN VÀ DATABASE (HTQLBENHVIEN)"
 echo "==================================================="
 
 echo ""
+echo "🛡️ Bước 0: Tự động sao lưu dữ liệu hiện tại để phòng ngừa rủi ro..."
+if [ -f ./backup.sh ]; then
+  bash ./backup.sh || echo "⚠️ Cảnh báo: Sao lưu tự động không thành công, tiếp tục quy trình..."
+fi
+
+echo ""
 echo "📥 Bước 1: Kéo mã nguồn mới nhất từ GitHub..."
 # Tự động sao lưu an toàn file .env
 if [ -f .env ]; then
