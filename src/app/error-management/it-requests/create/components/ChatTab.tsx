@@ -608,13 +608,26 @@ export function ChatTab({
                         value={chatText}
                         onChange={e => setChatText(e.target.value)}
                         onPaste={handlePaste}
-                        placeholder="Mô tả chi tiết sự cố của bạn ở đây... (Enter để xuống dòng, Ctrl+Enter hoặc bấm nút Gửi)" 
+                        placeholder="Mô tả chi tiết sự cố của bạn ở đây... (Enter để gửi, Ctrl+Enter để xuống dòng)" 
                         autoSize={{ minRows: 2, maxRows: 5 }}
                         className="flex-1 !border-none !shadow-none !ring-0 !bg-transparent text-[16px] py-3 px-2 leading-relaxed"
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                e.preventDefault();
-                                handleCreateFromChat();
+                            if (e.key === 'Enter') {
+                                if (e.ctrlKey || e.metaKey) {
+                                    e.preventDefault();
+                                    const target = e.currentTarget;
+                                    const start = target.selectionStart;
+                                    const end = target.selectionEnd;
+                                    const val = target.value;
+                                    const updated = val.substring(0, start) + '\n' + val.substring(end);
+                                    setChatText(updated);
+                                    setTimeout(() => {
+                                        target.selectionStart = target.selectionEnd = start + 1;
+                                    }, 0);
+                                } else if (!e.shiftKey) {
+                                    e.preventDefault();
+                                    handleCreateFromChat();
+                                }
                             }
                         }}
                     />
@@ -631,7 +644,7 @@ export function ChatTab({
                                 className="border-none bg-slate-100 hover:bg-slate-200 shadow-none"
                             />
                         </Tooltip>
-                        <Tooltip title="Gửi yêu cầu (Ctrl + Enter)">
+                        <Tooltip title="Gửi yêu cầu (Enter)">
                             <Button 
                                 type="primary" 
                                 shape="circle" 

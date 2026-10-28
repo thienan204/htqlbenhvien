@@ -880,19 +880,32 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                         onPaste={handleChatPaste}
                         placeholder={
                             activeChannel === 'INTERNAL' 
-                                ? "Nhập nội dung trao đổi... (Enter để xuống dòng, Ctrl+Enter hoặc bấm gửi)" 
-                                : `Nhập trao đổi với ${vendorName.trim() || 'Công ty ngoài'}... (Enter để xuống dòng, Ctrl+Enter để gửi)`
+                                ? "Nhập nội dung trao đổi... (Enter để gửi, Ctrl+Enter để xuống dòng)" 
+                                : `Nhập trao đổi với ${vendorName.trim() || 'Công ty ngoài'}... (Enter để gửi, Ctrl+Enter để xuống dòng)`
                         }
                         autoSize={{ minRows: 1, maxRows: 4 }}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                e.preventDefault();
-                                handleSend();
+                            if (e.key === 'Enter') {
+                                if (e.ctrlKey || e.metaKey) {
+                                    e.preventDefault();
+                                    const target = e.currentTarget;
+                                    const start = target.selectionStart;
+                                    const end = target.selectionEnd;
+                                    const val = target.value;
+                                    const updated = val.substring(0, start) + '\n' + val.substring(end);
+                                    setText(updated);
+                                    setTimeout(() => {
+                                        target.selectionStart = target.selectionEnd = start + 1;
+                                    }, 0);
+                                } else if (!e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
                             }
                         }}
                         className="!rounded-xl text-sm"
                     />
-                    <Tooltip title="Gửi tin nhắn (Ctrl + Enter)">
+                    <Tooltip title="Gửi tin nhắn (Enter)">
                         <Button 
                             type="primary" 
                             icon={<SendOutlined />} 
