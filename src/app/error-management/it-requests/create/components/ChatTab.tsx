@@ -608,11 +608,11 @@ export function ChatTab({
                         value={chatText}
                         onChange={e => setChatText(e.target.value)}
                         onPaste={handlePaste}
-                        placeholder="Mô tả chi tiết sự cố của bạn ở đây... (Có thể dán trực tiếp ảnh chụp Ctrl+V)" 
+                        placeholder="Mô tả chi tiết sự cố của bạn ở đây... (Enter để xuống dòng, Ctrl+Enter hoặc bấm nút Gửi)" 
                         autoSize={{ minRows: 2, maxRows: 5 }}
                         className="flex-1 !border-none !shadow-none !ring-0 !bg-transparent text-[16px] py-3 px-2 leading-relaxed"
-                        onPressEnter={(e) => {
-                            if (!e.shiftKey) {
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                 e.preventDefault();
                                 handleCreateFromChat();
                             }
@@ -631,16 +631,18 @@ export function ChatTab({
                                 className="border-none bg-slate-100 hover:bg-slate-200 shadow-none"
                             />
                         </Tooltip>
-                        <Button 
-                            type="primary" 
-                            shape="circle" 
-                            size="large" 
-                            icon={<SendOutlined />} 
-                            onClick={handleCreateFromChat}
-                            loading={chatLoading || uploadingFiles}
-                            disabled={chatLoading || uploadingFiles}
-                            className="bg-blue-600"
-                        />
+                        <Tooltip title="Gửi yêu cầu (Ctrl + Enter)">
+                            <Button 
+                                type="primary" 
+                                shape="circle" 
+                                size="large" 
+                                icon={<SendOutlined />} 
+                                onClick={handleCreateFromChat}
+                                loading={chatLoading || uploadingFiles}
+                                disabled={chatLoading || uploadingFiles}
+                                className="bg-blue-600"
+                            />
+                        </Tooltip>
                     </div>
                 </div>
 
