@@ -42,10 +42,11 @@ test-prisma-constructor.js
 api-*.txt
 
 # custom test & debug scripts
-/scripts/
+/scripts/*
 !scripts/generate-routes.js
 !scripts/generate-build-info.js
 !scripts/seed-standardized-menus.js
+!scripts/sync-menu-only.js
 *debug*.js
 *test*.js
 *.log
@@ -56,6 +57,8 @@ desktop-client/dist/
 
 # backups & dumps
 /backups/
+prisma/seeds/backups/
+prisma/seeds/*backup*
 *.sql.gz
 *.dump
 *.sql
