@@ -31,8 +31,8 @@ async function main() {
             isAdminOnly: false,
             children: [
                 { title: 'Bàn làm việc (Trang chủ)', path: '/', icon: 'DashboardOutlined', order: 10 },
-                { title: 'Thông báo toàn viện', path: '/admin/notifications', icon: 'BellOutlined', order: 20 },
-                { title: 'Hòm thư & Góp ý khoa phòng', path: '/admin/feedbacks', icon: 'MailOutlined', order: 30 }
+                { title: 'Góp ý chính sách & Khoa phòng', path: '/gop-y-chinh-sach', icon: 'MailOutlined', order: 20 },
+                { title: 'Sổ tay Quy trình & Hướng dẫn SOP', path: '/docs', icon: 'BookOutlined', order: 30 }
             ]
         },
         {
@@ -113,7 +113,8 @@ async function main() {
             children: [
                 { title: 'Dashboard Quản trị', path: '/', icon: 'DashboardOutlined', order: 10, isAdminOnly: true },
                 { title: 'Sơ đồ Kiến trúc & Luồng nghiệp vụ', path: '/he-thong/so-do-kien-truc', icon: 'BranchesOutlined', order: 20, isAdminOnly: true },
-                { title: 'Cấu hình thông báo toàn viện', path: '/admin/notifications', icon: 'BellOutlined', order: 30, isAdminOnly: true }
+                { title: 'Cấu hình thông báo toàn viện', path: '/admin/notifications', icon: 'BellOutlined', order: 30, isAdminOnly: true },
+                { title: 'Hòm thư & Tiếp nhận góp ý', path: '/admin/feedbacks', icon: 'MailOutlined', order: 40, isAdminOnly: true }
             ]
         },
         {

@@ -26,7 +26,10 @@ import { useAuth } from '@/contexts/AuthContext';
 const isMenuAdmin = (menu: any, rules: any[], allMenus: any[], adminOnlyPaths: string[]): boolean => {
     if (menu.isAdminOnly) return true;
     if (menu.path) {
-        return adminOnlyPaths.some(p => menu.path.startsWith(p));
+        return adminOnlyPaths.some(p => {
+            if (!p || p === '/') return false;
+            return menu.path === p || menu.path.startsWith(`${p}/`);
+        });
     }
     const children = allMenus.filter(m => m.parentId === menu.id);
     if (children.length > 0) {
@@ -57,13 +60,13 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
     const activeKeys: string[] = [];
 
     for (const group of rootMenus) {
+        const isGroupAdmin = group.isAdminOnly || isMenuAdmin(group, rules, menus, adminOnlyPaths);
+        if (adminMode && !isGroupAdmin) continue;
+        if (!adminMode && isGroupAdmin) continue;
+
         const children = menus.filter(m => m.parentId === group.id).sort((a, b) => a.order - b.order);
         
         if (children.length === 0) {
-            const isAdminGroup = isMenuAdmin(group, rules, menus, adminOnlyPaths);
-            if (adminMode && !isAdminGroup) continue;
-            if (!adminMode && isAdminGroup) continue;
-
             const isActive = group.path === '/' ? pathname === '/' : (group.path && pathname.startsWith(group.path));
             if (isActive) activeKeys.push(group.id);
 
@@ -81,7 +84,7 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
         }
 
         const visibleChildren = children.filter(child => {
-            const isAdminChild = isMenuAdmin(child, rules, menus, adminOnlyPaths);
+            const isAdminChild = child.isAdminOnly || isMenuAdmin(child, rules, menus, adminOnlyPaths);
             if (adminMode && !isAdminChild) return false;
             if (!adminMode && isAdminChild) return false;
 
@@ -90,7 +93,8 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
             }
             if (!child.permissionCode) {
                 if (child.path === '/') return true;
-                return user?.role === 'ADMIN'; 
+                if (isGroupAdmin || isAdminChild) return user?.role === 'ADMIN';
+                return true; 
             }
             return hasPermission(child.permissionCode);
         });

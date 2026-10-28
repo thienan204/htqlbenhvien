@@ -96,7 +96,7 @@ export default async function RootLayout({
   } catch (e) {
     console.error("Failed to read admin-paths.json in layout", e);
   }
-  const dbAdminPaths = menus.filter(m => m.isAdminOnly && m.path).map(m => m.path);
+  const dbAdminPaths = menus.filter(m => m.isAdminOnly && m.path && m.path !== '/').map(m => m.path);
   adminOnlyPaths = Array.from(new Set([...adminOnlyPaths, ...dbAdminPaths]));
 
   return (

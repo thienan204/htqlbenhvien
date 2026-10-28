@@ -30,7 +30,10 @@ const checkPathMatch = (patterns: string[], currentPath: string) => {
 const isMenuAdmin = (menu: any, rules: any[], allMenus: any[], adminOnlyPaths: string[]): boolean => {
     if (menu.isAdminOnly) return true;
     if (menu.path) {
-        return adminOnlyPaths.some(p => menu.path.startsWith(p));
+        return adminOnlyPaths.some(p => {
+            if (!p || p === '/') return false;
+            return menu.path === p || menu.path.startsWith(`${p}/`);
+        });
     }
     const children = allMenus.filter(m => m.parentId === menu.id);
     if (children.length > 0) {
@@ -84,17 +87,30 @@ export default function SidebarClient({ rules, menus = [], isOpen, adminMode = f
             <div className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-slate-200">
                 
                 {rootMenus.map(group => {
+                    const isGroupAdmin = group.isAdminOnly || isMenuAdmin(group, rules, menus, adminOnlyPaths);
+                    if (adminMode && !isGroupAdmin) return null;
+                    if (!adminMode && isGroupAdmin) return null;
+
                     const children = menus.filter(m => m.parentId === group.id).sort((a, b) => a.order - b.order);
 
                     if (children.length === 0) {
-                        const isAdminGroup = isMenuAdmin(group, rules, menus, adminOnlyPaths);
-                        if (adminMode && !isAdminGroup) return null;
-                        if (!adminMode && isAdminGroup) return null;
+                        const isActive = group.path === '/' ? pathname === '/' : (group.path && pathname.startsWith(group.path));
+                        return (
+                            <div key={group.id} className="px-3 mb-2">
+                                <Link 
+                                    href={group.path || '#'}
+                                    className={getLinkClass(group.path)}
+                                >
+                                    {renderIcon(group.icon)}
+                                    <span className="font-semibold text-sm">{group.title}</span>
+                                </Link>
+                            </div>
+                        );
                     }
 
                     // Lọc những menu con mà user có quyền xem
                     const visibleChildren = children.filter(child => {
-                        const isAdminChild = isMenuAdmin(child, rules, menus, adminOnlyPaths);
+                        const isAdminChild = child.isAdminOnly || isMenuAdmin(child, rules, menus, adminOnlyPaths);
                         if (adminMode && !isAdminChild) return false;
                         if (!adminMode && isAdminChild) return false;
 
@@ -105,7 +121,8 @@ export default function SidebarClient({ rules, menus = [], isOpen, adminMode = f
                         // 2. Lọc theo quyền
                         if (!child.permissionCode) {
                             if (child.path === '/') return true;
-                            return user?.role === 'ADMIN'; 
+                            if (isGroupAdmin || isAdminChild) return user?.role === 'ADMIN';
+                            return true; 
                         }
                         return hasPermission(child.permissionCode);
                     });
