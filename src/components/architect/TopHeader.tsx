@@ -67,7 +67,7 @@ const TopHeader = ({
         }
     }, []);
 
-    const isITUser = user?.role === 'CNTT' || (user as any)?.isITLeader;
+    const canToggleDuty = Boolean(user?.isITLeader) || user?.role === 'ADMIN';
     const [receivingDuty, setReceivingDuty] = useState(user?.isAvailable ?? false);
     const [loadingDuty, setLoadingDuty] = useState(false);
 
@@ -184,8 +184,8 @@ const TopHeader = ({
                     </Tooltip>
                 )}
 
-                {/* Nút bật/tắt nhận việc dành riêng cho Nhân viên & Lãnh đạo CNTT */}
-                {isITUser && (
+                {/* Nút bật/tắt nhận việc CHỈ dành cho Lãnh đạo phòng CNTT hoặc ADMIN */}
+                {canToggleDuty && (
                     <Tooltip title={receivingDuty ? "Trạng thái CNTT: ĐANG NHẬN VIỆC (Click để tạm nghỉ)" : "Trạng thái CNTT: TẠM DỪNG NHẬN VIỆC (Click để bật nhận việc)"}>
                         <div 
                             onClick={() => !loadingDuty && handleToggleDuty(!receivingDuty)}
@@ -213,7 +213,7 @@ const TopHeader = ({
                     <>
                         <Dropdown menu={{
                             items: [
-                                ...(isITUser ? [{
+                                ...(canToggleDuty ? [{
                                     key: 'toggle-duty',
                                     label: receivingDuty ? 'Trạng thái: Đang nhận việc (Bật)' : 'Trạng thái: Tạm dừng nhận việc (Tắt)',
                                     icon: <span className={`inline-block w-2.5 h-2.5 rounded-full ${receivingDuty ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>,

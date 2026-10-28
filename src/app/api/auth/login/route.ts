@@ -99,6 +99,12 @@ export async function POST(request: Request) {
                         where: { id: user.id },
                         data: { isAvailable: false }
                     });
+                } else {
+                    // Nhân viên kỹ thuật CNTT mặc định luôn sẵn sàng nhận việc tự động
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { isAvailable: true }
+                    });
                 }
             } catch (errLeader) {
                 console.error('Lỗi kiểm tra lãnh đạo CNTT khi login:', errLeader);
