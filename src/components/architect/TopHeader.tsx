@@ -7,7 +7,7 @@ import {
     MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined, DashboardOutlined,
     QrcodeOutlined, BookOutlined, InfoCircleOutlined, SafetyCertificateOutlined
 } from '@ant-design/icons';
-import { Button, Badge, Avatar, Dropdown, Tooltip, Switch, message } from 'antd';
+import { Button, Badge, Avatar, Dropdown, Tooltip, message } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import EditProfileModal from '../profile/EditProfileModal';
@@ -67,36 +67,6 @@ const TopHeader = ({
         }
     }, []);
 
-    const canToggleDuty = Boolean(user?.isITLeader) || user?.role === 'ADMIN';
-    const [receivingDuty, setReceivingDuty] = useState(user?.isAvailable ?? false);
-    const [loadingDuty, setLoadingDuty] = useState(false);
-
-    useEffect(() => {
-        if (user?.isAvailable !== undefined) {
-            setReceivingDuty(user.isAvailable);
-        }
-    }, [user?.isAvailable]);
-
-    const handleToggleDuty = async (checked: boolean) => {
-        setLoadingDuty(true);
-        try {
-            const res = await fetch(`${getBasePath()}/api/auth/profile`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ isAvailable: checked })
-            });
-            if (res.ok) {
-                setReceivingDuty(checked);
-                message.success(checked ? 'Đã bật chế độ nhận việc hỗ trợ CNTT' : 'Đã tạm tắt nhận việc hỗ trợ CNTT');
-            } else {
-                message.error('Không thể cập nhật trạng thái nhận việc');
-            }
-        } catch (e) {
-            message.error('Lỗi kết nối khi cập nhật trạng thái');
-        } finally {
-            setLoadingDuty(false);
-        }
-    };
 
     const getCurrentTitle = () => {
         if (!pathname || pathname === '/' || pathname === '/htqlbenhvien') return 'Trang Chủ Hệ Thống';
@@ -184,43 +154,12 @@ const TopHeader = ({
                     </Tooltip>
                 )}
 
-                {/* Nút bật/tắt nhận việc CHỈ dành cho Lãnh đạo phòng CNTT hoặc ADMIN */}
-                {canToggleDuty && (
-                    <Tooltip title={receivingDuty ? "Trạng thái CNTT: ĐANG NHẬN VIỆC (Click để tạm nghỉ)" : "Trạng thái CNTT: TẠM DỪNG NHẬN VIỆC (Click để bật nhận việc)"}>
-                        <div 
-                            onClick={() => !loadingDuty && handleToggleDuty(!receivingDuty)}
-                            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-xs font-medium cursor-pointer select-none ${
-                                receivingDuty 
-                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-sm shadow-emerald-100 hover:bg-emerald-100/70' 
-                                    : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200/70'
-                            }`}
-                        >
-                            <span className={`w-2 h-2 rounded-full ${receivingDuty ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                            <span className="font-semibold">{receivingDuty ? 'Đang nhận việc' : 'Tạm nghỉ nhận'}</span>
-                            <Switch 
-                                size="small"
-                                checked={receivingDuty} 
-                                loading={loadingDuty}
-                                className={receivingDuty ? 'bg-emerald-500 ml-0.5 pointer-events-none' : 'bg-slate-300 ml-0.5 pointer-events-none'}
-                            />
-                        </div>
-                    </Tooltip>
-                )}
-
                 <div className="h-6 w-px bg-slate-200 mx-1"></div>
                 
                 {user ? (
                     <>
                         <Dropdown menu={{
                             items: [
-                                ...(canToggleDuty ? [{
-                                    key: 'toggle-duty',
-                                    label: receivingDuty ? 'Trạng thái: Đang nhận việc (Bật)' : 'Trạng thái: Tạm dừng nhận việc (Tắt)',
-                                    icon: <span className={`inline-block w-2.5 h-2.5 rounded-full ${receivingDuty ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>,
-                                    onClick: () => handleToggleDuty(!receivingDuty)
-                                }, {
-                                    type: 'divider' as const
-                                }] : []),
                                 ...(user.role === 'ADMIN' ? [{
                                     key: 'system-health',
                                     label: 'Giám sát Hệ thống & API',

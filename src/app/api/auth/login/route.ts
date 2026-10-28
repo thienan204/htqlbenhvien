@@ -84,8 +84,9 @@ export async function POST(request: Request) {
             }
         });
 
-        // Quy định bệnh viện: Lãnh đạo phòng CNTT mặc định không nhận việc tự động khi đăng nhập
-        if (user.role === 'CNTT' && user.staffId) {
+        // Quy định bệnh viện: Lãnh đạo các phòng tiếp nhận yêu cầu (CNTT, VTYT, HCQT) mặc định không nhận việc tự động khi đăng nhập (isAvailable: false)
+        const isSupportDeptUser = ['CNTT', 'VTYT', 'HCQT'].includes(user.role) || ['KP046', 'KP038', 'KP040'].includes(user.ma_khoa || '');
+        if (isSupportDeptUser && user.staffId) {
             try {
                 const staff = await prisma.staff.findUnique({
                     where: { id: user.staffId },
@@ -99,15 +100,15 @@ export async function POST(request: Request) {
                         where: { id: user.id },
                         data: { isAvailable: false }
                     });
-                } else {
-                    // Nhân viên kỹ thuật CNTT mặc định luôn sẵn sàng nhận việc tự động
+                } else if (['CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
+                    // Nhân viên kỹ thuật mặc định luôn sẵn sàng nhận việc tự động
                     await prisma.user.update({
                         where: { id: user.id },
                         data: { isAvailable: true }
                     });
                 }
             } catch (errLeader) {
-                console.error('Lỗi kiểm tra lãnh đạo CNTT khi login:', errLeader);
+                console.error('Lỗi kiểm tra lãnh đạo phòng hỗ trợ khi login:', errLeader);
             }
         }
 

@@ -50,7 +50,13 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
     let description = 'Quản lý các ticket hỗ trợ gửi lên phòng CNTT';
     if (isVTYT) description = 'Quản lý các ticket hỗ trợ gửi lên phòng Vật tư Y tế';
     if (isHCQT) description = 'Quản lý các ticket hỗ trợ gửi lên phòng Hành chính Quản trị';
-    const canToggleAvailability = user?.role === 'ADMIN' || (user?.role === targetDepartment && (
+    const isDeptMember = user?.role === targetDepartment || user?.role === 'ADMIN' || (
+        (targetDepartment === 'CNTT' && user?.ma_khoa === 'KP046') ||
+        (targetDepartment === 'VTYT' && user?.ma_khoa === 'KP038') ||
+        (targetDepartment === 'HCQT' && user?.ma_khoa === 'KP040')
+    );
+
+    const canToggleAvailability = user?.role === 'ADMIN' || (isDeptMember && (
         targetDepartment === 'CNTT' ? Boolean(user?.isITLeader) : Boolean(user?.isDeptLeader)
     ));
 
@@ -66,7 +72,7 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                 </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto items-stretch sm:items-center mt-3 sm:mt-0">
-                {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
+                {isDeptMember && (
                     <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-start">
                         {canToggleAvailability && (
                             <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
