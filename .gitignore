@@ -45,6 +45,7 @@ api-*.txt
 /scripts/
 !scripts/generate-routes.js
 !scripts/generate-build-info.js
+!scripts/seed-standardized-menus.js
 *debug*.js
 *test*.js
 *.log
