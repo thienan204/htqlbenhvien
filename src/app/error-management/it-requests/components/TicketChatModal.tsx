@@ -880,26 +880,28 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                         onPaste={handleChatPaste}
                         placeholder={
                             activeChannel === 'INTERNAL' 
-                                ? "Nhập nội dung trao đổi (Có thể dán trực tiếp ảnh chụp Ctrl+V)..." 
-                                : `Nhập nội dung trao đổi với ${vendorName.trim() || 'Công ty ngoài'}...`
+                                ? "Nhập nội dung trao đổi... (Enter để xuống dòng, Ctrl+Enter hoặc bấm gửi)" 
+                                : `Nhập trao đổi với ${vendorName.trim() || 'Công ty ngoài'}... (Enter để xuống dòng, Ctrl+Enter để gửi)`
                         }
                         autoSize={{ minRows: 1, maxRows: 4 }}
-                        onPressEnter={(e) => {
-                            if (!e.shiftKey) {
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                 e.preventDefault();
                                 handleSend();
                             }
                         }}
                         className="!rounded-xl text-sm"
                     />
-                    <Button 
-                        type="primary" 
-                        icon={<SendOutlined />} 
-                        onClick={handleSend} 
-                        loading={sending}
-                        disabled={!text.trim()}
-                        className={`!h-[38px] !rounded-xl ${activeChannel === 'VENDOR' ? 'bg-amber-600 hover:bg-amber-500' : ''}`}
-                    />
+                    <Tooltip title="Gửi tin nhắn (Ctrl + Enter)">
+                        <Button 
+                            type="primary" 
+                            icon={<SendOutlined />} 
+                            onClick={handleSend} 
+                            loading={sending}
+                            disabled={!text.trim()}
+                            className={`!h-[38px] !rounded-xl ${activeChannel === 'VENDOR' ? 'bg-amber-600 hover:bg-amber-500' : ''}`}
+                        />
+                    </Tooltip>
                 </div>
 
                 {/* Hiển thị các liên kết phát hiện được trong nội dung trao đổi để click mở ngay */}
