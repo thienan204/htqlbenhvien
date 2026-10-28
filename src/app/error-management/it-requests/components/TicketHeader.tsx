@@ -56,10 +56,6 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
         (targetDepartment === 'HCQT' && user?.ma_khoa === 'KP040')
     );
 
-    const canToggleAvailability = user?.role === 'ADMIN' || (isDeptMember && (
-        targetDepartment === 'CNTT' ? Boolean(user?.isITLeader) : Boolean(user?.isDeptLeader)
-    ));
-
     return (
         <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -74,18 +70,16 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
             <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto items-stretch sm:items-center mt-3 sm:mt-0">
                 {isDeptMember && (
                     <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-start">
-                        {canToggleAvailability && (
-                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                                <span className="text-xs sm:text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
-                                <Switch 
-                                    checked={isAvailable}
-                                    loading={togglingAvailability}
-                                    onChange={onToggleAvailability}
-                                    checkedChildren="Bật"
-                                    unCheckedChildren="Tắt"
-                                />
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                            <span className="text-xs sm:text-sm font-medium text-slate-600">Trạng thái Nhận việc:</span>
+                            <Switch 
+                                checked={isAvailable}
+                                loading={togglingAvailability}
+                                onChange={onToggleAvailability}
+                                checkedChildren="Bật"
+                                unCheckedChildren="Tắt"
+                            />
+                        </div>
 
                         {/* Chế độ tập trung (Tự động tạo phiếu và miễn chia việc tự động) */}
                         {onToggleFocusMode && (
