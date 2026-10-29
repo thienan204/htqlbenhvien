@@ -18,6 +18,7 @@ import FeatureDocDrawer from '../shared/FeatureDocDrawer';
 import PasskeyManagementModal from '../common/PasskeyManagementModal';
 import { SYSTEM_CONFIG } from '@/config/systemVersion';
 import { getBasePath } from '@/utils/config';
+import { formatAvatarUrl } from '@/utils/avatar';
 import HorizontalMenuClient from './HorizontalMenuClient';
 import Link from 'next/link';
 
@@ -57,6 +58,19 @@ const TopHeader = ({
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
     const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
     const [hasNewVersion, setHasNewVersion] = useState(false);
+    const [currentAvatar, setCurrentAvatar] = useState<string | null | undefined>((user as any)?.avatar);
+
+    useEffect(() => {
+        setCurrentAvatar((user as any)?.avatar);
+    }, [(user as any)?.avatar]);
+
+    useEffect(() => {
+        const handleAvatarUpdate = (e: any) => {
+            setCurrentAvatar(e.detail);
+        };
+        window.addEventListener('user-avatar-updated', handleAvatarUpdate);
+        return () => window.removeEventListener('user-avatar-updated', handleAvatarUpdate);
+    }, []);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -255,7 +269,11 @@ const TopHeader = ({
                                     )}
                                 </div>
                                 <Badge dot={hasNewVersion} offset={[-2, 2]}>
-                                    <Avatar size="large" className="bg-blue-500 border-2 border-white shadow-sm">
+                                    <Avatar 
+                                        size="large" 
+                                        src={formatAvatarUrl(currentAvatar)} 
+                                        className="bg-blue-500 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                                    >
                                         {((user as any).name || user.username)?.[0]?.toUpperCase()}
                                     </Avatar>
                                 </Badge>

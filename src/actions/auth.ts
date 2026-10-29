@@ -28,6 +28,7 @@ export type UserPayload = {
     ma_nv?: string;
     cccd?: string;
     isAvailable?: boolean;
+    avatar?: string | null;
 };
 
 export async function getCurrentUser(): Promise<UserPayload | null> {
@@ -50,6 +51,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         let chucVuCode: string | undefined = undefined;
 
         let isAvailable = false;
+        let finalAvatar: string | null = null;
         let hierarchy = calculateUserHierarchy(payload.role as string, null, payload.ma_khoa as string);
 
         if (payload.role === 'ADMIN') {
@@ -92,6 +94,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                     ma_nv = userRecord.staff?.ma_nv || undefined;
                     cccd = userRecord.staff?.cccd || undefined;
                     isAvailable = userRecord.isAvailable ?? false;
+                    finalAvatar = (userRecord as any).avatar || null;
                 }
 
                 if (payload.ma_khoa) {
@@ -104,6 +107,11 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 console.error('Error fetching fresh permissions:', err);
             }
         }
+
+        try {
+            const avatarRes: any = await prisma.$queryRawUnsafe('SELECT avatar FROM "User" WHERE id = $1', payload.id as string);
+            finalAvatar = avatarRes?.[0]?.avatar || null;
+        } catch (errAvatar) {}
 
         return {
             id: payload.id as string,
@@ -124,7 +132,8 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             ten_khoa: finalTenKhoa,
             ma_nv,
             cccd,
-            isAvailable
+            isAvailable,
+            avatar: finalAvatar
         };
     } catch (error) {
         return null; // Invalid or expired token
@@ -167,11 +176,21 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
         let chucVuCode: string | undefined = undefined;
 
         let isAvailable = false;
+        let finalAvatar: string | null = null;
         let hierarchy = calculateUserHierarchy(payload.role as string, null, payload.ma_khoa as string);
 
         if (payload.role === 'ADMIN') {
             permissions = ['*'];
             finalName = payload.username === 'admin' ? 'Quản trị viên' : (payload.name as string);
+            try {
+                const adminUser = await prisma.user.findUnique({
+                    where: { id: payload.id as string },
+                    select: { avatar: true }
+                });
+                if (adminUser) {
+                    finalAvatar = adminUser.avatar || null;
+                }
+            } catch (errAdmin) {}
         } else {
             try {
                 const roleRecord = await prisma.role.findUnique({
@@ -209,6 +228,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                     ma_nv = userRecord.staff?.ma_nv || undefined;
                     cccd = userRecord.staff?.cccd || undefined;
                     isAvailable = userRecord.isAvailable ?? false;
+                    finalAvatar = (userRecord as any).avatar || null;
                 }
 
                 if (payload.ma_khoa) {
@@ -221,6 +241,11 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                 console.error('Error fetching fresh permissions in mobile API:', err);
             }
         }
+
+        try {
+            const avatarRes: any = await prisma.$queryRawUnsafe('SELECT avatar FROM "User" WHERE id = $1', payload.id as string);
+            finalAvatar = avatarRes?.[0]?.avatar || null;
+        } catch (errAvatar) {}
 
         return {
             id: payload.id as string,
@@ -241,7 +266,8 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
             ten_khoa: finalTenKhoa,
             ma_nv,
             cccd,
-            isAvailable
+            isAvailable,
+            avatar: finalAvatar
         };
     } catch (error) {
         return null;

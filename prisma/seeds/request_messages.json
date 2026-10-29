@@ -2145,5 +2145,88 @@
     "vendorName": null,
     "createdAt": "2026-10-25T21:07:52.358Z",
     "updatedAt": "2026-10-25T21:07:52.358Z"
+  },
+  {
+    "id": "cmvrlvd4e0003dhg58vdzfmvf",
+    "itRequestId": "cmvrlvd4d0002dhg5dyfz1527",
+    "senderId": "cmqwaq3lr00etm8g8b3vkcrhs",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "sdfasfsad",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmr5tcqqb009n3l00o4p17w4q",
+      "cmmsk8wy90000xzvfxm9b0uut"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-28T04:19:44.551Z",
+    "updatedAt": "2026-10-28T04:19:44.551Z"
+  },
+  {
+    "id": "cmvrm257m0005dhg55g5b4n55",
+    "itRequestId": "cmvrlvd4d0002dhg5dyfz1527",
+    "senderId": "cmr5tcqqb009n3l00o4p17w4q",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "fdsafsad",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmr5tcqqb009n3l00o4p17w4q",
+      "cmmsk8wy90000xzvfxm9b0uut"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-28T04:25:00.883Z",
+    "updatedAt": "2026-10-28T04:25:00.883Z"
+  },
+  {
+    "id": "cmvrm26sp0007dhg5dprp5epb",
+    "itRequestId": "cmvrm26sp0006dhg5wmknio20",
+    "senderId": "cmqwaq3lr00etm8g8b3vkcrhs",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "fdsaf \n fasdf \n fasd\n",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmr5tcqqb009n3l00o4p17w4q",
+      "cmmsk8wy90000xzvfxm9b0uut"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-28T04:25:02.953Z",
+    "updatedAt": "2026-10-28T04:25:02.953Z"
+  },
+  {
+    "id": "cmvrrg0i70001izcx6h8umdml",
+    "itRequestId": "cmvrrg0i30000izcxipmi7my6",
+    "senderId": "cmqwaptb1003zm8g8c1vebn3k",
+    "senderName": "Chu Đức Quang",
+    "content": "fasfsad",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmmsk8wy90000xzvfxm9b0uut"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-28T06:55:46.054Z",
+    "updatedAt": "2026-10-28T06:55:46.054Z"
+  },
+  {
+    "id": "cmvrrh30l0003izcxrr9a4lke",
+    "itRequestId": "cmvrm26sp0006dhg5wmknio20",
+    "senderId": "cmmsk8wy90000xzvfxm9b0uut",
+    "senderName": "Quản trị viên",
+    "content": "fsadfsaf\nfsadfas",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmmsk8wy90000xzvfxm9b0uut"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-28T06:56:35.973Z",
+    "updatedAt": "2026-10-28T06:56:35.973Z"
   }
 ]

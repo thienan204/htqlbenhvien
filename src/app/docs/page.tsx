@@ -23,9 +23,12 @@ export default function DocsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch index of docs
-        fetch('/docs/index.json')
-            .then(res => res.json())
+        // Fetch index of docs via API route to ensure correct basePath & MIME type
+        fetch('/api/docs')
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => {
                 setDocsList(data);
                 if (data.length > 0) {
@@ -43,8 +46,11 @@ export default function DocsPage() {
     useEffect(() => {
         if (selectedDoc) {
             setLoading(true);
-            fetch(`/docs/${selectedDoc.file}`)
-                .then(res => res.text())
+            fetch(`/api/docs?file=${encodeURIComponent(selectedDoc.file)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.text();
+                })
                 .then(text => setMarkdownContent(text))
                 .catch(err => console.error(err))
                 .finally(() => setLoading(false));

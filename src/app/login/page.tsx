@@ -13,7 +13,6 @@ import {
     CheckCircleOutlined
 } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
-import { loginAction } from '@/actions/auth';
 import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 
 function LoginForm() {
@@ -63,18 +62,28 @@ function LoginForm() {
         setLoading(true);
 
         try {
-            const res = await loginAction(username, password);
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
 
-            if (res.success) {
+            const data = await res.json();
+
+            if (res.ok && data.success) {
                 handleRedirect();
                 return;
             } else {
-                setError(res.error || 'Đăng nhập thất bại');
+                setError(data.error || 'Đăng nhập thất bại');
                 setLoading(false);
             }
         } catch (err: any) {
             console.error("Login fetch error:", err);
-            setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
+            if (err?.message?.includes('Server Action') || err?.message?.includes('not found on the server')) {
+                window.location.reload();
+                return;
+            }
+            setError(err.message || 'Có lỗi kết nối máy chủ, vui lòng thử lại');
             setLoading(false);
         }
     };

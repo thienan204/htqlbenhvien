@@ -43,7 +43,15 @@ export async function GET(request: Request) {
 
         if (!userData) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-        return NextResponse.json(userData);
+        let avatar: string | null = null;
+        try {
+            const avatarRes: any = await prisma.$queryRawUnsafe('SELECT avatar FROM "User" WHERE id = $1', user.id);
+            avatar = avatarRes?.[0]?.avatar || null;
+        } catch (e) {
+            console.warn('Lỗi đọc avatar:', e);
+        }
+
+        return NextResponse.json({ ...userData, avatar });
     } catch (error: any) {
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
@@ -56,7 +64,7 @@ export async function PUT(request: Request) {
 
         const body = await request.json();
         const { 
-            name, telegram_id, isAvailable, autoAssignDisabled, focusReason,
+            name, telegram_id, isAvailable, autoAssignDisabled, focusReason, avatar,
             ho_ten, so_dien_thoai, dia_chi,
             ma_nv, ngay_sinh, gioi_tinh_id, ma_khoa,
             loai_hop_dong_id, chuc_vu_id, vi_tri_viec_lam_id, chuc_danh_id, trinh_do_id
@@ -76,6 +84,14 @@ export async function PUT(request: Request) {
         }
         if (focusReason !== undefined) {
             updateData.focusReason = focusReason;
+        }
+
+        if (avatar !== undefined) {
+            try {
+                await prisma.$executeRawUnsafe('UPDATE "User" SET avatar = $1 WHERE id = $2', avatar, user.id);
+            } catch (errAv) {
+                console.error('Update avatar raw error:', errAv);
+            }
         }
 
         const updatedUser = await prisma.$transaction(async (tx) => {
@@ -124,7 +140,7 @@ export async function PUT(request: Request) {
             });
         });
 
-        return NextResponse.json({ message: 'Cập nhật thông tin thành công', user: updatedUser });
+        return NextResponse.json({ message: 'Cập nhật thông tin thành công', user: { ...updatedUser, avatar } });
     } catch (error: any) {
         console.error('Update profile error:', error);
         return NextResponse.json({ error: 'Lỗi cập nhật hồ sơ' }, { status: 500 });

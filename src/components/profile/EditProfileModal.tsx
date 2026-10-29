@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import DynamicForm, { FieldConfig } from '@/components/shared/DynamicForm';
 import { Modal, Tabs } from 'antd';
 import MyServicesTab from './MyServicesTab';
+import AvatarUploader from './AvatarUploader';
 
 interface EditProfileModalProps {
     open: boolean;
@@ -18,6 +19,7 @@ interface EditProfileModalProps {
 export default function EditProfileModal({ open, onClose, initialTab = '1' }: EditProfileModalProps) {
     const [activeTab, setActiveTab] = useState(initialTab);
     const [initialData, setInitialData] = useState<any>(null);
+    const [avatar, setAvatar] = useState<string | null>(null);
     const [hasStaff, setHasStaff] = useState(false);
     
     // Categories state
@@ -66,9 +68,11 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
                     if (res.ok) {
                         const data = await res.json();
                         setHasStaff(!!data.staffId);
+                        setAvatar(data.avatar || null);
                         setInitialData({
                             username: data.username,
                             name: data.name,
+                            avatar: data.avatar || null,
                             telegram_id: data.telegram_id,
                             isAvailable: data.isAvailable,
                             ho_ten: data.staff?.ho_ten,
@@ -92,6 +96,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
             fetchProfile();
         } else if (!open) {
             setInitialData(null);
+            setAvatar(null);
         }
     }, [open, user]);
 
@@ -103,7 +108,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
 
     const handleSave = async (values: any) => {
         try {
-            const payload = { ...values };
+            const payload = { ...values, avatar };
             if (payload.ngay_sinh) {
                 payload.ngay_sinh = payload.ngay_sinh.toISOString();
             }
@@ -115,9 +120,9 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
             });
 
             if (res.ok) {
-                message.success('Cập nhật hồ sơ thành công! Yêu cầu tải lại trang.');
+                message.success('Cập nhật hồ sơ thành công!');
                 onClose();
-                router.refresh();
+                window.location.reload();
                 return true;
             } else {
                 const err = await res.json();
@@ -224,16 +229,23 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
                         key: '1',
                         label: 'Thông tin cá nhân',
                         children: (
-                            <DynamicForm
-                                formId="profile_update_form"
-                                title={<span className="text-lg font-semibold">Chi tiết hồ sơ</span>}
-                                open={open}
-                                onClose={onClose}
-                                onSubmit={handleSave}
-                                fieldsConfig={fieldsConfig}
-                                initialData={initialData}
-                                mode="inline"
-                            />
+                            <div className="pt-2">
+                                <AvatarUploader
+                                    value={avatar}
+                                    onChange={(newUrl) => setAvatar(newUrl)}
+                                    fallbackText={initialData?.name || initialData?.ho_ten || (user as any)?.name || user?.username || 'U'}
+                                />
+                                <DynamicForm
+                                    formId="profile_update_form"
+                                    title={<span className="text-lg font-semibold">Chi tiết hồ sơ</span>}
+                                    open={open}
+                                    onClose={onClose}
+                                    onSubmit={handleSave}
+                                    fieldsConfig={fieldsConfig}
+                                    initialData={initialData}
+                                    mode="inline"
+                                />
+                            </div>
                         )
                     },
                     {
