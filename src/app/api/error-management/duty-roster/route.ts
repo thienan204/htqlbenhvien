@@ -11,6 +11,18 @@ export async function GET(request: Request) {
         const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
         const userId = searchParams.get('userId');
 
+        let avatarMap = new Map<string, string>();
+        try {
+            const avatarRows: any = await prisma.$queryRawUnsafe('SELECT id, avatar FROM "User"');
+            if (Array.isArray(avatarRows)) {
+                avatarRows.forEach((r: any) => {
+                    if (r.id && r.avatar) avatarMap.set(r.id, r.avatar);
+                });
+            }
+        } catch (e) {
+            console.warn('Lỗi đọc avatar trong duty-roster:', e);
+        }
+
         const users = await prisma.user.findMany({
             where: {
                 OR: [
@@ -33,6 +45,7 @@ export async function GET(request: Request) {
                 staff: {
                     select: {
                         ho_ten: true,
+                        so_dien_thoai: true,
                         chuc_vu_ref: true
                     }
                 }
@@ -42,17 +55,31 @@ export async function GET(request: Request) {
         const formatted = users.map(u => {
             const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
             const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
-            const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
+            const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
+            const isLeader = Boolean(
+                explicitLevel === 'LEVEL_1_BGD' || 
+                explicitLevel === 'LEVEL_2_LEADER' || 
+                cvCode.includes('TRUONG_PHONG') || 
+                cvCode.includes('PHO_TRUONG_PHONG') || 
+                cvCode.includes('TRUONG_KHOA') ||
+                cvCode.includes('PHO_TRUONG_KHOA') ||
+                cvName.includes('trưởng phòng') || 
+                cvName.includes('phó trưởng phòng') ||
+                cvName.includes('trưởng khoa') ||
+                cvName.includes('phó trưởng khoa')
+            );
             return {
                 id: u.id,
                 username: u.username,
                 name: u.name || u.staff?.ho_ten || u.username,
+                avatar: avatarMap.get(u.id) || null,
                 role: u.role,
                 isAvailable: u.isAvailable,
                 dutyOrder: u.dutyOrder,
                 autoAssignDisabled: u.autoAssignDisabled,
                 focusReason: u.focusReason,
                 isLeader,
+                phone: u.staff?.so_dien_thoai || null,
                 chuc_vu: u.staff?.chuc_vu_ref?.name || (isLeader ? 'Lãnh đạo' : 'Kỹ thuật viên')
             };
         });

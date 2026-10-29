@@ -13,6 +13,7 @@ import { TicketActionModal } from './TicketActionModal';
 import { EditTicketModal } from './EditTicketModal';
 import { TicketChatModal } from './TicketChatModal';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
+import { DepartmentStaffStatusStrip } from './DepartmentStaffStatusStrip';
 import { useITMasterData } from '../hooks/useITMasterData';
 import { useTickets } from '../hooks/useTickets';
 import { Ticket } from '../types';
@@ -39,6 +40,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [togglingAvailability, setTogglingAvailability] = useState(false);
     const [viewMode, setViewMode] = useState<'AUTO' | 'CARD' | 'TABLE'>('AUTO');
     const [onlyUnread, setOnlyUnread] = useState(false);
+    const [selectedStaffFilter, setSelectedStaffFilter] = useState<string | null>(null);
 
     const [togglingFocusMode, setTogglingFocusMode] = useState(false);
 
@@ -145,8 +147,12 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             });
         }
 
+        if (selectedStaffFilter) {
+            result = result.filter(t => t.assigneeId === selectedStaffFilter || t.transferToId === selectedStaffFilter);
+        }
+
         return result;
-    }, [tickets, filterMode, isAdmin, user, dateRange]);
+    }, [tickets, filterMode, isAdmin, user, dateRange, selectedStaffFilter]);
 
     const statusCounts = useMemo(() => {
         return {
@@ -387,6 +393,16 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 onOpenSettings={() => setIsSettingsVisible(true)}
                 onDeleteAll={isAdmin ? handleDeleteAllTickets : undefined}
                 targetDepartment={targetDepartment}
+            />
+
+            {/* Trạng thái nhân viên hiện tại của phòng CNTT (trừ lãnh đạo phòng) */}
+            <DepartmentStaffStatusStrip
+                targetDepartment={targetDepartment}
+                tickets={tickets}
+                selectedStaffId={selectedStaffFilter}
+                onSelectStaff={(staffId) => setSelectedStaffFilter(staffId)}
+                user={user}
+                allowedRoles={['ADMIN', targetDepartment]}
             />
 
             {/* Thanh bộ lọc: Tối ưu responsive đầy đủ cho cả Mobile và Desktop */}
