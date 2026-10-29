@@ -143,6 +143,7 @@ model Department {
   BedCatalog   BedCatalog[]
   staff        Staff[]
   warehouses   Warehouse[]
+  workHistories StaffWorkHistory[]
 }
 
 model Staff {
@@ -215,7 +216,8 @@ model Staff {
   phu_cap_tnvk_id  String?
   phu_cap_tnvk_ref SystemCategory? @relation("StaffTNVK", fields: [phu_cap_tnvk_id], references: [id])
 
-  trainings StaffTraining[]
+  trainings     StaffTraining[]
+  workHistories StaffWorkHistory[]
 }
 
 model StaffTraining {
@@ -228,7 +230,29 @@ model StaffTraining {
   institution     String?
   graduationYear  Int?
   createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  updatedAt       DateTime       @default(now()) @updatedAt
+}
+
+model StaffWorkHistory {
+  id              String          @id @default(cuid())
+  staffId         String
+  staff           Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  ma_khoa         String
+  department      Department      @relation(fields: [ma_khoa], references: [ma_khoa])
+  chuc_vu_id      String?
+  chuc_vu_ref     SystemCategory? @relation("StaffWorkHistoryPosition", fields: [chuc_vu_id], references: [id])
+  tu_ngay         DateTime
+  den_ngay        DateTime?
+  so_quyet_dinh   String?
+  ngay_quyet_dinh DateTime?
+  ghi_chu         String?
+  isCurrent       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([staffId])
+  @@index([ma_khoa])
+  @@index([isCurrent])
 }
 
 model SystemCategory {
@@ -259,14 +283,15 @@ model SystemCategory {
   parent   SystemCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children SystemCategory[] @relation("CategoryHierarchy")
 
-  staff_noi_sinh_ward Staff[]         @relation("StaffNoiSinh")
-  staff_que_quan_ward Staff[]         @relation("StaffQueQuan")
-  staff_noi_o_ward    Staff[]         @relation("StaffNoiO")
-  staff_ma_ngach      Staff[]         @relation("StaffNgach")
-  staff_he_so_luong   Staff[]         @relation("StaffHeSo")
-  staff_bac_luong     Staff[]         @relation("StaffBacLuong")
-  staff_phu_cap_tnvk  Staff[]         @relation("StaffTNVK")
-  staff_trainings     StaffTraining[] @relation("TrainingType")
+  staff_noi_sinh_ward   Staff[]            @relation("StaffNoiSinh")
+  staff_que_quan_ward   Staff[]            @relation("StaffQueQuan")
+  staff_noi_o_ward      Staff[]            @relation("StaffNoiO")
+  staff_ma_ngach        Staff[]            @relation("StaffNgach")
+  staff_he_so_luong     Staff[]            @relation("StaffHeSo")
+  staff_bac_luong       Staff[]            @relation("StaffBacLuong")
+  staff_phu_cap_tnvk    Staff[]            @relation("StaffTNVK")
+  staff_trainings       StaffTraining[]    @relation("TrainingType")
+  staff_work_histories  StaffWorkHistory[] @relation("StaffWorkHistoryPosition")
 
   @@unique([type, code])
 }

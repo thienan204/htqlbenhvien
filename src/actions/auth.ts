@@ -49,6 +49,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
         let cccd: string | undefined = undefined;
         let chucVuName: string | undefined = undefined;
         let chucVuCode: string | undefined = undefined;
+        let currentDeptMaKhoa: string | undefined = payload.ma_khoa as string | undefined;
 
         let isAvailable = false;
         let finalAvatar: string | null = null;
@@ -72,17 +73,22 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                         staff: {
                             include: {
                                 certificates: true,
-                                chuc_vu_ref: true
+                                chuc_vu_ref: true,
+                                department: true
                             }
                         }
                     }
                 });
 
+                currentDeptMaKhoa = (userRecord?.staff?.ma_khoa || userRecord?.ma_khoa || payload.ma_khoa) as string | undefined;
+
                 if (userRecord?.staff?.chuc_vu_ref) {
                     chucVuName = userRecord.staff.chuc_vu_ref.name;
                     chucVuCode = userRecord.staff.chuc_vu_ref.code;
                     const explicitLevel = (userRecord.staff.chuc_vu_ref as any).level;
-                    hierarchy = calculateUserHierarchy(payload.role as string, chucVuCode, payload.ma_khoa as string, explicitLevel);
+                    hierarchy = calculateUserHierarchy(payload.role as string, chucVuCode, currentDeptMaKhoa, explicitLevel);
+                } else {
+                    hierarchy = calculateUserHierarchy(payload.role as string, null, currentDeptMaKhoa);
                 }
 
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
@@ -97,10 +103,14 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                     finalAvatar = (userRecord as any).avatar || null;
                 }
 
-                if (payload.ma_khoa) {
-                    const dept = await prisma.department.findUnique({ where: { ma_khoa: payload.ma_khoa as string } });
-                    if (dept) {
-                        finalTenKhoa = dept.ten_khoa;
+                if (currentDeptMaKhoa) {
+                    if (userRecord?.staff?.department && userRecord.staff.ma_khoa === currentDeptMaKhoa) {
+                        finalTenKhoa = userRecord.staff.department.ten_khoa;
+                    } else {
+                        const dept = await prisma.department.findUnique({ where: { ma_khoa: currentDeptMaKhoa } });
+                        if (dept) {
+                            finalTenKhoa = dept.ten_khoa;
+                        }
                     }
                 }
             } catch (err) {
@@ -117,7 +127,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
             id: payload.id as string,
             username: payload.username as string,
             role: payload.role as string,
-            ma_khoa: payload.ma_khoa as string | undefined,
+            ma_khoa: currentDeptMaKhoa,
             staffId: payload.staffId as string | undefined,
             permissions,
             isManager: hierarchy.isManager,
@@ -174,6 +184,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
         let cccd: string | undefined = undefined;
         let chucVuName: string | undefined = undefined;
         let chucVuCode: string | undefined = undefined;
+        let currentDeptMaKhoa: string | undefined = payload.ma_khoa as string | undefined;
 
         let isAvailable = false;
         let finalAvatar: string | null = null;
@@ -206,17 +217,22 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                         staff: {
                             include: {
                                 certificates: true,
-                                chuc_vu_ref: true
+                                chuc_vu_ref: true,
+                                department: true
                             }
                         }
                     }
                 });
 
+                currentDeptMaKhoa = (userRecord?.staff?.ma_khoa || userRecord?.ma_khoa || payload.ma_khoa) as string | undefined;
+
                 if (userRecord?.staff?.chuc_vu_ref) {
                     chucVuName = userRecord.staff.chuc_vu_ref.name;
                     chucVuCode = userRecord.staff.chuc_vu_ref.code;
                     const explicitLevel = (userRecord.staff.chuc_vu_ref as any).level;
-                    hierarchy = calculateUserHierarchy(payload.role as string, chucVuCode, payload.ma_khoa as string, explicitLevel);
+                    hierarchy = calculateUserHierarchy(payload.role as string, chucVuCode, currentDeptMaKhoa, explicitLevel);
+                } else {
+                    hierarchy = calculateUserHierarchy(payload.role as string, null, currentDeptMaKhoa);
                 }
 
                 if (userRecord?.staff?.certificates && userRecord.staff.certificates.length > 0) {
@@ -231,10 +247,14 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                     finalAvatar = (userRecord as any).avatar || null;
                 }
 
-                if (payload.ma_khoa) {
-                    const dept = await prisma.department.findUnique({ where: { ma_khoa: payload.ma_khoa as string } });
-                    if (dept) {
-                        finalTenKhoa = dept.ten_khoa;
+                if (currentDeptMaKhoa) {
+                    if (userRecord?.staff?.department && userRecord.staff.ma_khoa === currentDeptMaKhoa) {
+                        finalTenKhoa = userRecord.staff.department.ten_khoa;
+                    } else {
+                        const dept = await prisma.department.findUnique({ where: { ma_khoa: currentDeptMaKhoa } });
+                        if (dept) {
+                            finalTenKhoa = dept.ten_khoa;
+                        }
                     }
                 }
             } catch (err) {
@@ -251,7 +271,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
             id: payload.id as string,
             username: payload.username as string,
             role: payload.role as string,
-            ma_khoa: payload.ma_khoa as string | undefined,
+            ma_khoa: currentDeptMaKhoa,
             staffId: payload.staffId as string | undefined,
             permissions,
             isManager: hierarchy.isManager,

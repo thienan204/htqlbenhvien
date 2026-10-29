@@ -271,8 +271,14 @@ const TopHeader = ({
                                 <Badge dot={hasNewVersion} offset={[-2, 2]}>
                                     <Avatar 
                                         size="large" 
-                                        src={formatAvatarUrl(currentAvatar)} 
-                                        className="bg-blue-500 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                                        src={currentAvatar ? (
+                                            <img 
+                                                src={formatAvatarUrl(currentAvatar)} 
+                                                alt="Avatar" 
+                                                className="w-full h-full object-contain p-0.5 bg-white rounded-full" 
+                                            />
+                                        ) : undefined} 
+                                        className="bg-blue-500 border-2 border-white shadow-sm ring-1 ring-slate-200 flex items-center justify-center overflow-hidden [&>img]:object-contain [&>img]:p-0.5 [&>img]:bg-white"
                                     >
                                         {((user as any).name || user.username)?.[0]?.toUpperCase()}
                                     </Avatar>

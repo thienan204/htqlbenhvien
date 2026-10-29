@@ -7,6 +7,7 @@ import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
 import CertificatesModal from './components/CertificatesModal';
 import TrainingModal from './components/TrainingModal';
+import StaffWorkHistoryModal from './components/StaffWorkHistoryModal';
 import BulkUpdateStaffModal from './components/BulkUpdateStaffModal';
 import StaffDetailsModal from './components/StaffDetailsModal';
 import TemplateConfigModal from './components/TemplateConfigModal';
@@ -27,6 +28,7 @@ export default function StaffPage() {
     const [isStaffDetailsModalOpen, setIsStaffDetailsModalOpen] = useState(false);
     const [isCertModalOpen, setIsCertModalOpen] = useState(false);
     const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
+    const [isWorkHistoryModalOpen, setIsWorkHistoryModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [isGeneratingUsers, setIsGeneratingUsers] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 20 });
@@ -180,7 +182,7 @@ export default function StaffPage() {
             title: 'Thao tác',
             key: 'action',
             render: (_: any, record: any) => (
-                <Space>
+                <Space wrap size="small">
                     <Button size="small" onClick={() => {
                         setSelectedStaff(record);
                         setIsStaffDetailsModalOpen(true);
@@ -189,6 +191,10 @@ export default function StaffPage() {
                         setSelectedStaff(record);
                         setIsStaffModalOpen(true);
                     }}>Sửa</Button>
+                    <Button size="small" className="text-emerald-600 border-emerald-600 hover:bg-emerald-50" onClick={() => {
+                        setSelectedStaff(record);
+                        setIsWorkHistoryModalOpen(true);
+                    }}>🏢 Lịch sử khoa</Button>
                     <Button size="small" onClick={() => {
                         setSelectedStaff(record);
                         setIsCertModalOpen(true);
@@ -493,6 +499,17 @@ export default function StaffPage() {
                 staffId={selectedStaff?.id}
                 staffName={selectedStaff?.ho_ten}
                 onClose={() => setIsTrainingModalOpen(false)}
+            />
+
+            <StaffWorkHistoryModal
+                open={isWorkHistoryModalOpen}
+                staffId={selectedStaff?.id}
+                staffName={selectedStaff?.ho_ten}
+                currentDeptName={selectedStaff?.department?.ten_khoa || selectedStaff?.ma_khoa}
+                onClose={() => setIsWorkHistoryModalOpen(false)}
+                onSuccess={() => {
+                    fetchStaff();
+                }}
             />
         </div>
     );

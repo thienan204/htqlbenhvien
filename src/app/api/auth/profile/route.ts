@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
     try {
@@ -28,6 +26,7 @@ export async function GET(request: Request) {
                         so_dien_thoai: true,
                         dia_chi: true,
                         ma_nv: true,
+                        cccd: true,
                         ngay_sinh: true,
                         gioi_tinh_id: true,
                         ma_khoa: true,

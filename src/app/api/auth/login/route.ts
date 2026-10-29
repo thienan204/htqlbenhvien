@@ -118,6 +118,27 @@ export async function POST(request: Request) {
         finalMaKhoa = user.ma_khoa;
         finalStaffId = user.staffId;
 
+        // Nếu user có liên kết với Staff, ưu tiên lấy mã khoa mới nhất từ Staff và tự động đồng bộ vào User
+        if (user.staffId) {
+            try {
+                const staffRecord = await prisma.staff.findUnique({
+                    where: { id: user.staffId },
+                    select: { ma_khoa: true }
+                });
+                if (staffRecord?.ma_khoa) {
+                    finalMaKhoa = staffRecord.ma_khoa;
+                    if (user.ma_khoa !== staffRecord.ma_khoa) {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { ma_khoa: staffRecord.ma_khoa }
+                        });
+                    }
+                }
+            } catch (errSync) {
+                console.error('Lỗi đồng bộ mã khoa từ staff khi login:', errSync);
+            }
+        }
+
 
         // Create JWT
         const alg = 'HS256';

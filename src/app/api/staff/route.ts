@@ -88,6 +88,12 @@ export async function POST(request: Request) {
         }
 
         if (id) {
+            // Kiểm tra xem khoa phòng có thay đổi không
+            const existingStaff = await prisma.staff.findUnique({
+                where: { id },
+                select: { ma_khoa: true, chuc_vu_id: true }
+            });
+
             // Update existing
             const updated = await prisma.staff.update({
                 where: { id },
@@ -108,6 +114,38 @@ export async function POST(request: Request) {
                     }
                 }
             });
+
+            // Nếu mã khoa thay đổi, tự động ghi nhận lịch sử công tác và sync User
+            if (existingStaff && existingStaff.ma_khoa !== ma_khoa) {
+                try {
+                    // Chốt mốc hiện tại cũ
+                    await prisma.staffWorkHistory.updateMany({
+                        where: { staffId: id, isCurrent: true },
+                        data: { isCurrent: false, den_ngay: new Date() }
+                    });
+
+                    // Tạo mốc mới
+                    await prisma.staffWorkHistory.create({
+                        data: {
+                            staffId: id,
+                            ma_khoa,
+                            chuc_vu_id: chuc_vu_id || existingStaff.chuc_vu_id || null,
+                            tu_ngay: new Date(),
+                            isCurrent: true,
+                            ghi_chu: 'Điều chuyển từ Quản lý nhân sự'
+                        }
+                    });
+
+                    // Đồng bộ sang bảng User
+                    await prisma.user.updateMany({
+                        where: { staffId: id },
+                        data: { ma_khoa }
+                    });
+                } catch (errHist) {
+                    console.error('Lỗi tự động lưu lịch sử chuyển khoa:', errHist);
+                }
+            }
+
             return NextResponse.json(updated);
         } else {
             // Create new
@@ -128,6 +166,23 @@ export async function POST(request: Request) {
                     }
                 }
             });
+
+            // Tự động tạo mốc lịch sử ban đầu cho nhân sự mới
+            try {
+                await prisma.staffWorkHistory.create({
+                    data: {
+                        staffId: created.id,
+                        ma_khoa,
+                        chuc_vu_id: chuc_vu_id || null,
+                        tu_ngay: ngay_tuyen_dung ? new Date(ngay_tuyen_dung) : new Date(),
+                        isCurrent: true,
+                        ghi_chu: 'Tiếp nhận công tác ban đầu'
+                    }
+                });
+            } catch (errNewHist) {
+                console.error('Lỗi tạo lịch sử cho nhân sự mới:', errNewHist);
+            }
+
             return NextResponse.json(created);
         }
 

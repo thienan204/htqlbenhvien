@@ -79,6 +79,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
                             so_dien_thoai: data.staff?.so_dien_thoai,
                             dia_chi: data.staff?.dia_chi,
                             ma_nv: data.staff?.ma_nv,
+                            cccd: data.staff?.cccd || (user as any)?.cccd,
                             ngay_sinh: data.staff?.ngay_sinh ? dayjs(data.staff.ngay_sinh) : null,
                             gioi_tinh_id: data.staff?.gioi_tinh_id,
                             ma_khoa: data.staff?.ma_khoa,
@@ -234,6 +235,12 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
                                     value={avatar}
                                     onChange={(newUrl) => setAvatar(newUrl)}
                                     fallbackText={initialData?.name || initialData?.ho_ten || (user as any)?.name || user?.username || 'U'}
+                                    userName={initialData?.ho_ten || initialData?.name || (user as any)?.name || user?.username}
+                                    userRole={user?.role}
+                                    userUsername={user?.username}
+                                    deptName={departments.find(d => d.ma_khoa === (initialData?.ma_khoa || (user as any)?.ma_khoa))?.ten_khoa || (user as any)?.ten_khoa}
+                                    staffMaNv={initialData?.ma_nv || (user as any)?.ma_nv}
+                                    staffCccd={initialData?.cccd || (user as any)?.cccd}
                                 />
                                 <DynamicForm
                                     formId="profile_update_form"
