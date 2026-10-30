@@ -476,15 +476,15 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 w-full">
                 {/* 1. Tabs phân loại Segmented */}
                 {isAdmin && (
-                    <div className="w-full sm:w-auto flex items-center bg-white p-1 rounded-xl border border-slate-100 shadow-sm overflow-x-auto h-[38px]">
+                    <div className="w-full sm:w-auto flex items-center bg-white p-1 rounded-xl border border-slate-100 shadow-sm overflow-hidden">
                         <Segmented 
                             block
-                            className="w-full sm:w-auto text-xs"
+                            className="w-full sm:w-auto"
                             options={[
                                 {
                                     label: (
-                                        <div className="flex items-center justify-center gap-1.5 px-1 py-0.5 whitespace-nowrap leading-none">
-                                            <span className="font-medium text-xs leading-none">Tất cả</span>
+                                        <div className="flex items-center justify-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap">
+                                            <span className="font-medium text-xs">Tất cả</span>
                                             <span className="text-[11px] sm:text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold leading-none">
                                                 {filterModeCounts.ALL}
                                             </span>
@@ -494,9 +494,9 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 },
                                 {
                                     label: (
-                                        <div className="flex items-center justify-center gap-1.5 px-1 py-0.5 whitespace-nowrap leading-none">
-                                            <span className="hidden sm:inline font-medium text-xs leading-none">Việc của tôi</span>
-                                            <span className="sm:hidden font-medium text-xs leading-none">Của tôi</span>
+                                        <div className="flex items-center justify-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap">
+                                            <span className="hidden sm:inline font-medium text-xs">Việc của tôi</span>
+                                            <span className="sm:hidden font-medium text-xs">Của tôi</span>
                                             <span className={`text-[11px] sm:text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none ${filterModeCounts.MINE > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
                                                 {filterModeCounts.MINE}
                                             </span>
@@ -506,9 +506,9 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 },
                                 ...(assignmentMode !== 'C' ? [{
                                     label: (
-                                        <div className="flex items-center justify-center gap-1.5 px-1 py-0.5 whitespace-nowrap leading-none">
-                                            <span className="hidden sm:inline font-medium text-xs leading-none">Chờ nhận việc (Trống)</span>
-                                            <span className="sm:hidden font-medium text-xs leading-none">Chờ nhận</span>
+                                        <div className="flex items-center justify-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap">
+                                            <span className="hidden sm:inline font-medium text-xs">Chờ nhận việc (Trống)</span>
+                                            <span className="sm:hidden font-medium text-xs">Chờ nhận</span>
                                             <span className={`text-[11px] sm:text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
                                                 {filterModeCounts.UNASSIGNED}
                                             </span>
