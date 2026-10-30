@@ -282,7 +282,7 @@ export function DepartmentStaffStatusStrip({
                                 ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 pt-2">
                                         {displayStaff.map(staff => {
-                                            const ticketStat = staffTicketStats.get(staff.id) || { active: 0, done: 0 };
+                                            const ticketStat = staffTicketStats.get(staff.id) || { active: 0, done: 0, totalPending: 0 };
                                             const isFocus = staff.isAvailable && staff.autoAssignDisabled;
                                             const isReady = staff.isAvailable && !staff.autoAssignDisabled;
                                             const isOff = !staff.isAvailable;

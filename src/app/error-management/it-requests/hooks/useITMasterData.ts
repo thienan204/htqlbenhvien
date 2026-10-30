@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { ITUser } from '../types';
 import { getBasePath } from '@/utils/config';
 
+export interface ShiftHoursConfig {
+    morningStartTime: string;
+    morningEndTime: string;
+    afternoonStartTime: string;
+    afternoonEndTime: string;
+}
+
 export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') => {
     const [itUsers, setItUsers] = useState<ITUser[]>([]);
     const [softwareErrors, setSoftwareErrors] = useState<string[]>([]);
@@ -13,6 +20,12 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
     const [isAvailable, setIsAvailable] = useState<boolean>(false);
     const [autoAssignDisabled, setAutoAssignDisabled] = useState<boolean>(false);
     const [focusReason, setFocusReason] = useState<string>('');
+    const [shiftHours, setShiftHours] = useState<ShiftHoursConfig>({
+        morningStartTime: '07:00',
+        morningEndTime: '11:30',
+        afternoonStartTime: '13:30',
+        afternoonEndTime: '17:00'
+    });
 
     useEffect(() => {
         let isMounted = true;
@@ -66,6 +79,14 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 setSoftwareErrors(configData.softwareErrors || []);
                 setHardwareErrors(configData.hardwareErrors || []);
                 setAssignmentMode(configData.assignmentMode || 'A');
+                if (configData.morningStartTime || configData.afternoonEndTime || configData.officeEndTime) {
+                    setShiftHours({
+                        morningStartTime: configData.morningStartTime || '07:00',
+                        morningEndTime: configData.morningEndTime || '11:30',
+                        afternoonStartTime: configData.afternoonStartTime || '13:30',
+                        afternoonEndTime: configData.afternoonEndTime || configData.officeEndTime || '17:00'
+                    });
+                }
                 if (configData.notificationSound) {
                     localStorage.setItem(`${targetDepartment}_department_notification_sound`, JSON.stringify(configData.notificationSound));
                 }
@@ -119,6 +140,7 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
         setAutoAssignDisabled,
         focusReason,
         setFocusReason,
+        shiftHours,
         fetchITUsers
     };
 };

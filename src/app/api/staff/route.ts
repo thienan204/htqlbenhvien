@@ -9,7 +9,7 @@ export async function GET(request: Request) {
         
         // Các vai trò quản trị hoặc hỗ trợ kỹ thuật toàn viện (ADMIN, CNTT, VTYT, HCQT)
         // được phép xem danh sách nhân sự toàn viện để tiếp nhận & nhập sự cố thay khoa phòng.
-        const isSupportOrAdmin = ['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user?.role);
+        const isSupportOrAdmin = user?.role ? ['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role) : false;
 
         if (user && !isSupportOrAdmin) {
             if (user.role === 'KHOA_PHONG' && user.staffId) {
