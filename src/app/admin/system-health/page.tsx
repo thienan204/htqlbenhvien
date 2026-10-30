@@ -21,7 +21,10 @@ import {
     ArrowUpOutlined,
     FundOutlined,
     FilterOutlined,
-    SearchOutlined
+    SearchOutlined,
+    LockOutlined,
+    WarningOutlined,
+    AlertOutlined
 } from '@ant-design/icons';
 import { getBasePath } from '@/utils/config';
 
@@ -41,7 +44,10 @@ export default function SystemHealthPage() {
     const fetchMetrics = useCallback(async (isManual = false) => {
         if (isManual) setRefreshing(true);
         try {
-            const res = await fetch(`${getBasePath()}/api/admin/system-health`);
+            const url = isManual 
+                ? `${getBasePath()}/api/admin/system-health?refresh=1`
+                : `${getBasePath()}/api/admin/system-health`;
+            const res = await fetch(url);
             if (res.ok) {
                 const json = await res.json();
                 setData(json);
@@ -157,7 +163,11 @@ export default function SystemHealthPage() {
     }
 
     const isDbHealthy = data?.database?.status === 'UP';
-    const isHealthy = data?.status === 'HEALTHY' && isDbHealthy;
+    const ssl = data?.ssl || {};
+    const isSslHealthy = ssl.status === 'VALID';
+    const isSslWarning = ssl.status === 'WARNING';
+    const isSslCritical = ssl.status === 'CRITICAL' || ssl.status === 'EXPIRED';
+    const isHealthy = data?.status === 'HEALTHY' && isDbHealthy && !isSslCritical;
     const server = data?.server || {};
     const memory = server.memory || {};
     const db = data?.database || {};
@@ -464,7 +474,9 @@ export default function SystemHealthPage() {
             <div className={`p-4 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all shadow-xs ${
                 isHealthy 
                     ? 'bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white border-emerald-200 text-emerald-900' 
-                    : 'bg-gradient-to-r from-rose-50 via-red-50/50 to-white border-rose-200 text-rose-900'
+                    : isSslCritical && isDbHealthy
+                        ? 'bg-gradient-to-r from-amber-50 via-rose-50/50 to-white border-rose-300 text-rose-900'
+                        : 'bg-gradient-to-r from-rose-50 via-red-50/50 to-white border-rose-200 text-rose-900'
             }`}>
                 <div className="flex items-center gap-3.5">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-xs ${
@@ -476,7 +488,9 @@ export default function SystemHealthPage() {
                         <div className="text-base sm:text-lg font-bold">
                             {isHealthy 
                                 ? '🟢 HỆ THỐNG ĐANG HOẠT ĐỘNG TỐT & KHỎE MẠNH' 
-                                : '🔴 HỆ THỐNG GẶP CẢNH BÁO KẾT NỐI'}
+                                : isSslCritical 
+                                    ? '🔴 CẢNH BÁO: CHỨNG CHỈ BẢO MẬT SSL (HTTPS) SẮP HẾT HẠN!' 
+                                    : '🔴 HỆ THỐNG GẶP CẢNH BÁO KẾT NỐI'}
                         </div>
                         <div className="text-xs opacity-80 mt-0.5">
                             Cập nhật lúc: <strong>{data?.checkedAt || 'Vừa xong'}</strong> • Máy chủ phản hồi tức thời
@@ -484,10 +498,25 @@ export default function SystemHealthPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end md:self-center">
+                <div className="flex items-center gap-2 self-end md:self-center flex-wrap">
                     <Tag color={isDbHealthy ? 'success' : 'error'} className="font-semibold px-3 py-1 text-xs rounded-full border-none">
                         PostgreSQL: {isDbHealthy ? `Online (${db.latencyMs}ms)` : 'Offline'}
                     </Tag>
+                    {ssl?.status && (
+                        <Tooltip title={`${ssl.message} (Hết hạn: ${ssl.validToFormatted})`}>
+                            <Tag 
+                                color={
+                                    ssl.status === 'VALID' ? 'success' :
+                                    ssl.status === 'WARNING' ? 'warning' :
+                                    ssl.status === 'CRITICAL' || ssl.status === 'EXPIRED' ? 'error' : 'default'
+                                } 
+                                className="font-semibold px-3 py-1 text-xs rounded-full border-none flex items-center gap-1 cursor-help"
+                            >
+                                <LockOutlined />
+                                <span>SSL: {ssl.daysRemaining !== undefined ? `Còn ${ssl.daysRemaining} ngày` : 'Kiểm tra SSL'}</span>
+                            </Tag>
+                        </Tooltip>
+                    )}
                     <Tag color="blue" className="font-semibold px-3 py-1 text-xs rounded-full border-none">
                         Uptime: {server.uptimeFormatted || 'Mới khởi động'}
                     </Tag>
@@ -509,6 +538,42 @@ export default function SystemHealthPage() {
                         ),
                         children: (
                             <div className="space-y-6 pt-2">
+                                {/* Cảnh báo hạn SSL nếu sắp hết hạn */}
+                                {isSslCritical && (
+                                    <Alert
+                                        type="error"
+                                        showIcon
+                                        icon={<AlertOutlined className="text-rose-600 text-lg" />}
+                                        className="rounded-2xl border-rose-300 bg-rose-50/90 shadow-2xs"
+                                        message={<span className="font-bold text-rose-800 text-sm">CẢNH BÁO KHẨN CẤP: CHỨNG CHỈ BẢO MẬT SSL (HTTPS) SẮP HẾT HẠN!</span>}
+                                        description={
+                                            <div className="text-xs text-rose-700 mt-1 space-y-1">
+                                                <div>
+                                                    Chứng chỉ SSL cho cổng truy cập <strong>https://{ssl.host}:{ssl.port}</strong> chỉ còn <strong className="text-rose-900 text-sm font-bold">{ssl.daysRemaining} ngày</strong> (hết hạn vào ngày <strong>{ssl.validToFormatted}</strong>).
+                                                </div>
+                                                <div>
+                                                    ⚠️ <strong>Hành động cần thực hiện ngay:</strong> Vui lòng liên hệ quản trị hệ thống để tạo lại/gia hạn chứng chỉ SSL trên máy chủ trước ngày {ssl.validToFormatted} nhằm tránh bị trình duyệt chặn truy cập!
+                                                </div>
+                                            </div>
+                                        }
+                                    />
+                                )}
+                                {isSslWarning && (
+                                    <Alert
+                                        type="warning"
+                                        showIcon
+                                        icon={<WarningOutlined className="text-amber-600 text-lg" />}
+                                        className="rounded-2xl border-amber-300 bg-amber-50/90 shadow-2xs"
+                                        message={<span className="font-bold text-amber-800 text-sm">NHẮC NHỞ: CHỨNG CHỈ BẢO MẬT SSL (HTTPS) SẮP ĐẾN HẠN CẤP LẠI (~2 THÁNG)</span>}
+                                        description={
+                                            <div className="text-xs text-amber-700 mt-1">
+                                                Chứng chỉ SSL cho tên miền <strong>https://{ssl.host}:{ssl.port}</strong> còn <strong className="font-bold text-amber-900">{ssl.daysRemaining} ngày</strong> (hết hạn ngày <strong>{ssl.validToFormatted}</strong>).
+                                                Theo chu kỳ ~2 tháng, vui lòng lên kế hoạch set lại chứng chỉ SSL trong thời gian tới để bảo đảm an toàn kết nối.
+                                            </div>
+                                        }
+                                    />
+                                )}
+
                                 {/* Thống kê nhanh 4 thẻ */}
                                 <Row gutter={[16, 16]}>
                                     <Col xs={24} sm={12} lg={6}>
@@ -573,6 +638,110 @@ export default function SystemHealthPage() {
                                         </Card>
                                     </Col>
                                 </Row>
+
+                                {/* Thẻ Chi Tiết Chứng Chỉ Bảo Mật HTTPS (SSL/TLS) */}
+                                <Card 
+                                    className="rounded-2xl border-slate-200 shadow-2xs hover:border-blue-300 transition-all overflow-hidden bg-white"
+                                    title={
+                                        <div className="flex items-center justify-between gap-2 flex-wrap py-0.5">
+                                            <span className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                                <LockOutlined className="text-emerald-600 text-base" /> 
+                                                Chứng Chỉ Bảo Mật HTTPS (SSL/TLS)
+                                            </span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <Tag color={
+                                                    ssl.status === 'VALID' ? 'success' :
+                                                    ssl.status === 'WARNING' ? 'warning' :
+                                                    ssl.status === 'CRITICAL' || ssl.status === 'EXPIRED' ? 'error' : 'default'
+                                                } className="font-semibold text-xs border-none rounded-full px-2.5 py-0.5 m-0">
+                                                    {ssl.status === 'VALID' ? '🟢 Đang hoạt động an toàn' :
+                                                     ssl.status === 'WARNING' ? '🟡 Cảnh báo hạn cấp lại' :
+                                                     ssl.status === 'CRITICAL' ? '🔴 Khẩn cấp sắp hết hạn' :
+                                                     ssl.status === 'EXPIRED' ? '⛔ Đã hết hạn' : 'Đang kiểm tra'}
+                                                </Tag>
+                                                <Tag color="cyan" className="font-mono text-xs border-none rounded-full px-2.5 py-0.5 m-0">
+                                                    https://{ssl.host || 'htqlbenhvien.bvdklangson.com.vn'}:{ssl.port || 201}
+                                                </Tag>
+                                            </div>
+                                        </div>
+                                    }
+                                >
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+                                        {/* Cột 1: Số ngày còn lại */}
+                                        <div className="md:col-span-4 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-slate-100 flex flex-col justify-between">
+                                            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                                                <span>Thời hạn còn lại</span>
+                                                <span className="text-[11px] font-normal text-slate-400">Chu kỳ ~90 ngày</span>
+                                            </div>
+                                            <div className="my-2.5 flex items-baseline gap-2">
+                                                <span className={`text-3xl sm:text-4xl font-extrabold font-mono tracking-tight ${
+                                                    ssl.status === 'VALID' ? 'text-emerald-600' :
+                                                    ssl.status === 'WARNING' ? 'text-amber-600' :
+                                                    'text-rose-600'
+                                                }`}>
+                                                    {ssl.daysRemaining !== undefined ? ssl.daysRemaining : '--'}
+                                                </span>
+                                                <span className="text-sm font-bold text-slate-600">ngày</span>
+                                            </div>
+                                            <div className="text-xs text-slate-600">
+                                                {ssl.message || 'Đang kiểm tra chứng chỉ...'}
+                                            </div>
+                                        </div>
+
+                                        {/* Cột 2: Tiến độ thời hạn (Progress bar) */}
+                                        <div className="md:col-span-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex flex-col justify-between">
+                                            <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                                                <span>Tiến trình thời hạn:</span>
+                                                <strong className={`font-bold ${
+                                                    ssl.status === 'VALID' ? 'text-emerald-600' :
+                                                    ssl.status === 'WARNING' ? 'text-amber-600' :
+                                                    'text-rose-600'
+                                                }`}>
+                                                    {ssl.percentRemaining || 0}% còn lại
+                                                </strong>
+                                            </div>
+                                            <div className="my-auto py-2">
+                                                <Progress 
+                                                    percent={ssl.percentRemaining || 0} 
+                                                    showInfo={false}
+                                                    strokeColor={
+                                                        ssl.status === 'VALID' ? '#10b981' :
+                                                        ssl.status === 'WARNING' ? '#f59e0b' :
+                                                        '#ef4444'
+                                                    }
+                                                    trailColor="#e2e8f0"
+                                                    size={['100%', 10]}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-200/70">
+                                                <span>Từ: {ssl.validFromFormatted || 'N/A'}</span>
+                                                <span>Hết hạn: <strong className="text-slate-700">{ssl.validToFormatted || 'N/A'}</strong></span>
+                                            </div>
+                                        </div>
+
+                                        {/* Cột 3: Chi tiết chứng chỉ */}
+                                        <div className="md:col-span-4 p-3.5 rounded-2xl bg-slate-50/60 border border-slate-100 space-y-2 text-xs flex flex-col justify-center">
+                                            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                                                <span className="text-slate-400">Tổ chức cấp:</span>
+                                                <strong className="text-slate-800 font-semibold">{ssl.issuer || "Let's Encrypt"}</strong>
+                                            </div>
+                                            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                                                <span className="text-slate-400">Tên miền cấp (CN):</span>
+                                                <strong className="text-blue-600 font-mono text-[11px] truncate max-w-[170px]" title={ssl.subject}>
+                                                    {ssl.subject || ssl.host}
+                                                </strong>
+                                            </div>
+                                            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                                                <span className="text-slate-400">Ngày hết hạn:</span>
+                                                <strong className="text-slate-800 font-mono">{ssl.validToFormatted || '--/--/----'}</strong>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400">Kiểm tra lúc:</span>
+                                                <span className="text-slate-600 text-[11px]">{ssl.lastCheckedAt || 'Vừa xong'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
 
                                 {/* Chi tiết Tài nguyên Máy chủ & Hệ điều hành */}
                                 <Row gutter={[16, 16]}>

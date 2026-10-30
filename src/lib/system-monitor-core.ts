@@ -279,10 +279,168 @@ export function getServerRuntimeInfo() {
     return {
         uptimeSeconds,
         uptimeFormatted,
-        startTime: new Date(store.startTime).toLocaleString('vi-VN'),
+        startTime: new Date(store.startTime).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
         nodeVersion: typeof process !== 'undefined' ? process.version : 'Node.js',
         platform: typeof process !== 'undefined' ? `${process.platform} (${process.arch})` : 'Server',
         pid: typeof process !== 'undefined' ? process.pid : 0,
         memory
     };
+}
+
+export interface SslCertInfo {
+    status: 'VALID' | 'WARNING' | 'CRITICAL' | 'EXPIRED' | 'ERROR';
+    host: string;
+    port: number;
+    issuer: string;
+    subject: string;
+    validFrom: string;
+    validTo: string;
+    validFromFormatted: string;
+    validToFormatted: string;
+    daysRemaining: number;
+    percentRemaining: number;
+    message: string;
+    lastCheckedAt: string;
+    error?: string;
+}
+
+interface SslCacheEntry {
+    data: SslCertInfo;
+    cachedAt: number;
+}
+
+let sslCache: SslCacheEntry | null = null;
+const SSL_CACHE_TTL_MS = 15 * 60 * 1000; // Cache 15 phút để tránh gọi TLS socket liên tục
+
+/**
+ * Kiểm tra chứng chỉ SSL/TLS của hệ thống
+ */
+export async function checkSslCertificate(options?: {
+    host?: string;
+    port?: number;
+    forceRefresh?: boolean;
+}): Promise<SslCertInfo> {
+    const host = options?.host || process.env.SSL_CHECK_DOMAIN || 'htqlbenhvien.bvdklangson.com.vn';
+    const port = options?.port || Number(process.env.SSL_CHECK_PORT) || 201;
+    const force = Boolean(options?.forceRefresh);
+
+    const now = Date.now();
+    if (!force && sslCache && (now - sslCache.cachedAt < SSL_CACHE_TTL_MS) && sslCache.data.host === host && sslCache.data.port === port) {
+        return sslCache.data;
+    }
+
+    try {
+        const tls = await import('tls');
+        const certData = await new Promise<any>((resolve, reject) => {
+            const socket = tls.connect({
+                host,
+                port,
+                servername: host,
+                rejectUnauthorized: false,
+                timeout: 5000
+            }, () => {
+                const cert = socket.getPeerCertificate();
+                socket.end();
+                resolve(cert);
+            });
+
+            socket.on('error', (err) => {
+                reject(err);
+            });
+
+            socket.on('timeout', () => {
+                socket.destroy();
+                reject(new Error('Kết nối kiểm tra SSL bị quá thời gian (Timeout 5s)'));
+            });
+        });
+
+        if (!certData || !certData.valid_to) {
+            throw new Error('Không lấy được dữ liệu chứng chỉ SSL từ máy chủ');
+        }
+
+        const validToDate = new Date(certData.valid_to);
+        const validFromDate = new Date(certData.valid_from);
+        const nowDate = new Date();
+        const diffMs = validToDate.getTime() - nowDate.getTime();
+        const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        const totalDurationDays = Math.max(1, Math.ceil((validToDate.getTime() - validFromDate.getTime()) / (1000 * 60 * 60 * 24)));
+        const percentRemaining = Math.max(0, Math.min(100, Math.round((daysRemaining / totalDurationDays) * 100)));
+
+        const formatDateVN = (d: Date) => d.toLocaleDateString('vi-VN', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+
+        let status: 'VALID' | 'WARNING' | 'CRITICAL' | 'EXPIRED' = 'VALID';
+        let message = `Chứng chỉ SSL hợp lệ, còn ${daysRemaining} ngày`;
+
+        if (daysRemaining <= 0) {
+            status = 'EXPIRED';
+            message = `Chứng chỉ SSL ĐÃ HẾT HẠN! Cần cấu hình lại ngay!`;
+        } else if (daysRemaining <= 15) {
+            status = 'CRITICAL';
+            message = `Khẩn cấp: Chứng chỉ SSL chỉ còn ${daysRemaining} ngày, cần cấp lại ngay!`;
+        } else if (daysRemaining <= 30) {
+            status = 'WARNING';
+            message = `Cảnh báo: Chứng chỉ SSL sắp hết hạn sau ${daysRemaining} ngày`;
+        }
+
+        const issuerStr = typeof certData.issuer === 'object' 
+            ? (certData.issuer.O || certData.issuer.CN || "Let's Encrypt") 
+            : String(certData.issuer || "Let's Encrypt");
+
+        const subjectStr = typeof certData.subject === 'object' 
+            ? (certData.subject.CN || host) 
+            : String(certData.subject || host);
+
+        const result: SslCertInfo = {
+            status,
+            host,
+            port,
+            issuer: issuerStr,
+            subject: subjectStr,
+            validFrom: validFromDate.toISOString(),
+            validTo: validToDate.toISOString(),
+            validFromFormatted: formatDateVN(validFromDate),
+            validToFormatted: formatDateVN(validToDate),
+            daysRemaining,
+            percentRemaining,
+            message,
+            lastCheckedAt: nowDate.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+        };
+
+        sslCache = {
+            data: result,
+            cachedAt: now
+        };
+
+        return result;
+    } catch (err: any) {
+        const errorResult: SslCertInfo = {
+            status: 'ERROR',
+            host,
+            port,
+            issuer: 'Không xác định',
+            subject: host,
+            validFrom: '',
+            validTo: '',
+            validFromFormatted: 'Không rõ',
+            validToFormatted: 'Không rõ',
+            daysRemaining: 0,
+            percentRemaining: 0,
+            message: `Không thể kiểm tra SSL: ${err.message || 'Lỗi kết nối'}`,
+            lastCheckedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+            error: err.message || 'Lỗi kết nối'
+        };
+
+        sslCache = {
+            data: errorResult,
+            cachedAt: now - (SSL_CACHE_TTL_MS - 2 * 60 * 1000)
+        };
+
+        return errorResult;
+    }
 }

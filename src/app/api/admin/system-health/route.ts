@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/actions/auth';
 import prisma from '@/lib/prisma';
-import { getApiMetrics, getServerRuntimeInfo } from '@/lib/system-monitor-core';
+import { getApiMetrics, getServerRuntimeInfo, checkSslCertificate } from '@/lib/system-monitor-core';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const user = await getCurrentUser();
         if (!user || (user.role !== 'ADMIN' && user.role !== 'CNTT')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        const { searchParams } = new URL(request.url);
+        const isRefresh = searchParams.get('refresh') === '1' || searchParams.get('refresh') === 'true';
 
         // 1. Kiểm tra kết nối Database & đo độ trễ Ping
         const startDb = Date.now();
@@ -31,7 +34,10 @@ export async function GET() {
         // 3. Lấy số liệu API Traffic từ bộ đệm In-Memory
         const apiTraffic = getApiMetrics();
 
-        // 4. Lấy các chỉ số nghiệp vụ vận hành hôm nay
+        // 4. Kiểm tra chứng chỉ bảo mật HTTPS (SSL/TLS)
+        const ssl = await checkSslCertificate({ forceRefresh: isRefresh });
+
+        // 5. Lấy các chỉ số nghiệp vụ vận hành hôm nay
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
@@ -71,11 +77,22 @@ export async function GET() {
             }
         }
 
-        const overallStatus = dbStatus === 'UP' ? 'HEALTHY' : 'DEGRADED';
+        const isSslCriticalOrExpired = ssl.status === 'CRITICAL' || ssl.status === 'EXPIRED';
+        const overallStatus = (dbStatus === 'UP' && !isSslCriticalOrExpired) ? 'HEALTHY' : 'DEGRADED';
+
+        const checkedAtFormatted = now.toLocaleString('vi-VN', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
 
         return NextResponse.json({
             status: overallStatus,
-            checkedAt: now.toLocaleTimeString('vi-VN') + ' ' + now.toLocaleDateString('vi-VN'),
+            checkedAt: checkedAtFormatted,
             timestamp: now.toISOString(),
             database: {
                 status: dbStatus,
@@ -83,6 +100,7 @@ export async function GET() {
                 error: dbError
             },
             server: serverInfo,
+            ssl,
             businessCounters,
             apiTraffic
         });
