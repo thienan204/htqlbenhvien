@@ -378,15 +378,20 @@ export function ChatTab({
                             {departmentStaff.find((s: any) => s.id === user.staffId)?.ho_ten || 'Tài khoản cá nhân'}
                         </span>
                     ) : (
-                        <div className="flex items-center gap-1 border border-slate-200 rounded-lg bg-slate-50 px-2 py-0.5 w-full sm:min-w-[240px] sm:max-w-[420px]">
+                        <div className="flex items-center gap-1 border border-slate-200 rounded-lg bg-slate-50 px-2 py-0.5 w-full sm:min-w-[260px] sm:max-w-[480px]">
                             <Select
                                 size="small"
+                                allowClear
                                 open={isSelectOpen}
                                 onOpenChange={(open) => setIsSelectOpen(open)}
                                 value={departmentStaff.some((s: any) => s.id === savedStaffId) ? savedStaffId : undefined}
                                 onChange={(val) => {
                                     setSavedStaffId(val);
-                                    localStorage.setItem('last_it_request_staff_id', val);
+                                    if (val) {
+                                        localStorage.setItem('last_it_request_staff_id', val);
+                                    } else {
+                                        localStorage.removeItem('last_it_request_staff_id');
+                                    }
                                     form.setFieldsValue({ nguoi_bao_id: val });
                                     setStaffSearchValue('');
                                     setIsSelectOpen(false);
@@ -399,22 +404,30 @@ export function ChatTab({
                                 }}
                                 className="w-full flex-1 min-w-0"
                                 popupMatchSelectWidth={false}
-                                placeholder="Chọn tên nhân viên"
+                                placeholder={isAdmin ? "Tìm tên, khoa phòng, hoặc SĐT người gọi..." : "Chọn tên nhân viên"}
                                 variant="borderless"
-                                virtual={false}
-                                options={departmentStaff.map((s: any) => ({
-                                    value: s.id,
-                                    label: isAdmin 
-                                        ? `${s.ho_ten}${s.chuc_danh ? ` (${s.chuc_danh})` : ''} - ${s.department?.ten_khoa || s.ma_khoa}` 
-                                        : `${s.ho_ten}${s.chuc_danh ? ` (${s.chuc_danh})` : ''}`
-                                }))}
+                                options={departmentStaff.map((s: any) => {
+                                    const cv = s.chuc_danh || s.chuc_vu || '';
+                                    const dept = s.department?.ten_khoa || s.ma_khoa || '';
+                                    const phone = s.so_dien_thoai ? ` (${s.so_dien_thoai})` : '';
+                                    const label = isAdmin 
+                                        ? `${s.ho_ten}${cv ? ` (${cv})` : ''} - ${dept}${phone}` 
+                                        : `${s.ho_ten}${cv ? ` (${cv})` : ''}${phone}`;
+                                    return {
+                                        value: s.id,
+                                        label,
+                                        searchtext: `${s.ho_ten} ${dept} ${s.so_dien_thoai || ''} ${cv}`
+                                    };
+                                })}
                                 showSearch
                                 filterOption={(input, option) => {
+                                    if (!input) return true;
+                                    const searchInput = normalizeString(input);
                                     const rawLabel = option?.label as string ?? '';
                                     const optionLabel = normalizeString(rawLabel);
-                                    const searchInput = normalizeString(input);
+                                    const searchText = normalizeString((option as any)?.searchtext || rawLabel);
                                     const initials = getInitials(rawLabel);
-                                    return optionLabel.includes(searchInput) || initials.includes(searchInput);
+                                    return optionLabel.includes(searchInput) || searchText.includes(searchInput) || initials.includes(searchInput);
                                 }}
                             />
                             <Tooltip title="Tìm bằng giọng nói">

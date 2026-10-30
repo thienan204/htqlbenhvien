@@ -24,6 +24,28 @@ interface SharedRequestsPageProps {
     createPath: string;
 }
 
+// Helper tạo khoảng thời gian Hành chính (07:00 - 17:00 ngày hôm nay)
+const getOfficeHoursRange = (): [Dayjs, Dayjs] => {
+    const start = dayjs().hour(7).minute(0).second(0).millisecond(0);
+    const end = dayjs().hour(17).minute(0).second(0).millisecond(0);
+    return [start, end];
+};
+
+// Helper tạo khoảng thời gian Ca trực 24h Bệnh viện (07:00 sáng -> 07:00 sáng hôm sau)
+const getHospitalDutyRange = (): [Dayjs, Dayjs] => {
+    const now = dayjs();
+    let start: Dayjs;
+    let end: Dayjs;
+    if (now.hour() < 7) {
+        start = now.subtract(1, 'day').hour(7).minute(0).second(0).millisecond(0);
+        end = now.hour(7).minute(0).second(0).millisecond(0);
+    } else {
+        start = now.hour(7).minute(0).second(0).millisecond(0);
+        end = now.add(1, 'day').hour(7).minute(0).second(0).millisecond(0);
+    }
+    return [start, end];
+};
+
 export function SharedRequestsPage({ targetDepartment, createPath }: SharedRequestsPageProps) {
     const router = useRouter();
     const { user, hasPermission } = useAuth();
@@ -36,11 +58,27 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [filterMode, setFilterMode] = useState<'ALL' | 'MINE' | 'UNASSIGNED'>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
-    const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>([dayjs().startOf('day'), dayjs().endOf('day')]);
+    const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(getOfficeHoursRange);
     const [togglingAvailability, setTogglingAvailability] = useState(false);
     const [viewMode, setViewMode] = useState<'AUTO' | 'CARD' | 'TABLE'>('AUTO');
     const [onlyUnread, setOnlyUnread] = useState(false);
     const [selectedStaffFilter, setSelectedStaffFilter] = useState<string | null>(null);
+
+    // Xác định preset thời gian đang chọn
+    const isOfficeHoursSelected = useMemo(() => {
+        if (!dateRange || !dateRange[0] || !dateRange[1]) return false;
+        const now = dayjs();
+        return dateRange[0].isSame(now, 'day') && 
+               dateRange[0].hour() === 7 && dateRange[0].minute() === 0 &&
+               dateRange[1].isSame(now, 'day') && 
+               dateRange[1].hour() === 17 && dateRange[1].minute() === 0;
+    }, [dateRange]);
+
+    const isDutyShiftSelected = useMemo(() => {
+        if (!dateRange || !dateRange[0] || !dateRange[1]) return false;
+        const duty = getHospitalDutyRange();
+        return dateRange[0].isSame(duty[0], 'minute') && dateRange[1].isSame(duty[1], 'minute');
+    }, [dateRange]);
 
     const [togglingFocusMode, setTogglingFocusMode] = useState(false);
 
@@ -131,10 +169,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             result = result.filter(t => t.ma_khoa === user.ma_khoa);
         }
 
-        // Lọc theo khoảng ngày (mặc định hôm nay, hoặc khoảng được chọn)
+        // Lọc theo khoảng ngày giờ (mặc định hôm nay theo giờ hành chính, hoặc khoảng được chọn)
         if (dateRange && (dateRange[0] || dateRange[1])) {
-            const start = dateRange[0] ? dateRange[0].startOf('day') : null;
-            const end = dateRange[1] ? dateRange[1].endOf('day') : null;
+            const start = dateRange[0] ? dateRange[0].startOf('minute') : null;
+            const end = dateRange[1] ? dateRange[1].endOf('minute') : null;
             result = result.filter(t => {
                 if (!t.createdAt) return false;
                 const created = dayjs(t.createdAt);
@@ -172,10 +210,10 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             allTickets = allTickets.filter(t => t.ma_khoa === user.ma_khoa);
         }
 
-        // Lọc theo khoảng ngày
+        // Lọc theo khoảng ngày giờ
         if (dateRange && (dateRange[0] || dateRange[1])) {
-            const start = dateRange[0] ? dateRange[0].startOf('day') : null;
-            const end = dateRange[1] ? dateRange[1].endOf('day') : null;
+            const start = dateRange[0] ? dateRange[0].startOf('minute') : null;
+            const end = dateRange[1] ? dateRange[1].endOf('minute') : null;
             allTickets = allTickets.filter(t => {
                 if (!t.createdAt) return false;
                 const created = dayjs(t.createdAt);
@@ -403,6 +441,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 onSelectStaff={(staffId) => setSelectedStaffFilter(staffId)}
                 user={user}
                 allowedRoles={['ADMIN', targetDepartment]}
+                dateRange={dateRange}
             />
 
             {/* Thanh bộ lọc: Tối ưu responsive đầy đủ cho cả Mobile và Desktop */}
@@ -577,24 +616,33 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
                 {/* 3. Bộ lọc khoảng ngày + Nút bấm chọn chế độ hiển thị (Click vào mới hiện) */}
                 <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full sm:w-auto">
-                    <div className="flex-1 min-w-0 sm:flex-initial flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm">
-                        <Tooltip title="Chọn khoảng ngày để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                    <div className="flex-1 min-w-0 sm:flex-initial flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm flex-wrap sm:flex-nowrap">
+                        <Tooltip title="Chọn khoảng ngày giờ để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
                             <DatePicker.RangePicker 
                                 value={dateRange}
                                 onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
-                                format="DD/MM/YYYY"
+                                showTime={{ format: 'HH:mm' }}
+                                format="DD/MM/YYYY HH:mm"
                                 allowClear
-                                placeholder={['Từ ngày', 'Đến ngày']}
-                                className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[220px]"
+                                placeholder={['Từ thời gian', 'Đến thời gian']}
+                                className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[280px]"
                             />
                         </Tooltip>
                         <Button 
                             size="small"
-                            type={dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'primary' : 'default'}
-                            onClick={() => setDateRange([dayjs().startOf('day'), dayjs().endOf('day')])}
-                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${dateRange && dateRange[0]?.isSame(dayjs(), 'day') && dateRange[1]?.isSame(dayjs(), 'day') ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
+                            type={isOfficeHoursSelected ? 'primary' : 'default'}
+                            onClick={() => setDateRange(getOfficeHoursRange())}
+                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${isOfficeHoursSelected ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
                         >
-                            Hôm nay
+                            Ngày hiện tại
+                        </Button>
+                        <Button 
+                            size="small"
+                            type={isDutyShiftSelected ? 'primary' : 'default'}
+                            onClick={() => setDateRange(getHospitalDutyRange())}
+                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${isDutyShiftSelected ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:text-indigo-600'}`}
+                        >
+                            Ca trực 24h
                         </Button>
                         <Button 
                             size="small"

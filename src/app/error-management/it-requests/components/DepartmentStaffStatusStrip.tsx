@@ -13,6 +13,7 @@ import {
 import { formatAvatarUrl } from '@/utils/avatar';
 import { getBasePath } from '@/utils/config';
 import { Ticket } from '../types';
+import dayjs, { Dayjs } from 'dayjs';
 
 interface StaffStatusItem {
     id: string;
@@ -36,6 +37,7 @@ interface DepartmentStaffStatusStripProps {
     onSelectStaff?: (staffId: string | null) => void;
     user?: any;
     allowedRoles?: string[];
+    dateRange?: [Dayjs | null, Dayjs | null] | null;
 }
 
 export function DepartmentStaffStatusStrip({
@@ -44,7 +46,8 @@ export function DepartmentStaffStatusStrip({
     selectedStaffId = null,
     onSelectStaff,
     user,
-    allowedRoles = ['ADMIN', 'CNTT']
+    allowedRoles = ['ADMIN', 'CNTT'],
+    dateRange
 }: DepartmentStaffStatusStripProps) {
     const [staffList, setStaffList] = useState<StaffStatusItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -113,24 +116,48 @@ export function DepartmentStaffStatusStrip({
         fetchStaffStatus();
     }, [fetchStaffStatus]);
 
-    // Tính số ticket đang xử lý cho từng nhân sự
+    // Tính số ticket đang xử lý cho từng nhân sự (đồng bộ theo dateRange nếu có lọc)
     const staffTicketStats = useMemo(() => {
-        const map = new Map<string, { active: number; done: number }>();
+        const map = new Map<string, { active: number; done: number; totalPending: number }>();
+        const start = dateRange && dateRange[0] ? dateRange[0] : null;
+        const end = dateRange && dateRange[1] ? dateRange[1] : null;
+
         tickets.forEach(t => {
             const assignee = t.assigneeId || t.transferToId;
             if (!assignee) return;
 
-            const current = map.get(assignee) || { active: 0, done: 0 };
+            const current = map.get(assignee) || { active: 0, done: 0, totalPending: 0 };
             const isResolved = ['RESOLVED', 'CLOSED'].includes(t.status);
-            if (isResolved) {
-                current.done += 1;
-            } else {
-                current.active += 1;
+
+            // Tính tổng tồn đọng chưa hoàn thành từ trước đến nay
+            if (!isResolved) {
+                current.totalPending += 1;
+            }
+
+            // Kiểm tra xem ticket có phát sinh trong khoảng thời gian dateRange được chọn không
+            let isInPeriod = true;
+            if (t.createdAt && (start || end)) {
+                const created = dayjs(t.createdAt);
+                if (start && end) {
+                    isInPeriod = (created.isAfter(start) || created.isSame(start)) && (created.isBefore(end) || created.isSame(end));
+                } else if (start) {
+                    isInPeriod = created.isAfter(start) || created.isSame(start);
+                } else if (end) {
+                    isInPeriod = created.isBefore(end) || created.isSame(end);
+                }
+            }
+
+            if (isInPeriod) {
+                if (isResolved) {
+                    current.done += 1;
+                } else {
+                    current.active += 1;
+                }
             }
             map.set(assignee, current);
         });
         return map;
-    }, [tickets]);
+    }, [tickets, dateRange]);
 
     // Danh sách nhân sự hiển thị thông minh:
     // 1. Kỹ thuật viên (!s.isLeader): Luôn hiển thị
@@ -361,16 +388,23 @@ export function DepartmentStaffStatusStrip({
 
                                                             {/* Số lượng ticket đang xử lý */}
                                                             {ticketStat.active > 0 ? (
-                                                                <span 
-                                                                    className="text-[10px] sm:text-[11px] font-bold text-blue-700 bg-blue-100/90 px-1.5 py-0.2 rounded-md"
-                                                                    title={`Đang xử lý ${ticketStat.active} yêu cầu`}
-                                                                >
-                                                                    {ticketStat.active} việc
-                                                                </span>
+                                                                <Tooltip title={
+                                                                    ticketStat.totalPending > ticketStat.active 
+                                                                        ? `Đang xử lý ${ticketStat.active} việc trong khung giờ này (Tổng tồn đọng chưa xong: ${ticketStat.totalPending} việc)` 
+                                                                        : `Đang xử lý ${ticketStat.active} yêu cầu`
+                                                                }>
+                                                                    <span 
+                                                                        className="text-[10px] sm:text-[11px] font-bold text-blue-700 bg-blue-100/90 px-1.5 py-0.2 rounded-md cursor-help"
+                                                                    >
+                                                                        {ticketStat.active} việc
+                                                                    </span>
+                                                                </Tooltip>
                                                             ) : (
-                                                                <span className="text-[10px] text-slate-400 font-normal">
-                                                                    0 việc
-                                                                </span>
+                                                                <Tooltip title={ticketStat.totalPending > 0 ? `Không có việc trong khung giờ này (Tổng tồn đọng cũ: ${ticketStat.totalPending} việc)` : 'Không có việc'}>
+                                                                    <span className="text-[10px] text-slate-400 font-normal cursor-help">
+                                                                        0 việc
+                                                                    </span>
+                                                                </Tooltip>
                                                             )}
                                                         </div>
                                                     </div>

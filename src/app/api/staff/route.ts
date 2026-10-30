@@ -7,7 +7,11 @@ export async function GET(request: Request) {
         const user = await getCurrentUserFromRequest(request);
         const whereClause: any = {};
         
-        if (user && user.role !== 'ADMIN') {
+        // Các vai trò quản trị hoặc hỗ trợ kỹ thuật toàn viện (ADMIN, CNTT, VTYT, HCQT)
+        // được phép xem danh sách nhân sự toàn viện để tiếp nhận & nhập sự cố thay khoa phòng.
+        const isSupportOrAdmin = ['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user?.role);
+
+        if (user && !isSupportOrAdmin) {
             if (user.role === 'KHOA_PHONG' && user.staffId) {
                 whereClause.id = user.staffId;
             } else if (user.ma_khoa) {
