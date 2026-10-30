@@ -230,7 +230,7 @@ export function DepartmentStaffStatusStrip({
                                             Trạng thái nhân viên {targetDepartment}
                                         </span>
                                         <span className="text-xs text-slate-400 hidden sm:inline font-normal">
-                                            ({displayStaff.length} nhân sự{stats.leadersActive > 0 ? `, gồm ${stats.leadersActive} lãnh đạo tham gia trực` : ''})
+                                            ({displayStaff.length} nhân sự{stats.leadersActive > 0 ? `, gồm ${stats.leadersActive} lãnh đạo tham gia nhận việc` : ''})
                                         </span>
                                     </div>
                                 </div>

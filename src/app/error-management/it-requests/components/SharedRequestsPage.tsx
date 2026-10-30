@@ -625,7 +625,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 format="DD/MM/YYYY HH:mm"
                                 allowClear
                                 placeholder={['Từ thời gian', 'Đến thời gian']}
-                                className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[280px]"
+                                className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[330px]"
                             />
                         </Tooltip>
                         <Button 
