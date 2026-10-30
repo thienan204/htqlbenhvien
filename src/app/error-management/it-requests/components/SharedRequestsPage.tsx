@@ -614,97 +614,160 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                     </Button>
                 </div>
 
-                {/* 3. Bộ lọc khoảng ngày + Nút bấm chọn chế độ hiển thị (Click vào mới hiện) */}
-                <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full sm:w-auto">
-                    <div className="flex-1 min-w-0 sm:flex-initial flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm flex-wrap sm:flex-nowrap">
-                        <Tooltip title="Chọn khoảng ngày giờ để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
-                            <DatePicker.RangePicker 
-                                value={dateRange}
-                                onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
-                                showTime={{ format: 'HH:mm' }}
-                                format="DD/MM/YYYY HH:mm"
-                                allowClear
-                                placeholder={['Từ thời gian', 'Đến thời gian']}
-                                className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[330px]"
-                            />
-                        </Tooltip>
-                        <Button 
-                            size="small"
-                            type={isOfficeHoursSelected ? 'primary' : 'default'}
-                            onClick={() => setDateRange(getOfficeHoursRange())}
-                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${isOfficeHoursSelected ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                        >
-                            Ngày hiện tại
-                        </Button>
-                        <Button 
-                            size="small"
-                            type={isDutyShiftSelected ? 'primary' : 'default'}
-                            onClick={() => setDateRange(getHospitalDutyRange())}
-                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${isDutyShiftSelected ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:text-indigo-600'}`}
-                        >
-                            Ca trực 24h
-                        </Button>
-                        <Button 
-                            size="small"
-                            type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
-                            onClick={() => setDateRange(null)}
-                            className={`text-xs rounded-lg px-1.5 sm:px-2 shrink-0 ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold' : 'text-slate-600 hover:text-blue-600'}`}
-                        >
-                            Tất cả
-                        </Button>
+                {/* 3. Bộ lọc khoảng ngày + Nút bấm chọn chế độ hiển thị: Tối ưu 2 tầng trên Mobile, 1 hàng trên Desktop */}
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2">
+                    {/* Hộp chứa RangePicker + Các nút preset */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 rounded-xl border border-slate-100 shadow-sm w-full sm:w-auto">
+                        {/* Hàng 1 (Mobile) / Khối RangePicker: Co giãn full width trên mobile, 330px trên desktop */}
+                        <div className="flex items-center gap-1 w-full sm:w-auto">
+                            <Tooltip title="Chọn khoảng ngày giờ để lọc yêu cầu (Bấm 'x' hoặc nút 'Tất cả' để xem toàn bộ lịch sử)">
+                                <DatePicker.RangePicker 
+                                    value={dateRange}
+                                    onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
+                                    showTime={{ format: 'HH:mm' }}
+                                    format="DD/MM/YYYY HH:mm"
+                                    allowClear
+                                    placeholder={['Từ thời gian', 'Đến thời gian']}
+                                    className="rounded-lg text-xs font-medium flex-1 min-w-0 sm:w-[330px]"
+                                />
+                            </Tooltip>
+                            {/* Nút Chế độ hiển thị: Trên Mobile đặt cạnh RangePicker ở Hàng 1 */}
+                            <div className="sm:hidden shrink-0">
+                                <Dropdown
+                                    menu={{
+                                        items: [
+                                            {
+                                                key: 'AUTO',
+                                                icon: <DesktopOutlined />,
+                                                label: (
+                                                    <div className="flex items-center justify-between gap-4 py-0.5">
+                                                        <span>Tự động theo thiết bị</span>
+                                                        {viewMode === 'AUTO' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                                    </div>
+                                                )
+                                            },
+                                            {
+                                                key: 'CARD',
+                                                icon: <AppstoreOutlined />,
+                                                label: (
+                                                    <div className="flex items-center justify-between gap-4 py-0.5">
+                                                        <span>Dạng Thẻ (Card View)</span>
+                                                        {viewMode === 'CARD' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                                    </div>
+                                                )
+                                            },
+                                            {
+                                                key: 'TABLE',
+                                                icon: <TableOutlined />,
+                                                label: (
+                                                    <div className="flex items-center justify-between gap-4 py-0.5">
+                                                        <span>Dạng Bảng (Table View)</span>
+                                                        {viewMode === 'TABLE' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                                    </div>
+                                                )
+                                            }
+                                        ],
+                                        selectedKeys: [viewMode],
+                                        onClick: ({ key }) => setViewMode(key as any),
+                                    }}
+                                    trigger={['click']}
+                                    placement="bottomRight"
+                                >
+                                    <Tooltip title={`Chế độ hiển thị: ${viewMode === 'CARD' ? 'Dạng Thẻ' : viewMode === 'TABLE' ? 'Dạng Bảng' : 'Tự động theo thiết bị'}`}>
+                                        <Button 
+                                            size="middle"
+                                            className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center justify-center gap-1 shrink-0 h-[32px]"
+                                        >
+                                            {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600 text-sm" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600 text-sm" /> : <DesktopOutlined className="text-slate-600 text-sm" />}
+                                            <DownOutlined className="text-[9px] text-slate-400" />
+                                        </Button>
+                                    </Tooltip>
+                                </Dropdown>
+                            </div>
+                        </div>
+
+                        {/* Hàng 2 (Mobile) / Liền kề (Desktop): Các nút chọn nhanh */}
+                        <div className="flex items-center gap-1 sm:gap-1.5 w-full sm:w-auto">
+                            <Button 
+                                size="small"
+                                type={isOfficeHoursSelected ? 'primary' : 'default'}
+                                onClick={() => setDateRange(getOfficeHoursRange())}
+                                className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${isOfficeHoursSelected ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                            >
+                                Ngày hiện tại
+                            </Button>
+                            <Button 
+                                size="small"
+                                type={isDutyShiftSelected ? 'primary' : 'default'}
+                                onClick={() => setDateRange(getHospitalDutyRange())}
+                                className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${isDutyShiftSelected ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:text-indigo-600'}`}
+                            >
+                                Ca trực 24h
+                            </Button>
+                            <Button 
+                                size="small"
+                                type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
+                                onClick={() => setDateRange(null)}
+                                className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                            >
+                                Tất cả
+                            </Button>
+                        </div>
                     </div>
 
-                    {/* Nút Chế độ hiển thị: Click vào hiện Dropdown để chọn */}
-                    <Dropdown
-                        menu={{
-                            items: [
-                                {
-                                    key: 'AUTO',
-                                    icon: <DesktopOutlined />,
-                                    label: (
-                                        <div className="flex items-center justify-between gap-4 py-0.5">
-                                            <span>Tự động theo thiết bị</span>
-                                            {viewMode === 'AUTO' && <span className="text-blue-600 text-xs font-bold">✓</span>}
-                                        </div>
-                                    )
-                                },
-                                {
-                                    key: 'CARD',
-                                    icon: <AppstoreOutlined />,
-                                    label: (
-                                        <div className="flex items-center justify-between gap-4 py-0.5">
-                                            <span>Dạng Thẻ (Card View)</span>
-                                            {viewMode === 'CARD' && <span className="text-blue-600 text-xs font-bold">✓</span>}
-                                        </div>
-                                    )
-                                },
-                                {
-                                    key: 'TABLE',
-                                    icon: <TableOutlined />,
-                                    label: (
-                                        <div className="flex items-center justify-between gap-4 py-0.5">
-                                            <span>Dạng Bảng (Table View)</span>
-                                            {viewMode === 'TABLE' && <span className="text-blue-600 text-xs font-bold">✓</span>}
-                                        </div>
-                                    )
-                                }
-                            ],
-                            selectedKeys: [viewMode],
-                            onClick: ({ key }) => setViewMode(key as any),
-                        }}
-                        trigger={['click']}
-                        placement="bottomRight"
-                    >
-                        <Tooltip title={`Chế độ hiển thị: ${viewMode === 'CARD' ? 'Dạng Thẻ' : viewMode === 'TABLE' ? 'Dạng Bảng' : 'Tự động theo thiết bị'}`}>
-                            <Button 
-                                size="middle"
-                                className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center justify-center gap-1 shrink-0 h-[32px]"
-                            >
-                                {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600 text-sm" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600 text-sm" /> : <DesktopOutlined className="text-slate-600 text-sm" />}
-                                <DownOutlined className="text-[9px] text-slate-400" />
-                            </Button>
-                        </Tooltip>
-                    </Dropdown>
+                    {/* Nút Chế độ hiển thị: Trên Desktop đặt ở cuối hàng ngang */}
+                    <div className="hidden sm:block shrink-0">
+                        <Dropdown
+                            menu={{
+                                items: [
+                                    {
+                                        key: 'AUTO',
+                                        icon: <DesktopOutlined />,
+                                        label: (
+                                            <div className="flex items-center justify-between gap-4 py-0.5">
+                                                <span>Tự động theo thiết bị</span>
+                                                {viewMode === 'AUTO' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        key: 'CARD',
+                                        icon: <AppstoreOutlined />,
+                                        label: (
+                                            <div className="flex items-center justify-between gap-4 py-0.5">
+                                                <span>Dạng Thẻ (Card View)</span>
+                                                {viewMode === 'CARD' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        key: 'TABLE',
+                                        icon: <TableOutlined />,
+                                        label: (
+                                            <div className="flex items-center justify-between gap-4 py-0.5">
+                                                <span>Dạng Bảng (Table View)</span>
+                                                {viewMode === 'TABLE' && <span className="text-blue-600 text-xs font-bold">✓</span>}
+                                            </div>
+                                        )
+                                    }
+                                ],
+                                selectedKeys: [viewMode],
+                                onClick: ({ key }) => setViewMode(key as any),
+                            }}
+                            trigger={['click']}
+                            placement="bottomRight"
+                        >
+                            <Tooltip title={`Chế độ hiển thị: ${viewMode === 'CARD' ? 'Dạng Thẻ' : viewMode === 'TABLE' ? 'Dạng Bảng' : 'Tự động theo thiết bị'}`}>
+                                <Button 
+                                    size="middle"
+                                    className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center justify-center gap-1 shrink-0 h-[32px]"
+                                >
+                                    {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600 text-sm" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600 text-sm" /> : <DesktopOutlined className="text-slate-600 text-sm" />}
+                                    <DownOutlined className="text-[9px] text-slate-400" />
+                                </Button>
+                            </Tooltip>
+                        </Dropdown>
+                    </div>
                 </div>
             </div>
 
