@@ -695,17 +695,15 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         trigger={['click']}
                         placement="bottomRight"
                     >
-                        <Button 
-                            size="middle"
-                            className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2.5 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center gap-1.5 shrink-0"
-                            title="Chọn chế độ hiển thị: Tự động / Dạng Thẻ / Dạng Bảng"
-                        >
-                            {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600" /> : <DesktopOutlined className="text-slate-500" />}
-                            <span className="hidden sm:inline font-medium text-slate-700">
-                                {viewMode === 'CARD' ? 'Thẻ' : viewMode === 'TABLE' ? 'Bảng' : 'Tự động'}
-                            </span>
-                            <DownOutlined className="text-[9px] text-slate-400" />
-                        </Button>
+                        <Tooltip title={`Chế độ hiển thị: ${viewMode === 'CARD' ? 'Dạng Thẻ' : viewMode === 'TABLE' ? 'Dạng Bảng' : 'Tự động theo thiết bị'}`}>
+                            <Button 
+                                size="middle"
+                                className="bg-white hover:bg-slate-50 border-slate-200 rounded-xl px-2 text-xs text-slate-600 hover:text-blue-600 shadow-sm flex items-center justify-center gap-1 shrink-0 h-[32px]"
+                            >
+                                {viewMode === 'CARD' ? <AppstoreOutlined className="text-blue-600 text-sm" /> : viewMode === 'TABLE' ? <TableOutlined className="text-blue-600 text-sm" /> : <DesktopOutlined className="text-slate-600 text-sm" />}
+                                <DownOutlined className="text-[9px] text-slate-400" />
+                            </Button>
+                        </Tooltip>
                     </Dropdown>
                 </div>
             </div>
