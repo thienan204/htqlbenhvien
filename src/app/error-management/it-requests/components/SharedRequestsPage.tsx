@@ -223,6 +223,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
     const statusCounts = useMemo(() => {
         return {
             ALL: baseTickets.length,
+            UNASSIGNED: baseTickets.filter(t => !t.assigneeId).length,
             PENDING: baseTickets.filter(t => t.status === 'PENDING').length,
             IN_PROGRESS: baseTickets.filter(t => t.status === 'IN_PROGRESS').length,
             PAUSED: baseTickets.filter(t => t.status === 'PAUSED').length,
@@ -269,7 +270,9 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
     const filteredTickets = useMemo(() => {
         let result = baseTickets;
-        if (statusFilter !== 'ALL') {
+        if (statusFilter === 'UNASSIGNED') {
+            result = result.filter(t => !t.assigneeId);
+        } else if (statusFilter !== 'ALL') {
             result = result.filter(t => t.status === statusFilter);
         }
         if (onlyUnread) {
@@ -503,19 +506,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                         </span>
                                     ),
                                     value: 'MINE'
-                                },
-                                ...(assignmentMode !== 'C' ? [{
-                                    label: (
-                                        <span className="inline-flex items-center justify-center gap-1.5 px-1 whitespace-nowrap leading-none">
-                                            <span className="hidden sm:inline font-medium text-xs leading-none">Chờ nhận việc (Trống)</span>
-                                            <span className="sm:hidden font-medium text-xs leading-none">Chờ nhận</span>
-                                            <span className={`text-[11px] sm:text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none ${filterModeCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                {filterModeCounts.UNASSIGNED}
-                                            </span>
-                                        </span>
-                                    ),
-                                    value: 'UNASSIGNED'
-                                }] : [])
+                                }
                             ]}
                             value={filterMode}
                             onChange={(val: any) => {
@@ -548,6 +539,17 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                     ),
                                     value: 'ALL'
                                 },
+                                ...(assignmentMode !== 'C' ? [{
+                                    label: (
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                            <span className="font-medium text-amber-700">Chờ nhận việc (Trống)</span>
+                                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-semibold ${statusCounts.UNASSIGNED > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {statusCounts.UNASSIGNED}
+                                            </span>
+                                        </div>
+                                    ),
+                                    value: 'UNASSIGNED'
+                                }] : []),
                                 {
                                     label: (
                                         <div className="flex items-center justify-between gap-2 w-full">
