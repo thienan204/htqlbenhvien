@@ -157,18 +157,27 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
         menuData.push({
             key: group.id,
             label: <span className="font-semibold text-[13px]">{group.title}</span>,
-            children: childItems
+            children: childItems,
+            popupOffset: [0, -4],
+            popupClassName: 'header-submenu-popup'
         });
     }
 
     return (
-        <Menu 
-            mode="horizontal" 
-            items={menuData} 
-            selectedKeys={activeKeys}
-            className="border-none bg-transparent flex-1 min-w-0"
-            style={{ lineHeight: '58px' }}
-            overflowedIndicator={<Icons.MoreOutlined className="text-lg" />}
-        />
+        <>
+            <Menu 
+                mode="horizontal" 
+                items={menuData} 
+                selectedKeys={activeKeys}
+                className="border-none bg-transparent flex-1 min-w-0 h-full [&_.ant-menu-item]:!h-full [&_.ant-menu-item]:!flex [&_.ant-menu-item]:!items-center [&_.ant-menu-submenu]:!h-full [&_.ant-menu-submenu]:!flex [&_.ant-menu-submenu]:!items-center [&_.ant-menu-submenu-title]:!flex [&_.ant-menu-submenu-title]:!items-center"
+                style={{ lineHeight: '60px', height: '60px' }}
+                overflowedIndicator={<Icons.MoreOutlined className="text-lg" />}
+            />
+            <style jsx global>{`
+                .header-submenu-popup {
+                    margin-top: -6px !important;
+                }
+            `}</style>
+        </>
     );
 }

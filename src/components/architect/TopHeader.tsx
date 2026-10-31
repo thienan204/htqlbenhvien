@@ -95,7 +95,7 @@ const TopHeader = ({
                 ${(isSidebarOpen && menuLayout === 'vertical') ? 'lg:left-[280px] left-0' : 'left-0'}
             `}
         >
-            <div className="flex items-center gap-4 flex-1 overflow-hidden">
+            <div className="flex items-center gap-4 flex-1 h-full overflow-hidden">
                 {menuLayout === 'horizontal' && (
                     <Link href="/" className="flex items-center gap-2 text-slate-800 font-bold text-xl tracking-tight no-underline shrink-0 pr-4 border-r border-slate-100">
                         <img src={`${getBasePath()}/logo.png`} alt="Logo" className="max-h-[36px] w-auto object-contain" />
@@ -112,7 +112,7 @@ const TopHeader = ({
                 )}
 
                 {menuLayout === 'horizontal' && (
-                    <div className="flex-1 ml-4 min-w-0">
+                    <div className="flex-1 ml-4 min-w-0 h-full flex items-center">
                         <HorizontalMenuClient rules={rules} menus={menus} adminMode={adminMode} adminOnlyPaths={adminOnlyPaths} />
                     </div>
                 )}
