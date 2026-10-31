@@ -1,6 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import * as jose from 'jose';
 import prisma from '@/lib/prisma';
 
@@ -310,6 +310,18 @@ export async function setAuthCookie(payload: {
     const alg = 'HS256';
     const secret = new TextEncoder().encode(JWT_SECRET);
 
+    // Nhận diện thiết bị di động qua User-Agent
+    let isMobile = false;
+    try {
+        const headerList = await headers();
+        const ua = headerList.get('user-agent') || '';
+        isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    } catch (e) {}
+
+    // Trên Mobile giữ đăng nhập dài hạn 90 ngày; trên PC giữ phiên 24h
+    const expirationTime = isMobile ? '90d' : '24h';
+    const cookieMaxAge = isMobile ? 60 * 60 * 24 * 90 : 60 * 60 * 24;
+
     const token = await new jose.SignJWT({
         id: payload.id,
         username: payload.username,
@@ -319,7 +331,7 @@ export async function setAuthCookie(payload: {
     })
         .setProtectedHeader({ alg })
         .setIssuedAt()
-        .setExpirationTime('24h') // Token valid for 24 hours
+        .setExpirationTime(expirationTime)
         .sign(secret);
 
     const isHttps = process.env.NEXTAUTH_URL?.startsWith('https') || false;
@@ -332,7 +344,7 @@ export async function setAuthCookie(payload: {
         secure: process.env.NODE_ENV === 'production' && isHttps,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 // 24 hours
+        maxAge: cookieMaxAge
     });
 
     return token;

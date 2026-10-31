@@ -25,6 +25,16 @@ export default function SessionTimeoutManager({
     const warningShownRef = useRef<boolean>(false);
 
     useEffect(() => {
+        // Kiểm tra nếu là thiết bị di động (Mobile/Tablet) -> Giữ đăng nhập liên tục cho đến khi người dùng chủ động Đăng xuất
+        if (typeof window !== 'undefined') {
+            const ua = navigator.userAgent || '';
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+            const isTouchScreen = ('ontouchstart' in window) || navigator.maxTouchPoints > 1;
+            if (isMobileUA || (isTouchScreen && window.innerWidth < 1024)) {
+                return;
+            }
+        }
+
         const timeoutMs = timeoutMinutes * 60 * 1000;
         const warningMs = (timeoutMinutes - warningMinutes) * 60 * 1000;
 

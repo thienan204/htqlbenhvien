@@ -103,6 +103,11 @@ export async function POST(request: Request) {
         }).catch(() => {});
 
         // 5. Cấp JWT Token và Cookie đăng nhập
+        const userAgent = request.headers.get('user-agent') || '';
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+        const expirationTime = isMobile ? '90d' : '24h';
+        const cookieMaxAge = isMobile ? 60 * 60 * 24 * 90 : 60 * 60 * 24;
+
         const alg = 'HS256';
         const secret = new TextEncoder().encode(JWT_SECRET);
 
@@ -115,7 +120,7 @@ export async function POST(request: Request) {
         })
             .setProtectedHeader({ alg })
             .setIssuedAt()
-            .setExpirationTime('24h')
+            .setExpirationTime(expirationTime)
             .sign(secret);
 
         const res = NextResponse.json({
@@ -137,7 +142,7 @@ export async function POST(request: Request) {
             secure: process.env.NODE_ENV === 'production' && isHttps,
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60 * 24 // 24 hours
+            maxAge: cookieMaxAge
         });
 
         return res;
