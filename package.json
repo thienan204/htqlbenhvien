@@ -9,6 +9,7 @@
     "generate-routes": "node scripts/generate-routes.js",
     "start": "next start",
     "lint": "eslint",
+    "seed:attendance": "node scripts/seed-attendance-statuses.js",
     "git-push": "node scripts/export-data.js && git add . && git commit -m \"auto backup data\" && git push"
   },
   "dependencies": {

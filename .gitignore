@@ -47,6 +47,7 @@ api-*.txt
 !scripts/generate-build-info.js
 !scripts/seed-standardized-menus.js
 !scripts/sync-menu-only.js
+!scripts/seed-attendance-statuses.js
 *debug*.js
 *test*.js
 *.log
@@ -117,3 +118,4 @@ extracted_*.json
 icd10_headers.json
 db-output.json
 menus.json
+!scripts/seed-attendance-statuses.js
