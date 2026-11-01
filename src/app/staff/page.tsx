@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select, Dropdown } from 'antd';
-import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined, DownloadOutlined, CalendarOutlined, ScheduleOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
 import CertificatesModal from './components/CertificatesModal';
@@ -244,119 +245,170 @@ export default function StaffPage() {
 
     return (
         <div className="w-full h-full p-6 space-y-6">
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center text-2xl">
-                        <TeamOutlined />
+            {/* Header Card 2 Hàng (Row 1: Tiêu đề + Nút chính | Row 2: Thanh công cụ tác vụ nhóm) */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
+                {/* HÀNG 1: Tiêu đề trang + Nhóm nút chính */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center text-2xl shadow-xs">
+                            <TeamOutlined />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2.5">
+                                <h1 className="text-2xl font-bold text-slate-800 m-0">Quản lý Nhân sự</h1>
+                                <Tag color="blue" className="font-semibold text-xs rounded-full px-2.5">
+                                    {filteredData.length} / {staffList.length} Cán bộ
+                                </Tag>
+                            </div>
+                            <p className="text-slate-500 text-xs sm:text-sm m-0 mt-0.5">
+                                Tra cứu hồ sơ, chức danh, bằng cấp, khoa phòng và chứng chỉ hành nghề (CCHN).
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800 mb-1">Quản lý Nhân sự</h1>
-                        <p className="text-slate-500 m-0">Tra cứu thông tin, chức danh, khoa phòng và CCHN.</p>
+
+                    {/* Nút hành động chính ở góc trên */}
+                    <div className="flex items-center gap-2.5">
+                        <Space.Compact>
+                            <Dropdown
+                                menu={{
+                                    items: reports.length > 0 ? reports.map(r => ({
+                                        key: r.id,
+                                        label: r.name,
+                                        onClick: () => {
+                                            const basePath = window.location.pathname.split('/staff')[0];
+                                            const url = new URL(`${basePath}/api/staff/reports/${r.id}/export`, window.location.origin);
+                                            if (searchText) url.searchParams.append('search', searchText);
+                                            window.open(url.toString(), '_blank');
+                                        }
+                                    })) : [{ key: 'empty', label: 'Chưa có mẫu báo cáo nào', disabled: true }]
+                                }}
+                                placement="bottomRight"
+                            >
+                                <Button 
+                                    type="default" 
+                                    size="middle"
+                                    icon={<DownloadOutlined />} 
+                                    className="text-green-700 border-green-600 hover:bg-green-50 font-medium"
+                                >
+                                    Xuất Báo Cáo
+                                </Button>
+                            </Dropdown>
+                            {user?.role === 'ADMIN' && (
+                                <Button
+                                    type="default"
+                                    size="middle"
+                                    className="text-slate-500 border-green-600 hover:text-green-600"
+                                    icon={<SettingOutlined />}
+                                    onClick={() => window.location.href = window.location.pathname.split('/staff')[0] + '/staff/reports'}
+                                    title="Quản lý Mẫu Báo cáo"
+                                />
+                            )}
+                        </Space.Compact>
+
+                        {(user?.role === 'ADMIN' || user?.role === 'PTCCB') && (
+                            <Button 
+                                type="primary" 
+                                size="middle"
+                                icon={<PlusOutlined />} 
+                                onClick={() => {
+                                    setSelectedStaff(null);
+                                    setIsStaffModalOpen(true);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-500 font-semibold shadow-xs"
+                            >
+                                Thêm mới
+                            </Button>
+                        )}
                     </div>
                 </div>
-                <Space>
-                    {(user?.role === 'ADMIN' || user?.role === 'PTCCB') && (
-                        <>
+
+                {/* HÀNG 2: Thanh công cụ Toolbar chuyên biệt (Phân nhóm chức năng khoa học) */}
+                {(user?.role === 'ADMIN' || user?.role === 'PTCCB') && (
+                    <div className="border-t border-slate-100 pt-3 flex flex-wrap items-center justify-between gap-3">
+                        {/* Nhóm 1: Chấm công & Lịch làm việc */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                                Chấm công:
+                            </span>
+                            <Link href="/staff/attendance-manager">
+                                <Button 
+                                    type="primary" 
+                                    icon={<CalendarOutlined />} 
+                                    className="bg-indigo-600 hover:bg-indigo-500 font-semibold"
+                                >
+                                    Bảng Chấm Công & Trực
+                                </Button>
+                            </Link>
+                            <Link href="/staff/my-attendance">
+                                <Button 
+                                    icon={<ScheduleOutlined />} 
+                                    className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-medium"
+                                >
+                                    Lịch Của Tôi
+                                </Button>
+                            </Link>
+                        </div>
+
+                        {/* Nhóm 2: Nhập xuất & Quản trị TCCB */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button type="default" icon={<UploadOutlined />} onClick={() => setIsImportOpen(true)}>
+                                Import Nhân sự
+                            </Button>
+                            <Button type="default" icon={<SyncOutlined />} onClick={() => setIsBulkUpdateOpen(true)}>
+                                Cập nhật hàng loạt
+                            </Button>
+                            <Popconfirm
+                                title="Đồng bộ sang Mẫu 02 XML?"
+                                description={selectedRowKeys.length > 0 
+                                    ? `Bạn đang chọn ${selectedRowKeys.length} nhân sự. Hệ thống sẽ XÓA SẠCH Mẫu 02 cũ và CHỈ ĐỒNG BỘ ${selectedRowKeys.length} người này. Bạn chắc chắn chứ?` 
+                                    : "Bạn chưa chọn ai. Hệ thống sẽ XÓA SẠCH Mẫu 02 cũ và ĐỒNG BỘ TOÀN BỘ nhân sự. Bạn chắc chắn chứ?"}
+                                onConfirm={handleSyncMau02}
+                                okText="Đồng bộ"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button 
+                                    className="text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100 font-medium" 
+                                    icon={<SyncOutlined />}
+                                    loading={isSyncing}
+                                >
+                                    Đồng bộ Mẫu 02 {selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''}
+                                </Button>
+                            </Popconfirm>
+                            <Popconfirm
+                                title="Tạo User tự động?"
+                                description="Hệ thống sẽ tạo tài khoản cho tất cả nhân sự chưa có User. Mật khẩu mặc định là 123456."
+                                onConfirm={handleGenerateUsers}
+                                okText="Tạo ngay"
+                                cancelText="Hủy"
+                            >
+                                <Button 
+                                    type="dashed" 
+                                    className="border-blue-400 text-blue-600 font-medium bg-blue-50/50 hover:bg-blue-100" 
+                                    icon={<TeamOutlined />}
+                                    loading={isGeneratingUsers}
+                                >
+                                    Tạo User tự động
+                                </Button>
+                            </Popconfirm>
+
                             {user?.role === 'ADMIN' && (
                                 <Popconfirm 
-                            title="Xóa toàn bộ nhân sự?" 
-                            description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
-                            onConfirm={handleDeleteAll} 
-                            okText="Có, Xóa hết" 
-                            cancelText="Không"
-                            okButtonProps={{ danger: true }}
-                        >
-                            <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
-                        </Popconfirm>
-                    )}
-                    <Popconfirm
-                        title="Đồng bộ sang Mẫu 02 XML?"
-                        description={selectedRowKeys.length > 0 
-                            ? `Bạn đang chọn ${selectedRowKeys.length} nhân sự. Hệ thống sẽ XÓA SẠCH Mẫu 02 cũ và CHỈ ĐỒNG BỘ ${selectedRowKeys.length} người này. Bạn chắc chắn chứ?` 
-                            : "Bạn chưa chọn ai. Hệ thống sẽ XÓA SẠCH Mẫu 02 cũ và ĐỒNG BỘ TOÀN BỘ nhân sự. Bạn chắc chắn chứ?"}
-                        onConfirm={handleSyncMau02}
-                        okText="Đồng bộ"
-                        cancelText="Hủy"
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button 
-                            type="primary" 
-                            className="bg-purple-600 hover:bg-purple-700" 
-                            size="large" 
-                            icon={<SyncOutlined />}
-                            loading={isSyncing}
-                        >
-                            Đồng bộ Mẫu 02 {selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''}
-                        </Button>
-                    </Popconfirm>
-                    <Popconfirm
-                        title="Tạo User tự động?"
-                        description="Hệ thống sẽ tạo tài khoản cho tất cả nhân sự chưa có User. Mật khẩu mặc định là 123456."
-                        onConfirm={handleGenerateUsers}
-                        okText="Tạo ngay"
-                        cancelText="Hủy"
-                    >
-                        <Button 
-                            type="dashed" 
-                            className="border-blue-500 text-blue-600 font-medium bg-blue-50 hover:bg-blue-100" 
-                            size="large" 
-                            icon={<TeamOutlined />}
-                            loading={isGeneratingUsers}
-                        >
-                            Tạo User tự động
-                        </Button>
-                    </Popconfirm>
-                    <Space.Compact>
-                        <Dropdown
-                            menu={{
-                                items: reports.length > 0 ? reports.map(r => ({
-                                    key: r.id,
-                                    label: r.name,
-                                    onClick: () => {
-                                        const basePath = window.location.pathname.split('/staff')[0];
-                                        const url = new URL(`${basePath}/api/staff/reports/${r.id}/export`, window.location.origin);
-                                        if (searchText) url.searchParams.append('search', searchText);
-                                        window.open(url.toString(), '_blank');
-                                    }
-                                })) : [{ key: 'empty', label: 'Chưa có mẫu báo cáo nào', disabled: true }]
-                            }}
-                            placement="bottomRight"
-                        >
-                            <Button 
-                                type="default" 
-                                size="large" 
-                                icon={<DownloadOutlined />} 
-                                className="text-green-600 border-green-600 hover:bg-green-50"
-                            >
-                                Xuất Báo Cáo
-                            </Button>
-                        </Dropdown>
-                        {user?.role === 'ADMIN' && (
-                            <Button
-                                type="default"
-                                size="large"
-                                className="text-slate-500 border-green-600 hover:text-green-600"
-                                icon={<SettingOutlined />}
-                                onClick={() => window.location.href = window.location.pathname.split('/staff')[0] + '/staff/reports'}
-                                title="Quản lý Mẫu Báo cáo"
-                            />
-                        )}
-                    </Space.Compact>
-                    <Button type="default" size="large" icon={<UploadOutlined />} onClick={() => setIsImportOpen(true)}>
-                        Import Nhân sự mới
-                    </Button>
-                    <Button type="default" size="large" icon={<SyncOutlined />} onClick={() => setIsBulkUpdateOpen(true)}>
-                        Cập nhật hàng loạt
-                    </Button>
-                    <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => {
-                        setSelectedStaff(null);
-                        setIsStaffModalOpen(true);
-                    }}>
-                        Thêm mới
-                    </Button>
-                        </>
-                    )}
-                </Space>
+                                    title="Xóa toàn bộ nhân sự?" 
+                                    description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
+                                    onConfirm={handleDeleteAll} 
+                                    okText="Có, Xóa hết" 
+                                    cancelText="Không"
+                                    okButtonProps={{ danger: true }}
+                                >
+                                    <Button danger type="text" icon={<DeleteOutlined />} className="hover:bg-rose-50 text-rose-600">
+                                        Xóa tất cả
+                                    </Button>
+                                </Popconfirm>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Card className="shadow-sm rounded-2xl overflow-hidden border-slate-100" styles={{ body: { padding: 0 } }}>

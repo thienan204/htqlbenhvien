@@ -39,10 +39,12 @@ interface DashboardCard {
     hoverColor: string | null;
     order: number;
     isActive: boolean;
+    allowedRoles?: string[];
 }
 
 export default function DashboardCardBuilder() {
     const [cards, setCards] = useState<DashboardCard[]>([]);
+    const [roles, setRoles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
@@ -50,7 +52,20 @@ export default function DashboardCardBuilder() {
 
     useEffect(() => {
         fetchCards();
+        fetchRoles();
     }, []);
+
+    const fetchRoles = async () => {
+        try {
+            const res = await fetch('/api/roles');
+            if (res.ok) {
+                const data = await res.json();
+                setRoles(data);
+            }
+        } catch (err) {
+            console.error('Lỗi khi tải danh sách vai trò:', err);
+        }
+    };
 
     const fetchCards = async () => {
         setLoading(true);
@@ -254,6 +269,23 @@ export default function DashboardCardBuilder() {
             )
         },
         {
+            title: 'Phân quyền Role',
+            dataIndex: 'allowedRoles',
+            key: 'allowedRoles',
+            render: (allowedRoles?: string[]) => {
+                if (!allowedRoles || allowedRoles.length === 0) {
+                    return <Tag color="green">Tất cả Role</Tag>;
+                }
+                return (
+                    <div className="flex flex-wrap gap-1 max-w-[220px]">
+                        {allowedRoles.map(r => (
+                            <Tag color="blue" key={r}>{r}</Tag>
+                        ))}
+                    </div>
+                );
+            }
+        },
+        {
             title: 'Trạng thái',
             dataIndex: 'isActive',
             key: 'isActive',
@@ -277,6 +309,7 @@ export default function DashboardCardBuilder() {
                                 let themeIndex = THEMES.findIndex(t => t.bg === record.bgColor);
                                 form.setFieldsValue({
                                     ...record,
+                                    allowedRoles: record.allowedRoles || [],
                                     themeIndex: themeIndex !== -1 ? themeIndex : undefined
                                 });
                             }, 0);
@@ -312,7 +345,7 @@ export default function DashboardCardBuilder() {
                             setTimeout(() => {
                                 setEditingId(null);
                                 form.resetFields();
-                                form.setFieldsValue({ isActive: true });
+                                form.setFieldsValue({ isActive: true, allowedRoles: [] });
                             }, 0);
                         }}
                     >
@@ -383,6 +416,24 @@ export default function DashboardCardBuilder() {
                             </Select>
                         </Form.Item>
                     </div>
+
+                    <Form.Item 
+                        name="allowedRoles" 
+                        label="Phân quyền hiển thị theo Role"
+                        tooltip="Chọn các vai trò được phép nhìn thấy thẻ này trên trang chủ. Để trống nếu muốn hiển thị cho tất cả mọi người."
+                    >
+                        <Select 
+                            mode="multiple" 
+                            placeholder="Tất cả Role (Mặc định mọi người đều thấy)" 
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            options={roles.map(r => ({
+                                label: `${r.name} (${r.code})`,
+                                value: r.code
+                            }))}
+                        />
+                    </Form.Item>
 
                     <Form.Item name="isActive" valuePropName="checked" label="Trạng thái hiển thị ở Trang chủ">
                         <Switch checkedChildren="Đang bật" unCheckedChildren="Đã tắt" />

@@ -26,6 +26,7 @@ export async function PUT(req: Request, context: any) {
                 hoverColor: data.hoverColor,
                 order: data.order,
                 isActive: data.isActive,
+                allowedRoles: Array.isArray(data.allowedRoles) ? data.allowedRoles : [],
             }
         });
         

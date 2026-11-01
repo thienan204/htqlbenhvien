@@ -13,22 +13,16 @@ export async function GET() {
             return NextResponse.json(cards);
         }
 
-        const adminOnlyPaths = ['/rules', '/roles', '/settings', '/admin', '/mau'];
-        const tccbPaths = ['/staff', '/departments'];
+        const userRole = user?.role || 'GUEST';
 
         const filteredCards = cards.filter(card => {
-            const isAdminRoute = adminOnlyPaths.some(p => card.href.startsWith(p));
-            const isTccbRoute = tccbPaths.some(p => card.href.startsWith(p));
-
-            if (isAdminRoute && user?.role !== 'ADMIN') {
-                return false;
+            // Nếu allowedRoles rỗng -> Hiển thị cho tất cả mọi người
+            if (!card.allowedRoles || card.allowedRoles.length === 0) {
+                return true;
             }
 
-            if (isTccbRoute && !['ADMIN', 'TCCB', 'KHOA_PHONG'].includes(user?.role as string)) {
-                return false;
-            }
-
-            return true;
+            // Nếu có cấu hình danh sách roles -> Kiểm tra xem role của user có nằm trong danh sách không
+            return card.allowedRoles.includes(userRole);
         });
 
         return NextResponse.json(filteredCards);
@@ -57,6 +51,7 @@ export async function POST(req: Request) {
                 hoverColor: data.hoverColor,
                 order: data.order || 0,
                 isActive: data.isActive !== undefined ? data.isActive : true,
+                allowedRoles: Array.isArray(data.allowedRoles) ? data.allowedRoles : [],
             }
         });
         

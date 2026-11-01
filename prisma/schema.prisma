@@ -216,8 +216,12 @@ model Staff {
   phu_cap_tnvk_id  String?
   phu_cap_tnvk_ref SystemCategory? @relation("StaffTNVK", fields: [phu_cap_tnvk_id], references: [id])
 
-  trainings     StaffTraining[]
-  workHistories StaffWorkHistory[]
+  trainings         StaffTraining[]
+  workHistories     StaffWorkHistory[]
+  attendanceRecords StaffAttendanceRecord[]
+  dutyRecords       StaffDutyRecord[]
+  overtimeRecords   StaffOvertimeRecord[]
+  monthlyNotes      StaffMonthlyAttendanceNote[]
 }
 
 model StaffTraining {
@@ -791,10 +795,11 @@ model DashboardCard {
   bgColor     String?
   borderColor String?
   hoverColor  String?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order        Int      @default(0)
+  isActive     Boolean  @default(true)
+  allowedRoles String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Warehouse {
@@ -1950,3 +1955,105 @@ model KskToanDan {
 
   @@index([sdtBenhNhan])
 }
+
+// ==========================================
+// PHÂN HỆ CHẤM CÔNG & CHẤM TRỰC KHOA PHÒNG
+// ==========================================
+
+model StaffDutyRecord {
+  id                 String                  @id @default(cuid())
+  staffId            String
+  ma_khoa            String
+  dutyDate           String                  // Định dạng YYYY-MM-DD
+  dutyCode           String                  // T (thường), C (thứ 7, CN), L (lễ), Te (tết)
+  dutyType           String                  @default("TRUC_CHINH") // TRUC_CHINH | TRUC_KEM
+  allowanceDays      Float                   @default(1.0) // 1.0 cho T, C; 2.0 cho L, Te theo luật
+  compensatedDays    Float                   @default(0.0) // Đã nghỉ bù (0.0, 0.5, 1.0, 1.5, 2.0)
+  isFullyCompensated Boolean                 @default(false)
+  note               String?
+  updatedBy          String?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  staff              Staff                   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  compensations      StaffAttendanceRecord[]
+
+  @@unique([staffId, dutyDate])
+  @@index([ma_khoa, dutyDate])
+}
+
+model StaffAttendanceRecord {
+  id            String           @id @default(cuid())
+  staffId       String
+  ma_khoa       String
+  workDate      String           // Định dạng YYYY-MM-DD
+  code          String           // x, Nb, P, L, H, Ô, TS, KL
+  session       String           @default("FULL_DAY") // FULL_DAY | MORNING | AFTERNOON
+  secondaryCode String?          // Ký hiệu buổi còn lại (vd: code="Nb", session="MORNING", secondaryCode="x" -> hiển thị "Nb/x")
+  value         Float            @default(1.0) // Giá trị ngày công (1.0 hoặc 0.5)
+  dutyRecordId  String?          // Liên kết ca trực khi là nghỉ bù Nb
+  dutyRecord    StaffDutyRecord? @relation(fields: [dutyRecordId], references: [id], onDelete: SetNull)
+  note          String?
+  updatedBy     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  staff         Staff            @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, workDate, session])
+  @@index([ma_khoa, workDate])
+  @@index([dutyRecordId])
+}
+
+model StaffMonthlyLock {
+  id        String    @id @default(cuid())
+  ma_khoa   String
+  monthYear String    // Định dạng YYYY-MM (vd: 2026-10)
+  sheetType String    // CHAM_CONG | CHAM_TRUC
+  isLocked  Boolean   @default(false)
+  lockedBy  String?
+  lockedAt  DateTime?
+  note      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([ma_khoa, monthYear, sheetType])
+  @@index([ma_khoa, monthYear])
+}
+
+model StaffOvertimeRecord {
+  id          String   @id @default(cuid())
+  staffId     String
+  ma_khoa     String   @default("KP046")
+  workDate    String   // Định dạng YYYY-MM-DD
+  dayHours    Float    @default(0) // Số giờ làm thêm ban ngày
+  nightHours  Float    @default(0) // Số giờ làm thêm ban đêm
+  totalHours  Float    @default(0) // Tổng số giờ làm thêm
+  note        String?
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, workDate])
+  @@index([ma_khoa, workDate])
+}
+
+model StaffMonthlyAttendanceNote {
+  id        String   @id @default(cuid())
+  staffId   String
+  ma_khoa   String
+  monthYear String   // Định dạng YYYY-MM
+  note      String   // Nội dung ghi chú (VD: 60% 15 N..., Nghỉ chế độ, ...)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, monthYear])
+  @@index([ma_khoa, monthYear])
+}
+

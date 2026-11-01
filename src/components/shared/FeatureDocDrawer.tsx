@@ -1154,7 +1154,7 @@ export default function FeatureDocDrawer({ open: openProp, onClose: onCloseProp,
             >
                 <div className="py-2 space-y-2">
                     <Alert
-                        message="Mẹo gửi nhanh"
+                        title="Mẹo gửi nhanh"
                         description="Bấm nút 'Sao chép tin nhắn Zalo', sau đó mở nhóm Zalo Khoa/Phòng và nhấn phím Ctrl + V để dán và gửi đi."
                         type="info"
                         showIcon

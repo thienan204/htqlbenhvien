@@ -67,11 +67,25 @@ export default function ClinicalSchedulingAttendancePage() {
         const newData = [...staffList];
         const index = newData.findIndex(item => item.id === staffId);
         let oldStatus = null;
+        let oldDvkt = true;
         let currentDvkt = true;
         if (index > -1) {
             oldStatus = newData[index].statusId;
-            currentDvkt = newData[index].is_thuc_hien_dvkt !== false;
+            oldDvkt = newData[index].is_thuc_hien_dvkt !== false;
+
+            const stObj = attendanceStatuses.find(s => s.id === statusId);
+            if (stObj) {
+                // Các trạng thái có đi làm thực tế trong ngày -> Tự động bật quyền DVKT = Có
+                if (['DI_LAM', 'TRUC', 'NGHI_BU_NUA_NGAY', 'NGHI_PHEP_NUA_NGAY'].includes(stObj.code)) {
+                    currentDvkt = true;
+                } else if (['DI_HOC', 'NGHI_PHEP', 'NGHI_OM', 'NGHI_BU', 'NGHI_LE', 'NGHI_THAI_SAN', 'NGHI_KHONG_LUONG'].includes(stObj.code)) {
+                    // Nghỉ cả ngày hoặc đi học -> Tự động tắt quyền DVKT để chống xuất toán BHYT
+                    currentDvkt = false;
+                }
+            }
+
             newData[index].statusId = statusId;
+            newData[index].is_thuc_hien_dvkt = currentDvkt;
             setStaffList(newData);
         }
 
@@ -157,29 +171,47 @@ export default function ClinicalSchedulingAttendancePage() {
             title: 'Mã NV',
             dataIndex: 'ma_nv',
             key: 'ma_nv',
-            width: 120,
+            width: 110,
         },
         {
             title: 'Họ tên',
             dataIndex: 'ho_ten',
             key: 'ho_ten',
+            width: 180,
+            render: (name: string) => <span className="font-semibold text-slate-800">{name}</span>
         },
         {
             title: 'Chức danh',
             dataIndex: 'chuc_danh',
             key: 'chuc_danh',
-            width: 150,
+            width: 140,
         },
         {
-            title: 'Trạng thái (Điểm danh)',
+            title: 'Trạng thái (Điểm danh theo Danh mục)',
             dataIndex: 'statusId',
             key: 'statusId',
-            width: 400,
+            width: 580,
             render: (statusId: string | null, record: any) => {
                 // Tìm ID của trạng thái DI_LAM làm mặc định nếu chưa điểm danh
                 const defaultStatus = attendanceStatuses.find(s => s.code === 'DI_LAM' || s.code === 'DI_LAM_HANH_CHINH');
                 const defaultStatusId = defaultStatus ? defaultStatus.id : (attendanceStatuses.length > 0 ? attendanceStatuses[0].id : null);
                 const currentValue = statusId || defaultStatusId;
+
+                // Hàm hiển thị nhãn ngắn gọn nhưng thân thiện
+                const getLabel = (s: any) => {
+                    if (s.code === 'DI_LAM') return 'Đi làm (x/+)';
+                    if (s.code === 'TRUC') return 'Trực (T)';
+                    if (s.code === 'NGHI_BU') return 'Nghỉ bù (Nb)';
+                    if (s.code === 'NGHI_BU_NUA_NGAY') return 'Bù 1/2 (Nb/2)';
+                    if (s.code === 'NGHI_PHEP') return 'Phép (P)';
+                    if (s.code === 'NGHI_PHEP_NUA_NGAY') return 'Phép 1/2 (P/2)';
+                    if (s.code === 'DI_HOC') return 'Đi học (H)';
+                    if (s.code === 'NGHI_LE') return 'Lễ (L)';
+                    if (s.code === 'NGHI_OM') return 'Ốm (Ô)';
+                    if (s.code === 'NGHI_THAI_SAN') return 'Thai sản (TS)';
+                    if (s.code === 'NGHI_KHONG_LUONG') return 'Không lương (KL)';
+                    return s.name;
+                };
 
                 return (
                     <ConfigProvider theme={{ token: { colorPrimary: '#16a34a' } }}>
@@ -187,12 +219,13 @@ export default function ClinicalSchedulingAttendancePage() {
                             value={currentValue} 
                             onChange={(e) => handleChangeStatus(record.id, e.target.value)}
                             buttonStyle="solid"
-                            size="middle"
+                            size="small"
+                            className="flex flex-wrap gap-1"
                         >
                             {attendanceStatuses.map(status => (
-                                <Tooltip title={status.name} key={status.id}>
-                                    <Radio.Button value={status.id}>
-                                        {status.code}
+                                <Tooltip title={`${status.name} (${status.description || status.code})`} key={status.id}>
+                                    <Radio.Button value={status.id} className="text-xs px-2 py-0.5 rounded">
+                                        {getLabel(status)}
                                     </Radio.Button>
                                 </Tooltip>
                             ))}

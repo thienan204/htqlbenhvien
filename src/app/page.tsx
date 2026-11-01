@@ -18,6 +18,7 @@ interface DashboardCard {
     hoverColor: string | null;
     order: number;
     isActive: boolean;
+    allowedRoles?: string[];
 }
 
 export default function DashboardPage() {
