@@ -42,6 +42,7 @@ export async function GET(request: Request) {
                 dutyOrder: true,
                 autoAssignDisabled: true,
                 focusReason: true,
+                staffId: true,
                 staff: {
                     select: {
                         ho_ten: true,
@@ -51,6 +52,64 @@ export async function GET(request: Request) {
                 }
             }
         });
+
+        // Tự động đối chiếu và đồng bộ trạng thái nhận việc theo Chấm công hôm nay
+        try {
+            let slug = 'it-request-fields-config';
+            if (targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
+            else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
+
+            const configRule = await prisma.specializedRule.findUnique({ where: { slug } });
+            const itConfig: any = configRule?.logicConfig || {};
+            const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
+            const applyForLeaders = itConfig.applyForLeaders !== false;
+            const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
+
+            if (syncAttendanceEnabled) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                for (const u of users) {
+                    if (u.staffId) {
+                        const todayAtt = await prisma.staffAttendanceRecord.findFirst({
+                            where: {
+                                staffId: u.staffId,
+                                workDate: todayStr
+                            }
+                        });
+
+                        if (todayAtt) {
+                            const cleanCode = (todayAtt.code || '').trim().toUpperCase();
+                            const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode);
+                            const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
+
+                            const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
+                            const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
+                            const cvName = (u.staff?.chuc_vu_ref?.name || '').toUpperCase();
+                            const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA') || cvName.includes('TRƯỞNG PHÒNG') || cvName.includes('PHÓ TRƯỞNG PHÒNG');
+
+                            if (isWorkingToday && (!isLeader || applyForLeaders)) {
+                                if (!u.isAvailable) {
+                                    await prisma.user.update({
+                                        where: { id: u.id },
+                                        data: { isAvailable: true }
+                                    });
+                                    u.isAvailable = true;
+                                }
+                            } else if (isLeaveToday && autoDisableOnLeave) {
+                                if (u.isAvailable) {
+                                    await prisma.user.update({
+                                        where: { id: u.id },
+                                        data: { isAvailable: false }
+                                    });
+                                    u.isAvailable = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (eSync) {
+            console.error('Lỗi tự động đồng bộ duty-roster với bảng chấm công:', eSync);
+        }
 
         const formatted = users.map(u => {
             const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;

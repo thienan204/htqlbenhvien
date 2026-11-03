@@ -319,6 +319,15 @@ export async function POST(request: Request) {
                         const isSupportDept = ['KP046', 'KP038', 'KP040'].includes(staffRecord.ma_khoa || '') || ['CNTT', 'VTYT', 'HCQT'].includes(staffRecord.user.role);
                         
                         if (isSupportDept) {
+                            // Đọc cấu hình liên kết chấm công của bộ phận nhận việc
+                            const itConfigRule = await prisma.specializedRule.findUnique({
+                                where: { slug: 'it-request-fields-config' }
+                            });
+                            const itConfig: any = itConfigRule?.logicConfig || {};
+                            const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
+                            const applyForLeaders = itConfig.applyForLeaders !== false;
+                            const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
+
                             const explicitLevel = (staffRecord.chuc_vu_ref as any)?.level;
                             const cvCode = (staffRecord.chuc_vu_ref?.code || '').toUpperCase();
                             const cvName = (staffRecord.chuc_vu_ref?.name || '').toUpperCase();
@@ -330,15 +339,21 @@ export async function POST(request: Request) {
                                 cvName.includes('TRƯỞNG PHÒNG') ||
                                 cvName.includes('PHÓ TRƯỞNG PHÒNG');
 
-                            // Đối với LÃNH ĐẠO: Giữ nguyên, KHÔNG tự động ép nhận việc!
-                            if (!isLeader) {
+                            if (syncAttendanceEnabled && (!isLeader || applyForLeaders)) {
                                 const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode) || (cleanCode === 'NB' && (secondaryCode === 'x' || secondaryCode === '+'));
-                                await prisma.user.update({
-                                    where: { id: staffRecord.user.id },
-                                    data: {
-                                        isAvailable: isWorkingToday
-                                    }
-                                } );
+                                const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
+
+                                if (isWorkingToday) {
+                                    await prisma.user.update({
+                                        where: { id: staffRecord.user.id },
+                                        data: { isAvailable: true }
+                                    });
+                                } else if (isLeaveToday && autoDisableOnLeave) {
+                                    await prisma.user.update({
+                                        where: { id: staffRecord.user.id },
+                                        data: { isAvailable: false }
+                                    });
+                                }
                             }
                         }
                     }

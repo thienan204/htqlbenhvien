@@ -84,28 +84,63 @@ export async function POST(request: Request) {
             }
         });
 
-        // Quy định bệnh viện: Lãnh đạo các phòng tiếp nhận yêu cầu (CNTT, VTYT, HCQT) mặc định không nhận việc tự động khi đăng nhập (isAvailable: false)
+        // Tự động đồng bộ trạng thái nhận việc (isAvailable) theo Bảng chấm công ngày hôm nay
         const isSupportDeptUser = ['CNTT', 'VTYT', 'HCQT'].includes(user.role) || ['KP046', 'KP038', 'KP040'].includes(user.ma_khoa || '');
         if (isSupportDeptUser && user.staffId) {
             try {
+                // Đọc cấu hình liên kết chấm công
+                const itConfigRule = await prisma.specializedRule.findUnique({
+                    where: { slug: 'it-request-fields-config' }
+                });
+                const itConfig: any = itConfigRule?.logicConfig || {};
+                const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
+                const applyForLeaders = itConfig.applyForLeaders !== false;
+                const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
+
                 const staff = await prisma.staff.findUnique({
                     where: { id: user.staffId },
                     include: { chuc_vu_ref: true }
                 });
                 const explicitLevel = (staff?.chuc_vu_ref as any)?.level;
                 const cvCode = (staff?.chuc_vu_ref?.code || '').toUpperCase();
-                const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
-                if (isLeader) {
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: { isAvailable: false }
-                    });
-                } else if (['CNTT', 'VTYT', 'HCQT'].includes(user.role)) {
-                    // Nhân viên kỹ thuật mặc định luôn sẵn sàng nhận việc tự động
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: { isAvailable: true }
-                    });
+                const cvName = (staff?.chuc_vu_ref?.name || '').toUpperCase();
+                const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA') || cvName.includes('TRƯỞNG PHÒNG') || cvName.includes('PHÓ TRƯỞNG PHÒNG');
+
+                // Lấy ngày hôm nay
+                const todayStr = new Date().toISOString().split('T')[0];
+                const todayAtt = await prisma.staffAttendanceRecord.findFirst({
+                    where: {
+                        staffId: user.staffId,
+                        workDate: todayStr
+                    }
+                });
+
+                if (todayAtt && syncAttendanceEnabled) {
+                    const cleanCode = (todayAtt.code || '').trim().toUpperCase();
+                    const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode);
+                    const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
+
+                    if (isWorkingToday) {
+                        if (!isLeader || applyForLeaders) {
+                            await prisma.user.update({
+                                where: { id: user.id },
+                                data: { isAvailable: true }
+                            });
+                        }
+                    } else if (isLeaveToday && autoDisableOnLeave) {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { isAvailable: false }
+                        });
+                    }
+                } else if (!isLeader) {
+                    // Nhân viên kỹ thuật nếu chưa có công hôm nay thì giữ nguyên trạng thái hoặc bật
+                    if (!user.isAvailable) {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { isAvailable: true }
+                        });
+                    }
                 }
             } catch (errLeader) {
                 console.error('Lỗi kiểm tra lãnh đạo phòng hỗ trợ khi login:', errLeader);

@@ -99,6 +99,31 @@ export default async function RootLayout({
   const dbAdminPaths = menus.filter(m => m.isAdminOnly && m.path && m.path !== '/').map(m => m.path);
   adminOnlyPaths = Array.from(new Set([...adminOnlyPaths, ...dbAdminPaths]));
 
+  // Tính toán thời gian phiên làm việc (Session Timeout) theo cấu hình
+  const isSupportUser = user ? (
+    ['CNTT', 'VTYT', 'HCQT', 'ADMIN'].includes(user.role) || 
+    ['KP046', 'KP038', 'KP040'].includes(user.ma_khoa || '')
+  ) : false;
+
+  let sessionTimeoutMinutes = 30;
+  if (user) {
+    try {
+      const itConfigRule = await prisma.specializedRule.findUnique({
+        where: { slug: 'it-request-fields-config' }
+      });
+      const itConfig: any = itConfigRule?.logicConfig || {};
+      if (isSupportUser) {
+        const hours = itConfig.supportSessionTimeoutHours !== undefined ? Number(itConfig.supportSessionTimeoutHours) : 8;
+        sessionTimeoutMinutes = Math.max(hours * 60, 60); // Mặc định 8h = 480 phút
+      } else {
+        sessionTimeoutMinutes = itConfig.departmentSessionTimeoutMinutes !== undefined ? Number(itConfig.departmentSessionTimeoutMinutes) : 30;
+      }
+    } catch {
+      sessionTimeoutMinutes = isSupportUser ? 480 : 30;
+    }
+  }
+  const warningMinutes = Math.min(5, Math.max(1, Math.floor(sessionTimeoutMinutes * 0.05) || 2));
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -108,7 +133,7 @@ export default async function RootLayout({
         <AntdRegistry>
           <App>
             <AuthProvider user={user} guestPermissions={guestPermissions}>
-              {user && <SessionTimeoutManager timeoutMinutes={30} warningMinutes={2} />}
+              {user && <SessionTimeoutManager timeoutMinutes={sessionTimeoutMinutes} warningMinutes={warningMinutes} />}
               <FetchInterceptor />
               <DesktopShortcutPrompt />
               {/* Main Layout Wrapper */}

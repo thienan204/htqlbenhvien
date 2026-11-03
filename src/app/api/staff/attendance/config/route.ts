@@ -21,11 +21,28 @@ const DEFAULT_WORK_HOURS = {
     standardDailyHours: 8.0
 };
 
+const DEFAULT_CHECKIN_RULES = {
+    checkInWindowMinutes: 60, // Cho phép bấm trước ca 60 phút
+    lateToleranceMinutes: 15, // Dung sai trễ 15 phút (vẫn tính đúng giờ)
+    cutOffMinutes: 90, // Tối đa 90 phút sau giờ vào (sau đó khóa tự bấm)
+    earlyLeaveToleranceMinutes: 15, // Cho phép về sớm tối đa 15 phút
+    checkOutWindowEndHour: '20:00', // Khung giờ chót bấm tan ca
+    requireInternalNetwork: false, // Bắt buộc mạng nội bộ
+    allowedSubnets: '', // Dải IP mạng nội bộ viện
+    defaultMode: 'HYBRID' // HYBRID | WEB_ONLY | BIOMETRIC_ONLY | MANUAL
+};
+
 export async function GET(request: Request) {
     try {
-        const configRule = await prisma.specializedRule.findUnique({
-            where: { slug: CONFIG_SLUG }
-        });
+        const [configRule, departments] = await Promise.all([
+            prisma.specializedRule.findUnique({
+                where: { slug: CONFIG_SLUG }
+            }),
+            prisma.department.findMany({
+                select: { ma_khoa: true, ten_khoa: true, type: true },
+                orderBy: { ten_khoa: 'asc' }
+            })
+        ]);
 
         if (!configRule || !configRule.logicConfig) {
             return NextResponse.json({
@@ -33,8 +50,11 @@ export async function GET(request: Request) {
                 config: {
                     holidays: DEFAULT_HOLIDAYS,
                     makeupWorkdays: [],
-                    workHours: DEFAULT_WORK_HOURS
-                }
+                    workHours: DEFAULT_WORK_HOURS,
+                    checkInRules: DEFAULT_CHECKIN_RULES,
+                    departmentConfigs: {}
+                },
+                departments
             });
         }
 
@@ -45,8 +65,11 @@ export async function GET(request: Request) {
             config: {
                 holidays: Array.isArray(logic.holidays) ? logic.holidays : DEFAULT_HOLIDAYS,
                 makeupWorkdays: Array.isArray(logic.makeupWorkdays) ? logic.makeupWorkdays : [],
-                workHours: logic.workHours || DEFAULT_WORK_HOURS
-            }
+                workHours: logic.workHours || DEFAULT_WORK_HOURS,
+                checkInRules: { ...DEFAULT_CHECKIN_RULES, ...(logic.checkInRules || {}) },
+                departmentConfigs: logic.departmentConfigs || {}
+            },
+            departments
         });
     } catch (error) {
         console.error('Lỗi lấy cấu hình chấm công bệnh viện:', error);
@@ -74,7 +97,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { holidays, makeupWorkdays, workHours } = body;
+        const { holidays, makeupWorkdays, workHours, checkInRules, departmentConfigs } = body;
 
         // Chuẩn hóa danh sách ngày nghỉ lễ
         const cleanHolidays = Array.isArray(holidays) ? holidays.map((h: any, idx: number) => ({
@@ -100,10 +123,29 @@ export async function POST(request: Request) {
             standardDailyHours: Number(workHours?.standardDailyHours) || 8.0
         };
 
+        // Quy tắc chấm công & dung sai
+        const cleanCheckInRules = {
+            checkInWindowMinutes: Number(checkInRules?.checkInWindowMinutes) || DEFAULT_CHECKIN_RULES.checkInWindowMinutes,
+            lateToleranceMinutes: Number(checkInRules?.lateToleranceMinutes) || DEFAULT_CHECKIN_RULES.lateToleranceMinutes,
+            cutOffMinutes: Number(checkInRules?.cutOffMinutes) || DEFAULT_CHECKIN_RULES.cutOffMinutes,
+            earlyLeaveToleranceMinutes: Number(checkInRules?.earlyLeaveToleranceMinutes) || DEFAULT_CHECKIN_RULES.earlyLeaveToleranceMinutes,
+            checkOutWindowEndHour: (checkInRules?.checkOutWindowEndHour || DEFAULT_CHECKIN_RULES.checkOutWindowEndHour).trim(),
+            requireInternalNetwork: Boolean(checkInRules?.requireInternalNetwork),
+            allowedSubnets: (checkInRules?.allowedSubnets || '').trim(),
+            defaultMode: ['WEB_ONLY', 'BIOMETRIC_ONLY', 'HYBRID', 'MANUAL'].includes(checkInRules?.defaultMode) 
+                ? checkInRules.defaultMode 
+                : DEFAULT_CHECKIN_RULES.defaultMode
+        };
+
+        // Cấu hình theo Khoa / Phòng
+        const cleanDepartmentConfigs = (departmentConfigs && typeof departmentConfigs === 'object') ? departmentConfigs : {};
+
         const newLogicConfig = {
             holidays: cleanHolidays,
             makeupWorkdays: cleanMakeupWorkdays,
             workHours: cleanWorkHours,
+            checkInRules: cleanCheckInRules,
+            departmentConfigs: cleanDepartmentConfigs,
             updatedAt: new Date().toISOString(),
             updatedBy: user.id
         };
@@ -128,7 +170,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             success: true,
-            message: 'Đã lưu cấu hình chấm công & ngày nghỉ lễ toàn viện thành công!',
+            message: 'Đã lưu cấu hình chấm công & quy định khoa phòng toàn viện thành công!',
             config: newLogicConfig
         });
     } catch (error) {
@@ -138,3 +180,4 @@ export async function POST(request: Request) {
         }, { status: 500 });
     }
 }
+

@@ -10,7 +10,10 @@ declare global {
   var prisma: undefined | ReturnType<typeof prismaClientSingleton>
 }
 
-const prisma = globalThis.prisma ?? prismaClientSingleton()
+// Nếu globalThis.prisma đang dùng instance cũ chưa có model mới thì khởi tạo lại
+const prisma = (globalThis.prisma && (globalThis.prisma as any).staffAttendanceCheckLog)
+  ? globalThis.prisma
+  : prismaClientSingleton()
 
 export default prisma
 

@@ -98,8 +98,8 @@ export async function POST(request: Request) {
                 updatedCount++;
             }
 
-            // Tự động BẬT isAvailable cho Kỹ thuật viên nếu là ngày hôm nay và đi làm đủ
-            if (date === todayStr && st.user && code === 'x') {
+            // Tự động BẬT isAvailable cho Kỹ thuật viên & Lãnh đạo nếu là ngày hôm nay và đi làm đủ
+            if (date === todayStr && st.user && ['x', '+'].includes(code.toLowerCase())) {
                 const explicitLevel = (st.chuc_vu_ref as any)?.level;
                 const cvCode = (st.chuc_vu_ref?.code || '').toUpperCase();
                 const cvName = (st.chuc_vu_ref?.name || '').toUpperCase();
@@ -111,7 +111,18 @@ export async function POST(request: Request) {
                     cvName.includes('TRƯỞNG PHÒNG') ||
                     cvName.includes('PHÓ TRƯỞNG PHÒNG');
 
-                if (!isLeader) {
+                let applyForLeaders = true;
+                try {
+                    const itConfigRule = await prisma.specializedRule.findUnique({
+                        where: { slug: 'it-request-fields-config' }
+                    });
+                    const itConfig: any = itConfigRule?.logicConfig || {};
+                    if (itConfig.applyForLeaders !== undefined) {
+                        applyForLeaders = Boolean(itConfig.applyForLeaders);
+                    }
+                } catch {}
+
+                if (!isLeader || applyForLeaders) {
                     await prisma.user.update({
                         where: { id: st.user.id },
                         data: { isAvailable: true }

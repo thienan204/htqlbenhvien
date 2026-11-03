@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const monthYear = searchParams.get('monthYear') || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-        const type = searchParams.get('type') || 'CHAM_CONG'; // 'CHAM_CONG' | 'CHAM_TRUC'
+        const type = searchParams.get('type') || 'CHAM_CONG'; // 'CHAM_CONG' | 'CHAM_TRUC' | 'TRUC_KEM' | 'TRUC_THUONG_TRU' | 'CHAM_THEM_GIO'
         const ma_khoa = searchParams.get('ma_khoa') || 'KP046';
 
         const [yearStr, monthStr] = monthYear.split('-');
@@ -421,11 +421,25 @@ export async function GET(request: Request) {
             sheet.getColumn(36).width = 9;
             sheet.getColumn(37).width = 16;
 
-        } else {
+        } else if (type === 'CHAM_TRUC' || type === 'TRUC_KEM' || type === 'TRUC_THUONG_TRU') {
             // =========================================================================
             // TRƯỜNG HỢP 2: XUẤT BẢNG CHẤM TRỰC (Mẫu C01b - YT theo QĐ 144-BHYT/QĐ)
+            // Hỗ trợ 3 bảng riêng biệt:
+            // 1. CHAM_TRUC: Bảng chấm trực chính (T, C, L/Te)
+            // 2. TRUC_KEM: Bảng chấm trực kèm (Tk)
+            // 3. TRUC_THUONG_TRU: Bảng chấm trực thường trú (TT)
             // =========================================================================
-            const sheet = workbook.addWorksheet(`T${month},${year}`);
+            const isTrucKem = type === 'TRUC_KEM';
+            const isThuongTru = type === 'TRUC_THUONG_TRU';
+            const isTrucChinh = type === 'CHAM_TRUC';
+
+            const sheetName = isTrucKem
+                ? `Trực kèm T${month}`
+                : isThuongTru
+                ? `Thường trú T${month}`
+                : `T${month},${year}`;
+
+            const sheet = workbook.addWorksheet(sheetName);
             sheet.views = [{ showGridLines: true }];
 
             const dutyRecords = await prisma.staffDutyRecord.findMany({
@@ -443,7 +457,19 @@ export async function GET(request: Request) {
             });
 
             // Tiêu đề & Biểu mẫu QĐ 144
-            sheet.getCell('A3').value = 'BẢNG CHẤM CÔNG THƯỜNG TRỰC CHUYÊN MÔN Y TẾ ĐƯỢC PHỤ CẤP';
+            const titleText = isTrucKem
+                ? 'BẢNG CHẤM CÔNG TRỰC KÈM CHUYÊN MÔN Y TẾ ĐƯỢC HƯỞNG PHỤ CẤP'
+                : isThuongTru
+                ? 'BẢNG CHẤM CÔNG TRỰC THƯỜNG TRÚ CHUYÊN MÔN Y TẾ ĐƯỢC HƯỞNG PHỤ CẤP'
+                : 'BẢNG CHẤM CÔNG THƯỜNG TRỰC CHUYÊN MÔN Y TẾ ĐƯỢC PHỤ CẤP';
+
+            const partIText = isTrucKem
+                ? 'PHẦN I - CHẤM CÔNG TRỰC KÈM'
+                : isThuongTru
+                ? 'PHẦN I - CHẤM CÔNG TRỰC THƯỜNG TRÚ'
+                : 'PHẦN I - CHẤM CÔNG';
+
+            sheet.getCell('A3').value = titleText;
             sheet.getCell('A3').font = { name: 'Times New Roman', size: 13, bold: true };
 
             sheet.getCell('C4').value = `Tháng  ${month} năm ${year}`;
@@ -464,7 +490,7 @@ export async function GET(request: Request) {
             sheet.getCell('A7').value = deptName;
             sheet.getCell('A7').font = { name: 'Times New Roman', size: 10, bold: true };
 
-            sheet.getCell('I7').value = 'PHẦN I - CHẤM CÔNG';
+            sheet.getCell('I7').value = partIText;
             sheet.getCell('I7').font = { name: 'Times New Roman', size: 11, bold: true };
 
             // Header Bảng trực (Row 8 & 9)
@@ -516,43 +542,51 @@ export async function GET(request: Request) {
                 }
             }
 
-            sheet.mergeCells('AI8:AN8');
-            sheet.getCell('AI8').value = 'CỘNG SỐ NGÀY TRỰC TRONG THÁNG';
-            sheet.getCell('AI8').font = { name: 'Times New Roman', size: 9, bold: true };
-            sheet.getCell('AI8').alignment = { horizontal: 'center', vertical: 'middle' };
-            for (let c = 35; c <= 40; c++) {
-                sheet.getRow(8).getCell(c).border = thinBorder;
+            const lastCol = isTrucChinh ? 38 : 35;
+
+            if (isTrucChinh) {
+                sheet.mergeCells('AI8:AL8');
+                sheet.getCell('AI8').value = 'CỘNG SỐ NGÀY TRỰC TRONG THÁNG';
+                sheet.getCell('AI8').font = { name: 'Times New Roman', size: 9, bold: true };
+                sheet.getCell('AI8').alignment = { horizontal: 'center', vertical: 'middle' };
+                for (let c = 35; c <= 38; c++) {
+                    sheet.getRow(8).getCell(c).border = thinBorder;
+                }
+
+                sheet.getCell('AI9').value = 'Ngày thường';
+                sheet.getCell('AI9').font = { name: 'Times New Roman', size: 8, bold: true };
+                sheet.getCell('AI9').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                sheet.getCell('AI9').border = thinBorder;
+
+                sheet.getCell('AJ9').value = 'T7,CN';
+                sheet.getCell('AJ9').font = { name: 'Times New Roman', size: 8, bold: true };
+                sheet.getCell('AJ9').alignment = { horizontal: 'center', vertical: 'middle' };
+                sheet.getCell('AJ9').border = thinBorder;
+
+                sheet.getCell('AK9').value = 'Lễ tết';
+                sheet.getCell('AK9').font = { name: 'Times New Roman', size: 8, bold: true };
+                sheet.getCell('AK9').alignment = { horizontal: 'center', vertical: 'middle' };
+                sheet.getCell('AK9').border = thinBorder;
+
+                sheet.getCell('AL9').value = 'Tổng Số';
+                sheet.getCell('AL9').font = { name: 'Times New Roman', size: 8, bold: true };
+                sheet.getCell('AL9').alignment = { horizontal: 'center', vertical: 'middle' };
+                sheet.getCell('AL9').border = thinBorder;
+            } else if (isTrucKem) {
+                sheet.mergeCells('AI8:AI9');
+                sheet.getCell('AI8').value = 'Tổng Số\r\nTrực Kèm';
+                sheet.getCell('AI8').font = { name: 'Times New Roman', size: 9, bold: true };
+                sheet.getCell('AI8').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                sheet.getCell('AI8').border = thinBorder;
+                sheet.getCell('AI9').border = thinBorder;
+            } else {
+                sheet.mergeCells('AI8:AI9');
+                sheet.getCell('AI8').value = 'Tổng Số\r\nThường Trú';
+                sheet.getCell('AI8').font = { name: 'Times New Roman', size: 9, bold: true };
+                sheet.getCell('AI8').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                sheet.getCell('AI8').border = thinBorder;
+                sheet.getCell('AI9').border = thinBorder;
             }
-
-            sheet.getCell('AI9').value = 'Ngày thường';
-            sheet.getCell('AI9').font = { name: 'Times New Roman', size: 8, bold: true };
-            sheet.getCell('AI9').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            sheet.getCell('AI9').border = thinBorder;
-
-            sheet.getCell('AJ9').value = 'T7,CN';
-            sheet.getCell('AJ9').font = { name: 'Times New Roman', size: 8, bold: true };
-            sheet.getCell('AJ9').alignment = { horizontal: 'center', vertical: 'middle' };
-            sheet.getCell('AJ9').border = thinBorder;
-
-            sheet.getCell('AK9').value = 'Lễ tết';
-            sheet.getCell('AK9').font = { name: 'Times New Roman', size: 8, bold: true };
-            sheet.getCell('AK9').alignment = { horizontal: 'center', vertical: 'middle' };
-            sheet.getCell('AK9').border = thinBorder;
-
-            sheet.getCell('AL9').value = 'Trực kèm';
-            sheet.getCell('AL9').font = { name: 'Times New Roman', size: 8, bold: true };
-            sheet.getCell('AL9').alignment = { horizontal: 'center', vertical: 'middle' };
-            sheet.getCell('AL9').border = thinBorder;
-
-            sheet.getCell('AM9').value = 'Thường trú';
-            sheet.getCell('AM9').font = { name: 'Times New Roman', size: 8, bold: true };
-            sheet.getCell('AM9').alignment = { horizontal: 'center', vertical: 'middle' };
-            sheet.getCell('AM9').border = thinBorder;
-
-            sheet.getCell('AN9').value = 'Tổng Số';
-            sheet.getCell('AN9').font = { name: 'Times New Roman', size: 8, bold: true };
-            sheet.getCell('AN9').alignment = { horizontal: 'center', vertical: 'middle' };
-            sheet.getCell('AN9').border = thinBorder;
 
             // Đổ dữ liệu nhân sự (Row 10 trở đi)
             let currentRow = 10;
@@ -601,47 +635,65 @@ export async function GET(request: Request) {
                         const dt = stDuty[d];
                         if (dt) {
                             const c = (dt.dutyCode || '').trim().toUpperCase();
-                            cell.value = c;
-                            if (c === 'T') dutyNgayThuong++;
-                            else if (c === 'C') dutyT7CN++;
-                            else if (c === 'L' || c === 'TE') dutyLeTet++;
-                            else if (c === 'TK') dutyTrucKem++;
-                            else if (c === 'TT') dutyThuongTru++;
+                            if (isTrucChinh) {
+                                if (c === 'T') {
+                                    cell.value = 'T';
+                                    dutyNgayThuong++;
+                                } else if (c === 'C') {
+                                    cell.value = 'C';
+                                    dutyT7CN++;
+                                } else if (c === 'L' || c === 'TE') {
+                                    cell.value = c === 'TE' ? 'Te' : 'L';
+                                    dutyLeTet++;
+                                }
+                            } else if (isTrucKem) {
+                                if (c === 'TK') {
+                                    cell.value = 'Tk';
+                                    dutyTrucKem++;
+                                }
+                            } else if (isThuongTru) {
+                                if (c === 'TT') {
+                                    cell.value = 'TT';
+                                    dutyThuongTru++;
+                                }
+                            }
                         }
                     }
                 }
 
-                // Cột tổng kết trực
-                row.getCell(35).value = dutyNgayThuong > 0 ? dutyNgayThuong : '';
-                row.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
-                row.getCell(35).border = thinBorder;
-                row.getCell(35).font = { name: 'Times New Roman', size: 10 };
+                // Cột tổng kết
+                if (isTrucChinh) {
+                    row.getCell(35).value = dutyNgayThuong > 0 ? dutyNgayThuong : '';
+                    row.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
+                    row.getCell(35).border = thinBorder;
+                    row.getCell(35).font = { name: 'Times New Roman', size: 10 };
 
-                row.getCell(36).value = dutyT7CN > 0 ? dutyT7CN : '';
-                row.getCell(36).alignment = { horizontal: 'center', vertical: 'middle' };
-                row.getCell(36).border = thinBorder;
-                row.getCell(36).font = { name: 'Times New Roman', size: 10 };
+                    row.getCell(36).value = dutyT7CN > 0 ? dutyT7CN : '';
+                    row.getCell(36).alignment = { horizontal: 'center', vertical: 'middle' };
+                    row.getCell(36).border = thinBorder;
+                    row.getCell(36).font = { name: 'Times New Roman', size: 10 };
 
-                row.getCell(37).value = dutyLeTet > 0 ? dutyLeTet : '';
-                row.getCell(37).alignment = { horizontal: 'center', vertical: 'middle' };
-                row.getCell(37).border = thinBorder;
-                row.getCell(37).font = { name: 'Times New Roman', size: 10 };
+                    row.getCell(37).value = dutyLeTet > 0 ? dutyLeTet : '';
+                    row.getCell(37).alignment = { horizontal: 'center', vertical: 'middle' };
+                    row.getCell(37).border = thinBorder;
+                    row.getCell(37).font = { name: 'Times New Roman', size: 10 };
 
-                row.getCell(38).value = dutyTrucKem > 0 ? dutyTrucKem : '';
-                row.getCell(38).alignment = { horizontal: 'center', vertical: 'middle' };
-                row.getCell(38).border = thinBorder;
-                row.getCell(38).font = { name: 'Times New Roman', size: 10 };
-
-                row.getCell(39).value = dutyThuongTru > 0 ? dutyThuongTru : '';
-                row.getCell(39).alignment = { horizontal: 'center', vertical: 'middle' };
-                row.getCell(39).border = thinBorder;
-                row.getCell(39).font = { name: 'Times New Roman', size: 10 };
-
-                const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet + dutyTrucKem + dutyThuongTru;
-                row.getCell(40).value = totalDuty > 0 ? totalDuty : '';
-                row.getCell(40).alignment = { horizontal: 'center', vertical: 'middle' };
-                row.getCell(40).border = thinBorder;
-                row.getCell(40).font = { name: 'Times New Roman', size: 10, bold: true };
+                    const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet;
+                    row.getCell(38).value = totalDuty > 0 ? totalDuty : '';
+                    row.getCell(38).alignment = { horizontal: 'center', vertical: 'middle' };
+                    row.getCell(38).border = thinBorder;
+                    row.getCell(38).font = { name: 'Times New Roman', size: 10, bold: true };
+                } else if (isTrucKem) {
+                    row.getCell(35).value = dutyTrucKem > 0 ? dutyTrucKem : '';
+                    row.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
+                    row.getCell(35).border = thinBorder;
+                    row.getCell(35).font = { name: 'Times New Roman', size: 10, bold: true };
+                } else {
+                    row.getCell(35).value = dutyThuongTru > 0 ? dutyThuongTru : '';
+                    row.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
+                    row.getCell(35).border = thinBorder;
+                    row.getCell(35).font = { name: 'Times New Roman', size: 10, bold: true };
+                }
 
                 currentRow++;
             });
@@ -652,45 +704,59 @@ export async function GET(request: Request) {
             sumRow.getCell(2).font = { name: 'Times New Roman', size: 10, bold: true };
             sumRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            for (let c = 1; c <= 40; c++) {
+            for (let c = 1; c <= lastCol; c++) {
                 sumRow.getCell(c).border = thinBorder;
             }
 
             const firstRow = 10;
             const lastRow = currentRow - 1;
-            sumRow.getCell(35).value = { formula: `SUM(AI${firstRow}:AI${lastRow})` };
-            sumRow.getCell(35).font = { name: 'Times New Roman', size: 10, bold: true };
-            sumRow.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            sumRow.getCell(36).value = { formula: `SUM(AJ${firstRow}:AJ${lastRow})` };
-            sumRow.getCell(36).font = { name: 'Times New Roman', size: 10, bold: true };
-            sumRow.getCell(36).alignment = { horizontal: 'center', vertical: 'middle' };
+            if (isTrucChinh) {
+                sumRow.getCell(35).value = { formula: `SUM(AI${firstRow}:AI${lastRow})` };
+                sumRow.getCell(35).font = { name: 'Times New Roman', size: 10, bold: true };
+                sumRow.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            sumRow.getCell(37).value = { formula: `SUM(AK${firstRow}:AK${lastRow})` };
-            sumRow.getCell(37).font = { name: 'Times New Roman', size: 10, bold: true };
-            sumRow.getCell(37).alignment = { horizontal: 'center', vertical: 'middle' };
+                sumRow.getCell(36).value = { formula: `SUM(AJ${firstRow}:AJ${lastRow})` };
+                sumRow.getCell(36).font = { name: 'Times New Roman', size: 10, bold: true };
+                sumRow.getCell(36).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            sumRow.getCell(38).value = { formula: `SUM(AL${firstRow}:AL${lastRow})` };
-            sumRow.getCell(38).font = { name: 'Times New Roman', size: 10, bold: true };
-            sumRow.getCell(38).alignment = { horizontal: 'center', vertical: 'middle' };
+                sumRow.getCell(37).value = { formula: `SUM(AK${firstRow}:AK${lastRow})` };
+                sumRow.getCell(37).font = { name: 'Times New Roman', size: 10, bold: true };
+                sumRow.getCell(37).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            sumRow.getCell(39).value = { formula: `SUM(AM${firstRow}:AM${lastRow})` };
-            sumRow.getCell(39).font = { name: 'Times New Roman', size: 10, bold: true };
-            sumRow.getCell(39).alignment = { horizontal: 'center', vertical: 'middle' };
-
-            sumRow.getCell(40).value = { formula: `SUM(AN${firstRow}:AN${lastRow})` };
-            sumRow.getCell(40).font = { name: 'Times New Roman', size: 10, bold: true };
-            sumRow.getCell(40).alignment = { horizontal: 'center', vertical: 'middle' };
+                sumRow.getCell(38).value = { formula: `SUM(AL${firstRow}:AL${lastRow})` };
+                sumRow.getCell(38).font = { name: 'Times New Roman', size: 10, bold: true };
+                sumRow.getCell(38).alignment = { horizontal: 'center', vertical: 'middle' };
+            } else {
+                sumRow.getCell(35).value = { formula: `SUM(AI${firstRow}:AI${lastRow})` };
+                sumRow.getCell(35).font = { name: 'Times New Roman', size: 10, bold: true };
+                sumRow.getCell(35).alignment = { horizontal: 'center', vertical: 'middle' };
+            }
 
             currentRow += 2;
 
             // Bảng ghi chú các ký hiệu chấm công trực
-            sheet.getCell(`B${currentRow}`).value = 'T: Trực thường | C: Trực T7, CN | L/Te: Trực lễ tết | Tk: Trực kèm | TT: Trực thường trú';
+            const noteText = isTrucKem
+                ? 'Tk: Trực kèm chuyên môn kỹ thuật / học việc / hỗ trợ kíp trực'
+                : isThuongTru
+                ? 'TT: Trực thường trú chuyên môn y tế (On-call ngoại viện theo quy định)'
+                : 'T: Trực thường | C: Trực T7, CN | L/Te: Trực lễ tết';
+            sheet.getCell(`B${currentRow}`).value = noteText;
             sheet.getCell(`B${currentRow}`).font = { name: 'Times New Roman', size: 10, italic: true };
 
             currentRow += 2;
 
-            // Chữ ký
+            // Dòng ngày ký
+            const lastSignCol = isTrucChinh ? 'AL' : 'AI';
+            const signDateRow = currentRow;
+            sheet.mergeCells(`AC${signDateRow}:${lastSignCol}${signDateRow}`);
+            sheet.getCell(`AC${signDateRow}`).value = `Lạng Sơn, ${signDateStr}`;
+            sheet.getCell(`AC${signDateRow}`).font = { name: 'Times New Roman', size: 10, italic: true };
+            sheet.getCell(`AC${signDateRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            currentRow++;
+
+            // Tiêu đề chữ ký
             const signHeaderRow = currentRow;
             sheet.mergeCells(`B${signHeaderRow}:D${signHeaderRow}`);
             sheet.getCell(`B${signHeaderRow}`).value = 'Người chấm công';
@@ -702,7 +768,7 @@ export async function GET(request: Request) {
             sheet.getCell(`I${signHeaderRow}`).font = { name: 'Times New Roman', size: 10, bold: true };
             sheet.getCell(`I${signHeaderRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            sheet.mergeCells(`AC${signHeaderRow}:AG${signHeaderRow}`);
+            sheet.mergeCells(`AC${signHeaderRow}:${lastSignCol}${signHeaderRow}`);
             sheet.getCell(`AC${signHeaderRow}`).value = 'Thủ trưởng đơn vị';
             sheet.getCell(`AC${signHeaderRow}`).font = { name: 'Times New Roman', size: 10, bold: true };
             sheet.getCell(`AC${signHeaderRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -725,16 +791,16 @@ export async function GET(request: Request) {
             for (let c = 4; c <= 34; c++) {
                 sheet.getColumn(c).width = 3.6;
             }
-            sheet.getColumn(35).width = 8;
-            sheet.getColumn(36).width = 8;
-            sheet.getColumn(37).width = 8;
-            sheet.getColumn(38).width = 9;
-        }
+            if (isTrucChinh) {
+                sheet.getColumn(35).width = 9;
+                sheet.getColumn(36).width = 8;
+                sheet.getColumn(37).width = 8;
+                sheet.getColumn(38).width = 9;
+            } else {
+                sheet.getColumn(35).width = 13;
+            }
 
-        // =========================================================================
-        // TRƯỜNG HỢP 3: XUẤT BẢNG CHẤM CÔNG LÀM THÊM GIỜ (Giống mẫu Thêm giờ trong Copy of THÁNG 9.xls)
-        // =========================================================================
-        if (type === 'CHAM_THEM_GIO') {
+        } else if (type === 'CHAM_THEM_GIO') {
             const sheet = workbook.addWorksheet('Thêm giờ');
             sheet.views = [{ showGridLines: true }];
 
@@ -1062,13 +1128,19 @@ export async function GET(request: Request) {
             ? `Bang_cham_cong_T${month}_${year}_${safeDeptCode}.xlsx`
             : type === 'CHAM_THEM_GIO'
             ? `Bang_cham_them_gio_T${month}_${year}_${safeDeptCode}.xlsx`
+            : type === 'TRUC_KEM'
+            ? `Bang_cham_truc_kem_T${month}_${year}_${safeDeptCode}.xlsx`
+            : type === 'TRUC_THUONG_TRU'
+            ? `Bang_cham_truc_thuong_tru_T${month}_${year}_${safeDeptCode}.xlsx`
             : `Bang_cham_truc_T${month}_${year}_${safeDeptCode}.xlsx`;
+
+        const encodedFilename = encodeURIComponent(filename);
 
         return new Response(buffer, {
             status: 200,
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition': `attachment; filename="${filename}"`
+                'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
             }
         });
     } catch (error: any) {

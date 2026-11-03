@@ -147,7 +147,13 @@ export async function GET(request: Request) {
             zaloEnabled: Boolean(config.zaloEnabled),
             zaloWebhookUrl: config.zaloWebhookUrl || '',
             saveAssignReason: config.saveAssignReason !== undefined ? Boolean(config.saveAssignReason) : true,
-            notificationSound: config.notificationSound || { type: 'DEFAULT', url: '', duration: 7 }
+            notificationSound: config.notificationSound || { type: 'DEFAULT', url: '', duration: 7 },
+            syncAttendanceEnabled: config.syncAttendanceEnabled !== undefined ? Boolean(config.syncAttendanceEnabled) : true,
+            applyForLeaders: config.applyForLeaders !== undefined ? Boolean(config.applyForLeaders) : true,
+            autoDisableOnLeave: config.autoDisableOnLeave !== undefined ? Boolean(config.autoDisableOnLeave) : true,
+            preserveStatusOnLogout: config.preserveStatusOnLogout !== undefined ? Boolean(config.preserveStatusOnLogout) : true,
+            supportSessionTimeoutHours: config.supportSessionTimeoutHours !== undefined ? Number(config.supportSessionTimeoutHours) : 8,
+            departmentSessionTimeoutMinutes: config.departmentSessionTimeoutMinutes !== undefined ? Number(config.departmentSessionTimeoutMinutes) : 30
         });
     } catch (error: any) {
         console.error('GET it-request-config error:', error);
@@ -196,7 +202,13 @@ export async function POST(request: Request) {
             zaloEnabled,
             zaloWebhookUrl, 
             saveAssignReason,
-            notificationSound 
+            notificationSound,
+            syncAttendanceEnabled,
+            applyForLeaders,
+            autoDisableOnLeave,
+            preserveStatusOnLogout,
+            supportSessionTimeoutHours,
+            departmentSessionTimeoutMinutes
         } = body;
 
         const parsedSoftware = parseSubmittedErrors(softwareErrorsConfig !== undefined ? softwareErrorsConfig : softwareErrors);
@@ -250,7 +262,13 @@ export async function POST(request: Request) {
             zaloEnabled: isAdmin && zaloEnabled !== undefined ? Boolean(zaloEnabled) : Boolean(existingConfig.zaloEnabled),
             zaloWebhookUrl: isAdmin && zaloWebhookUrl !== undefined ? zaloWebhookUrl.trim() : (existingConfig.zaloWebhookUrl || ''),
             saveAssignReason: isAdmin && saveAssignReason !== undefined ? Boolean(saveAssignReason) : (existingConfig.saveAssignReason !== undefined ? Boolean(existingConfig.saveAssignReason) : true),
-            notificationSound: notificationSound !== undefined ? notificationSound : (existingConfig.notificationSound || { type: 'DEFAULT', url: '', duration: 7 })
+            notificationSound: notificationSound !== undefined ? notificationSound : (existingConfig.notificationSound || { type: 'DEFAULT', url: '', duration: 7 }),
+            syncAttendanceEnabled: syncAttendanceEnabled !== undefined ? Boolean(syncAttendanceEnabled) : (existingConfig.syncAttendanceEnabled !== undefined ? Boolean(existingConfig.syncAttendanceEnabled) : true),
+            applyForLeaders: applyForLeaders !== undefined ? Boolean(applyForLeaders) : (existingConfig.applyForLeaders !== undefined ? Boolean(existingConfig.applyForLeaders) : true),
+            autoDisableOnLeave: autoDisableOnLeave !== undefined ? Boolean(autoDisableOnLeave) : (existingConfig.autoDisableOnLeave !== undefined ? Boolean(existingConfig.autoDisableOnLeave) : true),
+            preserveStatusOnLogout: preserveStatusOnLogout !== undefined ? Boolean(preserveStatusOnLogout) : (existingConfig.preserveStatusOnLogout !== undefined ? Boolean(existingConfig.preserveStatusOnLogout) : true),
+            supportSessionTimeoutHours: supportSessionTimeoutHours !== undefined ? Number(supportSessionTimeoutHours) : (existingConfig.supportSessionTimeoutHours !== undefined ? Number(existingConfig.supportSessionTimeoutHours) : 8),
+            departmentSessionTimeoutMinutes: departmentSessionTimeoutMinutes !== undefined ? Number(departmentSessionTimeoutMinutes) : (existingConfig.departmentSessionTimeoutMinutes !== undefined ? Number(existingConfig.departmentSessionTimeoutMinutes) : 30)
         };
 
         const configRule = await prisma.specializedRule.upsert({

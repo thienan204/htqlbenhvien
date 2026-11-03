@@ -222,6 +222,7 @@ model Staff {
   dutyRecords       StaffDutyRecord[]
   overtimeRecords   StaffOvertimeRecord[]
   monthlyNotes      StaffMonthlyAttendanceNote[]
+  attendanceCheckLogs StaffAttendanceCheckLog[]
 }
 
 model StaffTraining {
@@ -2056,4 +2057,31 @@ model StaffMonthlyAttendanceNote {
   @@unique([staffId, monthYear])
   @@index([ma_khoa, monthYear])
 }
+
+model StaffAttendanceCheckLog {
+  id             String    @id @default(cuid())
+  staffId        String
+  ma_khoa        String
+  workDate       String    // Định dạng YYYY-MM-DD
+  checkInTime    DateTime? // Giờ vào ca thực tế
+  checkOutTime   DateTime? // Giờ tan ca thực tế
+  checkInMethod  String    @default("WEB_BUTTON") // WEB_BUTTON | ZK_FINGERPRINT | ZK_FACE | MANUAL
+  checkOutMethod String?
+  checkInIp      String?
+  checkOutIp     String?
+  checkInDevice  String?
+  status         String    @default("ON_TIME") // ON_TIME | LATE | EARLY_LEAVE | VALID
+  lateMinutes    Int       @default(0) // Số phút đi muộn
+  earlyMinutes   Int       @default(0) // Số phút về sớm
+  workHours      Float     @default(0) // Số giờ làm việc tính được
+  note           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  staff          Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, workDate])
+  @@index([ma_khoa, workDate])
+}
+
 

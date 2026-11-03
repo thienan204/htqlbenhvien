@@ -72,7 +72,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     // Xuất Excel
-    const handleExportExcel = (type: 'CHAM_CONG' | 'CHAM_TRUC' | 'CHAM_THEM_GIO') => {
+    const handleExportExcel = (type: 'CHAM_CONG' | 'CHAM_TRUC' | 'TRUC_KEM' | 'TRUC_THUONG_TRU' | 'CHAM_THEM_GIO') => {
         const basePath = getBasePath();
         const monthYear = selectedDate.format('YYYY-MM');
         window.open(`${basePath}/api/staff/attendance/export-excel?monthYear=${monthYear}&ma_khoa=${selectedDept}&type=${type}`, '_blank');
@@ -87,13 +87,25 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
         },
         {
             key: 'export_truc',
-            label: '2. Xuất Bảng Chấm Trực (Kèm Trực kèm & Thường trú)',
+            label: '2. Xuất Bảng Chấm Trực (Ngày thường, T7/CN, Lễ tết)',
             icon: <FileExcelOutlined className="text-blue-600" />,
             onClick: () => handleExportExcel('CHAM_TRUC')
         },
         {
+            key: 'export_truc_kem',
+            label: '3. Xuất Bảng Trực Kèm (Tk)',
+            icon: <FileExcelOutlined className="text-teal-600" />,
+            onClick: () => handleExportExcel('TRUC_KEM')
+        },
+        {
+            key: 'export_truc_thuong_tru',
+            label: '4. Xuất Bảng Trực Thường Trú (TT)',
+            icon: <FileExcelOutlined className="text-indigo-600" />,
+            onClick: () => handleExportExcel('TRUC_THUONG_TRU')
+        },
+        {
             key: 'export_them_gio',
-            label: '3. Xuất Bảng Chấm Thêm Giờ',
+            label: '5. Xuất Bảng Chấm Thêm Giờ',
             icon: <FileExcelOutlined className="text-amber-600" />,
             onClick: () => handleExportExcel('CHAM_THEM_GIO')
         }

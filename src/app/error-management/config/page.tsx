@@ -59,6 +59,12 @@ export default function ITConfigPage() {
         name: ''
     });
     const [isPlayingSound, setIsPlayingSound] = useState(false);
+    const [syncAttendanceEnabled, setSyncAttendanceEnabled] = useState<boolean>(true);
+    const [applyForLeaders, setApplyForLeaders] = useState<boolean>(true);
+    const [autoDisableOnLeave, setAutoDisableOnLeave] = useState<boolean>(true);
+    const [preserveStatusOnLogout, setPreserveStatusOnLogout] = useState<boolean>(true);
+    const [supportSessionTimeoutHours, setSupportSessionTimeoutHours] = useState<number>(8);
+    const [departmentSessionTimeoutMinutes, setDepartmentSessionTimeoutMinutes] = useState<number>(30);
 
     const searchParams = useSearchParams();
     const targetDepartment = searchParams.get('targetDepartment') || 'CNTT';
@@ -133,6 +139,12 @@ export default function ITConfigPage() {
                 if (data.notificationSound) {
                     setNotificationSound(data.notificationSound);
                 }
+                setSyncAttendanceEnabled(data.syncAttendanceEnabled !== undefined ? Boolean(data.syncAttendanceEnabled) : true);
+                setApplyForLeaders(data.applyForLeaders !== undefined ? Boolean(data.applyForLeaders) : true);
+                setAutoDisableOnLeave(data.autoDisableOnLeave !== undefined ? Boolean(data.autoDisableOnLeave) : true);
+                setPreserveStatusOnLogout(data.preserveStatusOnLogout !== undefined ? Boolean(data.preserveStatusOnLogout) : true);
+                setSupportSessionTimeoutHours(data.supportSessionTimeoutHours !== undefined ? Number(data.supportSessionTimeoutHours) : 8);
+                setDepartmentSessionTimeoutMinutes(data.departmentSessionTimeoutMinutes !== undefined ? Number(data.departmentSessionTimeoutMinutes) : 30);
             } else {
                 message.error('Lỗi tải cấu hình');
             }
@@ -299,7 +311,13 @@ export default function ITConfigPage() {
                 telegramChatId,
                 zaloEnabled,
                 zaloWebhookUrl: zaloWebhookUrl.trim(),
-                notificationSound: currentSound
+                notificationSound: currentSound,
+                syncAttendanceEnabled,
+                applyForLeaders,
+                autoDisableOnLeave,
+                preserveStatusOnLogout,
+                supportSessionTimeoutHours,
+                departmentSessionTimeoutMinutes
             };
             const res = await fetch(`/api/error-management/it-request-config?targetDepartment=${targetDepartment}`, {
                 method: 'POST',
@@ -660,6 +678,161 @@ export default function ITConfigPage() {
                             }
                         />
                     )}
+
+                    {/* Card: Cấu hình Liên kết Chấm công & Trạng thái Nhận việc */}
+                    <Card 
+                        size="small" 
+                        title={
+                            <div className="flex items-center justify-between">
+                                <span className="font-semibold text-slate-800 flex items-center gap-2">
+                                    <span className="text-base">📅</span> Cấu hình Liên kết Bảng Chấm Công & Trạng thái Nhận việc
+                                </span>
+                                <Tag color="blue">Tự động hóa</Tag>
+                            </div>
+                        } 
+                        className="border border-slate-200 shadow-xs"
+                    >
+                        <div className="space-y-3 py-1">
+                            <div className="flex items-start justify-between gap-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="space-y-0.5">
+                                    <div className="text-xs font-bold text-slate-800">1. Tự động BẬT nhận việc khi hôm nay có công đi làm</div>
+                                    <div className="text-[11px] text-slate-500">
+                                        Khi cán bộ được chấm công đi làm hôm nay (ký hiệu <code>x</code>, <code>+</code>, <code>NB/2</code>, <code>P/2</code>), hệ thống sẽ tự động bật công tắc Nhận việc để sẵn sàng tiếp nhận yêu cầu từ các khoa phòng.
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={syncAttendanceEnabled} 
+                                    onChange={setSyncAttendanceEnabled}
+                                    checkedChildren="Bật"
+                                    unCheckedChildren="Tắt"
+                                    disabled={!isAdmin}
+                                />
+                            </div>
+
+                            <div className="flex items-start justify-between gap-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="space-y-0.5">
+                                    <div className="text-xs font-bold text-slate-800">2. Áp dụng cho cả Lãnh đạo khoa/phòng tham gia nhận việc</div>
+                                    <div className="text-[11px] text-slate-500">
+                                        Cho phép Trưởng phòng, Phó trưởng phòng tham gia cơ chế tự động bật nhận việc khi có công đi làm (Khắc phục việc lãnh đạo bị chặn nhận việc).
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={applyForLeaders} 
+                                    onChange={setApplyForLeaders}
+                                    checkedChildren="Bật"
+                                    unCheckedChildren="Tắt"
+                                    disabled={!isAdmin}
+                                />
+                            </div>
+
+                            <div className="flex items-start justify-between gap-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="space-y-0.5">
+                                    <div className="text-xs font-bold text-slate-800">3. Tự động TẮT nhận việc khi hôm nay Chấm nghỉ</div>
+                                    <div className="text-[11px] text-slate-500">
+                                        Nếu hôm nay cán bộ chấm nghỉ phép (<code>P</code>), nghỉ bù (<code>NB</code>), nghỉ ốm (<code>O</code>), không lương (<code>Ro</code>, <code>K</code>)..., hệ thống sẽ tự động TẮT nhận việc để khoa phòng không chia việc vào ngày nghỉ.
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={autoDisableOnLeave} 
+                                    onChange={setAutoDisableOnLeave}
+                                    checkedChildren="Bật"
+                                    unCheckedChildren="Tắt"
+                                    disabled={!isAdmin}
+                                />
+                            </div>
+
+                            <div className="flex items-start justify-between gap-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="space-y-0.5">
+                                    <div className="text-xs font-bold text-slate-800">4. Bảo toàn Trạng thái Nhận việc khi Đăng xuất (Logout / Hết phiên)</div>
+                                    <div className="text-[11px] text-slate-500">
+                                        Khi cán bộ đăng xuất hoặc hết hạn phiên làm việc, trạng thái Nhận việc vẫn được bảo toàn nguyên vẹn trong ngày (không bị tự động tắt) để tiếp tục duy trì điều phối công việc liên tục.
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={preserveStatusOnLogout} 
+                                    onChange={setPreserveStatusOnLogout}
+                                    checkedChildren="Bật"
+                                    unCheckedChildren="Tắt"
+                                    disabled={!isAdmin}
+                                />
+                            </div>
+
+                            {isAdmin && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit bg-blue-600 hover:bg-blue-500">
+                                    Lưu cấu hình liên kết chấm công
+                                </Button>
+                            )}
+                        </div>
+                    </Card>
+
+                    {/* Card: Cấu hình Thời gian Phiên làm việc (Session Timeout) */}
+                    <Card 
+                        size="small" 
+                        title={
+                            <div className="flex items-center justify-between">
+                                <span className="font-semibold text-slate-800 flex items-center gap-2">
+                                    <span className="text-base">⏱️</span> Cấu hình Thời gian Phiên Đăng xuất (Session Timeout)
+                                </span>
+                                <Tag color="orange">Bảo mật & Phiên làm việc</Tag>
+                            </div>
+                        } 
+                        className="border border-slate-200 shadow-xs"
+                    >
+                        <div className="space-y-3 py-1">
+                            <div className="text-xs text-slate-500">
+                                Tự động đăng xuất tài khoản khi không có bất kỳ thao tác nào (chuột, bàn phím) trong khoảng thời gian quy định nhằm bảo mật thông tin.
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
+                                    <div className="text-xs font-bold text-blue-900 mb-1">
+                                        🛠️ Bộ phận tiếp nhận việc ({targetDepartment}, VTYT, HCQT...):
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 mb-2">
+                                        Nhân viên trực tiếp nhận và xử lý yêu cầu cả ca làm việc. Mặc định <b>8 giờ (480 phút)</b> để tránh bị văng ra ngoài liên tục.
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <InputNumber 
+                                            min={1} 
+                                            max={24} 
+                                            value={supportSessionTimeoutHours} 
+                                            onChange={val => setSupportSessionTimeoutHours(val || 8)}
+                                            disabled={!isAdmin}
+                                            className="w-24"
+                                        />
+                                        <span className="text-xs font-semibold text-slate-700">Giờ ({supportSessionTimeoutHours * 60} phút)</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div className="text-xs font-bold text-slate-800 mb-1">
+                                        🏥 Khoa / Phòng thông thường (Lâm sàng, Cận lâm sàng):
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 mb-2">
+                                        Bác sĩ, điều dưỡng thao tác tại buồng bệnh/phòng khám. Mặc định <b>30 phút</b> để tự động khóa máy bảo vệ bệnh án khi rời đi.
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <InputNumber 
+                                            min={5} 
+                                            max={480} 
+                                            value={departmentSessionTimeoutMinutes} 
+                                            onChange={val => setDepartmentSessionTimeoutMinutes(val || 30)}
+                                            disabled={!isAdmin}
+                                            className="w-24"
+                                        />
+                                        <span className="text-xs font-semibold text-slate-700">Phút</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {isAdmin && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit bg-blue-600 hover:bg-blue-500">
+                                    Lưu cấu hình thời gian phiên
+                                </Button>
+                            )}
+                        </div>
+                    </Card>
+
                     {/* Card 1: Chế độ phân công công việc (4 Tùy chọn) */}
                     <Card 
                         size="small" 
