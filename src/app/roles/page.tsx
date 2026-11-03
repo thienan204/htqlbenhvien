@@ -76,7 +76,12 @@ export default function RolesPage() {
                 const seenCodes = new Set<string>();
 
                 data.forEach((m: any) => {
-                    const code = m.permissionCode?.trim();
+                    // Ưu tiên permissionCode trong DB, nếu chưa có thì tự sinh từ path
+                    let code = m.permissionCode?.trim();
+                    if (!code && m.path && m.path !== '/') {
+                        code = 'MENU_' + m.path.replace(/^\//, '').replace(/[\/-]/g, '_').toUpperCase();
+                    }
+
                     if (code && !seenCodes.has(code)) {
                         seenCodes.add(code);
 
@@ -402,7 +407,7 @@ export default function RolesPage() {
                                 showIcon
                                 icon={<InfoCircleOutlined />}
                                 className="mb-3 bg-purple-50/60 border-purple-200"
-                                message={<span className="font-semibold text-purple-900">Quy tắc phân quyền chi tiết (Xem / Sửa / Xóa)</span>}
+                                title={<span className="font-semibold text-purple-900">Quy tắc phân quyền chi tiết (Xem / Sửa / Xóa)</span>}
                                 description={
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1 text-xs text-slate-700">
                                         <div className="bg-white p-2 rounded border border-purple-100">
@@ -621,7 +626,7 @@ export default function RolesPage() {
                             type="success" 
                             showIcon 
                             className="mt-4"
-                            message="Vai trò Quản trị viên Tối cao (ADMIN)" 
+                            title="Vai trò Quản trị viên Tối cao (ADMIN)" 
                             description="Role ADMIN mặc định có toàn bộ quyền Xem, Sửa và Xóa trên tất cả các menu và tính năng của hệ thống." 
                         />
                     )}
