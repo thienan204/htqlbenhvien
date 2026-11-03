@@ -62,7 +62,8 @@ export async function GET(request: Request) {
             const configRule = await prisma.specializedRule.findUnique({ where: { slug } });
             const itConfig: any = configRule?.logicConfig || {};
             const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
-            const applyForLeaders = itConfig.applyForLeaders !== false;
+            // Mặc định KHÔNG tự động bật nhận việc cho Lãnh đạo (Trưởng/Phó phòng), chỉ bật khi cấu hình rõ ràng là true
+            const applyForLeaders = itConfig.applyForLeaders === true;
             const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
 
             if (syncAttendanceEnabled) {
@@ -83,8 +84,30 @@ export async function GET(request: Request) {
 
                             const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
                             const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
-                            const cvName = (u.staff?.chuc_vu_ref?.name || '').toUpperCase();
-                            const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA') || cvName.includes('TRƯỞNG PHÒNG') || cvName.includes('PHÓ TRƯỞNG PHÒNG');
+                            const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
+
+                            // 1. Tổ trưởng (Level 2.1 hoặc mã/tên có Tổ trưởng): Là lực lượng kỹ thuật tác chiến, KHÔNG PHẢI lãnh đạo miễn nhận việc
+                            const isTeamLeader = Boolean(
+                                explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+                                explicitLevel === 'LEVEL_2.1' || 
+                                cvCode === 'TO_TRUONG' || 
+                                cvCode.includes('TO_TRUONG') || 
+                                cvName.includes('tổ trưởng')
+                            );
+
+                            // 2. Lãnh đạo quản lý Khoa/Phòng (Level 1, Level 2): Mặc định không tự động nhận việc
+                            const isLeader = !isTeamLeader && Boolean(
+                                explicitLevel === 'LEVEL_1_BGD' || 
+                                explicitLevel === 'LEVEL_2_LEADER' || 
+                                cvCode.includes('TRUONG_PHONG') || 
+                                cvCode.includes('PHO_TRUONG_PHONG') || 
+                                cvCode.includes('TRUONG_KHOA') || 
+                                cvCode.includes('PHO_TRUONG_KHOA') ||
+                                cvName.includes('trưởng phòng') || 
+                                cvName.includes('phó trưởng phòng') || 
+                                cvName.includes('trưởng khoa') || 
+                                cvName.includes('phó trưởng khoa')
+                            );
 
                             if (isWorkingToday && (!isLeader || applyForLeaders)) {
                                 if (!u.isAvailable) {
@@ -115,7 +138,18 @@ export async function GET(request: Request) {
             const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
             const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
             const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
-            const isLeader = Boolean(
+
+            // 1. Tổ trưởng (Level 2.1)
+            const isTeamLeader = Boolean(
+                explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+                explicitLevel === 'LEVEL_2.1' || 
+                cvCode === 'TO_TRUONG' || 
+                cvCode.includes('TO_TRUONG') || 
+                cvName.includes('tổ trưởng')
+            );
+
+            // 2. Lãnh đạo Khoa/Phòng (Level 1, Level 2)
+            const isLeader = !isTeamLeader && Boolean(
                 explicitLevel === 'LEVEL_1_BGD' || 
                 explicitLevel === 'LEVEL_2_LEADER' || 
                 cvCode.includes('TRUONG_PHONG') || 
@@ -127,6 +161,7 @@ export async function GET(request: Request) {
                 cvName.includes('trưởng khoa') ||
                 cvName.includes('phó trưởng khoa')
             );
+
             return {
                 id: u.id,
                 username: u.username,
@@ -138,8 +173,9 @@ export async function GET(request: Request) {
                 autoAssignDisabled: u.autoAssignDisabled,
                 focusReason: u.focusReason,
                 isLeader,
+                isTeamLeader,
                 phone: u.staff?.so_dien_thoai || null,
-                chuc_vu: u.staff?.chuc_vu_ref?.name || (isLeader ? 'Lãnh đạo' : 'Kỹ thuật viên')
+                chuc_vu: u.staff?.chuc_vu_ref?.name || (isLeader ? 'Lãnh đạo' : (isTeamLeader ? 'Tổ trưởng' : 'Kỹ thuật viên'))
             };
         });
 

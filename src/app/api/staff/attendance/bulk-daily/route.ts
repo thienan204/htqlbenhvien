@@ -102,16 +102,28 @@ export async function POST(request: Request) {
             if (date === todayStr && st.user && ['x', '+'].includes(code.toLowerCase())) {
                 const explicitLevel = (st.chuc_vu_ref as any)?.level;
                 const cvCode = (st.chuc_vu_ref?.code || '').toUpperCase();
-                const cvName = (st.chuc_vu_ref?.name || '').toUpperCase();
-                const isLeader = explicitLevel === 'LEVEL_1_BGD' ||
+                const cvName = (st.chuc_vu_ref?.name || '').toLowerCase();
+                const isTeamLeader = Boolean(
+                    explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+                    explicitLevel === 'LEVEL_2.1' || 
+                    cvCode === 'TO_TRUONG' || 
+                    cvCode.includes('TO_TRUONG') || 
+                    cvName.includes('tổ trưởng')
+                );
+                const isLeader = !isTeamLeader && Boolean(
+                    explicitLevel === 'LEVEL_1_BGD' ||
                     explicitLevel === 'LEVEL_2_LEADER' ||
                     cvCode.includes('TRUONG_PHONG') ||
                     cvCode.includes('PHO_TRUONG_PHONG') ||
                     cvCode.includes('TRUONG_KHOA') ||
-                    cvName.includes('TRƯỞNG PHÒNG') ||
-                    cvName.includes('PHÓ TRƯỞNG PHÒNG');
+                    cvCode.includes('PHO_TRUONG_KHOA') ||
+                    cvName.includes('trưởng phòng') ||
+                    cvName.includes('phó trưởng phòng') ||
+                    cvName.includes('trưởng khoa') ||
+                    cvName.includes('phó trưởng khoa')
+                );
 
-                let applyForLeaders = true;
+                let applyForLeaders = false;
                 try {
                     const itConfigRule = await prisma.specializedRule.findUnique({
                         where: { slug: 'it-request-fields-config' }

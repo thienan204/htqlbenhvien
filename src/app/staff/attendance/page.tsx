@@ -40,11 +40,30 @@ export default function AttendanceSheetPage() {
         else if (['Ô', 'O', 'TS', 'KL'].includes(c)) color = 'error';
         else if (c === 'H' || c === 'CT') color = 'cyan';
 
-        return (
+        const tagNode = (
             <Tag color={color} className={`m-0 font-bold text-xs px-1.5 py-0.5 shadow-xs ${bgStyle}`}>
                 {att.code}
             </Tag>
         );
+
+        if ((c === 'NB' || c === 'NB/2' || c === 'NB/X' || c === 'X/NB') && att.dutyRecord) {
+            const parts = (att.dutyRecord.dutyDate || '').split('-');
+            const formattedDutyDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : att.dutyRecord.dutyDate;
+            return (
+                <Tooltip
+                    title={
+                        <div className="text-xs py-0.5">
+                            <div className="font-semibold text-amber-300">Nghỉ bù chế độ trực</div>
+                            <div>📅 Từ ca trực: <strong>{formattedDutyDate}</strong> (Ca {att.dutyRecord.dutyCode})</div>
+                        </div>
+                    }
+                >
+                    {tagNode}
+                </Tooltip>
+            );
+        }
+
+        return tagNode;
     };
 
     const columns: any[] = [
@@ -140,6 +159,80 @@ export default function AttendanceSheetPage() {
 
                     const remDays = record.dutySummary?.remainingCompensatoryDays ?? 0;
                     const canCompensate = remDays > 0;
+                    const uncompList = record.dutySummary?.uncompensatedDuties || [];
+                    const dutyDatesText = record.dutySummary?.dutyDatesText || '';
+
+                    const nbTooltipContent = uncompList.length > 0 ? (
+                        <div className="text-xs p-1">
+                            <div className="font-bold text-amber-300 mb-1 border-b border-amber-400/30 pb-0.5">
+                                Các ca trực còn ngày nghỉ bù ({remDays} ngày):
+                            </div>
+                            <div className="space-y-1">
+                                {uncompList.map((u, idx) => {
+                                    const parts = u.dutyDate.split('-');
+                                    const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                    return (
+                                        <div key={idx} className="flex justify-between items-center gap-3 text-slate-200">
+                                            <span>📅 Ngày <strong>{formattedDate}</strong> (Ca {u.dutyCode})</span>
+                                            <span className="font-semibold text-emerald-300 bg-emerald-950/60 px-1 rounded">Còn {u.remainingDays}d</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null;
+
+                    const nbChildren = canCompensate && uncompList.length > 0 ? [
+                        {
+                            key: 'Nb_AUTO',
+                            label: (
+                                <div className="py-0.5">
+                                    <span className="font-semibold text-emerald-600">⚡ Tự động bù ca gần nhất</span>
+                                    <span className="block text-[11px] text-slate-400">Ưu tiên ca ngày {uncompList[0]?.shortDate}</span>
+                                </div>
+                            )
+                        },
+                        { type: 'divider' as const },
+                        ...uncompList.map(u => ({
+                            key: `Nb_DUTY_${u.id}`,
+                            label: (
+                                <div className="py-0.5">
+                                    <span className="font-medium text-slate-700">
+                                        📅 Ca ngày <strong>{u.shortDate}</strong> ({u.dutyCode})
+                                    </span>
+                                    <span className="block text-[11px] text-amber-600">
+                                        Quỹ ca này còn: <strong>{u.remainingDays} ngày</strong>
+                                    </span>
+                                </div>
+                            )
+                        }))
+                    ] : undefined;
+
+                    const nbHalfChildren = canCompensate && uncompList.length > 0 ? [
+                        {
+                            key: 'Nb/2_AUTO',
+                            label: (
+                                <div className="py-0.5">
+                                    <span className="font-semibold text-emerald-600">⚡ Tự động bù ca gần nhất (1/2 ngày)</span>
+                                    <span className="block text-[11px] text-slate-400">Ưu tiên ca ngày {uncompList[0]?.shortDate}</span>
+                                </div>
+                            )
+                        },
+                        { type: 'divider' as const },
+                        ...uncompList.map(u => ({
+                            key: `Nb/2_DUTY_${u.id}`,
+                            label: (
+                                <div className="py-0.5">
+                                    <span className="font-medium text-slate-700">
+                                        📅 Ca ngày <strong>{u.shortDate}</strong> ({u.dutyCode})
+                                    </span>
+                                    <span className="block text-[11px] text-amber-600">
+                                        Quỹ ca này còn: <strong>{u.remainingDays} ngày</strong> (trừ 0.5d)
+                                    </span>
+                                </div>
+                            )
+                        }))
+                    ] : undefined;
 
                     const items = [
                         { key: 'x', label: <span className="font-semibold text-emerald-600">x - Đi làm đủ ngày (8h)</span> },
@@ -149,23 +242,55 @@ export default function AttendanceSheetPage() {
                         {
                             key: 'Nb',
                             label: canCompensate ? (
-                                <span className="text-amber-600 font-bold">
-                                    Nb - Nghỉ bù cả ngày <span className="text-[11px] font-normal text-slate-500">(quỹ còn {remDays}d)</span>
-                                </span>
+                                <Tooltip title={nbTooltipContent} placement="right" mouseEnterDelay={0.2}>
+                                    <div className="py-0.5">
+                                        <div className="text-amber-600 font-bold flex items-center justify-between gap-2">
+                                            <span>Nb - Nghỉ bù cả ngày</span>
+                                            <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full">
+                                                Quỹ còn {remDays}d
+                                            </span>
+                                        </div>
+                                        {dutyDatesText && (
+                                            <div className="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
+                                                <span className="text-amber-600 font-medium">↳ 📅 Trực ngày:</span>
+                                                <span className="font-medium text-slate-700 truncate max-w-[200px]" title={dutyDatesText}>
+                                                    {dutyDatesText}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Tooltip>
                             ) : (
                                 <span className="text-slate-400">Nb - Nghỉ bù cả ngày (Không có ca trực để bù)</span>
                             ),
+                            children: nbChildren,
                             disabled: !canCompensate
                         },
                         {
                             key: 'Nb/2',
                             label: canCompensate ? (
-                                <span className="text-amber-500">
-                                    Nb/2 - Nghỉ bù 1/2 ngày <span className="text-[11px] font-normal text-slate-500">(quỹ còn {remDays}d)</span>
-                                </span>
+                                <Tooltip title={nbTooltipContent} placement="right" mouseEnterDelay={0.2}>
+                                    <div className="py-0.5">
+                                        <div className="text-amber-500 font-semibold flex items-center justify-between gap-2">
+                                            <span>Nb/2 - Nghỉ bù 1/2 ngày</span>
+                                            <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full">
+                                                Quỹ còn {remDays}d
+                                            </span>
+                                        </div>
+                                        {dutyDatesText && (
+                                            <div className="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
+                                                <span className="text-amber-600 font-medium">↳ 📅 Trực ngày:</span>
+                                                <span className="font-medium text-slate-700 truncate max-w-[200px]" title={dutyDatesText}>
+                                                    {dutyDatesText}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Tooltip>
                             ) : (
                                 <span className="text-slate-400">Nb/2 - Nghỉ bù 1/2 ngày (Không có ca trực để bù)</span>
                             ),
+                            children: nbHalfChildren,
                             disabled: !canCompensate
                         },
                         { key: 'L', label: <span className="text-purple-600 font-bold">L - Nghỉ Lễ hưởng lương</span> },
@@ -182,11 +307,28 @@ export default function AttendanceSheetPage() {
                             menu={{
                                 items: items as any,
                                 onClick: ({ key }) => {
-                                    if ((key === 'Nb' || key === 'Nb/2') && !canCompensate) {
+                                    let finalCode = key;
+                                    let targetDutyId: string | undefined = undefined;
+
+                                    if (key.startsWith('Nb_DUTY_')) {
+                                        finalCode = 'Nb';
+                                        targetDutyId = key.replace('Nb_DUTY_', '');
+                                    } else if (key === 'Nb_AUTO' || key === 'Nb') {
+                                        finalCode = 'Nb';
+                                        targetDutyId = uncompList[0]?.id;
+                                    } else if (key.startsWith('Nb/2_DUTY_')) {
+                                        finalCode = 'Nb/2';
+                                        targetDutyId = key.replace('Nb/2_DUTY_', '');
+                                    } else if (key === 'Nb/2_AUTO' || key === 'Nb/2') {
+                                        finalCode = 'Nb/2';
+                                        targetDutyId = uncompList[0]?.id;
+                                    }
+
+                                    if ((finalCode === 'Nb' || finalCode === 'Nb/2') && !canCompensate) {
                                         return;
                                     }
                                     setSelectedDate(dayjs(d.dateStr));
-                                    handleUpdateAttendanceCell(record.staffId, d.day, key);
+                                    handleUpdateAttendanceCell(record.staffId, d.day, finalCode, targetDutyId);
                                 }
                             }}
                             trigger={['click']}

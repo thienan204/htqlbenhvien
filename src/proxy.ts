@@ -144,7 +144,7 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
         }
 
-        if (isTccbRoute && !['ADMIN', 'TCCB', 'KHOA_PHONG', 'KHOA'].includes(payload.role as string)) {
+        if (isTccbRoute && !['ADMIN', 'TCCB', 'PTCCB', 'CNTT', 'KHOA_PHONG', 'KHOA'].includes(payload.role as string)) {
             return NextResponse.redirect(new URL(`${bp}/?error=unauthorized`, request.url));
         }
 

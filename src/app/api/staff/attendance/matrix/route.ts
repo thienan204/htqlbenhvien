@@ -158,6 +158,52 @@ export async function GET(request: Request) {
             }
         });
 
+        // Lấy tất cả các ca trực chưa nghỉ bù của cán bộ (bao gồm cả các tháng trước đến nay)
+        const uncompensatedDutyRecords = await db.staffDutyRecord.findMany({
+            where: {
+                staffId: { in: staffIds },
+                isFullyCompensated: false
+            },
+            orderBy: {
+                dutyDate: 'desc'
+            },
+            select: {
+                id: true,
+                staffId: true,
+                dutyDate: true,
+                dutyCode: true,
+                dutyType: true,
+                allowanceDays: true,
+                compensatedDays: true
+            }
+        });
+
+        // Nhóm các ca trực chưa bù theo từng cán bộ
+        const uncompensatedByStaff: Record<string, any[]> = {};
+        uncompensatedDutyRecords.forEach((d: any) => {
+            const allowance = d.allowanceDays || 1.0;
+            const comp = d.compensatedDays || 0.0;
+            const remaining = Math.max(0, allowance - comp);
+            if (remaining > 0) {
+                if (!uncompensatedByStaff[d.staffId]) {
+                    uncompensatedByStaff[d.staffId] = [];
+                }
+                const parts = d.dutyDate.split('-');
+                const shortDate = `${parts[2]}/${parts[1]}`;
+                uncompensatedByStaff[d.staffId].push({
+                    id: d.id,
+                    dutyDate: d.dutyDate,
+                    dutyCode: d.dutyCode,
+                    dutyType: d.dutyType,
+                    allowanceDays: allowance,
+                    compensatedDays: comp,
+                    remainingDays: remaining,
+                    shortDate,
+                    label: `${shortDate} (${d.dutyCode}: ${remaining}d)`
+                });
+            }
+        });
+
         // Lấy dữ liệu Chấm Thêm Giờ (Overtime)
         const overtimeRecords = await db.staffOvertimeRecord.findMany({
             where: {
@@ -318,7 +364,11 @@ export async function GET(request: Request) {
             }
 
             const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet + dutyTrucKem + dutyThuongTru;
-            const remainingCompensatoryDays = Math.max(0, totalAllowanceDays - totalCompensatedDays);
+            
+            // Tính số ngày nghỉ bù còn dư thực tế từ tất cả các ca trực chưa bù hết
+            const staffUncompDuties = uncompensatedByStaff[st.id] || [];
+            const trueRemainingCompensatoryDays = staffUncompDuties.reduce((acc, item) => acc + item.remainingDays, 0);
+            const dutyDatesText = staffUncompDuties.map(d => d.label).join(', ');
 
             // Tính làm thêm giờ (Overtime):
             const otMap = overtimeByStaffAndDay[st.id] || {};
@@ -365,7 +415,9 @@ export async function GET(request: Request) {
                     tongSo: totalDuty,
                     totalAllowanceDays,
                     totalCompensatedDays,
-                    remainingCompensatoryDays
+                    remainingCompensatoryDays: trueRemainingCompensatoryDays,
+                    uncompensatedDuties: staffUncompDuties,
+                    dutyDatesText
                 },
                 overtimeSummary: {
                     totalDayHours,

@@ -336,7 +336,8 @@ export default function SystemCategoriesPage() {
             key: 'level',
             render: (val: string) => {
                 if (val === 'LEVEL_1_BGD') return <Tag color="gold" className="font-semibold">👑 Level 1 (Ban Giám Đốc)</Tag>;
-                if (val === 'LEVEL_2_LEADER') return <Tag color="blue" className="font-semibold">🎖️ Level 2 (Lãnh đạo Khoa/Phòng)</Tag>;
+                if (val === 'LEVEL_2_LEADER') return <Tag color="purple" className="font-semibold">🎖️ Level 2 (Lãnh đạo Khoa/Phòng)</Tag>;
+                if (val === 'LEVEL_2_1_TEAM_LEADER' || val === 'LEVEL_2.1') return <Tag color="blue" className="font-semibold">⭐ Level 2.1 (Tổ trưởng / Trưởng bộ phận)</Tag>;
                 if (val === 'LEVEL_3_STAFF') return <Tag color="default">👤 Level 3 (Nhân viên)</Tag>;
                 return <Tag color="orange">Tự động (Theo tên)</Tag>;
             }
@@ -463,6 +464,7 @@ export default function SystemCategoriesPage() {
                         options: [
                             { value: 'LEVEL_1_BGD', label: '👑 Level 1 - Ban Giám Đốc (Cao nhất)' },
                             { value: 'LEVEL_2_LEADER', label: '🎖️ Level 2 - Lãnh đạo Khoa / Phòng' },
+                            { value: 'LEVEL_2_1_TEAM_LEADER', label: '⭐ Level 2.1 - Tổ trưởng / Trưởng bộ phận' },
                             { value: 'LEVEL_3_STAFF', label: '👤 Level 3 - Nhân viên' },
                         ],
                         span: 24

@@ -293,7 +293,7 @@ export default function StaffPage() {
                                     Xuất Báo Cáo
                                 </Button>
                             </Dropdown>
-                            {user?.role === 'ADMIN' && (
+                            {(user?.role === 'ADMIN' || user?.role === 'CNTT') && (
                                 <Button
                                     type="default"
                                     size="middle"
@@ -305,7 +305,7 @@ export default function StaffPage() {
                             )}
                         </Space.Compact>
 
-                        {(user?.role === 'ADMIN' || user?.role === 'PTCCB') && (
+                        {(user?.role === 'ADMIN' || user?.role === 'PTCCB' || user?.role === 'TCCB' || user?.role === 'CNTT') && (
                             <Button 
                                 type="primary" 
                                 size="middle"
@@ -323,7 +323,7 @@ export default function StaffPage() {
                 </div>
 
                 {/* HÀNG 2: Thanh công cụ Toolbar chuyên biệt (Phân nhóm chức năng khoa học) */}
-                {(user?.role === 'ADMIN' || user?.role === 'PTCCB') && (
+                {(user?.role === 'ADMIN' || user?.role === 'PTCCB' || user?.role === 'TCCB' || user?.role === 'CNTT') && (
                     <div className="border-t border-slate-100 pt-3 flex flex-wrap items-center justify-between gap-3">
                         {/* Nhóm 1: Chấm công & Lịch làm việc */}
                         <div className="flex flex-wrap items-center gap-2">

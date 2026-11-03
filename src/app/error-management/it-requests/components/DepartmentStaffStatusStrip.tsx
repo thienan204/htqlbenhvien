@@ -25,6 +25,7 @@ interface StaffStatusItem {
     autoAssignDisabled?: boolean;
     focusReason?: string | null;
     isLeader: boolean;
+    isTeamLeader?: boolean;
     phone?: string | null;
     chuc_vu?: string;
     avatar?: string | null;
@@ -185,7 +186,7 @@ export function DepartmentStaffStatusStrip({
         const ready = displayStaff.filter(s => s.isAvailable && !s.autoAssignDisabled).length;
         const focus = displayStaff.filter(s => s.isAvailable && s.autoAssignDisabled).length;
         const off = displayStaff.filter(s => !s.isAvailable).length;
-        const leadersActive = displayStaff.filter(s => s.isLeader).length;
+        const leadersActive = displayStaff.filter(s => s.isLeader && !s.isTeamLeader).length;
         return { total, ready, focus, off, leadersActive };
     }, [displayStaff]);
 
@@ -335,6 +336,8 @@ export function DepartmentStaffStatusStrip({
                                                                     className={`text-white font-bold text-sm flex items-center justify-center ${
                                                                         staff.isLeader 
                                                                             ? 'bg-gradient-to-br from-purple-600 to-indigo-700' 
+                                                                            : (staff.isTeamLeader || (staff.chuc_vu && staff.chuc_vu.toLowerCase().includes('tổ trưởng')))
+                                                                            ? 'bg-gradient-to-br from-blue-600 to-cyan-600'
                                                                             : 'bg-gradient-to-br from-blue-500 to-indigo-600'
                                                                     }`}
                                                                 >
@@ -360,11 +363,15 @@ export function DepartmentStaffStatusStrip({
                                                             >
                                                                 {staff.name}
                                                             </div>
-                                                            {staff.isLeader && (
-                                                                <Tag color="purple" className="m-0 text-[10px] px-1 py-0 border-none font-medium shrink-0">
+                                                            {staff.isLeader ? (
+                                                                <Tag color="purple" className="m-0 text-[10px] px-1.5 py-0 border-none font-semibold shrink-0 shadow-2xs">
                                                                     {staff.chuc_vu || 'Lãnh đạo'}
                                                                 </Tag>
-                                                            )}
+                                                            ) : (staff.isTeamLeader || (staff.chuc_vu && staff.chuc_vu.toLowerCase().includes('tổ trưởng'))) ? (
+                                                                <Tag color="blue" className="m-0 text-[10px] px-1.5 py-0 border-none font-semibold shrink-0 shadow-2xs">
+                                                                    {staff.chuc_vu || 'Tổ trưởng'}
+                                                                </Tag>
+                                                            ) : null}
                                                         </div>
 
                                                         <div className="flex items-center gap-1.5 flex-wrap">

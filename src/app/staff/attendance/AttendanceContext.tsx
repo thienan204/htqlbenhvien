@@ -49,6 +49,18 @@ export interface StaffMatrixData {
         totalAllowanceDays: number;
         totalCompensatedDays: number;
         remainingCompensatoryDays: number;
+        uncompensatedDuties?: Array<{
+            id: string;
+            dutyDate: string;
+            dutyCode: string;
+            dutyType: string;
+            allowanceDays: number;
+            compensatedDays: number;
+            remainingDays: number;
+            shortDate: string;
+            label: string;
+        }>;
+        dutyDatesText?: string;
     };
     overtimeSummary: {
         totalDayHours: number;
@@ -115,7 +127,7 @@ interface AttendanceContextType {
     filteredStaffData: StaffMatrixData[];
     canEditCurrentDept: boolean;
     fetchData: () => Promise<void>;
-    handleUpdateAttendanceCell: (staffId: string, day: number, code: string) => Promise<void>;
+    handleUpdateAttendanceCell: (staffId: string, day: number, code: string, dutyRecordId?: string) => Promise<void>;
     handleUpdateDutyCell: (staffId: string, day: number, dutyCode: string) => Promise<void>;
     handleUpdateOvertimeCell: (staffId: string, day: number, dayHours: number, nightHours: number, note?: string) => Promise<void>;
     handleSaveNote: (staffId: string, noteText: string) => Promise<void>;
@@ -226,7 +238,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }, [matrixData?.staffData, searchText]);
 
     // Cập nhật ô Chấm Công
-    const handleUpdateAttendanceCell = async (staffId: string, day: number, code: string) => {
+    const handleUpdateAttendanceCell = async (staffId: string, day: number, code: string, dutyRecordId?: string) => {
         try {
             const basePath = getBasePath();
             const dateStr = `${selectedDate.format('YYYY-MM')}-${String(day).padStart(2, '0')}`;
@@ -238,7 +250,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
                     staffId,
                     date: dateStr,
                     code,
-                    ma_khoa: selectedDept
+                    ma_khoa: selectedDept,
+                    dutyRecordId: dutyRecordId || undefined
                 })
             });
             if (!res.ok) {
