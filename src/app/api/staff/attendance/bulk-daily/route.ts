@@ -21,12 +21,30 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Thiếu ngày chấm công (date)' }, { status: 400 });
         }
 
-        // Chặn ngày nghỉ cuối tuần (Thứ 7 & Chủ Nhật): Không đi làm hành chính
+        // Kiểm tra ngày nghỉ cuối tuần (Thứ 7 & Chủ Nhật)
         const dayOfWeek = new Date(date).getDay(); // 0: Chủ Nhật, 6: Thứ 7
         if (dayOfWeek === 0 || dayOfWeek === 6) {
-            return NextResponse.json({ 
-                error: `Ngày ${date} là ngày nghỉ cuối tuần (${dayOfWeek === 0 ? 'Chủ Nhật' : 'Thứ 7'}), không có công đi làm hành chính! Nếu cán bộ có làm việc, vui lòng chấm bên tab Bảng Trực hoặc Chấm Thêm Giờ.` 
-            }, { status: 400 });
+            // Kiểm tra xem có phải ngày làm bù được cấu hình toàn viện không
+            let isMakeupWorkday = false;
+            try {
+                const hospitalConfigRule = await prisma.specializedRule.findUnique({
+                    where: { slug: 'hospital-attendance-config' }
+                });
+                if (hospitalConfigRule && hospitalConfigRule.logicConfig) {
+                    const makeupList: any[] = (hospitalConfigRule.logicConfig as any).makeupWorkdays || [];
+                    if (makeupList.some((m: any) => m.date === date)) {
+                        isMakeupWorkday = true;
+                    }
+                }
+            } catch (errConfig) {
+                console.error('Lỗi kiểm tra makeupWorkdays trong bulk-daily:', errConfig);
+            }
+
+            if (!isMakeupWorkday) {
+                return NextResponse.json({ 
+                    error: `Ngày ${date} là ngày nghỉ cuối tuần (${dayOfWeek === 0 ? 'Chủ Nhật' : 'Thứ 7'}), không có công đi làm hành chính! Nếu cán bộ có làm việc, vui lòng chấm bên tab Bảng Trực hoặc Chấm Thêm Giờ.` 
+                }, { status: 400 });
+            }
         }
 
         const staffList = await prisma.staff.findMany({

@@ -30,7 +30,23 @@ export async function GET(request: Request) {
         const daysInMonth = new Date(year, month, 0).getDate();
         const daysInfo: any[] = [];
 
-        // Danh mục ngày lễ dương lịch cố định tại Việt Nam
+        // Lấy cấu hình ngày Lễ & Ngày làm bù toàn viện
+        let configHolidays: any[] = [];
+        let configMakeupWorkdays: any[] = [];
+        try {
+            const hospitalConfigRule = await prisma.specializedRule.findUnique({
+                where: { slug: 'hospital-attendance-config' }
+            });
+            if (hospitalConfigRule && hospitalConfigRule.logicConfig) {
+                const logic: any = hospitalConfigRule.logicConfig;
+                if (Array.isArray(logic.holidays)) configHolidays = logic.holidays;
+                if (Array.isArray(logic.makeupWorkdays)) configMakeupWorkdays = logic.makeupWorkdays;
+            }
+        } catch (errConfig) {
+            console.error('Lỗi đọc hospital-attendance-config:', errConfig);
+        }
+
+        // Danh mục ngày lễ dương lịch cố định tại Việt Nam (mặc định)
         const solarHolidays: Record<string, string> = {
             '01-01': 'Tết Dương Lịch',
             '04-30': 'Chiến Thắng 30/4',
@@ -44,16 +60,28 @@ export async function GET(request: Request) {
             const dayOfWeek = dateObj.getDay(); // 0 = Chủ Nhật, 6 = Thứ Bảy
             const monthDayStr = `${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const dateStr = `${year}-${monthDayStr}`;
-            const holidayName = solarHolidays[monthDayStr] || null;
+
+            const configuredHoliday = configHolidays.find((h: any) => h.date === dateStr);
+            const configuredMakeup = configMakeupWorkdays.find((m: any) => m.date === dateStr);
+            const isConfiguredHoliday = Boolean(configuredHoliday);
+            const isConfiguredMakeup = Boolean(configuredMakeup);
+
+            const holidayName = configuredHoliday?.name || solarHolidays[monthDayStr] || null;
+            const isHoliday = isConfiguredHoliday || Boolean(solarHolidays[monthDayStr]);
+            // Nếu là ngày làm bù Thứ 7, CN thì không tính là cuối tuần (mở khóa để chấm công)
+            const isActualWeekend = (dayOfWeek === 0 || dayOfWeek === 6) && !isConfiguredMakeup;
+
             daysInfo.push({
                 day: d,
                 dateStr,
                 dayOfWeek,
-                isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+                isWeekend: isActualWeekend,
                 isSaturday: dayOfWeek === 6,
                 isSunday: dayOfWeek === 0,
-                isHoliday: Boolean(holidayName),
-                holidayName
+                isHoliday,
+                holidayName,
+                isMakeupWorkday: isConfiguredMakeup,
+                makeupDescription: configuredMakeup?.description || null
             });
         }
 
@@ -264,9 +292,13 @@ export async function GET(request: Request) {
             // - Ngày thường: T
             // - T7, CN: C
             // - Lễ tết: L, Te
+            // - Trực kèm: TK
+            // - Thường trú: TT
             let dutyNgayThuong = 0;
             let dutyT7CN = 0;
             let dutyLeTet = 0;
+            let dutyTrucKem = 0;
+            let dutyThuongTru = 0;
             let totalAllowanceDays = 0;
             let totalCompensatedDays = 0;
 
@@ -277,13 +309,15 @@ export async function GET(request: Request) {
                     if (code === 'T') dutyNgayThuong += 1;
                     else if (code === 'C') dutyT7CN += 1;
                     else if (code === 'L' || code === 'TE') dutyLeTet += 1;
+                    else if (code === 'TK') dutyTrucKem += 1;
+                    else if (code === 'TT') dutyThuongTru += 1;
 
                     totalAllowanceDays += (duty.allowanceDays ?? 1.0);
                     totalCompensatedDays += (duty.compensatedDays ?? 0.0);
                 }
             }
 
-            const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet;
+            const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet + dutyTrucKem + dutyThuongTru;
             const remainingCompensatoryDays = Math.max(0, totalAllowanceDays - totalCompensatedDays);
 
             // Tính làm thêm giờ (Overtime):
@@ -326,6 +360,8 @@ export async function GET(request: Request) {
                     ngayThuong: dutyNgayThuong,
                     t7cn: dutyT7CN,
                     leTet: dutyLeTet,
+                    trucKem: dutyTrucKem,
+                    thuongTru: dutyThuongTru,
                     tongSo: totalDuty,
                     totalAllowanceDays,
                     totalCompensatedDays,
@@ -350,6 +386,8 @@ export async function GET(request: Request) {
             ngayThuong: staffData.reduce((acc, cur) => acc + cur.dutySummary.ngayThuong, 0),
             t7cn: staffData.reduce((acc, cur) => acc + cur.dutySummary.t7cn, 0),
             leTet: staffData.reduce((acc, cur) => acc + cur.dutySummary.leTet, 0),
+            trucKem: staffData.reduce((acc, cur) => acc + cur.dutySummary.trucKem, 0),
+            thuongTru: staffData.reduce((acc, cur) => acc + cur.dutySummary.thuongTru, 0),
             tongSo: staffData.reduce((acc, cur) => acc + cur.dutySummary.tongSo, 0),
         };
 

@@ -59,6 +59,25 @@ export async function POST(request: Request) {
         const month = parseInt(monthStr, 10);
         const daysInMonth = dayjs(`${year}-${month}-01`).daysInMonth();
 
+        // Lấy cấu hình ngày Lễ & Ngày làm bù toàn viện
+        let configHolidays: any[] = [];
+        let configMakeupWorkdays: any[] = [];
+        try {
+            const hospitalConfigRule = await prisma.specializedRule.findUnique({
+                where: { slug: 'hospital-attendance-config' }
+            });
+            if (hospitalConfigRule && hospitalConfigRule.logicConfig) {
+                const logic: any = hospitalConfigRule.logicConfig;
+                if (Array.isArray(logic.holidays)) configHolidays = logic.holidays;
+                if (Array.isArray(logic.makeupWorkdays)) configMakeupWorkdays = logic.makeupWorkdays;
+            }
+        } catch (errConfig) {
+            console.error('Lỗi đọc hospital-attendance-config:', errConfig);
+        }
+
+        const holidayDates = new Set(configHolidays.map((h: any) => h.date));
+        const makeupDates = new Set(configMakeupWorkdays.map((m: any) => m.date));
+
         // Ký hiệu công: CNTT dùng 'x', Lâm sàng/khoa khác dùng '+'
         const defaultCode = (ma_khoa === 'KP046') ? 'x' : '+';
 
@@ -70,9 +89,18 @@ export async function POST(request: Request) {
             const dayObj = dayjs(dateStr);
             const dayOfWeek = dayObj.day(); // 0: Chủ Nhật, 1: T2, ..., 6: T7
 
-            // Chỉ điền công ngày làm việc bình thường: Thứ 2 đến Thứ 6 (1..5)
+            const isConfiguredHoliday = holidayDates.has(dateStr);
+            const isConfiguredMakeup = makeupDates.has(dateStr);
+
+            // Bỏ qua ngày nghỉ Lễ / Tết / Hoán đổi
+            if (isConfiguredHoliday) {
+                continue;
+            }
+
+            // Điền công ngày thường (T2..T6) HOẶC ngày Thứ 7/CN làm bù (mặc định bỏ qua T7, CN nếu không phải ngày làm bù)
             const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-            if (!isWeekday) {
+            const shouldWork = isWeekday || isConfiguredMakeup;
+            if (!shouldWork) {
                 continue;
             }
 

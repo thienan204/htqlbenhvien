@@ -516,11 +516,11 @@ export async function GET(request: Request) {
                 }
             }
 
-            sheet.mergeCells('AI8:AL8');
+            sheet.mergeCells('AI8:AN8');
             sheet.getCell('AI8').value = 'CỘNG SỐ NGÀY TRỰC TRONG THÁNG';
             sheet.getCell('AI8').font = { name: 'Times New Roman', size: 9, bold: true };
             sheet.getCell('AI8').alignment = { horizontal: 'center', vertical: 'middle' };
-            for (let c = 35; c <= 38; c++) {
+            for (let c = 35; c <= 40; c++) {
                 sheet.getRow(8).getCell(c).border = thinBorder;
             }
 
@@ -539,10 +539,20 @@ export async function GET(request: Request) {
             sheet.getCell('AK9').alignment = { horizontal: 'center', vertical: 'middle' };
             sheet.getCell('AK9').border = thinBorder;
 
-            sheet.getCell('AL9').value = 'Tổng Số';
+            sheet.getCell('AL9').value = 'Trực kèm';
             sheet.getCell('AL9').font = { name: 'Times New Roman', size: 8, bold: true };
             sheet.getCell('AL9').alignment = { horizontal: 'center', vertical: 'middle' };
             sheet.getCell('AL9').border = thinBorder;
+
+            sheet.getCell('AM9').value = 'Thường trú';
+            sheet.getCell('AM9').font = { name: 'Times New Roman', size: 8, bold: true };
+            sheet.getCell('AM9').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('AM9').border = thinBorder;
+
+            sheet.getCell('AN9').value = 'Tổng Số';
+            sheet.getCell('AN9').font = { name: 'Times New Roman', size: 8, bold: true };
+            sheet.getCell('AN9').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('AN9').border = thinBorder;
 
             // Đổ dữ liệu nhân sự (Row 10 trở đi)
             let currentRow = 10;
@@ -566,6 +576,8 @@ export async function GET(request: Request) {
                 let dutyNgayThuong = 0;
                 let dutyT7CN = 0;
                 let dutyLeTet = 0;
+                let dutyTrucKem = 0;
+                let dutyThuongTru = 0;
 
                 const stDuty = dMap[st.id] || {};
 
@@ -593,6 +605,8 @@ export async function GET(request: Request) {
                             if (c === 'T') dutyNgayThuong++;
                             else if (c === 'C') dutyT7CN++;
                             else if (c === 'L' || c === 'TE') dutyLeTet++;
+                            else if (c === 'TK') dutyTrucKem++;
+                            else if (c === 'TT') dutyThuongTru++;
                         }
                     }
                 }
@@ -613,11 +627,21 @@ export async function GET(request: Request) {
                 row.getCell(37).border = thinBorder;
                 row.getCell(37).font = { name: 'Times New Roman', size: 10 };
 
-                const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet;
-                row.getCell(38).value = totalDuty > 0 ? totalDuty : '';
+                row.getCell(38).value = dutyTrucKem > 0 ? dutyTrucKem : '';
                 row.getCell(38).alignment = { horizontal: 'center', vertical: 'middle' };
                 row.getCell(38).border = thinBorder;
-                row.getCell(38).font = { name: 'Times New Roman', size: 10, bold: true };
+                row.getCell(38).font = { name: 'Times New Roman', size: 10 };
+
+                row.getCell(39).value = dutyThuongTru > 0 ? dutyThuongTru : '';
+                row.getCell(39).alignment = { horizontal: 'center', vertical: 'middle' };
+                row.getCell(39).border = thinBorder;
+                row.getCell(39).font = { name: 'Times New Roman', size: 10 };
+
+                const totalDuty = dutyNgayThuong + dutyT7CN + dutyLeTet + dutyTrucKem + dutyThuongTru;
+                row.getCell(40).value = totalDuty > 0 ? totalDuty : '';
+                row.getCell(40).alignment = { horizontal: 'center', vertical: 'middle' };
+                row.getCell(40).border = thinBorder;
+                row.getCell(40).font = { name: 'Times New Roman', size: 10, bold: true };
 
                 currentRow++;
             });
@@ -628,7 +652,7 @@ export async function GET(request: Request) {
             sumRow.getCell(2).font = { name: 'Times New Roman', size: 10, bold: true };
             sumRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            for (let c = 1; c <= 38; c++) {
+            for (let c = 1; c <= 40; c++) {
                 sumRow.getCell(c).border = thinBorder;
             }
 
@@ -650,17 +674,19 @@ export async function GET(request: Request) {
             sumRow.getCell(38).font = { name: 'Times New Roman', size: 10, bold: true };
             sumRow.getCell(38).alignment = { horizontal: 'center', vertical: 'middle' };
 
+            sumRow.getCell(39).value = { formula: `SUM(AM${firstRow}:AM${lastRow})` };
+            sumRow.getCell(39).font = { name: 'Times New Roman', size: 10, bold: true };
+            sumRow.getCell(39).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sumRow.getCell(40).value = { formula: `SUM(AN${firstRow}:AN${lastRow})` };
+            sumRow.getCell(40).font = { name: 'Times New Roman', size: 10, bold: true };
+            sumRow.getCell(40).alignment = { horizontal: 'center', vertical: 'middle' };
+
             currentRow += 2;
 
             // Bảng ghi chú các ký hiệu chấm công trực
-            sheet.getCell(`B${currentRow}`).value = 'T: Trực ngày thường';
+            sheet.getCell(`B${currentRow}`).value = 'T: Trực thường | C: Trực T7, CN | L/Te: Trực lễ tết | Tk: Trực kèm | TT: Trực thường trú';
             sheet.getCell(`B${currentRow}`).font = { name: 'Times New Roman', size: 10, italic: true };
-            sheet.getCell(`I${currentRow}`).value = 'C: Trực ngày chủ nhật';
-            sheet.getCell(`I${currentRow}`).font = { name: 'Times New Roman', size: 10, italic: true };
-            sheet.getCell(`T${currentRow}`).value = 'L: Trực ngày lễ';
-            sheet.getCell(`T${currentRow}`).font = { name: 'Times New Roman', size: 10, italic: true };
-            sheet.getCell(`AA${currentRow}`).value = 'Te: Trực tết';
-            sheet.getCell(`AA${currentRow}`).font = { name: 'Times New Roman', size: 10, italic: true };
 
             currentRow += 2;
 

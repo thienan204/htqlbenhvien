@@ -59,9 +59,17 @@ export async function POST(request: Request) {
                 return NextResponse.json({ success: true, message: `Đã xóa ca trực ngày ${date}` });
             }
 
-            // Theo luật: Trực Lễ (L) hoặc Trực Tết (Te) được nghỉ bù 2 ngày; Ngày thường (T) và T7/CN (C) được nghỉ bù 1 ngày
+            // Theo luật & QĐ 73/2011/QĐ-TTg:
+            // - Trực Lễ (L), Trực Tết (Te): nghỉ bù 2 ngày
+            // - Trực Thường (T), T7/CN (C), Trực kèm (TK): nghỉ bù 1 ngày
+            // - Trực thường trú (TT - on-call tại nhà): 0 ngày nghỉ bù (chỉ hưởng phụ cấp thường trú)
             const cleanDutyCode = dutyCode.trim().toUpperCase();
-            const allowanceDays = (cleanDutyCode === 'L' || cleanDutyCode === 'TE') ? 2.0 : 1.0;
+            let resolvedDutyType = dutyType || 'TRUC_CHINH';
+            if (cleanDutyCode === 'TK') resolvedDutyType = 'TRUC_KEM';
+            else if (cleanDutyCode === 'TT') resolvedDutyType = 'TRUC_THUONG_TRU';
+            else if (['T', 'C', 'L', 'TE'].includes(cleanDutyCode)) resolvedDutyType = 'TRUC_CHINH';
+
+            const allowanceDays = (cleanDutyCode === 'L' || cleanDutyCode === 'TE') ? 2.0 : (cleanDutyCode === 'TT' ? 0.0 : 1.0);
 
             const updatedDuty = await prisma.staffDutyRecord.upsert({
                 where: {
@@ -69,7 +77,7 @@ export async function POST(request: Request) {
                 },
                 update: {
                     dutyCode: cleanDutyCode,
-                    dutyType,
+                    dutyType: resolvedDutyType,
                     allowanceDays,
                     note: note || null,
                     updatedBy: user.id
@@ -79,7 +87,7 @@ export async function POST(request: Request) {
                     ma_khoa: ma_khoa || 'KP046',
                     dutyDate: date,
                     dutyCode: cleanDutyCode,
-                    dutyType,
+                    dutyType: resolvedDutyType,
                     allowanceDays,
                     compensatedDays: 0.0,
                     isFullyCompensated: false,

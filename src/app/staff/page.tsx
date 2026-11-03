@@ -330,7 +330,7 @@ export default function StaffPage() {
                             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
                                 Chấm công:
                             </span>
-                            <Link href="/staff/attendance-manager">
+                            <Link href="/staff/attendance">
                                 <Button 
                                     type="primary" 
                                     icon={<CalendarOutlined />} 

@@ -192,7 +192,7 @@ export default function MyAttendancePage() {
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Link href="/staff/attendance-manager">
+                        <Link href="/staff/attendance">
                             <Button icon={<ArrowLeftOutlined />} size="small">Quản Lý</Button>
                         </Link>
                         <ScheduleOutlined className="text-blue-600 text-2xl" />
