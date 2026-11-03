@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         const {
             ma_khoa = 'KP046',
             date, // 'YYYY-MM-DD'
-            code = 'x',
+            code = '+',
             overwrite = false // Nếu true thì ghi đè cả các ô đã có, false thì chỉ điền ô còn trống
         } = body;
 

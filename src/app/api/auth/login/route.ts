@@ -173,7 +173,7 @@ export async function POST(request: Request) {
                 ]);
 
                 const cleanCode = (todayAtt?.code || '').trim().toUpperCase();
-                const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode);
+                const isWorkingToday = ['X', '+', 'X/2', '+/2', 'NB/2', 'P/2'].includes(cleanCode);
                 const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
                 const hasDutyToday = Boolean(todayDuty || todayAtt?.dutyRecordId || cleanCode === 'T' || cleanCode.startsWith('T/'));
 

@@ -140,14 +140,21 @@ export async function GET(request: Request) {
             const c = (att.code || '').trim().toUpperCase();
             const sec = (att.secondaryCode || '').trim().toUpperCase();
 
-            if (['X', 'P', 'L', 'H'].includes(c)) {
+            if (['X', '+', 'P', 'L', 'H'].includes(c)) {
                 luongThoiGian += (att.value ?? 1.0);
+            } else if (c === 'X/2' || c === '+/2') {
+                luongThoiGian += (att.value ?? 0.5);
+            } else if (c === 'P/2') {
+                luongThoiGian += 1.0;
             } else if (c === 'NB') {
                 luongThoiGian += (att.value ?? 1.0);
                 soNgayNghiBu += (att.session === 'FULL_DAY' ? 1.0 : 0.5);
-                if (sec === 'X') {
+                if (sec === 'X' || sec === '+') {
                     luongThoiGian += 0.5;
                 }
+            } else if (c === 'NB/2') {
+                luongThoiGian += 1.0;
+                soNgayNghiBu += 0.5;
             } else if (c === 'KL') {
                 nghiKhongLuong += (att.value ?? 1.0);
             } else if (['Ô', 'O', 'TS'].includes(c)) {

@@ -104,7 +104,7 @@ export async function POST(request: Request) {
                 });
 
                 if (!existingAtt) {
-                    const defaultWorkCode = (ma_khoa === 'KP046') ? 'x' : '+';
+                    const defaultWorkCode = '+';
                     await prisma.staffAttendanceRecord.create({
                         data: {
                             staffId,
@@ -217,20 +217,37 @@ export async function POST(request: Request) {
             let finalValue = typeof value === 'number' ? value : 1.0;
             let finalSecondaryCode = secondaryCode ? secondaryCode.trim() : null;
 
-            if (cleanCode === 'X') formattedCode = 'x';
-            else if (cleanCode === 'NB') {
+            if (cleanCode === 'X') {
+                formattedCode = 'x';
+                finalValue = 1.0;
+                finalSession = 'FULL_DAY';
+            } else if (cleanCode === '+') {
+                formattedCode = '+';
+                finalValue = 1.0;
+                finalSession = 'FULL_DAY';
+            } else if (cleanCode === 'X/2') {
+                formattedCode = 'x/2';
+                finalSession = 'HALF_DAY';
+                finalValue = 0.5;
+                if (!finalSecondaryCode) finalSecondaryCode = 'x';
+            } else if (cleanCode === '+/2') {
+                formattedCode = '+/2';
+                finalSession = 'HALF_DAY';
+                finalValue = 0.5;
+                if (!finalSecondaryCode) finalSecondaryCode = '+';
+            } else if (cleanCode === 'NB') {
                 formattedCode = 'Nb';
                 finalValue = 1.0;
             } else if (cleanCode === 'NB/2') {
                 formattedCode = 'Nb/2';
                 finalSession = 'HALF_DAY';
                 finalValue = 0.5;
-                if (!finalSecondaryCode) finalSecondaryCode = 'x';
+                if (!finalSecondaryCode) finalSecondaryCode = '+';
             } else if (cleanCode === 'P/2') {
                 formattedCode = 'P/2';
                 finalSession = 'HALF_DAY';
                 finalValue = 0.5;
-                if (!finalSecondaryCode) finalSecondaryCode = 'x';
+                if (!finalSecondaryCode) finalSecondaryCode = '+';
             }
 
             // Cập nhật hoặc tạo mới bản ghi chấm công
@@ -352,7 +369,7 @@ export async function POST(request: Request) {
                             );
 
                             if (syncAttendanceEnabled && (!isLeader || applyForLeaders)) {
-                                const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode) || (cleanCode === 'NB' && (secondaryCode === 'x' || secondaryCode === '+'));
+                                const isWorkingToday = ['X', '+', 'X/2', '+/2', 'NB/2', 'P/2'].includes(cleanCode) || (cleanCode === 'NB' && (secondaryCode === 'x' || secondaryCode === '+'));
                                 const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
 
                                 if (isWorkingToday) {
@@ -379,7 +396,7 @@ export async function POST(request: Request) {
                 let targetStatusCode: string | undefined = undefined;
                 let dvktValue: boolean = true;
 
-                if (['X', '+'].includes(cleanCode)) {
+                if (['X', '+', 'X/2', '+/2'].includes(cleanCode)) {
                     targetStatusCode = 'DI_LAM';
                     dvktValue = true;
                 } else if (cleanCode === 'NB/2') {

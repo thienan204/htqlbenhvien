@@ -14,6 +14,7 @@ export async function POST(request: Request) {
         const {
             ma_khoa,
             monthYear, // 'YYYY-MM'
+            code = '+',
             overwrite = false
         } = body;
 
@@ -78,8 +79,8 @@ export async function POST(request: Request) {
         const holidayDates = new Set(configHolidays.map((h: any) => h.date));
         const makeupDates = new Set(configMakeupWorkdays.map((m: any) => m.date));
 
-        // Ký hiệu công: CNTT dùng 'x', Lâm sàng/khoa khác dùng '+'
-        const defaultCode = (ma_khoa === 'KP046') ? 'x' : '+';
+        // Ký hiệu công mặc định toàn viện là '+' (hoặc theo code gửi lên)
+        const defaultCode = (code || '+').trim();
 
         let createdCount = 0;
         const recordsToCreate: any[] = [];

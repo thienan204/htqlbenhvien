@@ -33,7 +33,7 @@ export default function AttendanceSheetPage() {
         let color = 'default';
         let bgStyle = '';
 
-        if (c === 'X' || c === '+') color = 'success';
+        if (['X', '+', 'X/2', '+/2'].includes(c)) color = 'success';
         else if (c === 'NB' || c === 'NB/2' || c === 'NB/X' || c === 'X/NB') color = 'warning';
         else if (c === 'P' || c === 'P/2') color = 'processing';
         else if (c === 'L' || c === 'TE') color = 'purple';
@@ -235,8 +235,10 @@ export default function AttendanceSheetPage() {
                     ] : undefined;
 
                     const items = [
-                        { key: 'x', label: <span className="font-semibold text-emerald-600">x - Đi làm đủ ngày (8h)</span> },
-                        { key: 'x/2', label: <span className="text-emerald-500">x/2 - Đi làm nửa ngày (4h)</span> },
+                        { key: '+', label: <span className="font-bold text-emerald-600">+ - Đi làm đủ ngày (8h) [Mặc định]</span> },
+                        { key: '+/2', label: <span className="font-medium text-emerald-600">+/2 - Đi làm nửa ngày (4h)</span> },
+                        { key: 'x', label: <span className="font-semibold text-teal-700">x - Đi làm đủ ngày (8h)</span> },
+                        { key: 'x/2', label: <span className="text-teal-600">x/2 - Đi làm nửa ngày (4h)</span> },
                         { key: 'P', label: <span className="text-blue-600">P - Nghỉ phép cả ngày</span> },
                         { key: 'P/2', label: <span className="text-blue-500">P/2 - Nghỉ phép 1/2 ngày</span> },
                         {

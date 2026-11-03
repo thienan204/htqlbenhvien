@@ -153,7 +153,7 @@ export async function POST(request: Request) {
                         });
 
                         if (!existingAtt) {
-                            const defaultWorkCode = (ma_khoa === 'KP046') ? 'x' : '+';
+                            const defaultWorkCode = '+';
                             await prisma.staffAttendanceRecord.create({
                                 data: {
                                     staffId,

@@ -296,6 +296,9 @@ export async function GET(request: Request) {
                             } else if (c.toUpperCase() === 'P/2') {
                                 cell.value = 'P/2';
                                 luongThoiGian += 1.0;
+                            } else if (c.toUpperCase() === 'X/2' || c.toUpperCase() === '+/2') {
+                                cell.value = c;
+                                luongThoiGian += (att.value || 0.5);
                             } else if (c.toUpperCase() === 'X' || c === '+') {
                                 cell.value = c;
                                 luongThoiGian += (att.value || 1.0);

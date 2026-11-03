@@ -314,6 +314,8 @@ export async function GET(request: Request) {
 
                     if (['X', '+', 'P', 'L', 'H'].includes(c)) {
                         luongThoiGian += (att.value ?? 1.0);
+                    } else if (c === 'X/2' || c === '+/2') {
+                        luongThoiGian += (att.value ?? 0.5);
                     } else if (c === 'P/2') {
                         // Nghỉ phép 1/2 ngày: 0.5 công đi làm + 0.5 công nghỉ phép = 1.0 công thời gian
                         luongThoiGian += 1.0;

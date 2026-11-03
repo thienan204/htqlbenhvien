@@ -122,7 +122,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                 body: JSON.stringify({
                     ma_khoa: selectedDept,
                     date: dateStr,
-                    code: selectedDept === 'KP046' ? 'x' : '+'
+                    code: '+'
                 })
             });
             if (!res.ok) {
@@ -157,7 +157,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                 body: JSON.stringify({
                     ma_khoa: selectedDept,
                     monthYear,
-                    code: selectedDept === 'KP046' ? 'x' : '+'
+                    code: '+'
                 })
             });
             if (!res.ok) {
@@ -317,7 +317,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                             title="⚡ Khởi tạo công cả tháng?"
                             description={
                                 <div className="max-w-xs text-xs space-y-1.5 py-1">
-                                    <p>Tự động điền công đi làm (<b>{selectedDept === 'KP046' ? 'x' : '+'}</b>) cho tất cả cán bộ trong tháng <b>{selectedDate.format('MM/YYYY')}</b>.</p>
+                                    <p>Tự động điền công đi làm (<b>+</b>) cho tất cả cán bộ trong tháng <b>{selectedDate.format('MM/YYYY')}</b>.</p>
                                     <p className="text-emerald-700 font-medium">✓ <b>Mặc định điền Thứ 2 - Thứ 6</b> (tự động bỏ qua Thứ 7 & Chủ Nhật).</p>
                                     <p className="text-purple-700 font-medium">✓ Tự động bỏ qua các ngày nghỉ Lễ/Tết đã cấu hình.</p>
                                     <p className="text-blue-700">✓ Tự động điền Thứ 7/CN nếu có lịch làm bù.</p>

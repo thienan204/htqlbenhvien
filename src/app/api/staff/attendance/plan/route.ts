@@ -14,7 +14,7 @@ export async function POST(request: Request) {
             staffIds, // string[]
             startDate, // 'YYYY-MM-DD'
             endDate, // 'YYYY-MM-DD'
-            code = 'x', // 'x' | 'P' | 'P/2' | 'Nb' | 'Nb/2' | 'H' | 'Ố' | 'TS' | 'KL' | 'L' | 'CLEAR'
+            code = '+', // '+' | 'x' | '+/2' | 'x/2' | 'P' | 'P/2' | 'Nb' | 'Nb/2' | 'H' | 'Ố' | 'TS' | 'KL' | 'L' | 'CLEAR'
             skipWeekends = true,
             overwrite = true,
             ma_khoa = 'KP046'
@@ -63,14 +63,23 @@ export async function POST(request: Request) {
 
         if (!isClear) {
             if (cleanCode === 'X') formattedCode = 'x';
-            else if (cleanCode === 'NB') {
+            else if (cleanCode === '+') formattedCode = '+';
+            else if (cleanCode === 'X/2') {
+                formattedCode = 'x/2';
+                session = 'HALF_DAY';
+                value = 0.5;
+            } else if (cleanCode === '+/2') {
+                formattedCode = '+/2';
+                session = 'HALF_DAY';
+                value = 0.5;
+            } else if (cleanCode === 'NB') {
                 formattedCode = 'Nb';
                 value = 1.0;
             } else if (cleanCode === 'NB/2') {
                 formattedCode = 'Nb/2';
                 session = 'HALF_DAY';
                 value = 0.5;
-                secondaryCode = 'x';
+                secondaryCode = '+';
             } else if (cleanCode === 'P/2') {
                 formattedCode = 'P/2';
                 session = 'HALF_DAY';

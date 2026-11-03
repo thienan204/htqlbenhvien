@@ -14,6 +14,8 @@ interface AttendancePlanModalProps {
 }
 
 const ATTENDANCE_FORM_OPTIONS = [
+    { value: '+', label: '+ - Đi làm đủ ngày (8h) [Mặc định]', color: 'green' },
+    { value: '+/2', label: '+/2 - Đi làm nửa ngày (4h)', color: 'cyan' },
     { value: 'x', label: 'x - Đi làm đủ ngày (8h)', color: 'green' },
     { value: 'x/2', label: 'x/2 - Đi làm nửa ngày (4h)', color: 'cyan' },
     { value: 'P', label: 'P - Nghỉ phép cả ngày', color: 'blue' },
