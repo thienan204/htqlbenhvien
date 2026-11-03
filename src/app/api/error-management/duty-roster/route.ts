@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { sendZaloGroupNotification } from '@/lib/zalo';
+import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig } from '@/lib/shiftUtils';
 
 // Lấy danh sách nhân viên CNTT
 export async function GET(request: Request) {
@@ -53,62 +54,109 @@ export async function GET(request: Request) {
             }
         });
 
-        // Tự động đối chiếu và đồng bộ trạng thái nhận việc theo Chấm công hôm nay
+        // Tự động đối chiếu và đồng bộ trạng thái nhận việc theo Cấu hình Khung giờ & Chấm công toàn viện
         try {
             let slug = 'it-request-fields-config';
             if (targetDepartment === 'VTYT') slug = 'vtyt-request-fields-config';
             else if (targetDepartment === 'HCQT') slug = 'hcqt-request-fields-config';
 
-            const configRule = await prisma.specializedRule.findUnique({ where: { slug } });
+            // 1. Đọc cấu hình phòng ban & cấu hình chấm công toàn viện
+            const [configRule, hospitalConfigRule] = await Promise.all([
+                prisma.specializedRule.findUnique({ where: { slug } }),
+                prisma.specializedRule.findUnique({ where: { slug: 'hospital-attendance-config' } })
+            ]);
+
             const itConfig: any = configRule?.logicConfig || {};
+            const hospitalConfig: any = hospitalConfigRule?.logicConfig || {};
+            const workHours = hospitalConfig.workHours || {};
+
             const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
             // Mặc định KHÔNG tự động bật nhận việc cho Lãnh đạo (Trưởng/Phó phòng), chỉ bật khi cấu hình rõ ràng là true
             const applyForLeaders = itConfig.applyForLeaders === true;
             const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
 
+            // 2. Lấy khung giờ: ƯU TIÊN LẤY TỪ CẤU HÌNH TOÀN VIỆN (hospital-attendance-config)
+            const morningStart = workHours.morningStart || itConfig.morningStartTime || '07:00';
+            const morningEnd = workHours.morningEnd || itConfig.morningEndTime || '11:30';
+            const afternoonStart = workHours.afternoonStart || itConfig.afternoonStartTime || '13:30';
+            const afternoonEnd = workHours.afternoonEnd || itConfig.afternoonEndTime || itConfig.officeEndTime || '17:00';
+
+            const holidays = Array.isArray(hospitalConfig.holidays)
+                ? hospitalConfig.holidays.map((h: any) => h.date).filter(Boolean)
+                : (Array.isArray(itConfig.holidays) ? itConfig.holidays : []);
+
+            const makeupWorkdays = Array.isArray(hospitalConfig.makeupWorkdays)
+                ? hospitalConfig.makeupWorkdays.map((m: any) => m.date).filter(Boolean)
+                : (Array.isArray(itConfig.makeupWorkdays) ? itConfig.makeupWorkdays : []);
+
+            const shiftConfig: HospitalShiftConfig = {
+                morningStart,
+                morningEnd,
+                afternoonStart,
+                afternoonEnd,
+                holidays,
+                makeupWorkdays
+            };
+
+            // 3. Xác định ca làm việc theo giờ thực tế Việt Nam (GMT+7)
+            const shiftInfo = getCurrentHospitalShift(shiftConfig);
+            const isOfficeHours = shiftInfo.isOfficeHours;
+            const vnTime = getVietnamTimeParts();
+            const todayStr = vnTime.dateStr;
+
             if (syncAttendanceEnabled) {
-                const todayStr = new Date().toISOString().split('T')[0];
                 for (const u of users) {
                     if (u.staffId) {
-                        const todayAtt = await prisma.staffAttendanceRecord.findFirst({
-                            where: {
-                                staffId: u.staffId,
-                                workDate: todayStr
-                            }
-                        });
+                        const [todayAtt, todayDuty] = await Promise.all([
+                            prisma.staffAttendanceRecord.findFirst({
+                                where: {
+                                    staffId: u.staffId,
+                                    workDate: todayStr
+                                }
+                            }),
+                            prisma.staffDutyRecord.findFirst({
+                                where: {
+                                    staffId: u.staffId,
+                                    dutyDate: todayStr
+                                }
+                            })
+                        ]);
 
-                        if (todayAtt) {
-                            const cleanCode = (todayAtt.code || '').trim().toUpperCase();
-                            const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode);
-                            const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
+                        const cleanCode = (todayAtt?.code || '').trim().toUpperCase();
+                        const isWorkingToday = ['X', '+', 'NB/2', 'P/2'].includes(cleanCode);
+                        const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
+                        const hasDutyToday = Boolean(todayDuty || todayAtt?.dutyRecordId || cleanCode === 'T' || cleanCode.startsWith('T/'));
 
-                            const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
-                            const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
-                            const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
+                        const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
+                        const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
+                        const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
 
-                            // 1. Tổ trưởng (Level 2.1 hoặc mã/tên có Tổ trưởng): Là lực lượng kỹ thuật tác chiến, KHÔNG PHẢI lãnh đạo miễn nhận việc
-                            const isTeamLeader = Boolean(
-                                explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
-                                explicitLevel === 'LEVEL_2.1' || 
-                                cvCode === 'TO_TRUONG' || 
-                                cvCode.includes('TO_TRUONG') || 
-                                cvName.includes('tổ trưởng')
-                            );
+                        // 1. Tổ trưởng (Level 2.1 hoặc mã/tên có Tổ trưởng): Là lực lượng kỹ thuật tác chiến, KHÔNG PHẢI lãnh đạo miễn nhận việc
+                        const isTeamLeader = Boolean(
+                            explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+                            explicitLevel === 'LEVEL_2.1' || 
+                            cvCode === 'TO_TRUONG' || 
+                            cvCode.includes('TO_TRUONG') || 
+                            cvName.includes('tổ trưởng')
+                        );
 
-                            // 2. Lãnh đạo quản lý Khoa/Phòng (Level 1, Level 2): Mặc định không tự động nhận việc
-                            const isLeader = !isTeamLeader && Boolean(
-                                explicitLevel === 'LEVEL_1_BGD' || 
-                                explicitLevel === 'LEVEL_2_LEADER' || 
-                                cvCode.includes('TRUONG_PHONG') || 
-                                cvCode.includes('PHO_TRUONG_PHONG') || 
-                                cvCode.includes('TRUONG_KHOA') || 
-                                cvCode.includes('PHO_TRUONG_KHOA') ||
-                                cvName.includes('trưởng phòng') || 
-                                cvName.includes('phó trưởng phòng') || 
-                                cvName.includes('trưởng khoa') || 
-                                cvName.includes('phó trưởng khoa')
-                            );
+                        // 2. Lãnh đạo quản lý Khoa/Phòng (Level 1, Level 2): Mặc định không tự động nhận việc
+                        const isLeader = !isTeamLeader && Boolean(
+                            explicitLevel === 'LEVEL_1_BGD' || 
+                            explicitLevel === 'LEVEL_2_LEADER' || 
+                            cvCode.includes('TRUONG_PHONG') || 
+                            cvCode.includes('PHO_TRUONG_PHONG') || 
+                            cvCode.includes('TRUONG_KHOA') || 
+                            cvCode.includes('PHO_TRUONG_KHOA') ||
+                            cvName.includes('trưởng phòng') || 
+                            cvName.includes('phó trưởng phòng') || 
+                            cvName.includes('trưởng khoa') || 
+                            cvName.includes('phó trưởng khoa')
+                        );
 
+                        // XỬ LÝ THEO MỐC THỜI GIAN LẤY TỪ CẤU HÌNH TOÀN VIỆN:
+                        if (isOfficeHours) {
+                            // A. Đang trong giờ hành chính (Chưa vượt quá afternoonEnd trong cấu hình):
                             if (isWorkingToday && (!isLeader || applyForLeaders)) {
                                 if (!u.isAvailable) {
                                     await prisma.user.update({
@@ -126,12 +174,33 @@ export async function GET(request: Request) {
                                     u.isAvailable = false;
                                 }
                             }
+                        } else {
+                            // B. Ngoài giờ hành chính (Đã vượt quá afternoonEnd theo cấu hình, hoặc ca đêm, ngày nghỉ):
+                            if (hasDutyToday) {
+                                // Nhân viên có lịch trực hôm nay -> Duy trì hoặc bật Sẵn sàng nhận việc
+                                if (!u.isAvailable) {
+                                    await prisma.user.update({
+                                        where: { id: u.id },
+                                        data: { isAvailable: true }
+                                    });
+                                    u.isAvailable = true;
+                                }
+                            } else {
+                                // Nhân viên làm hành chính bình thường (không có lịch trực) -> Tự động TẮT vì đã hết giờ theo cấu hình
+                                if (u.isAvailable) {
+                                    await prisma.user.update({
+                                        where: { id: u.id },
+                                        data: { isAvailable: false }
+                                    });
+                                    u.isAvailable = false;
+                                }
+                            }
                         }
                     }
                 }
             }
         } catch (eSync) {
-            console.error('Lỗi tự động đồng bộ duty-roster với bảng chấm công:', eSync);
+            console.error('Lỗi tự động đồng bộ duty-roster với bảng chấm công & cấu hình toàn viện:', eSync);
         }
 
         const formatted = users.map(u => {
