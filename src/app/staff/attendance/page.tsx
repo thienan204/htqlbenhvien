@@ -1,11 +1,69 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Tag, Dropdown, Tooltip, Button } from 'antd';
+import { Table, Tag, Popover, Tooltip, Button } from 'antd';
 import { EditOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAttendance, StaffMatrixData } from './AttendanceContext';
 import { AttendancePlanModal } from './_components/AttendancePlanModal';
+
+interface AttendanceOptionButtonProps {
+    code: string;
+    label: string;
+    desc?: string;
+    colorType?: 'emerald' | 'teal' | 'blue' | 'amber' | 'purple' | 'red' | 'cyan' | 'slate';
+    disabled?: boolean;
+    active?: boolean;
+    onClick: () => void;
+}
+
+function AttendanceOptionButton({
+    code,
+    label,
+    desc,
+    colorType = 'emerald',
+    disabled = false,
+    active = false,
+    onClick
+}: AttendanceOptionButtonProps) {
+    const badgeColors: Record<string, string> = {
+        emerald: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        teal: 'bg-teal-100 text-teal-800 border-teal-300',
+        blue: 'bg-blue-100 text-blue-800 border-blue-300',
+        amber: 'bg-amber-100 text-amber-800 border-amber-300',
+        purple: 'bg-purple-100 text-purple-800 border-purple-300',
+        red: 'bg-red-100 text-red-800 border-red-300',
+        cyan: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+        slate: 'bg-slate-100 text-slate-700 border-slate-300'
+    };
+
+    return (
+        <button
+            type="button"
+            disabled={disabled}
+            onClick={onClick}
+            className={`w-full text-left px-2 py-1 rounded transition-all flex items-start gap-1.5 text-xs select-none ${
+                disabled
+                    ? 'opacity-40 cursor-not-allowed bg-slate-50 text-slate-400'
+                    : active
+                    ? 'bg-blue-50/90 border border-blue-400 text-blue-900 shadow-xs'
+                    : 'hover:bg-slate-100 hover:border-slate-300 border border-transparent cursor-pointer text-slate-700'
+            }`}
+        >
+            <span
+                className={`font-mono font-bold px-1.5 py-0.2 rounded text-[11px] shrink-0 border ${
+                    badgeColors[colorType] || badgeColors.slate
+                }`}
+            >
+                {code}
+            </span>
+            <div className="flex-1 min-w-0 leading-tight">
+                <div className="font-medium truncate">{label}</div>
+                {desc && <div className="text-[10px] text-slate-400 truncate">{desc}</div>}
+            </div>
+        </button>
+    );
+}
 
 export default function AttendanceSheetPage() {
     const {
@@ -22,6 +80,7 @@ export default function AttendanceSheetPage() {
     } = useAttendance();
 
     const [planModalOpen, setPlanModalOpen] = useState(false);
+    const [activePopoverKey, setActivePopoverKey] = useState<string | null>(null);
 
     const daysInfo = matrixData?.daysInfo || [];
 
@@ -37,12 +96,22 @@ export default function AttendanceSheetPage() {
         else if (c === 'NB' || c === 'NB/2' || c === 'NB/X' || c === 'X/NB') color = 'warning';
         else if (c === 'P' || c === 'P/2') color = 'processing';
         else if (c === 'L' || c === 'TE') color = 'purple';
-        else if (['Ô', 'O', 'TS', 'KL'].includes(c)) color = 'error';
+        else if (['Ô', 'Ố', 'O', 'TS', 'KL'].includes(c)) color = 'error';
         else if (c === 'H' || c === 'CT') color = 'cyan';
+
+        let sessionSuffix = '';
+        let sessionDesc = '';
+        if (att.session === 'MORNING') {
+            sessionSuffix = ' (S)';
+            sessionDesc = 'Buổi Sáng (07:00 - 11:30)';
+        } else if (att.session === 'AFTERNOON') {
+            sessionSuffix = ' (C)';
+            sessionDesc = 'Buổi Chiều (13:30 - 17:00)';
+        }
 
         const tagNode = (
             <Tag color={color} className={`m-0 font-bold text-xs px-1.5 py-0.5 shadow-xs ${bgStyle}`}>
-                {att.code}
+                {att.code}{sessionSuffix}
             </Tag>
         );
 
@@ -53,11 +122,19 @@ export default function AttendanceSheetPage() {
                 <Tooltip
                     title={
                         <div className="text-xs py-0.5">
-                            <div className="font-semibold text-amber-300">Nghỉ bù chế độ trực</div>
+                            <div className="font-semibold text-amber-300">Nghỉ bù chế độ trực {sessionSuffix ? `(${sessionDesc})` : ''}</div>
                             <div>📅 Từ ca trực: <strong>{formattedDutyDate}</strong> (Ca {att.dutyRecord.dutyCode})</div>
                         </div>
                     }
                 >
+                    {tagNode}
+                </Tooltip>
+            );
+        }
+
+        if (sessionDesc) {
+            return (
+                <Tooltip title={<div className="text-xs font-medium">{att.code}: {sessionDesc}</div>}>
                     {tagNode}
                 </Tooltip>
             );
@@ -162,183 +239,249 @@ export default function AttendanceSheetPage() {
                     const uncompList = record.dutySummary?.uncompensatedDuties || [];
                     const dutyDatesText = record.dutySummary?.dutyDatesText || '';
 
-                    const nbTooltipContent = uncompList.length > 0 ? (
-                        <div className="text-xs p-1">
-                            <div className="font-bold text-amber-300 mb-1 border-b border-amber-400/30 pb-0.5">
-                                Các ca trực còn ngày nghỉ bù ({remDays} ngày):
+                    if (!canEditCurrentDept) {
+                        return cellNode;
+                    }
+
+                    const cellKey = `${record.staffId}_${d.day}`;
+                    const isOpen = activePopoverKey === cellKey;
+
+                    const handleSelect = (code: string, dutyId?: string, session?: string) => {
+                        setActivePopoverKey(null);
+                        setSelectedDate(dayjs(d.dateStr));
+                        handleUpdateAttendanceCell(record.staffId, d.day, code, dutyId, session);
+                    };
+
+                    const currentCode = (att?.code || '').trim().toUpperCase();
+                    const currentSession = (att?.session || '').trim().toUpperCase();
+
+                    const popoverContent = (
+                        <div className="w-[660px] p-1 text-slate-800">
+                            {/* Header Popup */}
+                            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                                <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                                    <span className="text-blue-600 font-bold">{record.ho_ten}</span>
+                                    <span className="text-slate-300">|</span>
+                                    <span>Ngày {d.day}/{selectedDate.format('MM/YYYY')} ({d.dayOfWeek})</span>
+                                </div>
+                                {att?.code && (
+                                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded font-medium">
+                                        Đang chấm: <strong className="text-blue-600 font-mono">{att.code}{att.session === 'MORNING' ? ' (S)' : att.session === 'AFTERNOON' ? ' (C)' : ''}</strong>
+                                    </span>
+                                )}
                             </div>
-                            <div className="space-y-1">
-                                {uncompList.map((u, idx) => {
-                                    const parts = u.dutyDate.split('-');
-                                    const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                                    return (
-                                        <div key={idx} className="flex justify-between items-center gap-3 text-slate-200">
-                                            <span>📅 Ngày <strong>{formattedDate}</strong> (Ca {u.dutyCode})</span>
-                                            <span className="font-semibold text-emerald-300 bg-emerald-950/60 px-1 rounded">Còn {u.remainingDays}d</span>
+
+                            {/* Khối 3 Cột chức năng */}
+                            <div className="grid grid-cols-3 gap-2.5">
+                                {/* Cột 1: Đi Làm */}
+                                <div className="space-y-1">
+                                    <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 flex items-center gap-1 mb-1.5">
+                                        🟢 1. Đi Làm
+                                    </div>
+                                    <AttendanceOptionButton
+                                        code="+"
+                                        label="Đi làm đủ ngày (8h)"
+                                        desc="8h hành chính (Mặc định)"
+                                        colorType="emerald"
+                                        active={currentCode === '+' && currentSession === 'FULL_DAY'}
+                                        onClick={() => handleSelect('+', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="+/2"
+                                        label="Làm buổi Sáng (4h)"
+                                        desc="07:00 - 11:30 (Sáng)"
+                                        colorType="emerald"
+                                        active={currentCode === '+/2' && currentSession === 'MORNING'}
+                                        onClick={() => handleSelect('+/2', undefined, 'MORNING')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="+/2"
+                                        label="Làm buổi Chiều (4h)"
+                                        desc="13:30 - 17:00 (Chiều)"
+                                        colorType="emerald"
+                                        active={currentCode === '+/2' && currentSession === 'AFTERNOON'}
+                                        onClick={() => handleSelect('+/2', undefined, 'AFTERNOON')}
+                                    />
+                                    <div className="my-1 border-t border-slate-100" />
+                                    <AttendanceOptionButton
+                                        code="x"
+                                        label="Đi làm đủ ngày (8h)"
+                                        desc="8h hành chính"
+                                        colorType="teal"
+                                        active={currentCode === 'X' && currentSession === 'FULL_DAY'}
+                                        onClick={() => handleSelect('x', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="x/2"
+                                        label="Đi làm nửa ngày"
+                                        desc="4h làm việc"
+                                        colorType="teal"
+                                        active={currentCode === 'X/2'}
+                                        onClick={() => handleSelect('x/2', undefined, 'HALF_DAY')}
+                                    />
+                                </div>
+
+                                {/* Cột 2: Phép & Nghỉ Bù */}
+                                <div className="space-y-1">
+                                    <div className="text-xs font-bold text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-200 flex items-center gap-1 mb-1.5">
+                                        🔵 2. Phép & Nghỉ Bù
+                                    </div>
+                                    <AttendanceOptionButton
+                                        code="P"
+                                        label="Nghỉ phép cả ngày"
+                                        desc="Hưởng nguyên lương"
+                                        colorType="blue"
+                                        active={currentCode === 'P' && currentSession === 'FULL_DAY'}
+                                        onClick={() => handleSelect('P', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="P/2"
+                                        label="Phép buổi Sáng"
+                                        desc="07:00 - 11:30 (Nghỉ sáng)"
+                                        colorType="blue"
+                                        active={currentCode === 'P/2' && currentSession === 'MORNING'}
+                                        onClick={() => handleSelect('P/2', undefined, 'MORNING')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="P/2"
+                                        label="Phép buổi Chiều"
+                                        desc="13:30 - 17:00 (Nghỉ chiều)"
+                                        colorType="blue"
+                                        active={currentCode === 'P/2' && currentSession === 'AFTERNOON'}
+                                        onClick={() => handleSelect('P/2', undefined, 'AFTERNOON')}
+                                    />
+                                    <div className="my-1 border-t border-slate-100" />
+                                    <AttendanceOptionButton
+                                        code="Nb"
+                                        label="Nghỉ bù cả ngày"
+                                        desc={canCompensate ? `Ca ${uncompList[0]?.shortDate || ''} (Quỹ: ${remDays}d)` : 'Không có ca trực để bù'}
+                                        disabled={!canCompensate}
+                                        colorType="amber"
+                                        active={currentCode === 'NB' && currentSession === 'FULL_DAY'}
+                                        onClick={() => handleSelect('Nb', uncompList[0]?.id, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="Nb/2"
+                                        label="Bù buổi Sáng"
+                                        desc={canCompensate ? `07:00 - 11:30 (Trừ 0.5d ca ${uncompList[0]?.shortDate || ''})` : 'Không có ca trực để bù'}
+                                        disabled={!canCompensate}
+                                        colorType="amber"
+                                        active={currentCode === 'NB/2' && currentSession === 'MORNING'}
+                                        onClick={() => handleSelect('Nb/2', uncompList[0]?.id, 'MORNING')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="Nb/2"
+                                        label="Bù buổi Chiều"
+                                        desc={canCompensate ? `13:30 - 17:00 (Trừ 0.5d ca ${uncompList[0]?.shortDate || ''})` : 'Không có ca trực để bù'}
+                                        disabled={!canCompensate}
+                                        colorType="amber"
+                                        active={currentCode === 'NB/2' && currentSession === 'AFTERNOON'}
+                                        onClick={() => handleSelect('Nb/2', uncompList[0]?.id, 'AFTERNOON')}
+                                    />
+
+                                    {/* Danh sách các ca trực khác nếu có từ 2 ca trở lên */}
+                                    {canCompensate && uncompList.length > 1 && (
+                                        <div className="mt-1 pt-1 border-t border-dashed border-amber-200">
+                                            <div className="text-[10px] text-amber-800 font-medium mb-1">
+                                                Ca trực khác còn quỹ bù:
+                                            </div>
+                                            <div className="flex flex-wrap gap-1">
+                                                {uncompList.slice(1).map(u => (
+                                                    <button
+                                                        key={u.id}
+                                                        type="button"
+                                                        onClick={() => handleSelect('Nb', u.id, 'FULL_DAY')}
+                                                        className="px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded text-[10px] font-medium transition-colors cursor-pointer"
+                                                        title={`Bù cả ngày từ ca ${u.dutyDate} (${u.dutyCode}) - Quỹ còn: ${u.remainingDays}d`}
+                                                    >
+                                                        {u.shortDate} ({u.remainingDays}d)
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    );
-                                })}
+                                    )}
+                                </div>
+
+                                {/* Cột 3: Chế Độ Khác */}
+                                <div className="space-y-1">
+                                    <div className="text-xs font-bold text-purple-800 bg-purple-50 px-2 py-1 rounded border border-purple-200 flex items-center gap-1 mb-1.5">
+                                        🟣 3. Chế Độ Khác
+                                    </div>
+                                    <AttendanceOptionButton
+                                        code="L"
+                                        label="Nghỉ Lễ hưởng lương"
+                                        desc="Theo quy định nhà nước"
+                                        colorType="purple"
+                                        active={currentCode === 'L'}
+                                        onClick={() => handleSelect('L', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="Ố"
+                                        label="Nghỉ ốm đau"
+                                        desc="Hưởng chế độ BHXH"
+                                        colorType="red"
+                                        active={['Ô', 'Ố', 'O'].includes(currentCode)}
+                                        onClick={() => handleSelect('Ố', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="TS"
+                                        label="Nghỉ thai sản"
+                                        desc="Hưởng chế độ BHXH"
+                                        colorType="red"
+                                        active={currentCode === 'TS'}
+                                        onClick={() => handleSelect('TS', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="H"
+                                        label="Đi học, hội nghị"
+                                        desc="Cử đi học, công tác"
+                                        colorType="cyan"
+                                        active={currentCode === 'H'}
+                                        onClick={() => handleSelect('H', undefined, 'FULL_DAY')}
+                                    />
+                                    <AttendanceOptionButton
+                                        code="KL"
+                                        label="Nghỉ không lương"
+                                        desc="Trừ lương thời gian"
+                                        colorType="slate"
+                                        active={currentCode === 'KL'}
+                                        onClick={() => handleSelect('KL', undefined, 'FULL_DAY')}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Footer Popup */}
+                            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <div className="text-[11px] text-slate-400">
+                                    💡 Nhấp chọn mã công để áp dụng ngay
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelect('', undefined)}
+                                    className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                    🗑️ Xóa công ngày này
+                                </button>
                             </div>
                         </div>
-                    ) : null;
-
-                    const nbChildren = canCompensate && uncompList.length > 0 ? [
-                        {
-                            key: 'Nb_AUTO',
-                            label: (
-                                <div className="py-0.5">
-                                    <span className="font-semibold text-emerald-600">⚡ Tự động bù ca gần nhất</span>
-                                    <span className="block text-[11px] text-slate-400">Ưu tiên ca ngày {uncompList[0]?.shortDate}</span>
-                                </div>
-                            )
-                        },
-                        { type: 'divider' as const },
-                        ...uncompList.map(u => ({
-                            key: `Nb_DUTY_${u.id}`,
-                            label: (
-                                <div className="py-0.5">
-                                    <span className="font-medium text-slate-700">
-                                        📅 Ca ngày <strong>{u.shortDate}</strong> ({u.dutyCode})
-                                    </span>
-                                    <span className="block text-[11px] text-amber-600">
-                                        Quỹ ca này còn: <strong>{u.remainingDays} ngày</strong>
-                                    </span>
-                                </div>
-                            )
-                        }))
-                    ] : undefined;
-
-                    const nbHalfChildren = canCompensate && uncompList.length > 0 ? [
-                        {
-                            key: 'Nb/2_AUTO',
-                            label: (
-                                <div className="py-0.5">
-                                    <span className="font-semibold text-emerald-600">⚡ Tự động bù ca gần nhất (1/2 ngày)</span>
-                                    <span className="block text-[11px] text-slate-400">Ưu tiên ca ngày {uncompList[0]?.shortDate}</span>
-                                </div>
-                            )
-                        },
-                        { type: 'divider' as const },
-                        ...uncompList.map(u => ({
-                            key: `Nb/2_DUTY_${u.id}`,
-                            label: (
-                                <div className="py-0.5">
-                                    <span className="font-medium text-slate-700">
-                                        📅 Ca ngày <strong>{u.shortDate}</strong> ({u.dutyCode})
-                                    </span>
-                                    <span className="block text-[11px] text-amber-600">
-                                        Quỹ ca này còn: <strong>{u.remainingDays} ngày</strong> (trừ 0.5d)
-                                    </span>
-                                </div>
-                            )
-                        }))
-                    ] : undefined;
-
-                    const items = [
-                        { key: '+', label: <span className="font-bold text-emerald-600">+ - Đi làm đủ ngày (8h) [Mặc định]</span> },
-                        { key: '+/2', label: <span className="font-medium text-emerald-600">+/2 - Đi làm nửa ngày (4h)</span> },
-                        { key: 'x', label: <span className="font-semibold text-teal-700">x - Đi làm đủ ngày (8h)</span> },
-                        { key: 'x/2', label: <span className="text-teal-600">x/2 - Đi làm nửa ngày (4h)</span> },
-                        { key: 'P', label: <span className="text-blue-600">P - Nghỉ phép cả ngày</span> },
-                        { key: 'P/2', label: <span className="text-blue-500">P/2 - Nghỉ phép 1/2 ngày</span> },
-                        {
-                            key: 'Nb',
-                            label: canCompensate ? (
-                                <Tooltip title={nbTooltipContent} placement="right" mouseEnterDelay={0.2}>
-                                    <div className="py-0.5">
-                                        <div className="text-amber-600 font-bold flex items-center justify-between gap-2">
-                                            <span>Nb - Nghỉ bù cả ngày</span>
-                                            <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full">
-                                                Quỹ còn {remDays}d
-                                            </span>
-                                        </div>
-                                        {dutyDatesText && (
-                                            <div className="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
-                                                <span className="text-amber-600 font-medium">↳ 📅 Trực ngày:</span>
-                                                <span className="font-medium text-slate-700 truncate max-w-[200px]" title={dutyDatesText}>
-                                                    {dutyDatesText}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Tooltip>
-                            ) : (
-                                <span className="text-slate-400">Nb - Nghỉ bù cả ngày (Không có ca trực để bù)</span>
-                            ),
-                            children: nbChildren,
-                            disabled: !canCompensate
-                        },
-                        {
-                            key: 'Nb/2',
-                            label: canCompensate ? (
-                                <Tooltip title={nbTooltipContent} placement="right" mouseEnterDelay={0.2}>
-                                    <div className="py-0.5">
-                                        <div className="text-amber-500 font-semibold flex items-center justify-between gap-2">
-                                            <span>Nb/2 - Nghỉ bù 1/2 ngày</span>
-                                            <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full">
-                                                Quỹ còn {remDays}d
-                                            </span>
-                                        </div>
-                                        {dutyDatesText && (
-                                            <div className="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
-                                                <span className="text-amber-600 font-medium">↳ 📅 Trực ngày:</span>
-                                                <span className="font-medium text-slate-700 truncate max-w-[200px]" title={dutyDatesText}>
-                                                    {dutyDatesText}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Tooltip>
-                            ) : (
-                                <span className="text-slate-400">Nb/2 - Nghỉ bù 1/2 ngày (Không có ca trực để bù)</span>
-                            ),
-                            children: nbHalfChildren,
-                            disabled: !canCompensate
-                        },
-                        { key: 'L', label: <span className="text-purple-600 font-bold">L - Nghỉ Lễ hưởng lương</span> },
-                        { key: 'Ố', label: <span className="text-red-500">Ố - Nghỉ ốm (hưởng BHXH)</span> },
-                        { key: 'TS', label: <span className="text-red-500">TS - Nghỉ thai sản (hưởng BHXH)</span> },
-                        { key: 'H', label: <span className="text-cyan-600">H - Đi học, hội nghị</span> },
-                        { key: 'KL', label: <span className="text-slate-500">KL - Nghỉ không lương</span> },
-                        { type: 'divider' },
-                        { key: '', label: <span className="text-rose-500">Xóa công ngày này</span> }
-                    ];
+                    );
 
                     return (
-                        <Dropdown
-                            menu={{
-                                items: items as any,
-                                onClick: ({ key }) => {
-                                    let finalCode = key;
-                                    let targetDutyId: string | undefined = undefined;
-
-                                    if (key.startsWith('Nb_DUTY_')) {
-                                        finalCode = 'Nb';
-                                        targetDutyId = key.replace('Nb_DUTY_', '');
-                                    } else if (key === 'Nb_AUTO' || key === 'Nb') {
-                                        finalCode = 'Nb';
-                                        targetDutyId = uncompList[0]?.id;
-                                    } else if (key.startsWith('Nb/2_DUTY_')) {
-                                        finalCode = 'Nb/2';
-                                        targetDutyId = key.replace('Nb/2_DUTY_', '');
-                                    } else if (key === 'Nb/2_AUTO' || key === 'Nb/2') {
-                                        finalCode = 'Nb/2';
-                                        targetDutyId = uncompList[0]?.id;
-                                    }
-
-                                    if ((finalCode === 'Nb' || finalCode === 'Nb/2') && !canCompensate) {
-                                        return;
-                                    }
-                                    setSelectedDate(dayjs(d.dateStr));
-                                    handleUpdateAttendanceCell(record.staffId, d.day, finalCode, targetDutyId);
-                                }
+                        <Popover
+                            open={isOpen}
+                            onOpenChange={(visible) => {
+                                if (!visible) setActivePopoverKey(null);
+                                else setActivePopoverKey(cellKey);
                             }}
-                            trigger={['click']}
+                            trigger="click"
+                            placement="bottom"
+                            content={popoverContent}
+                            destroyTooltipOnHide
                         >
                             <div className="cursor-pointer hover:bg-blue-100/60 rounded transition-colors">
                                 {cellNode}
                             </div>
-                        </Dropdown>
+                        </Popover>
                     );
                 }
             };

@@ -219,6 +219,8 @@ export async function POST(request: Request) {
             let finalValue = typeof value === 'number' ? value : 1.0;
             let finalSecondaryCode = secondaryCode ? secondaryCode.trim() : null;
 
+            const isSpecifiedSession = session === 'MORNING' || session === 'AFTERNOON';
+
             if (cleanCode === 'X') {
                 formattedCode = 'x';
                 finalValue = 1.0;
@@ -229,25 +231,26 @@ export async function POST(request: Request) {
                 finalSession = 'FULL_DAY';
             } else if (cleanCode === 'X/2') {
                 formattedCode = 'x/2';
-                finalSession = 'HALF_DAY';
+                finalSession = isSpecifiedSession ? session : 'HALF_DAY';
                 finalValue = 0.5;
                 if (!finalSecondaryCode) finalSecondaryCode = 'x';
             } else if (cleanCode === '+/2') {
                 formattedCode = '+/2';
-                finalSession = 'HALF_DAY';
+                finalSession = isSpecifiedSession ? session : 'HALF_DAY';
                 finalValue = 0.5;
                 if (!finalSecondaryCode) finalSecondaryCode = '+';
             } else if (cleanCode === 'NB') {
                 formattedCode = 'Nb';
                 finalValue = 1.0;
+                finalSession = 'FULL_DAY';
             } else if (cleanCode === 'NB/2') {
                 formattedCode = 'Nb/2';
-                finalSession = 'HALF_DAY';
+                finalSession = isSpecifiedSession ? session : 'HALF_DAY';
                 finalValue = 0.5;
                 if (!finalSecondaryCode) finalSecondaryCode = '+';
             } else if (cleanCode === 'P/2') {
                 formattedCode = 'P/2';
-                finalSession = 'HALF_DAY';
+                finalSession = isSpecifiedSession ? session : 'HALF_DAY';
                 finalValue = 0.5;
                 if (!finalSecondaryCode) finalSecondaryCode = '+';
             }

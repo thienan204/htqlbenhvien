@@ -127,7 +127,7 @@ interface AttendanceContextType {
     filteredStaffData: StaffMatrixData[];
     canEditCurrentDept: boolean;
     fetchData: () => Promise<void>;
-    handleUpdateAttendanceCell: (staffId: string, day: number, code: string, dutyRecordId?: string) => Promise<void>;
+    handleUpdateAttendanceCell: (staffId: string, day: number, code: string, dutyRecordId?: string, session?: string) => Promise<void>;
     handleUpdateDutyCell: (staffId: string, day: number, dutyCode: string) => Promise<void>;
     handleUpdateOvertimeCell: (staffId: string, day: number, dayHours: number, nightHours: number, note?: string) => Promise<void>;
     handleSaveNote: (staffId: string, noteText: string) => Promise<void>;
@@ -238,7 +238,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }, [matrixData?.staffData, searchText]);
 
     // Cập nhật ô Chấm Công
-    const handleUpdateAttendanceCell = async (staffId: string, day: number, code: string, dutyRecordId?: string) => {
+    const handleUpdateAttendanceCell = async (staffId: string, day: number, code: string, dutyRecordId?: string, session?: string) => {
         try {
             const basePath = getBasePath();
             const dateStr = `${selectedDate.format('YYYY-MM')}-${String(day).padStart(2, '0')}`;
@@ -250,6 +250,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
                     staffId,
                     date: dateStr,
                     code,
+                    session: session || undefined,
                     ma_khoa: selectedDept,
                     dutyRecordId: dutyRecordId || undefined
                 })
