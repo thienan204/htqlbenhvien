@@ -48,7 +48,8 @@ export async function GET(request: Request) {
             }
         }
 
-        const requests = await prisma.staffLeaveRequest.findMany({
+        const db = prisma as any;
+        const requests = await db.staffLeaveRequest.findMany({
             where,
             orderBy: { createdAt: 'desc' },
             include: {
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
 
         // Lấy thông tin người nhận bàn giao và người điều hành thay thế nếu có
         const relatedStaffIds = Array.from(new Set(
-            requests.flatMap(r => [r.handoverStaffId, r.actingHeadStaffId]).filter(Boolean) as string[]
+            requests.flatMap((r: any) => [r.handoverStaffId, r.actingHeadStaffId]).filter(Boolean) as string[]
         ));
 
         let relatedStaffMap = new Map<string, any>();
@@ -83,7 +84,7 @@ export async function GET(request: Request) {
             relatedStaffs.forEach(s => relatedStaffMap.set(s.id, s));
         }
 
-        const formatted = requests.map(r => ({
+        const formatted = requests.map((r: any) => ({
             ...r,
             handoverStaff: r.handoverStaffId ? relatedStaffMap.get(r.handoverStaffId) : null,
             actingHeadStaff: r.actingHeadStaffId ? relatedStaffMap.get(r.actingHeadStaffId) : null
@@ -154,7 +155,8 @@ export async function POST(request: Request) {
         const formType = manualFormType || (isDepartmentHead ? 'DEPARTMENT_HEAD' : 'STAFF_DEPUTY');
         const initialStatus = formType === 'DEPARTMENT_HEAD' ? 'PENDING_TCCB' : 'PENDING_DEPT';
 
-        const newRequest = await prisma.staffLeaveRequest.create({
+        const db = prisma as any;
+        const newRequest = await db.staffLeaveRequest.create({
             data: {
                 formType,
                 staffId: targetStaffId,
@@ -181,3 +183,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: error.message || 'Lỗi tạo đơn nghỉ phép' }, { status: 500 });
     }
 }
+

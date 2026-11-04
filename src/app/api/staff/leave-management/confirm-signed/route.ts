@@ -26,7 +26,9 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Thiếu mã đơn nghỉ phép' }, { status: 400 });
         }
 
-        const leaveReq = await prisma.staffLeaveRequest.findUnique({
+        const db = prisma as any;
+
+        const leaveReq = await db.staffLeaveRequest.findUnique({
             where: { id: requestId },
             include: { staff: true }
         });
@@ -40,7 +42,7 @@ export async function PUT(request: Request) {
         const endDateStr = leaveReq.approvedEndDate || leaveReq.requestedEndDate;
 
         // 1. Cập nhật trạng thái đơn thành ĐÃ DUYỆT (APPROVED) & ĐÃ KÝ
-        const updatedRequest = await prisma.staffLeaveRequest.update({
+        const updatedRequest = await db.staffLeaveRequest.update({
             where: { id: requestId },
             data: {
                 status: 'APPROVED',
@@ -59,7 +61,7 @@ export async function PUT(request: Request) {
         const leaveYear = startDayjs.year();
 
         try {
-            const balance = await prisma.staffLeaveBalance.findUnique({
+            const balance = await db.staffLeaveBalance.findUnique({
                 where: {
                     staffId_year: {
                         staffId: leaveReq.staffId,
@@ -71,7 +73,7 @@ export async function PUT(request: Request) {
             if (balance) {
                 const newUsed = balance.usedDays + finalDays;
                 const newRemaining = Math.max(0, balance.totalAvailable - newUsed);
-                await prisma.staffLeaveBalance.update({
+                await db.staffLeaveBalance.update({
                     where: { id: balance.id },
                     data: {
                         usedDays: newUsed,
@@ -145,3 +147,4 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: error.message || 'Lỗi xác nhận chữ ký' }, { status: 500 });
     }
 }
+

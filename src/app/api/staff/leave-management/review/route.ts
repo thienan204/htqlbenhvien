@@ -31,7 +31,9 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Thiếu thông tin yêu cầu' }, { status: 400 });
         }
 
-        const leaveReq = await prisma.staffLeaveRequest.findUnique({
+        const db = prisma as any;
+
+        const leaveReq = await db.staffLeaveRequest.findUnique({
             where: { id: requestId },
             include: { staff: true }
         });
@@ -83,7 +85,7 @@ export async function PUT(request: Request) {
             }
         }
 
-        const updated = await prisma.staffLeaveRequest.update({
+        const updated = await db.staffLeaveRequest.update({
             where: { id: requestId },
             data: updateData
         });
@@ -97,3 +99,4 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: error.message || 'Lỗi xử lý đơn' }, { status: 500 });
     }
 }
+

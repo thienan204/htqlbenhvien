@@ -37,8 +37,10 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Cán bộ không tồn tại' }, { status: 404 });
         }
 
+        const db = prisma as any;
+
         // Tìm số dư phép của năm được chỉ định
-        let balance = await prisma.staffLeaveBalance.findUnique({
+        let balance = await db.staffLeaveBalance.findUnique({
             where: {
                 staffId_year: {
                     staffId: targetStaffId,
@@ -69,7 +71,7 @@ export async function GET(request: Request) {
             const usedDays = 0.0;
             const remainingDays = totalAvailable;
 
-            balance = await prisma.staffLeaveBalance.create({
+            balance = await db.staffLeaveBalance.create({
                 data: {
                     staffId: targetStaffId,
                     year: queryYear,
@@ -103,3 +105,4 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: error.message || 'Lỗi máy chủ' }, { status: 500 });
     }
 }
+

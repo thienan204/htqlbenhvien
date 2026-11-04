@@ -29,8 +29,10 @@ export async function GET(request: Request) {
 
         const config = (configRule?.logicConfig as any) || defaultPolicy;
 
+        const db = prisma as any;
+
         // Lấy danh sách các đơn bị từ chối do thiếu nhân lực (đủ điều kiện đề xuất thanh toán tiền)
-        const eligibleCashRequests = await prisma.staffLeaveRequest.findMany({
+        const eligibleCashRequests = await db.staffLeaveRequest.findMany({
             where: {
                 isEligibleForCashPayout: true,
                 rejectReasonType: 'THIEU_NHAN_LUC'
