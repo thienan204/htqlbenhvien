@@ -179,3 +179,57 @@ export function getCurrentHospitalShift(config?: HospitalShiftConfig, referenceD
         currentTimeStr: vn.currentTimeStr
     };
 }
+
+/**
+ * Xác định ngày của Ca trực 24h đang có hiệu lực (từ 07:00 hôm trước đến 07:00 hôm sau)
+ * - Nếu thời gian hiện tại trước 07:00 sáng (00:00 -> 06:59): Ca trực vẫn thuộc về NGÀY HÔM TRƯỚC (D - 1).
+ * - Nếu thời gian hiện tại từ 07:00 sáng trở đi (07:00 -> 23:59): Ca trực bắt đầu của NGÀY HÔM NAY (D).
+ */
+export function getActiveDutyDate(referenceDate: Date = new Date(), morningStart: string = '07:00'): string {
+    const vn = getVietnamTimeParts(referenceDate);
+    const morningStartMin = parseTimeToMinutes(morningStart, 7 * 60);
+
+    if (vn.timeMinutes < morningStartMin) {
+        // Trước 07:00 sáng -> Thuộc ca trực ngày hôm trước
+        const prevDayDate = new Date(referenceDate.getTime() - 24 * 60 * 60 * 1000);
+        return getVietnamTimeParts(prevDayDate).dateStr;
+    }
+
+    // Từ 07:00 sáng trở đi -> Thuộc ca trực ngày hôm nay
+    return vn.dateStr;
+}
+
+/**
+ * Kiểm tra xem người chấm nghỉ nửa ngày (Nb/2 hoặc P/2) có đang trong buổi đi làm tại thời điểm hiện tại không
+ */
+export function isHalfDayWorkingNow(session: string | null | undefined, shiftType: string): boolean {
+    const s = (session || '').trim().toUpperCase();
+
+    // Nếu nghỉ ca sáng (MORNING):
+    if (s === 'MORNING') {
+        // Buổi sáng nghỉ -> không đi làm
+        if (shiftType === 'OFFICE_MORNING') return false;
+        // Buổi chiều đi làm
+        if (shiftType === 'OFFICE_AFTERNOON') return true;
+        // Ngoài giờ hành chính -> không làm việc
+        return false;
+    }
+
+    // Nếu nghỉ ca chiều (AFTERNOON):
+    if (s === 'AFTERNOON') {
+        // Buổi sáng đi làm
+        if (shiftType === 'OFFICE_MORNING') return true;
+        // Buổi chiều nghỉ -> không đi làm
+        if (shiftType === 'OFFICE_AFTERNOON') return false;
+        // Ngoài giờ hành chính -> không làm việc
+        return false;
+    }
+
+    // Nếu chỉ ghi chung chung là HALF_DAY:
+    if (shiftType === 'OFFICE_MORNING' || shiftType === 'OFFICE_AFTERNOON') {
+        return true;
+    }
+
+    return false;
+}
+

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { getVietnamTimeParts, getCurrentHospitalShift, getActiveDutyDate, isHalfDayWorkingNow, HospitalShiftConfig } from '@/lib/shiftUtils';
 
 export async function POST(request: Request) {
     try {
@@ -31,7 +32,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Thiếu thông tin bắt buộc (staffId, date, type)' }, { status: 400 });
         }
 
-        const todayStr = new Date().toISOString().split('T')[0];
+        const vnTime = getVietnamTimeParts();
+        const todayStr = vnTime.dateStr;
 
         // 1. XỬ LÝ CHẤM TRỰC (DUTY)
         if (type === 'DUTY') {
@@ -336,14 +338,43 @@ export async function POST(request: Request) {
                         const isSupportDept = ['KP046', 'KP038', 'KP040'].includes(staffRecord.ma_khoa || '') || ['CNTT', 'VTYT', 'HCQT'].includes(staffRecord.user.role);
                         
                         if (isSupportDept) {
-                            // Đọc cấu hình liên kết chấm công của bộ phận nhận việc
-                            const itConfigRule = await prisma.specializedRule.findUnique({
-                                where: { slug: 'it-request-fields-config' }
-                            });
+                            // Đọc cấu hình liên kết chấm công & cấu hình toàn viện
+                            const [itConfigRule, hospitalConfigRule] = await Promise.all([
+                                prisma.specializedRule.findUnique({ where: { slug: 'it-request-fields-config' } }),
+                                prisma.specializedRule.findUnique({ where: { slug: 'hospital-attendance-config' } })
+                            ]);
                             const itConfig: any = itConfigRule?.logicConfig || {};
+                            const hospitalConfig: any = hospitalConfigRule?.logicConfig || {};
+                            const workHours = hospitalConfig.workHours || {};
+
                             const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
                             const applyForLeaders = itConfig.applyForLeaders === true;
                             const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
+
+                            const morningStart = workHours.morningStart || itConfig.morningStartTime || '07:00';
+                            const morningEnd = workHours.morningEnd || itConfig.morningEndTime || '11:30';
+                            const afternoonStart = workHours.afternoonStart || itConfig.afternoonStartTime || '13:30';
+                            const afternoonEnd = workHours.afternoonEnd || itConfig.afternoonEndTime || itConfig.officeEndTime || '17:00';
+
+                            const holidays = Array.isArray(hospitalConfig.holidays)
+                                ? hospitalConfig.holidays.map((h: any) => h.date).filter(Boolean)
+                                : (Array.isArray(itConfig.holidays) ? itConfig.holidays : []);
+                            const makeupWorkdays = Array.isArray(hospitalConfig.makeupWorkdays)
+                                ? hospitalConfig.makeupWorkdays.map((m: any) => m.date).filter(Boolean)
+                                : (Array.isArray(itConfig.makeupWorkdays) ? itConfig.makeupWorkdays : []);
+
+                            const shiftConfig: HospitalShiftConfig = {
+                                morningStart,
+                                morningEnd,
+                                afternoonStart,
+                                afternoonEnd,
+                                holidays,
+                                makeupWorkdays
+                            };
+
+                            const shiftInfo = getCurrentHospitalShift(shiftConfig);
+                            const isOfficeHours = shiftInfo.isOfficeHours;
+                            const activeDutyDate = getActiveDutyDate(new Date(), morningStart);
 
                             const explicitLevel = (staffRecord.chuc_vu_ref as any)?.level;
                             const cvCode = (staffRecord.chuc_vu_ref?.code || '').toUpperCase();
@@ -368,19 +399,52 @@ export async function POST(request: Request) {
                                 cvName.includes('phó trưởng khoa')
                             );
 
-                            if (syncAttendanceEnabled && (!isLeader || applyForLeaders)) {
-                                const isWorkingToday = ['X', '+', 'X/2', '+/2', 'NB/2', 'P/2'].includes(cleanCode) || (cleanCode === 'NB' && (secondaryCode === 'x' || secondaryCode === '+'));
-                                const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
+                            if (syncAttendanceEnabled) {
+                                const activeDuty = await prisma.staffDutyRecord.findFirst({
+                                    where: {
+                                        staffId: staffRecord.id,
+                                        dutyDate: activeDutyDate
+                                    }
+                                });
 
-                                if (isWorkingToday) {
+                                const isFullDayLeave = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H', 'KL'].includes(cleanCode);
+                                const isHalfDayLeave = ['NB/2', 'P/2'].includes(cleanCode);
+                                const isWorkingFullDay = ['X', '+'].includes(cleanCode);
+                                const hasDutyNow = !isFullDayLeave && Boolean(activeDuty || cleanCode === 'T' || cleanCode.startsWith('T/'));
+
+                                let nextIsAvailable = false;
+
+                                if (isFullDayLeave) {
+                                    // Nghỉ cả ngày: Luôn TẮT
+                                    nextIsAvailable = false;
+                                } else if (isHalfDayLeave) {
+                                    // Nghỉ nửa ngày: Xét theo buổi làm việc hiện tại
+                                    const isWorkingNow = isHalfDayWorkingNow(session, shiftInfo.shiftType);
+                                    if (isOfficeHours && isWorkingNow) {
+                                        nextIsAvailable = !isLeader || applyForLeaders;
+                                    } else {
+                                        nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
+                                    }
+                                } else if (isWorkingFullDay) {
+                                    if (isOfficeHours) {
+                                        nextIsAvailable = !isLeader || applyForLeaders;
+                                    } else {
+                                        nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
+                                    }
+                                } else {
+                                    if (hasDutyNow) {
+                                        nextIsAvailable = !isLeader || applyForLeaders;
+                                    } else if (isOfficeHours && !autoDisableOnLeave) {
+                                        nextIsAvailable = staffRecord.user.isAvailable;
+                                    } else {
+                                        nextIsAvailable = false;
+                                    }
+                                }
+
+                                if (staffRecord.user.isAvailable !== nextIsAvailable) {
                                     await prisma.user.update({
                                         where: { id: staffRecord.user.id },
-                                        data: { isAvailable: true }
-                                    });
-                                } else if (isLeaveToday && autoDisableOnLeave) {
-                                    await prisma.user.update({
-                                        where: { id: staffRecord.user.id },
-                                        data: { isAvailable: false }
+                                        data: { isAvailable: nextIsAvailable }
                                     });
                                 }
                             }

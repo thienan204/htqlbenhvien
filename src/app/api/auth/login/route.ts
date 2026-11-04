@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
-import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig } from '@/lib/shiftUtils';
+import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow } from '@/lib/shiftUtils';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 // Trigger nextjs hot reload
@@ -130,6 +130,9 @@ export async function POST(request: Request) {
                 const vnTime = getVietnamTimeParts();
                 const todayStr = vnTime.dateStr;
 
+                // Ca trực 24h: Từ 07:00 hôm trước đến 07:00 hôm sau
+                const activeDutyDate = getActiveDutyDate(new Date(), morningStart);
+
                 const staff = await prisma.staff.findUnique({
                     where: { id: user.staffId },
                     include: { chuc_vu_ref: true }
@@ -157,7 +160,7 @@ export async function POST(request: Request) {
                     cvName.includes('phó trưởng khoa')
                 );
 
-                const [todayAtt, todayDuty] = await Promise.all([
+                const [todayAtt, activeDuty] = await Promise.all([
                     prisma.staffAttendanceRecord.findFirst({
                         where: {
                             staffId: user.staffId,
@@ -167,47 +170,57 @@ export async function POST(request: Request) {
                     prisma.staffDutyRecord.findFirst({
                         where: {
                             staffId: user.staffId,
-                            dutyDate: todayStr
+                            dutyDate: activeDutyDate
                         }
                     })
                 ]);
 
                 const cleanCode = (todayAtt?.code || '').trim().toUpperCase();
-                const isWorkingToday = ['X', '+', 'X/2', '+/2', 'NB/2', 'P/2'].includes(cleanCode);
-                const isLeaveToday = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H'].includes(cleanCode);
-                const hasDutyToday = Boolean(todayDuty || todayAtt?.dutyRecordId || cleanCode === 'T' || cleanCode.startsWith('T/'));
+                const isFullDayLeave = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H', 'KL'].includes(cleanCode);
+                const isHalfDayLeave = ['NB/2', 'P/2'].includes(cleanCode);
+                const isWorkingFullDay = ['X', '+'].includes(cleanCode);
+
+                // Có lịch trực trong ca 24h đang chạy (Lưu ý: Không dùng dutyRecordId trên chấm công vì đó là ca quá khứ được nghỉ bù)
+                const hasDutyNow = !isFullDayLeave && Boolean(activeDuty || cleanCode === 'T' || cleanCode.startsWith('T/'));
 
                 if (syncAttendanceEnabled) {
-                    if (isOfficeHours) {
-                        // Trong giờ hành chính:
-                        if (isWorkingToday) {
-                            if (!isLeader || applyForLeaders) {
-                                await prisma.user.update({
-                                    where: { id: user.id },
-                                    data: { isAvailable: true }
-                                });
-                            }
-                        } else if (isLeaveToday && autoDisableOnLeave) {
-                            await prisma.user.update({
-                                where: { id: user.id },
-                                data: { isAvailable: false }
-                            });
+                    let nextIsAvailable = false;
+
+                    if (isFullDayLeave) {
+                        // Nghỉ cả ngày (Nb, P, Ố, TS, KL...): Bắt buộc TẮT nhận việc
+                        nextIsAvailable = false;
+                    } else if (isHalfDayLeave) {
+                        // Nghỉ nửa ngày (Nb/2, P/2): Xét theo buổi làm việc hiện tại
+                        const isWorkingNow = isHalfDayWorkingNow(todayAtt?.session, shiftInfo.shiftType);
+                        if (isOfficeHours && isWorkingNow) {
+                            nextIsAvailable = !isLeader || applyForLeaders;
+                        } else {
+                            nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
+                        }
+                    } else if (isWorkingFullDay) {
+                        // Đi làm cả ngày (+ hoặc x):
+                        if (isOfficeHours) {
+                            nextIsAvailable = !isLeader || applyForLeaders;
+                        } else {
+                            nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
                         }
                     } else {
-                        // Ngoài giờ hành chính (sau giờ chiều cấu hình, đêm, ngày nghỉ):
-                        if (hasDutyToday) {
-                            // Có lịch trực -> Bật sẵn sàng nhận việc
-                            await prisma.user.update({
-                                where: { id: user.id },
-                                data: { isAvailable: true }
-                            });
+                        // Chưa chấm công:
+                        if (hasDutyNow) {
+                            nextIsAvailable = !isLeader || applyForLeaders;
+                        } else if (isOfficeHours && !autoDisableOnLeave) {
+                            nextIsAvailable = user.isAvailable;
                         } else {
-                            // Không có lịch trực -> Tắt vì đã hết giờ làm việc hành chính
-                            await prisma.user.update({
-                                where: { id: user.id },
-                                data: { isAvailable: false }
-                            });
+                            nextIsAvailable = false;
                         }
+                    }
+
+                    if (user.isAvailable !== nextIsAvailable) {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { isAvailable: nextIsAvailable }
+                        });
+                        user.isAvailable = nextIsAvailable;
                     }
                 }
             } catch (errLeader) {
