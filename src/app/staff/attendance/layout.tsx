@@ -17,6 +17,7 @@ import {
     UserOutlined,
     InfoCircleOutlined,
     FileExcelOutlined,
+    FileTextOutlined,
     SettingOutlined
 } from '@ant-design/icons';
 import { AttendanceProvider, useAttendance } from './AttendanceContext';
@@ -235,6 +236,11 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                         >
                             {showGuide ? 'Ẩn hướng dẫn' : 'Hướng dẫn thao tác'}
                         </Button>
+                        <Link href="/staff/leave-management">
+                            <Button icon={<FileTextOutlined className="text-blue-600" />} size="small" className="border-blue-300 text-blue-700 hover:bg-blue-50 font-medium">
+                                📝 Đơn Nghỉ Phép
+                            </Button>
+                        </Link>
                         <Link href="/staff/my-attendance">
                             <Button icon={<UserOutlined />} size="small">
                                 Lịch Của Tôi

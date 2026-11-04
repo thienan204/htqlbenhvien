@@ -223,6 +223,8 @@ model Staff {
   overtimeRecords   StaffOvertimeRecord[]
   monthlyNotes      StaffMonthlyAttendanceNote[]
   attendanceCheckLogs StaffAttendanceCheckLog[]
+  leaveBalances       StaffLeaveBalance[]
+  leaveRequests       StaffLeaveRequest[]
 }
 
 model StaffTraining {
@@ -2083,5 +2085,94 @@ model StaffAttendanceCheckLog {
   @@unique([staffId, workDate])
   @@index([ma_khoa, workDate])
 }
+
+model StaffLeaveBalance {
+  id                    String   @id @default(cuid())
+  staffId               String
+  year                  Int      // Năm quản lý phép (VD: 2026)
+  standardDays          Float    @default(12.0) // 12 hoặc 14 ngày
+  seniorityDays         Float    @default(0.0)  // Thâm niên (+1 ngày cho mỗi 5 năm)
+  transferredDays       Float    @default(0.0)  // Phép năm trước chuyển sang
+  totalAvailable        Float    // Tổng số ngày được nghỉ trong năm
+  usedDays              Float    @default(0.0)  // Đã nghỉ
+  remainingDays         Float    // Còn lại
+  expiredDays           Float    @default(0.0)  // Hết hạn sau ngày 30/03 ("cống hiến")
+  compensatedCashDays   Float    @default(0.0)  // Số ngày được BGD duyệt chi trả tiền do thiếu nhân lực
+  compensatedCashAmount Float    @default(0.0)  // Số tiền đã thanh toán (VNĐ)
+  directorApprovalDoc   String?  // Số quyết định / tờ trình BGD phê duyệt thanh toán
+  note                  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  staff                 Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, year])
+  @@index([staffId])
+  @@index([year])
+}
+
+model StaffLeaveRequest {
+  id                    String    @id @default(cuid())
+  formType              String    @default("STAFF_DEPUTY") // 'STAFF_DEPUTY' (Mẫu 1) | 'DEPARTMENT_HEAD' (Mẫu 2)
+  staffId               String
+  ma_khoa               String
+
+  // Khoảng thời gian xin nghỉ ban đầu
+  requestedStartDate    String    // YYYY-MM-DD
+  requestedEndDate      String    // YYYY-MM-DD
+  requestedDays         Float     // Số ngày xin nghỉ (VD: 1.0, 3.0, 0.5)
+  session               String    @default("FULL_DAY") // FULL_DAY | MORNING | AFTERNOON
+
+  reason                String    // Lý do xin nghỉ
+  destination           String?   // Nơi nghỉ phép (tại địa phương / ngoại tỉnh)
+  contactPhone          String?   // SĐT liên hệ khi có việc khẩn
+
+  // Phân công / Bàn giao
+  handoverStaffId       String?   // Cán bộ nhận bàn giao công việc (Dành cho Mẫu 1)
+  actingHeadStaffId     String?   // Phó phòng được phân công điều hành (Dành cho Mẫu 2)
+
+  // Khoảng thời gian và số ngày TCCB duyệt thực tế (Có thể chỉnh sửa)
+  approvedStartDate     String?   // YYYY-MM-DD
+  approvedEndDate       String?   // YYYY-MM-DD
+  approvedDays          Float?    // Số ngày thực tế được duyệt nghỉ (TCCB chỉnh sửa)
+  tccbNote              String?   // Ý kiến / lý do TCCB điều chỉnh
+
+  // Trạng thái phê duyệt
+  status                String    @default("PENDING_DEPT") 
+  // PENDING_DEPT (Chờ Trưởng khoa duyệt - với Mẫu 1)
+  // PENDING_TCCB (Chờ Phòng TCCB thẩm tra & in phiếu)
+  // PENDING_DIRECTOR (Chờ Lãnh đạo BV ký giấy)
+  // APPROVED (Đã duyệt chính thức & đã có chữ ký Lãnh đạo)
+  // REJECTED (Từ chối)
+
+  // Trường hợp từ chối do thiếu nhân lực
+  rejectReasonType      String?   // 'THIEU_NHAN_LUC' | 'LY_DO_KHAC'
+  rejectNote            String?
+  isEligibleForCashPayout Boolean @default(false) // Đủ điều kiện xem xét thanh toán tiền
+
+  // Tiến trình ký duyệt của Lãnh đạo Bệnh viện
+  directorSignatureStatus String  @default("CHUA_KY") // CHUA_KY | DA_KY
+  directorSignedAt      DateTime?
+  directorSignerName    String?   // Tên Lãnh đạo ký văn bản giấy
+  directorPaperCode     String?   // Số hiệu văn bản / phiếu kết quả đã ký
+
+  // Lịch sử duyệt các cấp
+  deptApproverId        String?
+  deptApprovedAt        DateTime?
+  deptComment           String?
+
+  tccbApproverId        String?
+  tccbApprovedAt        DateTime?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  staff                 Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([ma_khoa])
+  @@index([status])
+}
+
 
 
