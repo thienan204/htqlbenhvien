@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tooltip } from 'antd';
+import { Tooltip, message } from 'antd';
 import { PhoneOutlined } from '@ant-design/icons';
 
 interface PhoneCallActionsProps {
@@ -27,6 +27,19 @@ export const PhoneCallActions: React.FC<PhoneCallActionsProps> = ({
 
     const isSmall = size === 'small';
 
+    const handleZaloClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        // Tự động sao chép SĐT vào Clipboard để người dùng dán (Ctrl+V) nhanh vào ô tìm kiếm Zalo PC nếu muốn
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(cleanPhone).then(() => {
+                message.success({
+                    content: `Đã sao chép SĐT: ${cleanPhone} (có thể dán Ctrl+V vào tìm kiếm Zalo PC)`,
+                    duration: 3
+                });
+            }).catch(() => {});
+        }
+    };
+
     return (
         <span
             className={`inline-flex items-center gap-1 shrink-0 ${className}`}
@@ -34,11 +47,12 @@ export const PhoneCallActions: React.FC<PhoneCallActionsProps> = ({
         >
             {/* Nút Gọi & Nhắn tin Zalo */}
             {showZalo && (
-                <Tooltip title={`Mở Zalo nhắn tin / gọi điện: ${cleanPhone}`} placement="top">
+                <Tooltip title={`Mở Zalo: ${cleanPhone} (Tự động copy SĐT để dán vào Zalo PC)`} placement="top">
                     <a
                         href={`https://zalo.me/${cleanPhone}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={handleZaloClick}
                         className={`inline-flex items-center justify-center font-bold text-white bg-[#0068FF] hover:bg-[#0052cc] rounded shadow-2xs transition-all hover:scale-105 active:scale-95 select-none ${
                             isSmall ? 'px-1.5 py-0.5 text-[10px] leading-tight' : 'px-2 py-1 text-xs'
                         }`}
