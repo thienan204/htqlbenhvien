@@ -11,6 +11,7 @@ import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils'
 import { getDefaultPagination } from '@/utils/pagination';
 import { TicketCardList } from './TicketCardList';
 import { renderTextWithLinks } from '@/components/common/LinkifiedText';
+import { PhoneCallActions } from '@/components/common/PhoneCallActions';
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -195,12 +196,28 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                         return Object.entries(record.dynamicFields)
                                             .filter(([k]) => !excludeKeys.includes(k))
                                             .map(([k, v]) => {
-                                                if (k === 'SĐT') {
-                                                    return <div key={k} className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">SĐT: {v as string}</div>;
+                                                if (k === 'SĐT' || k.toLowerCase() === 'sdt' || k === 'Số điện thoại') {
+                                                    const phoneVal = String(v || '').trim();
+                                                    return (
+                                                        <div key={k} className="flex items-center gap-1.5 flex-wrap">
+                                                            <div className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">
+                                                                SĐT: {phoneVal}
+                                                            </div>
+                                                            <PhoneCallActions phone={phoneVal} />
+                                                        </div>
+                                                    );
                                                 }
                                                 return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
                                             });
                                     })()}
+                                    {record.sdt && !record.dynamicFields?.['SĐT'] && !record.dynamicFields?.['sdt'] && (
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <div className="text-sm text-red-600 font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5 w-fit">
+                                                SĐT: {record.sdt}
+                                            </div>
+                                            <PhoneCallActions phone={record.sdt} />
+                                        </div>
+                                    )}
                                 </div>
                                 {(() => {
                                     const attachmentKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm'];
@@ -279,8 +296,11 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             )}
                         </div>
                         {record.assigneePhone && (
-                            <div className="text-[11px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-sm">
-                                📞 {record.assigneePhone}
+                            <div className="flex flex-col items-start gap-1 mt-0.5">
+                                <div className="text-[11px] font-semibold text-gray-600 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-sm">
+                                    📞 {record.assigneePhone}
+                                </div>
+                                <PhoneCallActions phone={record.assigneePhone} />
                             </div>
                         )}
                     </div>

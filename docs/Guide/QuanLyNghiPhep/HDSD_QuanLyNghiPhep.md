@@ -154,3 +154,4 @@ Phân hệ này giải quyết trọn vẹn luồng nghiệp vụ thực tế gi
 3. Hệ thống tự động:
    - Trừ số ngày được duyệt vào Quỹ phép năm của cán bộ.
    - Tự động điền các ô công `P` (hoặc `P/2`) trên Bảng Chấm Công của khoa.
+

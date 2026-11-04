@@ -30,6 +30,7 @@ import { TicketImage } from '@/components/shared/TicketImage';
 import { getBasePath } from '@/utils/config';
 import { copyTicketShareLink, copyTicketZaloMessage } from '../utils/shareUtils';
 import { renderTextWithLinks } from '@/components/common/LinkifiedText';
+import { PhoneCallActions } from '@/components/common/PhoneCallActions';
 
 interface TicketCardListProps {
     tickets: Ticket[];
@@ -284,16 +285,19 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 </div>
 
                                 {phone && (
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                        <PhoneOutlined className="text-red-500 shrink-0" />
-                                        <span className="text-slate-500">SĐT:</span>
-                                        <a href={`tel:${phone}`} className="text-red-600 font-bold hover:underline">
-                                            {phone}
-                                        </a>
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                                        <div className="flex items-center gap-1">
+                                            <PhoneOutlined className="text-red-500 shrink-0" />
+                                            <span className="text-slate-500">SĐT:</span>
+                                            <a href={`tel:${phone}`} className="text-red-600 font-bold hover:underline">
+                                                {phone}
+                                            </a>
+                                        </div>
+                                        <PhoneCallActions phone={phone} showCall={false} />
                                     </div>
                                 )}
 
-                                <div className="flex items-center gap-1.5 min-w-0 xs:col-span-2">
+                                <div className="flex items-center gap-1.5 min-w-0 xs:col-span-2 flex-wrap">
                                     <span className="text-slate-500 shrink-0">Kỹ thuật viên:</span>
                                     {ticket.assigneeName ? (
                                         <Tag color="purple" className="m-0 font-medium">
@@ -305,9 +309,12 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                         </Tag>
                                     )}
                                     {ticket.assigneePhone && (
-                                        <a href={`tel:${ticket.assigneePhone}`} className="text-[11px] text-slate-500 font-mono hover:text-blue-600">
-                                            ({ticket.assigneePhone})
-                                        </a>
+                                        <div className="inline-flex items-center gap-1 flex-wrap">
+                                            <span className="text-[11px] text-slate-500 font-mono">
+                                                ({ticket.assigneePhone})
+                                            </span>
+                                            <PhoneCallActions phone={ticket.assigneePhone} />
+                                        </div>
                                     )}
                                 </div>
 
