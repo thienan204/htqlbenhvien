@@ -170,7 +170,7 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
                 type="info"
                 showIcon
                 className="mb-3 text-xs"
-                message={
+                title={
                     <div className="flex justify-between items-center">
                         <span>
                             Cán bộ làm đơn: <strong>{currentStaff?.ho_ten}</strong> ({currentStaff?.chuc_vu || 'Nhân viên'} - {currentStaff?.ten_khoa})
@@ -303,3 +303,4 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
         </Modal>
     );
 };
+

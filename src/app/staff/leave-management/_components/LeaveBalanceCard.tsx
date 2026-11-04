@@ -81,3 +81,4 @@ export const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
         </Card>
     );
 };
+

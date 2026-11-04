@@ -101,7 +101,7 @@ export const DirectorSignModal: React.FC<DirectorSignModalProps> = ({
                 type="success"
                 showIcon
                 className="mb-3 text-xs"
-                message={
+                title={
                     <div>
                         <div className="font-semibold text-emerald-900">
                             Cán bộ: {staff.ho_ten} ({staff.chuc_vu_ref?.name || 'Nhân viên'} - {staff.department?.ten_khoa})
@@ -151,3 +151,4 @@ export const DirectorSignModal: React.FC<DirectorSignModalProps> = ({
         </Modal>
     );
 };
+

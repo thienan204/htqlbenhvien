@@ -184,3 +184,4 @@ export const LeavePolicyConfigModal: React.FC<LeavePolicyConfigModalProps> = ({
         </Modal>
     );
 };
+

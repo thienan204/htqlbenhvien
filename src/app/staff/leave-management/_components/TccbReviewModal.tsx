@@ -177,7 +177,7 @@ export const TccbReviewModal: React.FC<TccbReviewModalProps> = ({
                 type="info"
                 showIcon
                 className="mb-3 text-xs"
-                message={
+                title={
                     <div>
                         <div>Cán bộ: <strong>{staff.ho_ten}</strong> ({staff.chuc_vu_ref?.name || 'Nhân viên'} - {staff.department?.ten_khoa})</div>
                         <div className="mt-0.5 text-slate-600">
@@ -263,3 +263,4 @@ export const TccbReviewModal: React.FC<TccbReviewModalProps> = ({
         </Modal>
     );
 };
+
