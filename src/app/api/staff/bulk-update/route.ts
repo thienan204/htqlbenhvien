@@ -20,7 +20,8 @@ const CATEGORY_MAP: Record<string, { type: string, idField: string }> = {
     'ma_ngach': { type: 'NGACH_LUONG', idField: 'ma_ngach_id' },
     'he_so_luong': { type: 'HE_SO_LUONG', idField: 'he_so_luong_id' },
     'bac_luong': { type: 'BAC_LUONG', idField: 'bac_luong_id' },
-    'phu_cap_tnvk': { type: 'PHU_CAP', idField: 'phu_cap_tnvk_id' }
+    'phu_cap_tnvk': { type: 'PHU_CAP', idField: 'phu_cap_tnvk_id' },
+    'trang_thai': { type: 'WORKING_STATUS', idField: 'trang_thai_id' }
 };
 
 export async function POST(request: Request) {
@@ -127,7 +128,12 @@ export async function POST(request: Request) {
                         validUpdateData.ma_khoa = dept.ma_khoa;
                     }
                     else {
-                        validUpdateData[key] = value;
+                        if (typeof value === 'string' && key.includes('ngay')) {
+                            const d = new Date(value);
+                            validUpdateData[key] = !isNaN(d.getTime()) ? d : null;
+                        } else {
+                            validUpdateData[key] = value;
+                        }
                     }
                 }
 

@@ -74,7 +74,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
             id: staffData?.id,
         };
 
-        const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong'];
+        const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong', 'ngay_nghi_viec', 'ngay_qd_nghi_viec'];
         dateFields.forEach(field => {
             if (payload[field]) {
                 payload[field] = payload[field].toISOString();
@@ -101,7 +101,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
         trang_thai_id: workingStatuses.find(s => s.code === 'DANG_LAM_VIEC')?.id
     };
     if (initialData) {
-        const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong'];
+        const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong', 'ngay_nghi_viec', 'ngay_qd_nghi_viec'];
         dateFields.forEach(field => {
             if (initialData[field]) {
                 initialData[field] = dayjs(initialData[field]);
@@ -134,6 +134,11 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
 
         { id: 'ma_khoa', label: 'Khoa / Phòng (Bắt buộc)', type: 'select', required: true, span: 12, options: departments.map(d => ({ value: d.ma_khoa, label: d.ten_khoa })) },
         { id: 'trang_thai_id', label: 'Trạng thái làm việc', type: 'select', span: 12, options: workingStatuses.map(s => ({ value: s.id, label: s.name })) },
+        { id: 'ngay_nghi_viec', label: 'Ngày nghỉ việc / chuyển công tác', type: 'date', span: 8 },
+        { id: 'so_qd_nghi_viec', label: 'Số QĐ nghỉ việc / chuyển công tác', type: 'input', span: 8 },
+        { id: 'ngay_qd_nghi_viec', label: 'Ngày ký QĐ', type: 'date', span: 8 },
+        { id: 'don_vi_chuyen_den', label: 'Cơ quan / Đơn vị chuyển đến (nếu có)', type: 'input', span: 12 },
+        { id: 'ly_do_nghi_viec', label: 'Lý do / Ghi chú nghỉ việc, chuyển đi', type: 'input', span: 12 },
         { id: 'loai_hop_dong_id', label: 'Loại hợp đồng', type: 'select', span: 12, options: contracts.map(c => ({ value: c.id, label: c.name })) },
         { id: 'chuc_vu_id', label: 'Chức vụ', type: 'select', span: 12, options: positions.map(p => ({ value: p.id, label: p.name })) },
         { id: 'vi_tri_viec_lam_id', label: 'Vị trí việc làm', type: 'select', span: 12, options: jobPositions.map(p => ({ value: p.id, label: p.name })) },

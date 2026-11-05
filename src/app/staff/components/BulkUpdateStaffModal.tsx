@@ -31,7 +31,13 @@ const STAFF_FIELDS = [
     { value: 'he_so_luong', label: 'Hệ số lương (Danh mục)' },
     { value: 'bac_luong', label: 'Bậc lương (Danh mục)' },
     { value: 'phu_cap_tnvk', label: 'Phụ cấp TNVK (Danh mục)' },
-    { value: 'thoi_diem_nang_luong', label: 'Ngày nâng lương (YYYY-MM-DD)' }
+    { value: 'thoi_diem_nang_luong', label: 'Ngày nâng lương (YYYY-MM-DD)' },
+    { value: 'trang_thai', label: 'Trạng thái làm việc (Danh mục)' },
+    { value: 'ngay_nghi_viec', label: 'Ngày nghỉ/chuyển đi (YYYY-MM-DD)' },
+    { value: 'so_qd_nghi_viec', label: 'Số QĐ nghỉ/chuyển' },
+    { value: 'ngay_qd_nghi_viec', label: 'Ngày ký QĐ (YYYY-MM-DD)' },
+    { value: 'don_vi_chuyen_den', label: 'Đơn vị chuyển đến' },
+    { value: 'ly_do_nghi_viec', label: 'Lý do nghỉ/chuyển' }
 ];
 
 interface BulkUpdateStaffModalProps {

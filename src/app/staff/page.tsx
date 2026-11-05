@@ -22,6 +22,7 @@ export default function StaffPage() {
     const [filterDept, setFilterDept] = useState<string | null>(null);
     const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
     const [filterDegree, setFilterDegree] = useState<string | null>(null);
+    const [filterStatus, setFilterStatus] = useState<string | null>(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
     const [isTemplateConfigOpen, setIsTemplateConfigOpen] = useState(false);
@@ -180,6 +181,23 @@ export default function StaffPage() {
             render: (_: any, record: any) => record.department ? record.department.ten_khoa : record.ma_khoa
         },
         {
+            title: 'Trạng thái',
+            key: 'trang_thai',
+            width: 140,
+            align: 'center' as const,
+            render: (_: any, record: any) => {
+                const status = record.trang_thai_ref;
+                if (!status) return <Tag color="default">Chưa rõ</Tag>;
+                const code = status.code;
+                if (code === 'DANG_LAM_VIEC') return <Tag color="success">Đang làm việc</Tag>;
+                if (code === 'DA_NGHI_VIEC') return <Tag color="error">Đã nghỉ việc</Tag>;
+                if (code === 'THUYEN_CHUYEN') return <Tag color="warning">Chuyển công tác</Tag>;
+                if (code === 'NGHI_HUU') return <Tag color="purple">Nghỉ hưu</Tag>;
+                if (code === 'NGHI_THAI_SAN') return <Tag color="magenta">Nghỉ thai sản</Tag>;
+                return <Tag color="blue">{status.name}</Tag>;
+            }
+        },
+        {
             title: 'Thao tác',
             key: 'action',
             render: (_: any, record: any) => (
@@ -212,6 +230,7 @@ export default function StaffPage() {
     const uniqueDepartments = Array.from(new Set(staffList.map(s => s.department?.ten_khoa || s.ma_khoa))).filter(Boolean);
     const uniqueJobTitles = Array.from(new Set(staffList.map(s => s.chuc_danh_ref?.name))).filter(Boolean);
     const uniqueDegrees = Array.from(new Set(staffList.map(s => s.trinh_do_ref?.name))).filter(Boolean);
+    const uniqueStatuses = Array.from(new Set(staffList.map(s => s.trang_thai_ref?.name))).filter(Boolean);
 
     // Normalize vietnamese string for better search
     const normalizeString = (str: string) => {
@@ -240,7 +259,8 @@ export default function StaffPage() {
         const matchDept = filterDept ? (s.department?.ten_khoa === filterDept || s.ma_khoa === filterDept) : true;
         const matchJobTitle = filterJobTitle ? (s.chuc_danh_ref?.name === filterJobTitle) : true;
         const matchDegree = filterDegree ? (s.trinh_do_ref?.name === filterDegree) : true;
-        return matchText && matchDept && matchJobTitle && matchDegree;
+        const matchStatus = filterStatus ? (s.trang_thai_ref?.name === filterStatus) : true;
+        return matchText && matchDept && matchJobTitle && matchDegree && matchStatus;
     });
 
     return (
@@ -464,6 +484,23 @@ export default function StaffPage() {
                         value={filterDegree}
                         onChange={setFilterDegree}
                         options={uniqueDegrees.map(deg => ({ label: String(deg), value: String(deg) }))}
+                        filterOption={(input, option) => {
+                            const rawLabel = option?.label as string ?? '';
+                            const optionLabel = normalizeString(rawLabel);
+                            const searchInput = normalizeString(input);
+                            const initials = getInitials(rawLabel);
+                            return optionLabel.includes(searchInput) || initials.includes(searchInput);
+                        }}
+                    />
+                    <Select
+                        placeholder="Lọc Trạng thái"
+                        allowClear
+                        showSearch
+                        size="large"
+                        className="min-w-[170px]"
+                        value={filterStatus}
+                        onChange={setFilterStatus}
+                        options={uniqueStatuses.map(st => ({ label: String(st), value: String(st) }))}
                         filterOption={(input, option) => {
                             const rawLabel = option?.label as string ?? '';
                             const optionLabel = normalizeString(rawLabel);

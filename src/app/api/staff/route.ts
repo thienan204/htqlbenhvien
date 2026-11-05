@@ -84,6 +84,7 @@ export async function POST(request: Request) {
             noi_o_ward_id, noi_o_thon,
             so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
             ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+            ngay_nghi_viec, so_qd_nghi_viec, ngay_qd_nghi_viec, don_vi_chuyen_den, ly_do_nghi_viec,
             trainings
         } = body;
 
@@ -112,6 +113,11 @@ export async function POST(request: Request) {
                     noi_o_ward_id, noi_o_thon,
                     so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
                     ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+                    ngay_nghi_viec: ngay_nghi_viec ? new Date(ngay_nghi_viec) : null,
+                    so_qd_nghi_viec: so_qd_nghi_viec || null,
+                    ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
+                    don_vi_chuyen_den: don_vi_chuyen_den || null,
+                    ly_do_nghi_viec: ly_do_nghi_viec || null,
                     trainings: {
                         deleteMany: {},
                         create: trainings || []
@@ -165,6 +171,11 @@ export async function POST(request: Request) {
                     noi_o_ward_id, noi_o_thon,
                     so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
                     ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+                    ngay_nghi_viec: ngay_nghi_viec ? new Date(ngay_nghi_viec) : null,
+                    so_qd_nghi_viec: so_qd_nghi_viec || null,
+                    ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
+                    don_vi_chuyen_den: don_vi_chuyen_den || null,
+                    ly_do_nghi_viec: ly_do_nghi_viec || null,
                     trainings: {
                         create: trainings || []
                     }

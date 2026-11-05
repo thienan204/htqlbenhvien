@@ -216,6 +216,13 @@ model Staff {
   phu_cap_tnvk_id  String?
   phu_cap_tnvk_ref SystemCategory? @relation("StaffTNVK", fields: [phu_cap_tnvk_id], references: [id])
 
+  // Thông tin chuyển công tác / nghỉ việc / nghỉ hưu
+  ngay_nghi_viec      DateTime?
+  so_qd_nghi_viec     String?
+  ngay_qd_nghi_viec   DateTime?
+  don_vi_chuyen_den   String?
+  ly_do_nghi_viec     String?
+
   trainings         StaffTraining[]
   workHistories     StaffWorkHistory[]
   attendanceRecords StaffAttendanceRecord[]

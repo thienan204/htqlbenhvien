@@ -131,6 +131,43 @@ export default function StaffDetailsModal({ open, onClose, staff }: StaffDetails
                     <Descriptions.Item label="Loại hợp đồng">
                         {staff.loai_hop_dong_ref?.name || '-'}
                     </Descriptions.Item>
+                    <Descriptions.Item label="Trạng thái làm việc">
+                        {(() => {
+                            const st = staff.trang_thai_ref;
+                            if (!st) return <Tag color="default">Chưa rõ</Tag>;
+                            if (st.code === 'DANG_LAM_VIEC') return <Tag color="success">Đang làm việc</Tag>;
+                            if (st.code === 'DA_NGHI_VIEC') return <Tag color="error">Đã nghỉ việc</Tag>;
+                            if (st.code === 'THUYEN_CHUYEN') return <Tag color="warning">Chuyển công tác</Tag>;
+                            if (st.code === 'NGHI_HUU') return <Tag color="purple">Nghỉ hưu</Tag>;
+                            if (st.code === 'NGHI_THAI_SAN') return <Tag color="magenta">Nghỉ thai sản</Tag>;
+                            return <Tag color="blue">{st.name}</Tag>;
+                        })()}
+                    </Descriptions.Item>
+                    {(staff.ngay_nghi_viec || staff.so_qd_nghi_viec || staff.don_vi_chuyen_den || staff.ly_do_nghi_viec) && (
+                        <>
+                            <Descriptions.Item label="Ngày nghỉ / chuyển đi">
+                                {staff.ngay_nghi_viec ? dayjs(staff.ngay_nghi_viec).format('DD/MM/YYYY') : '-'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Quyết định nghỉ / chuyển">
+                                {staff.so_qd_nghi_viec ? (
+                                    <span>
+                                        Số: <strong>{staff.so_qd_nghi_viec}</strong>
+                                        {staff.ngay_qd_nghi_viec && ` (Ký ngày: ${dayjs(staff.ngay_qd_nghi_viec).format('DD/MM/YYYY')})`}
+                                    </span>
+                                ) : '-'}
+                            </Descriptions.Item>
+                            {staff.don_vi_chuyen_den && (
+                                <Descriptions.Item label="Đơn vị chuyển đến">
+                                    <span className="font-semibold text-blue-700">{staff.don_vi_chuyen_den}</span>
+                                </Descriptions.Item>
+                            )}
+                            {staff.ly_do_nghi_viec && (
+                                <Descriptions.Item label="Lý do / Ghi chú nghỉ việc">
+                                    <span className="italic text-slate-600">{staff.ly_do_nghi_viec}</span>
+                                </Descriptions.Item>
+                            )}
+                        </>
+                    )}
                 </Descriptions>
             )
         },
