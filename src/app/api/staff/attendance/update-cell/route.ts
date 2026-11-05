@@ -149,25 +149,25 @@ export async function POST(request: Request) {
         if (type === 'ATTENDANCE') {
             const cleanCode = (code || '').trim().toUpperCase();
 
-            // Lấy bản ghi chấm công hiện tại (nếu có)
-            const existingAttendance = await prisma.staffAttendanceRecord.findFirst({
+            // Lấy tất cả bản ghi chấm công hiện tại của ngày này (để xử lý trọn vẹn cả ngày lẫn nửa ngày)
+            const existingRecords = await prisma.staffAttendanceRecord.findMany({
                 where: {
                     staffId,
-                    workDate: date,
-                    session
+                    workDate: date
                 }
             });
+            const existingAttendance = existingRecords[0] || null;
 
             // Nếu người dùng chọn xóa công (cleanCode rỗng)
             if (!cleanCode) {
-                if (existingAttendance) {
+                for (const rec of existingRecords) {
                     // Nếu công cũ là nghỉ bù có gắn dutyRecordId -> Hoàn lại quỹ ngày bù cho ca trực đó!
-                    if (existingAttendance.dutyRecordId) {
+                    if (rec.dutyRecordId) {
                         const targetDuty = await prisma.staffDutyRecord.findUnique({
-                            where: { id: existingAttendance.dutyRecordId }
+                            where: { id: rec.dutyRecordId }
                         });
                         if (targetDuty) {
-                            const newCompensated = Math.max(0, targetDuty.compensatedDays - (existingAttendance.value || 0.5));
+                            const newCompensated = Math.max(0, targetDuty.compensatedDays - (rec.value || 0.5));
                             await prisma.staffDutyRecord.update({
                                 where: { id: targetDuty.id },
                                 data: {
@@ -177,11 +177,12 @@ export async function POST(request: Request) {
                             });
                         }
                     }
-
-                    await prisma.staffAttendanceRecord.delete({
-                        where: { id: existingAttendance.id }
-                    });
                 }
+
+                // Xóa toàn bộ bản ghi công của ngày này
+                await prisma.staffAttendanceRecord.deleteMany({
+                    where: { staffId, workDate: date }
+                });
 
                 return NextResponse.json({ success: true, message: `Đã xóa chấm công ngày ${date}` });
             }
@@ -287,6 +288,17 @@ export async function POST(request: Request) {
                         updatedBy: user.id
                     }
                 });
+
+                // Dọn sạch các bản ghi phụ thừa nếu trước đây bị lưu trùng nhiều ca
+                if (existingRecords.length > 1) {
+                    await prisma.staffAttendanceRecord.deleteMany({
+                        where: {
+                            staffId,
+                            workDate: date,
+                            id: { not: existingAttendance.id }
+                        }
+                    });
+                }
             } else {
                 updatedAttendance = await prisma.staffAttendanceRecord.create({
                     data: {

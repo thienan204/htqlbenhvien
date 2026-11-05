@@ -93,8 +93,18 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
     };
 
     const handleSubmit = async () => {
+        let values: any;
         try {
-            const values = await form.validateFields();
+            values = await form.validateFields();
+        } catch (err: any) {
+            // Bắt lỗi validation thông thường của Ant Design Form, không dùng console.error để tránh bật dev overlay popup
+            if (err?.errorFields && err.errorFields.length > 0) {
+                message.warning('Vui lòng kiểm tra và điền đầy đủ các thông tin bắt buộc trong đơn!');
+            }
+            return;
+        }
+
+        try {
             setLoading(true);
 
             const [startDate, endDate] = values.dateRange;
@@ -129,7 +139,7 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
             onSuccess();
             onClose();
         } catch (err: any) {
-            console.error('Lỗi nộp đơn:', err);
+            message.error(err?.message || 'Có lỗi xảy ra khi nộp đơn nghỉ phép');
         } finally {
             setLoading(false);
         }
@@ -237,7 +247,7 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
                 </Form.Item>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <Form.Item name="destination" label="Nơi nghỉ phép (Địa chỉ)">
+                    <Form.Item name="destination" label="Nơi nghỉ phép (Ví dụ: Nghệ An, tại gia đình...)">
                         <Input placeholder="Tại gia đình (hoặc địa chỉ ngoại tỉnh...)" />
                     </Form.Item>
                     <Form.Item name="contactPhone" label="Số điện thoại liên hệ khi cần việc gấp">
@@ -257,11 +267,11 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
                         <Form.Item
                             name="actingHeadStaffId"
                             label={<span className="text-xs">Đồng chí Phó Trưởng khoa/phòng phụ trách, điều hành đơn vị:</span>}
-                            rules={[{ required: true, message: 'Vui lòng chọn đồng chí phụ trách thay' }]}
                             className="mb-1"
                         >
                             <Select
-                                placeholder="-- Chọn Phó Trưởng phòng/khoa điều hành thay --"
+                                placeholder="-- Chọn Phó Trưởng phòng/khoa điều hành thay (nếu có) --"
+                                allowClear
                                 showSearch
                                 optionFilterProp="label"
                                 options={departmentStaffs
@@ -282,11 +292,11 @@ export const CreateLeaveModal: React.FC<CreateLeaveModalProps> = ({
                         <Form.Item
                             name="handoverStaffId"
                             label={<span className="text-xs">Cán bộ cùng khoa nhận bàn giao công việc:</span>}
-                            rules={[{ required: true, message: 'Vui lòng chọn cán bộ nhận bàn giao' }]}
                             className="mb-1"
                         >
                             <Select
-                                placeholder="-- Chọn cán bộ nhận bàn giao việc trong khoa --"
+                                placeholder="-- Chọn cán bộ nhận bàn giao việc trong khoa (nếu có) --"
+                                allowClear
                                 showSearch
                                 optionFilterProp="label"
                                 options={departmentStaffs

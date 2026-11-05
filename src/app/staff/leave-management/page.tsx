@@ -23,6 +23,7 @@ import { LeaveBalanceCard } from './_components/LeaveBalanceCard';
 import { CreateLeaveModal } from './_components/CreateLeaveModal';
 import { TccbReviewModal } from './_components/TccbReviewModal';
 import { LeavePrintTemplate } from './_components/LeavePrintTemplate';
+import { LeaveApplicationPrintTemplate } from './_components/LeaveApplicationPrintTemplate';
 import { DirectorSignModal } from './_components/DirectorSignModal';
 import { LeavePolicyConfigModal } from './_components/LeavePolicyConfigModal';
 
@@ -45,6 +46,7 @@ export default function LeaveManagementPage() {
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [printModalOpen, setPrintModalOpen] = useState(false);
+    const [appPrintModalOpen, setAppPrintModalOpen] = useState(false);
     const [signModalOpen, setSignModalOpen] = useState(false);
     const [policyModalOpen, setPolicyModalOpen] = useState(false);
 
@@ -113,6 +115,11 @@ export default function LeaveManagementPage() {
     const handleOpenPrint = (req: any) => {
         setSelectedRequest(req);
         setPrintModalOpen(true);
+    };
+
+    const handleOpenAppPrint = (req: any) => {
+        setSelectedRequest(req);
+        setAppPrintModalOpen(true);
     };
 
     const handleOpenReview = (req: any) => {
@@ -272,17 +279,28 @@ export default function LeaveManagementPage() {
         {
             title: 'Thao Tác',
             key: 'actions',
-            width: 170,
+            width: 220,
             align: 'right' as const,
             render: (_: any, r: any) => (
                 <Space size="small">
-                    {/* Nút in mẫu A4 (chỉ khi TCCB đã duyệt xong hoặc đang chờ ký) */}
+                    {/* Nút In Đơn Xin Nghỉ Phép (A4 Chuẩn Mẫu Word 2025 BVĐKLS) */}
+                    <Button
+                        size="small"
+                        icon={<FileTextOutlined />}
+                        onClick={() => handleOpenAppPrint(r)}
+                        title="In Đơn Xin Nghỉ Phép (Mẫu A4 BVĐK Lạng Sơn)"
+                        className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                    >
+                        In Đơn
+                    </Button>
+
+                    {/* Nút in mẫu A4 Kết quả thẩm tra TCCB (khi TCCB đã thẩm tra hoặc chờ ký) */}
                     {(r.status === 'PENDING_DIRECTOR' || r.status === 'APPROVED' || r.status === 'PENDING_TCCB') && (
                         <Button
                             size="small"
                             icon={<PrinterOutlined />}
                             onClick={() => handleOpenPrint(r)}
-                            title="In Mẫu Kết Quả Nghỉ Phép (A4)"
+                            title="In Mẫu Kết Quả Nghỉ Phép (A4 - TCCB)"
                         />
                     )}
 
@@ -484,6 +502,13 @@ export default function LeaveManagementPage() {
                 onClose={() => setPrintModalOpen(false)}
                 requestData={selectedRequest}
                 balanceData={leaveBalance}
+            />
+
+            {/* Mẫu In A4 Đơn Xin Nghỉ Phép (Chuẩn File Word 2025 BVĐK Tỉnh Lạng Sơn) */}
+            <LeaveApplicationPrintTemplate
+                open={appPrintModalOpen}
+                onClose={() => setAppPrintModalOpen(false)}
+                requestData={selectedRequest}
             />
 
             {/* Modal Xác Nhận Lãnh Đạo Đã Ký Văn Bản Giấy */}
