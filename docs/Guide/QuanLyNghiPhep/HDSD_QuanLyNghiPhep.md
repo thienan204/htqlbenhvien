@@ -143,10 +143,14 @@ Phân hệ này giải quyết trọn vẹn luồng nghiệp vụ thực tế gi
 3. Kiểm tra số ngày phép còn lại. TCCB **có thể sửa lại số ngày cho phép nghỉ** (ví dụ: xin 5 ngày, TCCB sửa duyệt 3 ngày).
 4. Bấm **Lưu & Sẵn Sàng Trình Ký**.
 
-### Bước 4: In Phiếu Kết Quả trình Giám Đốc Bệnh Viện ký
-1. Tại đơn đã thẩm tra, bấm nút **`🖨️ In Mẫu Phiếu Kết Quả`**.
-2. Hệ thống hiển thị bản in A4 chuẩn hành chính Bệnh viện ĐK tỉnh Lạng Sơn gồm: Tiêu ngữ, số ngày được duyệt, thời gian nghỉ và phần ký 3 bên.
-3. In ra giấy và đem trình Giám đốc Bệnh viện ký, đóng dấu.
+### Bước 4: In Đơn Xin Nghỉ Phép & Phiếu Báo Kết Quả (Khổ giấy A4 Chuẩn BVĐK Lạng Sơn)
+Hệ thống cung cấp 2 loại văn bản in A4 độc lập:
+1. **📄 Nút `In Đơn` (Đơn Xin Nghỉ Phép Ban Đầu)**:
+   - Dành cho cán bộ in đơn đem ký nội bộ ngay khi vừa tạo đơn:
+   - **Mẫu 1 (Dành cho Nhân viên / Phó Trưởng khoa, phòng)**: Có đầy đủ thông tin: Năm nghỉ phép, thời gian, số ngày, nơi nghỉ phép; 2 ô chữ ký: bên trái là *Xác nhận của Khoa/Phòng* (Trưởng khoa ký), bên phải là *Người làm đơn*.
+   - **Mẫu 2 (Dành cho Trưởng khoa, Trưởng phòng)**: Có thông tin đồng chí Phó Trưởng khoa phụ trách điều hành thay; 2 ô chữ ký: bên trái là *Xác nhận của Lãnh đạo BV*, bên phải là *Người làm đơn*.
+2. **🖨️ Nút `In Mẫu Phiếu Kết Quả` (Phiếu Báo Kết Quả Giải Quyết Nghỉ Phép của Phòng TCCB)**:
+   - Dành cho cán bộ Phòng TCCB in sau khi đã thẩm tra số ngày phép để trình Ban Giám Đốc Bệnh viện ký duyệt chính thức.
 
 ### Bước 5: Xác nhận Lãnh đạo đã ký -> Tự động điền công
 1. Sau khi Lãnh đạo Bệnh viện ký tay vào phiếu giấy, TCCB vào lại đơn trên phần mềm và bấm **`Xác Nhận Đã Ký`**.
@@ -164,7 +168,7 @@ Dành cho Phòng TCCB và Lãnh đạo để theo dõi, điều chỉnh số ng�
    - Bấm nút **`🔄 Đồng Bộ Từ Bảng Chấm Công`**.
    - Hệ thống tự động quét toàn bộ 12 tháng của năm trên Bảng Chấm Công:
      + Mã `P` (Nghỉ phép cả ngày) = 1.0 ngày
-     + Mã `P/2` (Phép buổi Sáng / Chiều) = 0.5 ngày
+     + Mã `P/2` (Phép buổi Sáng / Chiều) = 0.5 ngày (Hưởng nguyên lương thời gian, trừ 0.5 ngày quỹ phép)
    - Hệ thống tự động cộng dồn thành **Số ngày đã nghỉ thực tế** và tính lại **Số ngày phép còn lại** cho toàn bộ nhân sự bệnh viện.
 3. **Điều chỉnh Thủ Công cho từng cá nhân**:
    - Bấm nút **`✏️ Sửa`** tại dòng cán bộ tương ứng.
