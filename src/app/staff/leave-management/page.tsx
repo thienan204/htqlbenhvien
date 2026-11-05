@@ -12,8 +12,10 @@ import {
     CalendarOutlined,
     ArrowLeftOutlined,
     SafetyCertificateOutlined,
-    FileTextOutlined
+    FileTextOutlined,
+    PieChartOutlined
 } from '@ant-design/icons';
+import { LeaveBalanceManager } from './_components/LeaveBalanceManager';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 
@@ -32,6 +34,7 @@ export default function LeaveManagementPage() {
     const [currentStaff, setCurrentStaff] = useState<any>(null);
     const [leaveBalance, setLeaveBalance] = useState<any>(null);
     const [departmentStaffs, setDepartmentStaffs] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
 
     // Danh sách đơn theo từng tab
     const [myRequests, setMyRequests] = useState<any[]>([]);
@@ -95,6 +98,10 @@ export default function LeaveManagementPage() {
     useEffect(() => {
         fetchBalanceAndStaff();
         fetchDepartmentStaffs();
+        fetch('/api/departments')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => setDepartments(data))
+            .catch(err => console.error(err));
     }, []);
 
     useEffect(() => {
@@ -432,6 +439,17 @@ export default function LeaveManagementPage() {
                                     bordered
                                     pagination={{ pageSize: 8 }}
                                 />
+                            )
+                        },
+                        {
+                            key: 'leave-balances',
+                            label: (
+                                <span className="font-semibold text-xs flex items-center gap-1.5 text-blue-700">
+                                    <PieChartOutlined /> 4. Quản Lý Quỹ Phép Năm & Đối Soát Chấm Công
+                                </span>
+                            ),
+                            children: (
+                                <LeaveBalanceManager departments={departments} />
                             )
                         }
                     ]}

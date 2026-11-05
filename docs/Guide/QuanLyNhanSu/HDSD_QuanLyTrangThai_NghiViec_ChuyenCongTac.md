@@ -63,3 +63,4 @@ Khi nhân sự chuyển công tác, nghỉ việc hoặc nghỉ hưu, TCCB nhậ
    - `ly_do_nghi_viec` (Lý do nghỉ/chuyển)
 3. Bấm **Tải File Mẫu** -> Điền Mã NV và trạng thái tương ứng.
 4. Tải file lên để hệ thống tự động cập nhật hàng loạt.
+

@@ -155,3 +155,21 @@ Phân hệ này giải quyết trọn vẹn luồng nghiệp vụ thực tế gi
    - Trừ số ngày được duyệt vào Quỹ phép năm của cán bộ.
    - Tự động điền các ô công `P` (hoặc `P/2`) trên Bảng Chấm Công của khoa.
 
+---
+
+### Bước 6: Quản lý Quỹ Phép Năm & Đối Soát Bảng Chấm Công (Tab 4)
+Dành cho Phòng TCCB và Lãnh đạo để theo dõi, điều chỉnh số ngày phép theo từng năm (2026, 2027...):
+1. **Chuyển đổi Năm Quản Lý**: Chọn năm mong muốn (Ví dụ: 2026 hoặc 2027) để xem toàn bộ quỹ phép.
+2. **Đồng Bộ Tự Động từ Bảng Chấm Công**:
+   - Bấm nút **`🔄 Đồng Bộ Từ Bảng Chấm Công`**.
+   - Hệ thống tự động quét toàn bộ 12 tháng của năm trên Bảng Chấm Công:
+     + Mã `P` (Nghỉ phép cả ngày) = 1.0 ngày
+     + Mã `P/2` (Phép buổi Sáng / Chiều) = 0.5 ngày
+   - Hệ thống tự động cộng dồn thành **Số ngày đã nghỉ thực tế** và tính lại **Số ngày phép còn lại** cho toàn bộ nhân sự bệnh viện.
+3. **Điều chỉnh Thủ Công cho từng cá nhân**:
+   - Bấm nút **`✏️ Sửa`** tại dòng cán bộ tương ứng.
+   - Cho phép nhập trực tiếp: *Số ngày đã nghỉ*, *Số ngày còn lại*, *Số ngày chuyển sang từ năm trước*, hoặc *Ghi chú*.
+   - Hệ thống sẽ lưu giữ số liệu chuẩn theo hồ sơ thực tế.
+4. **Xuất File Excel**: Bấm **`Xuất Excel`** để tải về báo cáo tổng hợp quỹ phép năm của toàn viện hoặc theo từng khoa/phòng.
+
+
