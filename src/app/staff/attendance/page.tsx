@@ -476,7 +476,7 @@ export default function AttendanceSheetPage() {
                             trigger="click"
                             placement="bottom"
                             content={popoverContent}
-                            destroyTooltipOnHide
+                            destroyOnHidden
                         >
                             <div className="cursor-pointer hover:bg-blue-100/60 rounded transition-colors">
                                 {cellNode}
