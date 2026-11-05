@@ -266,7 +266,7 @@ export const LeaveBalanceManager: React.FC<LeaveBalanceManagerProps> = ({
                             value={totalStaffCount}
                             suffix="người"
                             prefix={<TeamOutlined className="text-blue-500" />}
-                            valueStyle={{ fontSize: '1.25rem', fontWeight: 'bold' }}
+                            styles={{ content: { fontSize: '1.25rem', fontWeight: 'bold' } }}
                         />
                     </Card>
                 </Col>
@@ -277,7 +277,7 @@ export const LeaveBalanceManager: React.FC<LeaveBalanceManagerProps> = ({
                             value={totalAvailableDays}
                             suffix="ngày"
                             prefix={<CalendarOutlined className="text-indigo-500" />}
-                            valueStyle={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1d4ed8' }}
+                            styles={{ content: { fontSize: '1.25rem', fontWeight: 'bold', color: '#1d4ed8' } }}
                         />
                     </Card>
                 </Col>
@@ -288,7 +288,7 @@ export const LeaveBalanceManager: React.FC<LeaveBalanceManagerProps> = ({
                             value={totalUsedDays}
                             suffix="ngày"
                             prefix={<PieChartOutlined className="text-amber-500" />}
-                            valueStyle={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#b45309' }}
+                            styles={{ content: { fontSize: '1.25rem', fontWeight: 'bold', color: '#b45309' } }}
                         />
                     </Card>
                 </Col>
@@ -299,7 +299,7 @@ export const LeaveBalanceManager: React.FC<LeaveBalanceManagerProps> = ({
                             value={totalRemainingDays}
                             suffix="ngày"
                             prefix={<CheckCircleOutlined className="text-emerald-500" />}
-                            valueStyle={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#047857' }}
+                            styles={{ content: { fontSize: '1.25rem', fontWeight: 'bold', color: '#047857' } }}
                         />
                     </Card>
                 </Col>
