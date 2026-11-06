@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { checkStaffAttendanceEligibility } from '@/lib/attendanceStaffFilter';
 
 export async function POST(request: Request) {
     try {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
             where: { ma_khoa },
             include: {
                 chuc_vu_ref: true,
+                trang_thai_ref: true,
                 user: true
             }
         });
@@ -59,10 +61,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Không tìm thấy nhân sự trong khoa phòng' }, { status: 404 });
         }
 
+        const dateParts = date.split('-');
+        const dateYear = parseInt(dateParts[0], 10);
+        const dateMonth = parseInt(dateParts[1], 10);
+        const dateDay = parseInt(dateParts[2], 10);
+
         const todayStr = new Date().toISOString().split('T')[0];
         let updatedCount = 0;
 
         for (const st of staffList) {
+            const filterInfo = checkStaffAttendanceEligibility(st, dateYear, dateMonth, false);
+            // Bỏ qua nếu đã nghỉ trước tháng này hoặc nếu ngày chấm >= ngày chuyển công tác
+            if (!filterInfo.shouldInclude) continue;
+            if (filterInfo.resignedDay && dateDay >= filterInfo.resignedDay) continue;
+
             const existing = await prisma.staffAttendanceRecord.findFirst({
                 where: {
                     staffId: st.id,

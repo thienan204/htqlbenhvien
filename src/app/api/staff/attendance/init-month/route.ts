@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { checkStaffAttendanceEligibility } from '@/lib/attendanceStaffFilter';
 import dayjs from 'dayjs';
 
 export async function POST(request: Request) {
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
         // Lấy danh sách nhân viên trong khoa
         const staffList = await prisma.staff.findMany({
             where: { ma_khoa },
+            include: { trang_thai_ref: true },
             orderBy: { ho_ten: 'asc' }
         });
 
@@ -59,6 +61,12 @@ export async function POST(request: Request) {
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10);
         const daysInMonth = dayjs(`${year}-${month}-01`).daysInMonth();
+
+        // Lọc danh sách nhân viên hợp lệ (loại bỏ người đã nghỉ việc / chuyển công tác trước tháng này)
+        const eligibleStaffList = staffList.filter(st => {
+            const filterInfo = checkStaffAttendanceEligibility(st, year, month, false);
+            return filterInfo.shouldInclude;
+        });
 
         // Lấy cấu hình ngày Lễ & Ngày làm bù toàn viện
         let configHolidays: any[] = [];
@@ -105,7 +113,13 @@ export async function POST(request: Request) {
                 continue;
             }
 
-            for (const st of staffList) {
+            for (const st of eligibleStaffList) {
+                const filterInfo = checkStaffAttendanceEligibility(st, year, month, false);
+                // Nếu cán bộ chuyển công tác / nghỉ việc trong tháng này (ví dụ: ngày 15), từ ngày đó trở đi không khởi tạo công
+                if (filterInfo.resignedDay && d >= filterInfo.resignedDay) {
+                    continue;
+                }
+
                 // Kiểm tra xem đã có bản ghi công chưa
                 const existing = await prisma.staffAttendanceRecord.findFirst({
                     where: {
@@ -151,7 +165,7 @@ export async function POST(request: Request) {
             success: true,
             message: `Đã khởi tạo thành công ${createdCount} công đi làm ngày thường (T2-T6) cho cả tháng ${monthStr}/${year}!`,
             createdCount,
-            staffCount: staffList.length
+            staffCount: eligibleStaffList.length
         });
     } catch (error: any) {
         console.error('Error init month attendance:', error);

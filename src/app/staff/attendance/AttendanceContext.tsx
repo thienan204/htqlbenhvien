@@ -29,6 +29,12 @@ export interface StaffMatrixData {
     userId?: string | null;
     username?: string | null;
     isAvailable?: boolean;
+    trang_thai_lam_viec?: string;
+    trang_thai_code?: string;
+    ngay_nghi_viec?: string | null;
+    isResignedInMonth?: boolean;
+    resignedDay?: number;
+    resignedStatus?: string;
     attendanceMap: Record<number, any>;
     dutyMap: Record<number, any>;
     overtimeMap: Record<number, any>;

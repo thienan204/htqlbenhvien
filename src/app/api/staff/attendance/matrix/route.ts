@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { checkStaffAttendanceEligibility } from '@/lib/attendanceStaffFilter';
+import dayjs from 'dayjs';
 
 export async function GET(request: Request) {
     try {
@@ -93,6 +95,7 @@ export async function GET(request: Request) {
                 chuc_danh_ref: true,
                 bac_luong_ref: true,
                 he_so_luong_ref: true,
+                trang_thai_ref: true,
                 user: {
                     select: {
                         id: true,
@@ -293,10 +296,20 @@ export async function GET(request: Request) {
             overtimeByStaffAndDay[ot.staffId][dayNum] = ot;
         });
 
+        // Lọc nhân sự theo quy tắc: Không hiển thị người đã nghỉ việc / chuyển công tác trước tháng này
+        const eligibleStaffList = staffList.filter(st => {
+            const hasAtt = Boolean(attendanceByStaffAndDay[st.id] && Object.keys(attendanceByStaffAndDay[st.id]).length > 0);
+            const hasDuty = Boolean(dutyByStaffAndDay[st.id] && Object.keys(dutyByStaffAndDay[st.id]).length > 0);
+            const hasRecord = hasAtt || hasDuty;
+            const filterInfo = checkStaffAttendanceEligibility(st, year, month, hasRecord);
+            return filterInfo.shouldInclude;
+        });
+
         // Tổng kết từng nhân viên
-        const staffData = staffList.map((st, index) => {
+        const staffData = eligibleStaffList.map((st, index) => {
             const attMap = attendanceByStaffAndDay[st.id] || {};
             const dMap = dutyByStaffAndDay[st.id] || {};
+            const filterInfo = checkStaffAttendanceEligibility(st, year, month, true);
 
             // Tính công:
             // - Lương thời gian: x (1.0), Nb (1.0 hoặc 0.5), Nb/x (1.0), x/Nb (1.0), P (1.0), L (1.0), H (1.0)
@@ -398,6 +411,12 @@ export async function GET(request: Request) {
                 userId: st.user?.id || null,
                 username: st.user?.username || null,
                 isAvailable: st.user?.isAvailable ?? false,
+                trang_thai_lam_viec: st.trang_thai_ref?.name || 'Đang làm việc',
+                trang_thai_code: st.trang_thai_ref?.code || 'DANG_LAM_VIEC',
+                ngay_nghi_viec: st.ngay_nghi_viec ? dayjs(st.ngay_nghi_viec).format('YYYY-MM-DD') : null,
+                isResignedInMonth: filterInfo.isResignedInMonth,
+                resignedDay: filterInfo.resignedDay,
+                resignedStatus: filterInfo.resignedStatusName,
                 attendanceMap: attMap,
                 dutyMap: dMap,
                 overtimeMap: otMap,

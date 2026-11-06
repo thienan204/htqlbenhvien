@@ -162,11 +162,17 @@ export default function AttendanceSheetPage() {
             className: 'bg-slate-50',
             render: (name: string, record: StaffMatrixData) => {
                 const hasPosition = Boolean(record.chuc_vu && record.chuc_vu.trim() !== '' && record.chuc_vu.trim().toLowerCase() !== 'cán bộ');
+                const isResignedInMonth = Boolean(record.isResignedInMonth && record.resignedDay);
                 return (
                     <div className="py-0.5">
                         <span className="font-semibold text-slate-800 leading-tight block">{name}</span>
                         {hasPosition && (
                             <div className="text-[11px] text-blue-700 font-semibold mt-0.5 leading-none">{record.chuc_vu}</div>
+                        )}
+                        {isResignedInMonth && (
+                            <Tag color="orange" className="text-[10px] mt-1 px-1 py-0 border-amber-300 bg-amber-50 text-amber-900 block w-fit font-medium">
+                                {record.resignedStatus || 'Chuyển CT'} từ {record.resignedDay}/{selectedDate.format('MM')}
+                            </Tag>
                         )}
                     </div>
                 );
@@ -223,9 +229,17 @@ export default function AttendanceSheetPage() {
                     : '',
                 render: (att: any, record: StaffMatrixData) => {
                     const dutyOnThisDay = record.dutyMap?.[d.day];
+                    const isPostResignation = Boolean(record.resignedDay && d.day >= record.resignedDay);
+
                     const cellNode = (
-                        <div className="relative flex items-center justify-center py-1">
-                            {renderAttendanceTag(att)}
+                        <div className={`relative flex items-center justify-center py-1 ${isPostResignation && !att?.code ? 'opacity-40 bg-slate-100/60 rounded' : ''}`}>
+                            {isPostResignation && !att?.code ? (
+                                <Tooltip title={`${record.ho_ten} đã ${record.resignedStatus || 'chuyển công tác'} từ ngày ${record.resignedDay}/${selectedDate.format('MM/YYYY')}`}>
+                                    <span className="text-slate-400 text-xs font-mono select-none">✕</span>
+                                </Tooltip>
+                            ) : (
+                                renderAttendanceTag(att)
+                            )}
                             {dutyOnThisDay && (
                                 <Tooltip title={`Có lịch trực: ${dutyOnThisDay.dutyCode} (${dutyOnThisDay.dutyType || 'Trực'})`}>
                                     <span className="absolute -top-1.5 -right-1 w-2 h-2 rounded-full bg-blue-600 border border-white shadow-xs" />
@@ -257,6 +271,14 @@ export default function AttendanceSheetPage() {
 
                     const popoverContent = (
                         <div className="w-[660px] p-1 text-slate-800">
+                            {/* Cảnh báo nếu ngày này sau ngày chuyển công tác */}
+                            {isPostResignation && (
+                                <div className="mb-2 p-1.5 bg-amber-50 border border-amber-300 rounded text-amber-900 text-xs flex items-center gap-1.5">
+                                    <span>⚠️</span>
+                                    <span>Cán bộ này đã <strong>{record.resignedStatus || 'chuyển công tác'}</strong> từ ngày <strong>{record.resignedDay}/{selectedDate.format('MM/YYYY')}</strong>.</span>
+                                </div>
+                            )}
+
                             {/* Header Popup */}
                             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
                                 <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">

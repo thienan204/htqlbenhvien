@@ -217,3 +217,22 @@ Phân hệ quản lý chấm công hành chính và chấm công thường trự
   4. **Khớp chức vụ**: `trưởng phòng`, `phó phòng`...
 - **Phạm vi tác dụng**: Tự động lọc danh sách cán bộ đồng bộ trên cả 4 Tab (*Chấm Công, Chấm Trực, Sổ Nghỉ Bù, Chấm Thêm Giờ*), có thông báo quân số lọc trực quan (VD: *Tổng quân số: 1 cán bộ (Lọc từ 8 cán bộ)*).
 
+---
+
+## 6. QUY TẮC HIỂN THỊ NHÂN SỰ NGHỈ VIỆC & CHUYỂN CÔNG TÁC THEO MỐC THỜI GIAN
+
+Để đảm bảo tính chính xác về quân số và lương thời gian, hệ thống tự động xử lý hiển thị nhân sự trên Bảng Chấm Công theo mốc thời gian:
+
+### 6.1. Quy tắc hiển thị theo mốc ngày:
+1. **Chuyển công tác / nghỉ việc vào giữa tháng (Ví dụ: Ngày 15/11)**:
+   - **Từ ngày 01 đến ngày 14**: Cán bộ vẫn làm việc tại khoa $\rightarrow$ **Vẫn hiển thị đầy đủ trên Bảng Chấm Công** để chấm công bình thường và tính đủ lương thời gian.
+   - **Cạnh tên cán bộ**: Hiển thị nhãn cảnh báo trực quan: `(Chuyển CT từ ngày 15/11)` hoặc `(Nghỉ việc từ ngày 15/11)`.
+   - **Từ ngày 15 đến cuối tháng**: Các ô hiển thị mờ với ký hiệu `✕` và tooltip giải thích (*Cán bộ đã chuyển công tác từ ngày 15/11*). Chức năng *Khởi tạo công cả tháng* hoặc *Chấm nhanh cả phòng* sẽ tự động bỏ qua từ ngày 15 trở đi.
+   - **Sang tháng tiếp theo (từ 01/12 trở đi)**: Cán bộ đã chuyển đi từ tháng trước nên sẽ **tự động ẩn vĩnh viễn** khỏi Bảng Chấm Công của khoa cũ, quân số tự động cập nhật chuẩn xác.
+
+2. **Đã nghỉ việc / chuyển công tác trước tháng đang xem**:
+   - Tự động **ẨN HOÀN TOÀN** khỏi Bảng Chấm Công, Khởi tạo công cả tháng, Chấm nhanh và File Excel xuất khẩu (trừ trường hợp tháng đó trước đây đã có dữ liệu chấm công cũ thì vẫn hiển thị để lưu giữ lịch sử).
+
+3. **Cán bộ có trạng thái Đã nghỉ việc / Thuyên chuyển nhưng không có ngày cụ thể**:
+   - Nếu trong tháng không phát sinh ngày công nào $\rightarrow$ **Tự động ẨN**.
+

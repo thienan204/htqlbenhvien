@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { checkStaffAttendanceEligibility } from '@/lib/attendanceStaffFilter';
 
 export async function GET(request: Request) {
     try {
@@ -27,7 +28,8 @@ export async function GET(request: Request) {
                 chuc_vu_ref: true,
                 chuc_danh_ref: true,
                 bac_luong_ref: true,
-                he_so_luong_ref: true
+                he_so_luong_ref: true,
+                trang_thai_ref: true
             },
             orderBy: { ma_nv: 'asc' }
         });
@@ -245,9 +247,15 @@ export async function GET(request: Request) {
             sheet.getCell('AK8').border = thinBorder;
             sheet.getCell('AK8').font = { name: 'Times New Roman', size: 9 };
 
+            // Lọc nhân sự hợp lệ theo trạng thái làm việc và mốc ngày chuyển công tác
+            const eligibleStaffList = staffList.filter(st => {
+                const hasAtt = Boolean(attMap && attMap[st.id] && Object.keys(attMap[st.id]).length > 0);
+                return checkStaffAttendanceEligibility(st, year, month, hasAtt).shouldInclude;
+            });
+
             // Đổ dữ liệu nhân sự (Row 9 trở đi)
             let currentRow = 9;
-            staffList.forEach((st, idx) => {
+            eligibleStaffList.forEach((st, idx) => {
                 const row = sheet.getRow(currentRow);
                 row.getCell(1).value = idx + 1;
                 row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
