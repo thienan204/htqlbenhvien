@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Checkbox, Button, Upload, message, Alert, Typography } from 'antd';
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
+import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
@@ -49,38 +50,46 @@ interface BulkUpdateStaffModalProps {
 export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkUpdateStaffModalProps) {
     const [selectedFields, setSelectedFields] = useState<string[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [downloading, setDownloading] = useState(false);
 
-    const handleDownloadTemplate = () => {
+    const handleDownloadTemplate = async () => {
         if (selectedFields.length === 0) {
             message.warning('Vui lòng chọn ít nhất một trường dữ liệu để tạo mẫu!');
             return;
         }
 
-        const headers = ['ma_nv']; 
-        selectedFields.forEach(field => {
-            headers.push(field);
-        });
+        try {
+            setDownloading(true);
+            const res = await fetch('/api/staff/bulk-update/template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fields: selectedFields })
+            });
 
-        const wsData = [headers];
-        
-        const sampleRow = ['BV0001'];
-        selectedFields.forEach(field => {
-            if (field.includes('ngay')) {
-                sampleRow.push('20100115');
-            } else {
-                sampleRow.push('Dữ liệu mẫu');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                message.error(errData.error || 'Lỗi khi tải file danh sách nhân sự');
+                return;
             }
-        });
-        wsData.push(sampleRow);
 
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const staffCount = res.headers.get('X-Staff-Count') || '';
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Danh_Sach_Nhan_Su_Cap_Nhat_Hang_Loat_${dayjs().format('YYYYMMDD')}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
 
-        const colWidths = headers.map(() => ({ wch: 25 }));
-        ws['!cols'] = colWidths;
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Update_Staff');
-        XLSX.writeFile(wb, `Mau_Update_Staff_Dynamic.xlsx`);
+            message.success(`Đã tải về danh sách ${staffCount ? staffCount + ' ' : ''}nhân sự thành công!`);
+        } catch (error: any) {
+            console.error('Lỗi tải file mẫu nhân sự:', error);
+            message.error('Có lỗi xảy ra khi tải danh sách nhân sự');
+        } finally {
+            setDownloading(false);
+        }
     };
 
     const handleFileUpload = (file: File) => {
@@ -212,8 +221,8 @@ export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkU
                 description={
                     <ul className="list-disc pl-5 mt-2 mb-0">
                         <li>Bước 1: Chọn các trường dữ liệu bạn muốn cập nhật bổ sung ở bên dưới.</li>
-                        <li>Bước 2: Bấm nút "Tải File Mẫu" để sinh ra file Excel với đúng các cột đã chọn.</li>
-                        <li>Bước 3: Điền dữ liệu vào file (Bắt buộc phải điền chuẩn cột <b>ma_nv</b>). Các trường Danh mục chỉ cần gõ Tên, hệ thống tự mapping.</li>
+                        <li>Bước 2: Bấm nút <b>"Tải File Mẫu"</b> để tải về <b>toàn bộ danh sách nhân sự hiện có</b> kèm các cột và dữ liệu hiện tại theo đúng các trường đã chọn.</li>
+                        <li>Bước 3: Mở file Excel chỉnh sửa các thông tin cần thay đổi (Giữ nguyên cột <b>ma_nv</b>). Các trường Danh mục chỉ cần gõ Tên, hệ thống tự mapping.</li>
                         <li>Bước 4: Tải file đó lên. Hệ thống sẽ tự động cập nhật và <b>trả về 1 file Báo cáo Lỗi/Thành công</b> chi tiết từng dòng ở cột cuối!</li>
                     </ul>
                 }
@@ -236,9 +245,10 @@ export default function BulkUpdateStaffModal({ open, onClose, onSuccess }: BulkU
                         type="primary" 
                         icon={<DownloadOutlined />} 
                         onClick={handleDownloadTemplate}
+                        loading={downloading}
                         disabled={selectedFields.length === 0}
                     >
-                        Tải File Mẫu (Đã chọn {selectedFields.length} trường)
+                        {downloading ? 'Đang xuất danh sách nhân sự...' : `Tải File Mẫu (Đã chọn ${selectedFields.length} trường)`}
                     </Button>
                 </div>
             </div>

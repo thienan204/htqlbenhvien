@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import * as xlsx from 'xlsx';
-
-const prisma = new PrismaClient();
+import dayjs from 'dayjs';
 
 const CATEGORY_MAP: Record<string, { type: string, idField: string }> = {
     'chuc_danh': { type: 'CHUC_DANH', idField: 'chuc_danh_id' },
@@ -128,9 +127,26 @@ export async function POST(request: Request) {
                         validUpdateData.ma_khoa = dept.ma_khoa;
                     }
                     else {
-                        if (typeof value === 'string' && key.includes('ngay')) {
-                            const d = new Date(value);
-                            validUpdateData[key] = !isNaN(d.getTime()) ? d : null;
+                        if (key.includes('ngay') || key.includes('thoi_diem')) {
+                            const valStr = String(value || '').trim();
+                            if (valStr) {
+                                // Hỗ trợ cả YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY
+                                const parsed = dayjs(valStr);
+                                if (parsed.isValid() && valStr.length >= 8) {
+                                    validUpdateData[key] = parsed.toDate();
+                                } else if (valStr.includes('/')) {
+                                    const parts = valStr.split('/');
+                                    if (parts.length === 3) {
+                                        const d = dayjs(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                                        if (d.isValid()) validUpdateData[key] = d.toDate();
+                                    }
+                                } else {
+                                    const d = new Date(valStr);
+                                    validUpdateData[key] = !isNaN(d.getTime()) ? d : null;
+                                }
+                            } else {
+                                validUpdateData[key] = null;
+                            }
                         } else {
                             validUpdateData[key] = value;
                         }
