@@ -413,7 +413,7 @@ export async function GET(request: Request) {
                 isAvailable: st.user?.isAvailable ?? false,
                 trang_thai_lam_viec: st.trang_thai_ref?.name || 'Đang làm việc',
                 trang_thai_code: st.trang_thai_ref?.code || 'DANG_LAM_VIEC',
-                ngay_nghi_viec: st.ngay_nghi_viec ? dayjs(st.ngay_nghi_viec).format('YYYY-MM-DD') : null,
+                ngay_nghi_viec: (st as any).ngay_nghi_viec ? dayjs((st as any).ngay_nghi_viec).format('YYYY-MM-DD') : null,
                 isResignedInMonth: filterInfo.isResignedInMonth,
                 resignedDay: filterInfo.resignedDay,
                 resignedStatus: filterInfo.resignedStatusName,
