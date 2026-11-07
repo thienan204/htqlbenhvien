@@ -210,6 +210,7 @@ export async function POST(request: Request) {
         let targetMakeupWorkdays: string[] = [];
         let targetNoStaffWarningEnabled = true;
         let targetNoStaffWarningMessage = 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!';
+        let targetNoStaffPhone = '';
         let targetSaveAssignReason = true;
 
         if (configRule && configRule.logicConfig) {
@@ -230,6 +231,7 @@ export async function POST(request: Request) {
                 if (Array.isArray(config.makeupWorkdays)) targetMakeupWorkdays = config.makeupWorkdays;
                 if (config.noStaffWarningEnabled !== undefined) targetNoStaffWarningEnabled = Boolean(config.noStaffWarningEnabled);
                 if (config.noStaffWarningMessage) targetNoStaffWarningMessage = config.noStaffWarningMessage;
+                if (config.noStaffPhone) targetNoStaffPhone = config.noStaffPhone;
                 if (config.saveAssignReason !== undefined) targetSaveAssignReason = Boolean(config.saveAssignReason);
             }
         }
@@ -504,6 +506,11 @@ export async function POST(request: Request) {
                 console.error("Lỗi đồng bộ sdt nhân viên:", err);
             }
         }
+
+        if (!dynamicFields) dynamicFields = {};
+        dynamicFields['createdById'] = user.id;
+        dynamicFields['creatorUsername'] = user.username;
+        if (user.staffId) dynamicFields['creatorStaffId'] = user.staffId;
 
         // Nếu Khoa không chọn ai (Khoa không có quyền chọn, nên luôn là null)
         if (!finalAssignee && !isSelfHandling) {
@@ -967,11 +974,13 @@ export async function POST(request: Request) {
         }
 
         const warningMessage = (!finalAssignee && targetNoStaffWarningEnabled) ? targetNoStaffWarningMessage : null;
+        const warningPhone = (!finalAssignee && targetNoStaffWarningEnabled) ? (targetNoStaffPhone || null) : null;
 
         return NextResponse.json({
             ...newRequest,
             hasAssignee: Boolean(finalAssignee),
-            warningMessage
+            warningMessage,
+            warningPhone
         });
     } catch (error: any) {
         console.error('Error POST it-requests:', error);
@@ -1007,6 +1016,21 @@ export async function PUT(request: Request) {
         if (action === 'EDIT_REQUEST') {
             if (ticket.status !== 'PENDING') {
                 return NextResponse.json({ error: 'Chỉ có thể sửa yêu cầu khi đang ở trạng thái Chờ xử lý' }, { status: 400 });
+            }
+
+            const isAdmin = user.role === 'ADMIN';
+            const dyn = (ticket.dynamicFields as any) || {};
+            const isCreator = Boolean(
+                (dyn.createdById && (dyn.createdById === user.id || dyn.createdById === user.staffId)) ||
+                (dyn.creatorStaffId && (dyn.creatorStaffId === user.id || dyn.creatorStaffId === user.staffId)) ||
+                (dyn.nguoi_bao_id && (dyn.nguoi_bao_id === user.id || dyn.nguoi_bao_id === user.staffId)) ||
+                (dyn['Người báo'] && user.name && dyn['Người báo'].trim().toLowerCase() === user.name.trim().toLowerCase()) ||
+                (dyn.creatorUsername && dyn.creatorUsername === user.username) ||
+                (dyn.ma_nv && user.ma_nv && dyn.ma_nv === user.ma_nv)
+            );
+
+            if (!isAdmin && !isCreator) {
+                return NextResponse.json({ error: 'Chỉ chính người gửi yêu cầu mới có quyền chỉnh sửa' }, { status: 403 });
             }
 
             // Hợp nhất dynamicFields cũ và mới để giữ lại 'Hình ảnh đính kèm' nếu có
@@ -1404,13 +1428,23 @@ export async function DELETE(request: Request) {
         const ticket = await prisma.iTRequest.findUnique({ where: { id } });
         if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        const isDepartmentUser = !['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role);
-        if (isDepartmentUser && ticket.ma_khoa !== user.ma_khoa) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        const isAdmin = user.role === 'ADMIN';
+        const dyn = (ticket.dynamicFields as any) || {};
+        const isCreator = Boolean(
+            (dyn.createdById && (dyn.createdById === user.id || dyn.createdById === user.staffId)) ||
+            (dyn.creatorStaffId && (dyn.creatorStaffId === user.id || dyn.creatorStaffId === user.staffId)) ||
+            (dyn.nguoi_bao_id && (dyn.nguoi_bao_id === user.id || dyn.nguoi_bao_id === user.staffId)) ||
+            (dyn['Người báo'] && user.name && dyn['Người báo'].trim().toLowerCase() === user.name.trim().toLowerCase()) ||
+            (dyn.creatorUsername && dyn.creatorUsername === user.username) ||
+            (dyn.ma_nv && user.ma_nv && dyn.ma_nv === user.ma_nv)
+        );
+
+        if (!isAdmin && !isCreator) {
+            return NextResponse.json({ error: 'Chỉ chính người gửi yêu cầu mới có quyền xóa yêu cầu này' }, { status: 403 });
         }
 
-        if (ticket.status === 'IN_PROGRESS') {
-            return NextResponse.json({ error: 'Không thể xóa yêu cầu đang xử lý' }, { status: 400 });
+        if (ticket.status !== 'PENDING') {
+            return NextResponse.json({ error: 'Chỉ có thể xóa yêu cầu khi đang ở trạng thái Chờ xử lý' }, { status: 400 });
         }
 
         // Xóa các file ảnh vật lý đính kèm nếu có

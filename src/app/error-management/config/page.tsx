@@ -7,6 +7,7 @@ import { SoundConfig, playSoundByConfig, stopAllNotificationSounds, extractYouTu
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { NoStaffWarningContent } from '@/components/common/NoStaffWarningModal';
 
 interface ITError {
     id: string; // Virtual ID for table key
@@ -40,6 +41,7 @@ export default function ITConfigPage() {
     const [newMakeupInput, setNewMakeupInput] = useState<string>('');
     const [noStaffWarningEnabled, setNoStaffWarningEnabled] = useState<boolean>(true);
     const [noStaffWarningMessage, setNoStaffWarningMessage] = useState<string>('');
+    const [noStaffPhone, setNoStaffPhone] = useState<string>('');
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(15);
     const [allowedFileExtensions, setAllowedFileExtensions] = useState<string>('.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
     const [maBaLength, setMaBaLength] = useState<number>(11);
@@ -129,6 +131,7 @@ export default function ITConfigPage() {
                 setMakeupWorkdays(Array.isArray(data.makeupWorkdays) ? data.makeupWorkdays : []);
                 setNoStaffWarningEnabled(data.noStaffWarningEnabled !== undefined ? Boolean(data.noStaffWarningEnabled) : true);
                 setNoStaffWarningMessage(data.noStaffWarningMessage || '');
+                setNoStaffPhone(data.noStaffPhone || '');
                 setMaxImageSizeMB(data.maxFileSizeMB || data.maxImageSizeMB || 15);
                 setAllowedFileExtensions(data.allowedFileExtensions || '.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
                 setMaBaLength(data.maBaLength || 11);
@@ -302,6 +305,7 @@ export default function ITConfigPage() {
                 makeupWorkdays,
                 noStaffWarningEnabled,
                 noStaffWarningMessage: noStaffWarningMessage.trim(),
+                noStaffPhone: noStaffPhone.trim(),
                 maxImageSizeMB,
                 maxFileSizeMB: maxImageSizeMB,
                 allowedFileExtensions,
@@ -1295,6 +1299,35 @@ export default function ITConfigPage() {
                                     * Thông điệp này sẽ hiện lên màn hình Khoa/Phòng khi họ gửi yêu cầu mà không có nhân viên kỹ thuật nào tiếp nhận.
                                 </div>
                             </div>
+
+                            <div>
+                                <div className="text-xs font-semibold text-slate-700 mb-1">
+                                    Số điện thoại Hotline / Trực ban (Tùy chọn - Hệ thống cũng tự động nhận diện nếu đã có SĐT trong nội dung trên):
+                                </div>
+                                <Input 
+                                    value={noStaffPhone}
+                                    onChange={e => setNoStaffPhone(e.target.value)}
+                                    placeholder="Ví dụ: 02053.600.553 hoặc 0912.345.678"
+                                    disabled={!isAdmin}
+                                    className="text-xs max-w-md"
+                                />
+                                <div className="text-[11px] text-slate-400 mt-1 italic">
+                                    * Khi có số điện thoại, hệ thống sẽ tự động hiển thị Nút gọi trực tiếp [📞 Gọi ngay], [Zalo], [📋 Sao chép] cho Khoa/Phòng.
+                                </div>
+                            </div>
+
+                            {noStaffWarningEnabled && (noStaffWarningMessage || noStaffPhone) && (
+                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+                                    <div className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+                                        <span>👁️ Xem trước giao diện cảnh báo hiển thị cho Khoa/Phòng:</span>
+                                    </div>
+                                    <NoStaffWarningContent 
+                                        warningMessage={noStaffWarningMessage} 
+                                        hotline={noStaffPhone} 
+                                    />
+                                </div>
+                            )}
+
                             {isAdmin && (
                                 <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit bg-blue-600 hover:bg-blue-500">
                                     Lưu nội dung cảnh báo

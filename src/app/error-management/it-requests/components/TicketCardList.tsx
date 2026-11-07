@@ -192,6 +192,23 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                     const isTransferringToMe = ticket.status === 'TRANSFERRING' && ticket.transferToId === user?.id;
                     const canQuickResolve = ticket.status !== 'RESOLVED' && !canReceive && isMyTask;
 
+                    const dyn = ticket.dynamicFields as any;
+                    const isCreator = Boolean(
+                        user?.role === 'ADMIN' ||
+                        (dyn && (
+                            (dyn.createdById && (dyn.createdById === user?.id || dyn.createdById === user?.staffId)) ||
+                            (dyn.creatorStaffId && (dyn.creatorStaffId === user?.id || dyn.creatorStaffId === user?.staffId)) ||
+                            (dyn.nguoi_bao_id && (dyn.nguoi_bao_id === user?.id || dyn.nguoi_bao_id === user?.staffId)) ||
+                            (dyn['Người báo'] && user?.name && dyn['Người báo'].trim().toLowerCase() === user.name.trim().toLowerCase()) ||
+                            (dyn.creatorUsername && dyn.creatorUsername === user?.username) ||
+                            (dyn.ma_nv && user?.ma_nv && dyn.ma_nv === user.ma_nv)
+                        )) ||
+                        ((ticket as any).senderId && ((ticket as any).senderId === user?.id || (ticket as any).senderId === user?.staffId))
+                    );
+
+                    const canEdit = ticket.status === 'PENDING' && isCreator;
+                    const canDelete = ticket.status === 'PENDING' && (isCreator || hasPermission('MENU_ERROR_REQUESTS', 'DELETE'));
+
                     // Gom ảnh đính kèm
                     const attachmentKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm'];
                     const rawAttachments: string[] = [];
@@ -494,32 +511,33 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                         </Tooltip>
                                     )}
 
-                                    {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && ticket.status === 'PENDING' && (
-                                        <>
-                                            {onEditClick && (
-                                                <Button 
-                                                    size="middle" 
-                                                    type="default" 
-                                                    icon={<EditOutlined />}
-                                                    className="rounded-xl text-blue-600 border-blue-200"
-                                                    onClick={() => onEditClick(ticket)}
-                                                />
-                                            )}
-                                            <Popconfirm 
-                                                title="Xóa yêu cầu?" 
-                                                description="Bạn có chắc chắn muốn xóa yêu cầu này?"
-                                                onConfirm={() => onDeleteTicket(ticket.id)}
-                                                okText="Xóa"
-                                                cancelText="Hủy"
-                                            >
-                                                <Button 
-                                                    size="middle" 
-                                                    danger 
-                                                    icon={<DeleteOutlined />} 
-                                                    className="rounded-xl"
-                                                />
-                                            </Popconfirm>
-                                        </>
+                                    {/* Chỉ chính người gửi (hoặc Admin) mới được Sửa / Xóa khi phiếu đang Chờ xử lý */}
+                                    {canEdit && onEditClick && (
+                                        <Button 
+                                            size="middle" 
+                                            type="default" 
+                                            icon={<EditOutlined />}
+                                            className="rounded-xl text-blue-600 border-blue-200"
+                                            onClick={() => onEditClick(ticket)}
+                                            title="Sửa yêu cầu"
+                                        />
+                                    )}
+                                    {canDelete && (
+                                        <Popconfirm 
+                                            title="Xóa yêu cầu?" 
+                                            description="Bạn có chắc chắn muốn xóa yêu cầu này?"
+                                            onConfirm={() => onDeleteTicket(ticket.id)}
+                                            okText="Xóa"
+                                            cancelText="Hủy"
+                                        >
+                                            <Button 
+                                                size="middle" 
+                                                danger 
+                                                icon={<DeleteOutlined />} 
+                                                className="rounded-xl"
+                                                title="Xóa yêu cầu"
+                                            />
+                                        </Popconfirm>
                                     )}
                                 </div>
                             </div>

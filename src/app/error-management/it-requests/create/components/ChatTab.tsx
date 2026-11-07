@@ -1,3 +1,4 @@
+import { showNoStaffWarningModal } from '@/components/common/NoStaffWarningModal';
 import React, { useState, useRef, useEffect } from 'react';
 import { Select, Radio, Upload, Dropdown, Button, Input, Tooltip, message, Switch, Alert, Tag, Modal } from 'antd';
 import { BugOutlined, PictureOutlined, CameraOutlined, AudioOutlined, SendOutlined, PaperClipOutlined, CheckOutlined } from '@ant-design/icons';
@@ -337,14 +338,9 @@ export function ChatTab({
                     : (targetDepartment === 'HCQT' ? '/error-management/hcqt-requests' : '/error-management/it-requests');
 
                 if (data.warningMessage) {
-                    Modal.warning({
-                        title: 'Đã gửi yêu cầu - Lưu ý tiếp nhận',
-                        content: (
-                            <div className="py-2">
-                                <p className="text-amber-800 font-medium whitespace-pre-line leading-relaxed">{data.warningMessage}</p>
-                            </div>
-                        ),
-                        okText: 'Đã hiểu và hoàn tất',
+                    showNoStaffWarningModal({
+                        warningMessage: data.warningMessage,
+                        warningPhone: data.warningPhone,
                         onOk: () => {
                             router.push(redirectPath);
                         }

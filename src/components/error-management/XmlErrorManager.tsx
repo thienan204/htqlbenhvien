@@ -1,5 +1,7 @@
 'use client';
 
+import { showNoStaffWarningModal } from '@/components/common/NoStaffWarningModal';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Tag, Modal, Form, Input, Select, message, Segmented, Card, Space, Statistic, Typography, Tabs } from 'antd';
 const { Text } = Typography;
@@ -319,13 +321,10 @@ export default function XmlErrorManager() {
                 }
 
                 if (data.warningMessage) {
-                    Modal.warning({
+                    showNoStaffWarningModal({
+                        warningMessage: data.warningMessage,
+                        warningPhone: data.warningPhone,
                         title: 'Đã gửi yêu cầu IT - Lưu ý tiếp nhận',
-                        content: (
-                            <div className="py-2">
-                                <p className="text-amber-800 font-medium whitespace-pre-line leading-relaxed">{data.warningMessage}</p>
-                            </div>
-                        ),
                         okText: 'Đã hiểu'
                     });
                 }

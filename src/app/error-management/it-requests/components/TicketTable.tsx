@@ -469,6 +469,23 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 const isTransferringToMe = record.status === 'TRANSFERRING' && record.transferToId === user?.id;
                 const canQuickResolve = record.status !== 'RESOLVED' && !canReceive && isMyTask;
 
+                const dyn = record.dynamicFields as any;
+                const isCreator = Boolean(
+                    user?.role === 'ADMIN' ||
+                    (dyn && (
+                        (dyn.createdById && (dyn.createdById === user?.id || dyn.createdById === user?.staffId)) ||
+                        (dyn.creatorStaffId && (dyn.creatorStaffId === user?.id || dyn.creatorStaffId === user?.staffId)) ||
+                        (dyn.nguoi_bao_id && (dyn.nguoi_bao_id === user?.id || dyn.nguoi_bao_id === user?.staffId)) ||
+                        (dyn['Người báo'] && user?.name && dyn['Người báo'].trim().toLowerCase() === user.name.trim().toLowerCase()) ||
+                        (dyn.creatorUsername && dyn.creatorUsername === user?.username) ||
+                        (dyn.ma_nv && user?.ma_nv && dyn.ma_nv === user.ma_nv)
+                    )) ||
+                    ((record as any).senderId && ((record as any).senderId === user?.id || (record as any).senderId === user?.staffId))
+                );
+
+                const canEdit = record.status === 'PENDING' && isCreator;
+                const canDelete = record.status === 'PENDING' && (isCreator || hasPermission('MENU_ERROR_REQUESTS', 'DELETE'));
+
                 return (
                     <div className="flex flex-col items-center justify-center gap-1.5 py-1 w-full">
                         {/* 1. Nhận việc (khi chờ nhận) */}
@@ -597,35 +614,35 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                 </Badge>
                             )}
 
-                            {hasPermission('MENU_ERROR_REQUESTS', 'DELETE') && (
-                                <>
-                                    {record.status === 'PENDING' && onEditClick && (
-                                        <Button 
-                                            size="small" 
-                                            type="primary" 
-                                            className="bg-blue-600 hover:bg-blue-500 whitespace-nowrap"
-                                            onClick={() => onEditClick(record)}
-                                        >
-                                            Sửa
-                                        </Button>
-                                    )}
-                                    <Popconfirm 
-                                        title="Xóa yêu cầu?" 
-                                        description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
-                                        onConfirm={() => onDeleteTicket(record.id)}
+                            {/* Chỉ chính người gửi (hoặc Admin) mới được Sửa / Xóa khi phiếu đang Chờ xử lý (PENDING) */}
+                            {canEdit && onEditClick && (
+                                <Button 
+                                    size="small" 
+                                    type="primary" 
+                                    className="bg-blue-600 hover:bg-blue-500 whitespace-nowrap"
+                                    onClick={() => onEditClick(record)}
+                                >
+                                    Sửa
+                                </Button>
+                            )}
+
+                            {canDelete && (
+                                <Popconfirm 
+                                    title="Xóa yêu cầu?" 
+                                    description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
+                                    onConfirm={() => onDeleteTicket(record.id)}
+                                    disabled={record.status !== 'PENDING'}
+                                    okText="Xóa"
+                                    cancelText="Hủy"
+                                >
+                                    <Button 
+                                        size="small" 
+                                        danger 
+                                        icon={<DeleteOutlined />} 
                                         disabled={record.status !== 'PENDING'}
-                                        okText="Xóa"
-                                        cancelText="Hủy"
-                                    >
-                                        <Button 
-                                            size="small" 
-                                            danger 
-                                            icon={<DeleteOutlined />} 
-                                            disabled={record.status !== 'PENDING'}
-                                            title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : ''}
-                                        />
-                                    </Popconfirm>
-                                </>
+                                        title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : 'Xóa yêu cầu'}
+                                    />
+                                </Popconfirm>
                             )}
                         </div>
 

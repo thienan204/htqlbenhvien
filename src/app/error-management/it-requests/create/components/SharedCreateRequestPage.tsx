@@ -12,6 +12,7 @@ import { useITRequestData } from '../hooks/useITRequestData';
 import { useImageUpload } from '../hooks/useImageUpload';
 import { ChatTab } from '../components/ChatTab';
 import { FormTab } from '../components/FormTab';
+import { showNoStaffWarningModal } from '@/components/common/NoStaffWarningModal';
 
 interface SharedCreateRequestPageProps {
     targetDepartment: string;
@@ -116,14 +117,9 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
                 const data = await res.json().catch(() => ({}));
                 clearFiles();
                 if (data.warningMessage) {
-                    Modal.warning({
-                        title: 'Đã gửi yêu cầu - Lưu ý tiếp nhận',
-                        content: (
-                            <div className="py-2">
-                                <p className="text-amber-800 font-medium whitespace-pre-line leading-relaxed">{data.warningMessage}</p>
-                            </div>
-                        ),
-                        okText: 'Đã hiểu và hoàn tất',
+                    showNoStaffWarningModal({
+                        warningMessage: data.warningMessage,
+                        hotline: data.warningPhone,
                         onOk: () => {
                             router.push(backPath);
                         }
