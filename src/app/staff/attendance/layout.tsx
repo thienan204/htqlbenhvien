@@ -292,57 +292,56 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Nút Chấm Nhanh Ngày Đang Chọn */}
-                        <Tooltip
-                            title={
-                                isSelectedWeekend
-                                    ? `Ngày nghỉ cuối tuần (${selectedDate.format('dddd, DD/MM/YYYY')}): Cán bộ không đi làm hành chính, không thể chấm nhanh cả khoa!`
-                                    : !canEditCurrentDept
-                                    ? 'Bạn không có quyền chấm công cho khoa này'
-                                    : `Chấm nhanh đi làm cả khoa ngày ${selectedDate.format('DD/MM/YYYY')}`
-                            }
-                        >
-                            <span>
-                                <Button
-                                    type="primary"
-                                    icon={<ThunderboltOutlined />}
-                                    disabled={!canEditCurrentDept || isSelectedWeekend}
-                                    onClick={handleBulkSelectedDate}
-                                    className={isSelectedWeekend ? 'bg-slate-300 text-slate-500 font-medium' : 'bg-amber-600 hover:bg-amber-500 font-medium'}
-                                >
-                                    {isSelectedWeekend
-                                        ? `🚫 Nghỉ ${selectedDate.format('DD/MM')} (Khóa)`
-                                        : `Chấm Nhanh Ngày ${selectedDate.format('DD/MM')}`
+                        {/* Nút Chấm Nhanh & Khởi Tạo Công (Chỉ Lãnh đạo có quyền chấm công mới hiển thị) */}
+                        {canEditCurrentDept && (
+                            <>
+                                <Tooltip
+                                    title={
+                                        isSelectedWeekend
+                                            ? `Ngày nghỉ cuối tuần (${selectedDate.format('dddd, DD/MM/YYYY')}): Cán bộ không đi làm hành chính, không thể chấm nhanh cả khoa!`
+                                            : `Chấm nhanh đi làm cả khoa ngày ${selectedDate.format('DD/MM/YYYY')}`
                                     }
-                                </Button>
-                            </span>
-                        </Tooltip>
+                                >
+                                    <span>
+                                        <Button
+                                            type="primary"
+                                            icon={<ThunderboltOutlined />}
+                                            disabled={isSelectedWeekend}
+                                            onClick={handleBulkSelectedDate}
+                                            className={isSelectedWeekend ? 'bg-slate-300 text-slate-500 font-medium' : 'bg-amber-600 hover:bg-amber-500 font-medium'}
+                                        >
+                                            {isSelectedWeekend
+                                                ? `🚫 Nghỉ ${selectedDate.format('DD/MM')} (Khóa)`
+                                                : `Chấm Nhanh Ngày ${selectedDate.format('DD/MM')}`
+                                            }
+                                        </Button>
+                                    </span>
+                                </Tooltip>
 
-                        {/* Nút Khởi Tạo Công Cả Tháng */}
-                        <Popconfirm
-                            title="⚡ Khởi tạo công cả tháng?"
-                            description={
-                                <div className="max-w-xs text-xs space-y-1.5 py-1">
-                                    <p>Tự động điền công đi làm (<b>+</b>) cho tất cả cán bộ trong tháng <b>{selectedDate.format('MM/YYYY')}</b>.</p>
-                                    <p className="text-emerald-700 font-medium">✓ <b>Mặc định điền Thứ 2 - Thứ 6</b> (tự động bỏ qua Thứ 7 & Chủ Nhật).</p>
-                                    <p className="text-purple-700 font-medium">✓ Tự động bỏ qua các ngày nghỉ Lễ/Tết đã cấu hình.</p>
-                                    <p className="text-blue-700">✓ Tự động điền Thứ 7/CN nếu có lịch làm bù.</p>
-                                    <p className="text-slate-500 italic">✓ Không ghi đè các ô đã chấm trước đó.</p>
-                                </div>
-                            }
-                            onConfirm={handleInitMonth}
-                            okText="Khởi tạo ngay"
-                            cancelText="Hủy"
-                            disabled={!canEditCurrentDept}
-                        >
-                            <Button 
-                                disabled={!canEditCurrentDept} 
-                                icon={<ThunderboltOutlined className="text-amber-500" />}
-                                className="font-semibold text-slate-700 hover:text-amber-600 border-amber-300 hover:border-amber-400 bg-amber-50/50"
-                            >
-                                ⚡ Khởi Tạo Công Cả Tháng
-                            </Button>
-                        </Popconfirm>
+                                <Popconfirm
+                                    title="⚡ Khởi tạo công cả tháng?"
+                                    description={
+                                        <div className="max-w-xs text-xs space-y-1.5 py-1">
+                                            <p>Tự động điền công đi làm (<b>+</b>) cho tất cả cán bộ trong tháng <b>{selectedDate.format('MM/YYYY')}</b>.</p>
+                                            <p className="text-emerald-700 font-medium">✓ <b>Mặc định điền Thứ 2 - Thứ 6</b> (tự động bỏ qua Thứ 7 & Chủ Nhật).</p>
+                                            <p className="text-purple-700 font-medium">✓ Tự động bỏ qua các ngày nghỉ Lễ/Tết đã cấu hình.</p>
+                                            <p className="text-blue-700">✓ Tự động điền Thứ 7/CN nếu có lịch làm bù.</p>
+                                            <p className="text-slate-500 italic">✓ Không ghi đè các ô đã chấm trước đó.</p>
+                                        </div>
+                                    }
+                                    onConfirm={handleInitMonth}
+                                    okText="Khởi tạo ngay"
+                                    cancelText="Hủy"
+                                >
+                                    <Button 
+                                        icon={<ThunderboltOutlined className="text-amber-500" />}
+                                        className="font-semibold text-slate-700 hover:text-amber-600 border-amber-300 hover:border-amber-400 bg-amber-50/50"
+                                    >
+                                        ⚡ Khởi Tạo Công Cả Tháng
+                                    </Button>
+                                </Popconfirm>
+                            </>
+                        )}
 
                         {/* Nút Xuất Excel */}
                         <Dropdown menu={{ items: exportMenuItems }}>

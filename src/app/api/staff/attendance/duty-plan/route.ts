@@ -9,6 +9,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
         }
 
+        const isSuperAdmin = user.role === 'ADMIN';
+        const isTCCB = user.role === 'TCCB' || (user.ma_khoa && ['TCCB', 'TC_CB', 'P02'].includes(user.ma_khoa.toUpperCase()));
+        const isDirector = user.userLevel === 'LEVEL_1_BGD' || user.isDirector;
+        const isDeptLeader = Boolean(
+            user.userLevel === 'LEVEL_2_LEADER' || 
+            user.isDeptLeader || 
+            user.isManager
+        );
+        const isLeader = isSuperAdmin || isTCCB || isDirector || isDeptLeader;
+
+        if (!isLeader) {
+            return NextResponse.json({ error: 'Chỉ lãnh đạo khoa/phòng mới có quyền phân lịch trực kế hoạch!' }, { status: 403 });
+        }
+
         const body = await request.json();
         const {
             staffIds, // string[]

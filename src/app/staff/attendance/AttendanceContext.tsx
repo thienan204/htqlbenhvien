@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import dayjs from 'dayjs';
 import { message } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
@@ -132,6 +132,7 @@ interface AttendanceContextType {
     matrixData: AttendanceMatrixResponse | null;
     filteredStaffData: StaffMatrixData[];
     canEditCurrentDept: boolean;
+    isLeader: boolean;
     fetchData: () => Promise<void>;
     handleUpdateAttendanceCell: (staffId: string, day: number, code: string, dutyRecordId?: string, session?: string) => Promise<void>;
     handleUpdateDutyCell: (staffId: string, day: number, dutyCode: string) => Promise<void>;
@@ -155,7 +156,10 @@ const AttendanceContext = createContext<AttendanceContextType | undefined>(undef
 export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
-    const [selectedDept, setSelectedDept] = useState<string>('KP046');
+    const [selectedDept, setSelectedDept] = useState<string>(() => {
+        if (user?.ma_khoa && user.role !== 'ADMIN') return user.ma_khoa;
+        return user?.ma_khoa || 'KP046';
+    });
     const [searchText, setSearchText] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [matrixData, setMatrixData] = useState<AttendanceMatrixResponse | null>(null);
@@ -168,20 +172,31 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     const [showQuickModal, setShowQuickModal] = useState<boolean>(false);
     const [showGuide, setShowGuide] = useState<boolean>(false);
 
+    // Xác định người dùng có phải Lãnh đạo khoa/phòng hay không
+    const isLeader = useMemo(() => {
+        if (!user) return false;
+        if (user.role === 'ADMIN' || user.role === 'TCCB') return true;
+        if (user.userLevel === 'LEVEL_1_BGD' || user.userLevel === 'LEVEL_2_LEADER') return true;
+        if (user.isDeptLeader || user.isManager) return true;
+        const cv = (user.chuc_vu || user.chuc_vu_code || '').toLowerCase();
+        if (cv.includes('trưởng') || cv.includes('phó') || cv.includes('phụ trách') || cv.includes('tổ trưởng')) return true;
+        return false;
+    }, [user]);
+
     // Khởi tạo khoa phòng theo user
     useEffect(() => {
         if (user?.ma_khoa && user.role !== 'ADMIN') {
             setSelectedDept(user.ma_khoa);
         }
-    }, [user]);
+    }, [user?.ma_khoa, user?.role]);
 
-    // Quyền chỉnh sửa khoa phòng
+    // Quyền chỉnh sửa khoa phòng: BẮT BUỘC là Lãnh đạo (hoặc Admin/TCCB) và đúng khoa mình phụ trách
     const canEditCurrentDept = useMemo(() => {
-        if (!user) return false;
-        if (user.role === 'ADMIN') return true;
+        if (!user || !isLeader) return false;
+        if (user.role === 'ADMIN' || user.role === 'TCCB') return true;
         if (!user.ma_khoa) return false;
         return user.ma_khoa === selectedDept;
-    }, [user, selectedDept]);
+    }, [user, isLeader, selectedDept]);
 
     const getBasePath = () => {
         if (typeof window !== 'undefined') {
@@ -191,12 +206,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         return '';
     };
 
+    const fetchRequestIdRef = useRef<number>(0);
+
     const fetchData = async () => {
+        const reqId = ++fetchRequestIdRef.current;
         try {
             setLoading(true);
             const monthYear = selectedDate.format('YYYY-MM');
             const basePath = getBasePath();
-            const res = await fetch(`${basePath}/api/staff/attendance/matrix?monthYear=${monthYear}&ma_khoa=${selectedDept}`);
+            const deptToFetch = (user?.ma_khoa && user.role !== 'ADMIN' && !isLeader) ? user.ma_khoa : selectedDept;
+            const res = await fetch(`${basePath}/api/staff/attendance/matrix?monthYear=${monthYear}&ma_khoa=${deptToFetch}`);
             if (!res.ok) {
                 try {
                     const errData = await res.json();
@@ -207,12 +226,19 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
                 return;
             }
             const data = await res.json();
-            setMatrixData(data);
+            if (reqId === fetchRequestIdRef.current) {
+                setMatrixData(data);
+                if (data.ma_khoa && data.ma_khoa !== selectedDept && user?.role !== 'ADMIN') {
+                    setSelectedDept(data.ma_khoa);
+                }
+            }
         } catch (error) {
             console.error('Fetch error:', error);
             message.error('Không thể kết nối máy chủ');
         } finally {
-            setLoading(false);
+            if (reqId === fetchRequestIdRef.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -415,6 +441,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
                 matrixData,
                 filteredStaffData,
                 canEditCurrentDept,
+                isLeader,
                 fetchData,
                 handleUpdateAttendanceCell,
                 handleUpdateDutyCell,

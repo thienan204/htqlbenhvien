@@ -18,7 +18,24 @@ export async function GET(request: Request) {
         const defaultMonthYear = `${currentYear}-${currentMonth}`;
 
         const monthYear = searchParams.get('monthYear') || defaultMonthYear;
-        const ma_khoa = searchParams.get('ma_khoa') || (user.ma_khoa && user.ma_khoa !== 'KP046' && user.role !== 'ADMIN' ? user.ma_khoa : 'KP046');
+
+        const isSuperAdmin = user.role === 'ADMIN';
+        const isTCCB = user.role === 'TCCB' || (user.ma_khoa && ['TCCB', 'TC_CB', 'P02'].includes(user.ma_khoa.toUpperCase()));
+        const isDirector = user.userLevel === 'LEVEL_1_BGD' || user.isDirector;
+        const isDeptLeader = Boolean(
+            user.userLevel === 'LEVEL_2_LEADER' || 
+            user.isDeptLeader || 
+            user.isManager
+        );
+        const isLeader = isSuperAdmin || isTCCB || isDirector || isDeptLeader;
+
+        let ma_khoa = searchParams.get('ma_khoa');
+        if (!isSuperAdmin && !isTCCB && !isDirector) {
+            // Tài khoản khoa/phòng: bắt buộc xem khoa của mình
+            ma_khoa = user.ma_khoa || ma_khoa || 'KP046';
+        } else {
+            ma_khoa = ma_khoa || user.ma_khoa || 'KP046';
+        }
 
         const [yearStr, monthStr] = monthYear.split('-');
         const year = parseInt(yearStr, 10);
@@ -88,7 +105,7 @@ export async function GET(request: Request) {
         }
 
         // Lấy danh sách nhân sự của phòng ban
-        const staffList = await prisma.staff.findMany({
+        const rawStaffList = await prisma.staff.findMany({
             where: { ma_khoa },
             include: {
                 chuc_vu_ref: true,
@@ -109,6 +126,18 @@ export async function GET(request: Request) {
                 { ma_nv: 'asc' }
             ]
         });
+
+        // Nếu là nhân viên thông thường (không phải lãnh đạo): CHỈ XEM DUY NHẤT CHÍNH MÌNH
+        let staffList = rawStaffList;
+        if (!isLeader) {
+            staffList = rawStaffList.filter(s => 
+                s.id === user.staffId || 
+                (user.ma_nv && s.ma_nv === user.ma_nv) || 
+                (user.cccd && s.cccd === user.cccd) || 
+                s.user?.id === user.id ||
+                s.ma_nv === user.username
+            );
+        }
 
         // Sắp xếp ưu tiên: Trưởng khoa/phòng, Phụ trách khoa -> Phó khoa/phòng -> Điều dưỡng trưởng -> Cán bộ
         staffList.sort((a, b) => {
@@ -488,14 +517,18 @@ export async function GET(request: Request) {
             month,
             ma_khoa,
             ten_khoa: department?.ten_khoa || ma_khoa,
-            departments: allDepartments,
+            departments: (isSuperAdmin || isTCCB || isDirector) 
+                ? allDepartments 
+                : allDepartments.filter(d => d.ma_khoa === ma_khoa),
             daysInMonth,
             daysInfo,
             staffData,
             totalDeptAttendance,
             totalDeptDuty,
             totalDeptOvertime,
-            lockMap
+            lockMap,
+            isLeader,
+            canEdit: isLeader && (isSuperAdmin || isTCCB || user.ma_khoa === ma_khoa)
         });
     } catch (error: any) {
         console.error('Error in attendance matrix:', error);

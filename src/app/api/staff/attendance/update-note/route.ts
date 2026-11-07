@@ -5,6 +5,23 @@ import { getCurrentUserFromRequest } from '@/actions/auth';
 export async function POST(req: NextRequest) {
     try {
         const user = await getCurrentUserFromRequest(req);
+        if (!user) {
+            return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+        }
+
+        const isSuperAdmin = user.role === 'ADMIN';
+        const isTCCB = user.role === 'TCCB' || (user.ma_khoa && ['TCCB', 'TC_CB', 'P02'].includes(user.ma_khoa.toUpperCase()));
+        const isDirector = user.userLevel === 'LEVEL_1_BGD' || user.isDirector;
+        const isDeptLeader = Boolean(
+            user.userLevel === 'LEVEL_2_LEADER' || 
+            user.isDeptLeader || 
+            user.isManager
+        );
+        const isLeader = isSuperAdmin || isTCCB || isDirector || isDeptLeader;
+
+        if (!isLeader) {
+            return NextResponse.json({ error: 'Chỉ lãnh đạo khoa/phòng mới có quyền sửa ghi chú tháng!' }, { status: 403 });
+        }
         const body = await req.json();
         const { staffId, ma_khoa, monthYear, note } = body;
 
