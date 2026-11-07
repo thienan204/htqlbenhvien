@@ -22,11 +22,12 @@ export const metadata: Metadata = {
   manifest: "/htqlbenhvien/manifest.json",
   icons: {
     icon: [
-      { url: '/htqlbenhvien/logo.png', type: 'image/png' },
+      { url: '/htqlbenhvien/app-icon.png', type: 'image/png' },
+      { url: '/htqlbenhvien/logo.ico' },
       { url: '/htqlbenhvien/favicon.ico' }
     ],
-    shortcut: '/htqlbenhvien/logo.png',
-    apple: '/htqlbenhvien/logo.png',
+    shortcut: '/htqlbenhvien/app-icon.png',
+    apple: '/htqlbenhvien/app-icon.png',
   },
 };
 
