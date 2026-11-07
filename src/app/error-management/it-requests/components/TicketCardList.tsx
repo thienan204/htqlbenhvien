@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Tag, Badge, Tooltip, Popconfirm, Modal, Input, message, Pagination } from 'antd';
+import { Button, Tag, Badge, Tooltip, Popconfirm, Modal, Input, message, Pagination, Dropdown } from 'antd';
 import { 
     CheckCircleOutlined, 
     LoadingOutlined, 
@@ -17,7 +17,8 @@ import {
     ShareAltOutlined, 
     PauseCircleOutlined, 
     PlayCircleOutlined,
-    PaperClipOutlined
+    PaperClipOutlined,
+    EllipsisOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -475,71 +476,141 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 </div>
 
                                 {/* Nút phụ: Thảo luận chat, Link, XML, Sửa, Xóa */}
-                                <div className="flex items-center gap-1">
-                                    {onChatClick && (
-                                        <Badge count={ticket.unreadMessageCount || 0} size="small" offset={[-2, 2]}>
-                                            <Button 
-                                                size="middle" 
-                                                type="dashed" 
-                                                icon={<MessageOutlined />} 
-                                                title="Thảo luận / Trao đổi" 
-                                                className="rounded-xl"
-                                                onClick={() => onChatClick(ticket)} 
-                                            />
-                                        </Badge>
-                                    )}
+                                <div className="flex items-center gap-1.5">
+                                    {(() => {
+                                        const canProcess = Boolean(
+                                            hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && 
+                                            (user?.role === 'ADMIN' || user?.role === targetDepartment)
+                                        );
 
-                                    <Tooltip title="Sao chép Link phiếu">
-                                        <Button 
-                                            size="middle"
-                                            type="default"
-                                            icon={<LinkOutlined />}
-                                            className="rounded-xl text-slate-600"
-                                            onClick={() => copyTicketShareLink(ticket.id)}
-                                        />
-                                    </Tooltip>
+                                        const moreMenuItems: any[] = [];
+                                        if (canEdit && onEditClick) {
+                                            moreMenuItems.push({
+                                                key: 'edit',
+                                                icon: <EditOutlined className="text-blue-600" />,
+                                                label: <span className="font-medium text-slate-700">Sửa yêu cầu</span>,
+                                                onClick: () => onEditClick(ticket)
+                                            });
+                                        }
+                                        if (canDelete) {
+                                            moreMenuItems.push({
+                                                key: 'delete',
+                                                danger: true,
+                                                icon: <DeleteOutlined />,
+                                                label: <span className="font-medium">Xóa yêu cầu</span>,
+                                                onClick: () => {
+                                                    Modal.confirm({
+                                                        title: 'Xóa yêu cầu?',
+                                                        content: 'Bạn có chắc chắn muốn xóa yêu cầu này?',
+                                                        okText: 'Xóa',
+                                                        okType: 'danger',
+                                                        cancelText: 'Hủy',
+                                                        onOk: () => onDeleteTicket(ticket.id)
+                                                    });
+                                                }
+                                            });
+                                        }
+                                        if (ticket.ma_ba && ticket.hasXml) {
+                                            moreMenuItems.push({
+                                                key: 'xml',
+                                                icon: <FileTextOutlined className="text-purple-600" />,
+                                                label: <span>Xem hồ sơ XML gốc</span>,
+                                                onClick: () => window.open(`/xml1-viewer?search=${ticket.ma_ba}`, '_blank')
+                                            });
+                                        }
+                                        moreMenuItems.push({
+                                            key: 'share',
+                                            icon: <LinkOutlined className="text-slate-500" />,
+                                            label: <span>Sao chép Link</span>,
+                                            onClick: () => copyTicketShareLink(ticket.id)
+                                        });
 
-                                    {ticket.ma_ba && ticket.hasXml && (
-                                        <Tooltip title="Xem hồ sơ XML gốc">
-                                            <Button 
-                                                size="middle" 
-                                                type="default"
-                                                icon={<FileTextOutlined />}
-                                                className="rounded-xl"
-                                                onClick={() => window.open(`/xml1-viewer?search=${ticket.ma_ba}`, '_blank')}
-                                            />
-                                        </Tooltip>
-                                    )}
+                                        return (
+                                            <>
+                                                {onChatClick && (
+                                                    <Badge count={ticket.unreadMessageCount || 0} size="small" offset={[-2, 2]}>
+                                                        <Button 
+                                                            size="middle" 
+                                                            type="dashed" 
+                                                            icon={<MessageOutlined />} 
+                                                            title="Thảo luận / Trao đổi" 
+                                                            className="rounded-xl"
+                                                            onClick={() => onChatClick(ticket)} 
+                                                        />
+                                                    </Badge>
+                                                )}
 
-                                    {/* Chỉ chính người gửi (hoặc Admin) mới được Sửa / Xóa khi phiếu đang Chờ xử lý */}
-                                    {canEdit && onEditClick && (
-                                        <Button 
-                                            size="middle" 
-                                            type="default" 
-                                            icon={<EditOutlined />}
-                                            className="rounded-xl text-blue-600 border-blue-300 bg-blue-50/70 hover:bg-blue-100 font-semibold text-xs flex items-center gap-1 shadow-2xs"
-                                            onClick={() => onEditClick(ticket)}
-                                        >
-                                            <span>Sửa</span>
-                                        </Button>
-                                    )}
-                                    {canDelete && (
-                                        <Popconfirm 
-                                            title="Xóa yêu cầu?" 
-                                            description="Bạn có chắc chắn muốn xóa yêu cầu này?"
-                                            onConfirm={() => onDeleteTicket(ticket.id)}
-                                            okText="Xóa"
-                                            cancelText="Hủy"
-                                        >
-                                            <Button 
-                                                size="middle" 
-                                                danger 
-                                                icon={<DeleteOutlined />} 
-                                                className="rounded-xl bg-red-50/70 border-red-200 text-red-600 hover:bg-red-100 shadow-2xs"
-                                                title="Xóa yêu cầu"
-                                            />
-                                        </Popconfirm>
-                                    )}
+                                                {/* Khi có nút Xử lý (Admin / CNTT): Gom thao tác phụ vào menu 3 chấm để thẻ gọn gàng */}
+                                                {canProcess ? (
+                                                    moreMenuItems.length > 0 && (
+                                                        <Dropdown menu={{ items: moreMenuItems }} trigger={['click']} placement="bottomRight">
+                                                            <Button 
+                                                                size="middle" 
+                                                                type="default" 
+                                                                icon={<EllipsisOutlined className="text-slate-700 text-base" />} 
+                                                                className="rounded-xl border-slate-200"
+                                                                title="Thao tác khác"
+                                                            />
+                                                        </Dropdown>
+                                                    )
+                                                ) : (
+                                                    /* Khi là tài khoản khoa phòng: Hiển thị trực tiếp các nút để thao tác 1 chạm */
+                                                    <>
+                                                        <Tooltip title="Sao chép Link phiếu">
+                                                            <Button 
+                                                                size="middle"
+                                                                type="default"
+                                                                icon={<LinkOutlined />}
+                                                                className="rounded-xl text-slate-600"
+                                                                onClick={() => copyTicketShareLink(ticket.id)}
+                                                            />
+                                                        </Tooltip>
+
+                                                        {ticket.ma_ba && ticket.hasXml && (
+                                                            <Tooltip title="Xem hồ sơ XML gốc">
+                                                                <Button 
+                                                                    size="middle" 
+                                                                    type="default"
+                                                                    icon={<FileTextOutlined />}
+                                                                    className="rounded-xl"
+                                                                    onClick={() => window.open(`/xml1-viewer?search=${ticket.ma_ba}`, '_blank')}
+                                                                />
+                                                            </Tooltip>
+                                                        )}
+
+                                                        {canEdit && onEditClick && (
+                                                            <Button 
+                                                                size="middle" 
+                                                                type="default" 
+                                                                icon={<EditOutlined />}
+                                                                className="rounded-xl text-blue-600 border-blue-300 bg-blue-50/70 hover:bg-blue-100 font-semibold text-xs flex items-center gap-1 shadow-2xs"
+                                                                onClick={() => onEditClick(ticket)}
+                                                            >
+                                                                <span>Sửa</span>
+                                                            </Button>
+                                                        )}
+                                                        {canDelete && (
+                                                            <Popconfirm 
+                                                                title="Xóa yêu cầu?" 
+                                                                description="Bạn có chắc chắn muốn xóa yêu cầu này?"
+                                                                onConfirm={() => onDeleteTicket(ticket.id)}
+                                                                okText="Xóa"
+                                                                cancelText="Hủy"
+                                                            >
+                                                                <Button 
+                                                                    size="middle" 
+                                                                    danger 
+                                                                    icon={<DeleteOutlined />} 
+                                                                    className="rounded-xl bg-red-50/70 border-red-200 text-red-600 hover:bg-red-100 shadow-2xs"
+                                                                    title="Xóa yêu cầu"
+                                                                />
+                                                            </Popconfirm>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>

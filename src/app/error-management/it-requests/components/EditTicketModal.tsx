@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Modal, Form, Input, Radio, message, Button, Upload } from 'antd';
+import { Modal, Form, Input, Segmented, message, Button } from 'antd';
 import { Ticket } from '../types';
 import { useImageUpload } from '../create/hooks/useImageUpload';
 import { 
@@ -171,7 +171,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
         <>
             <Modal
                 title={
-                    <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
                         <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center text-lg font-bold shadow-2xs shrink-0">
                             <EditOutlined />
                         </div>
@@ -187,9 +187,16 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                 }
                 open={visible}
                 onCancel={onCancel}
-                width={600}
+                width={580}
                 centered
-                className="max-w-[95vw] sm:max-w-[600px]"
+                className="max-w-[95vw] sm:max-w-[580px]"
+                styles={{
+                    body: {
+                        maxHeight: 'calc(85vh - 120px)',
+                        overflowY: 'auto',
+                        paddingRight: '4px'
+                    }
+                }}
                 footer={
                     <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                         <Button 
@@ -215,7 +222,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                     <Form form={form} preserve={false} layout="vertical" className="mt-4 space-y-1">
                         {/* Hiển thị Mã Bệnh Án / Mã LK nếu có (Chỉ đọc) */}
                         {ticket?.ma_ba && (
-                            <div className="mb-3 p-2.5 bg-blue-50/70 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900">
+                            <div className="mb-3.5 p-2.5 bg-blue-50/70 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900">
                                 <div className="flex items-center gap-1.5 font-medium">
                                     <FileTextOutlined className="text-blue-600" />
                                     <span>Hồ sơ bệnh án liên quan:</span>
@@ -231,16 +238,17 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                                 name="category"
                                 label={<span className="font-semibold text-slate-700 text-xs sm:text-sm">Loại sự cố</span>}
                                 rules={[{ required: true, message: 'Vui lòng chọn loại sự cố' }]}
-                                className="mb-3"
+                                className="mb-3.5"
                             >
-                                <Radio.Group buttonStyle="solid" className="flex w-full gap-2">
-                                    <Radio.Button value="SOFTWARE" className="flex-1 text-center rounded-xl! h-9 leading-9 font-medium text-xs sm:text-sm">
-                                        💻 Phần mềm (BAĐT)
-                                    </Radio.Button>
-                                    <Radio.Button value="HARDWARE" className="flex-1 text-center rounded-xl! h-9 leading-9 font-medium text-xs sm:text-sm">
-                                        🖨️ Thiết bị / Sửa chữa
-                                    </Radio.Button>
-                                </Radio.Group>
+                                <Segmented 
+                                    block 
+                                    size="large"
+                                    className="w-full !h-11 p-1 bg-slate-100/90 rounded-xl font-medium text-xs sm:text-sm border border-slate-200"
+                                    options={[
+                                        { label: '💻 Phần mềm (BAĐT)', value: 'SOFTWARE' },
+                                        { label: '🖨️ Thiết bị / Sửa chữa', value: 'HARDWARE' }
+                                    ]}
+                                />
                             </Form.Item>
                         )}
 
@@ -248,7 +256,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                             name="ten_loi"
                             label={<span className="font-semibold text-slate-700 text-xs sm:text-sm">Mô tả sự cố / Lỗi cần báo <span className="text-red-500">*</span></span>}
                             rules={[{ required: true, message: 'Vui lòng nhập mô tả sự cố' }]}
-                            className="mb-3"
+                            className="mb-3.5"
                         >
                             <Input.TextArea 
                                 rows={3} 
@@ -257,12 +265,12 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                             />
                         </Form.Item>
 
-                        {/* Responsive 1 cột trên mobile, 2 cột trên tablet/desktop */}
+                        {/* Responsive: 1 cột trên mobile, 2 cột trên tablet/desktop */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-1">
                             <Form.Item
                                 name="nguoi_bao"
                                 label={<span className="font-semibold text-slate-700 text-xs sm:text-sm">Người báo</span>}
-                                className="mb-2 sm:mb-3"
+                                className="mb-2 sm:mb-3.5"
                             >
                                 <Input 
                                     prefix={<UserOutlined className="text-slate-400 mr-1" />}
@@ -274,7 +282,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                             <Form.Item
                                 name="sdt"
                                 label={<span className="font-semibold text-slate-700 text-xs sm:text-sm">Số điện thoại liên hệ</span>}
-                                className="mb-2 sm:mb-3"
+                                className="mb-2 sm:mb-3.5"
                             >
                                 <Input 
                                     prefix={<PhoneOutlined className="text-slate-400 mr-1" />}
@@ -287,7 +295,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                         <Form.Item
                             name="ghi_chu"
                             label={<span className="font-semibold text-slate-700 text-xs sm:text-sm">Ghi chú thêm</span>}
-                            className="mb-3"
+                            className="mb-3.5"
                         >
                             <Input.TextArea 
                                 rows={2} 
@@ -296,44 +304,44 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                             />
                         </Form.Item>
                         
-                        {/* Khu vực đính kèm tệp & chụp ảnh */}
-                        <Form.Item 
-                            label={
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="font-semibold text-slate-700 text-xs sm:text-sm flex items-center gap-1.5">
-                                        <PaperClipOutlined className="text-blue-600" />
-                                        Hình ảnh & Tệp đính kèm (Tuỳ chọn)
+                        {/* Khu vực đính kèm tệp & chụp ảnh (Tuyệt đối không dùng Antd Upload wrapper để không sinh ô vuông rỗng) */}
+                        <div className="pt-1 mb-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="font-semibold text-slate-700 text-xs sm:text-sm flex items-center gap-1.5">
+                                    <PaperClipOutlined className="text-blue-600" />
+                                    Hình ảnh & Tệp đính kèm (Tuỳ chọn)
+                                </span>
+                                {fileList.length > 0 && (
+                                    <span className="text-[11px] text-blue-600 font-semibold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                                        {fileList.length} tệp
                                     </span>
-                                    {fileList.length > 0 && (
-                                        <span className="text-[11px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                                            {fileList.length} tệp
-                                        </span>
-                                    )}
-                                </div>
-                            }
-                            className="mb-1"
-                        >
-                            {/* Hai nút hành động to, rõ ràng, thân thiện cho ngón tay trên mobile */}
+                                )}
+                            </div>
+
+                            {/* 2 Nút bấm thuần chuẩn Mobile & Desktop - 100% không còn ô vuông nét đứt */}
                             <div className="flex flex-col sm:flex-row gap-2.5 mb-2.5">
-                                <Upload {...uploadProps} showUploadList={false} className="flex-1 w-full">
-                                    <Button 
-                                        icon={<PictureOutlined className="text-blue-600 text-base" />}
-                                        className="w-full h-10 rounded-xl bg-blue-50/70 hover:bg-blue-100 text-blue-700 border-blue-200 font-medium flex items-center justify-center gap-1.5 shadow-2xs"
-                                    >
-                                        Chọn ảnh / tệp từ máy
-                                    </Button>
-                                </Upload>
-                                <Button 
-                                    icon={<CameraOutlined className="text-emerald-600 text-base" />} 
-                                    onClick={() => {
-                                        document.getElementById('camera-input-edit')?.click();
-                                    }}
-                                    className="flex-1 h-10 rounded-xl bg-emerald-50/70 hover:bg-emerald-100 text-emerald-700 border-emerald-200 font-medium flex items-center justify-center gap-1.5 shadow-2xs"
-                                >
-                                    Chụp ảnh (Điện thoại)
-                                </Button>
                                 <input 
-                                    id="camera-input-edit"
+                                    id="file-input-edit" 
+                                    type="file" 
+                                    accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" 
+                                    multiple 
+                                    style={{ display: 'none' }} 
+                                    onChange={(e) => {
+                                        handleFileChange(e);
+                                        e.target.value = '';
+                                    }} 
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => document.getElementById('file-input-edit')?.click()}
+                                    className="flex-1 h-11 px-4 rounded-xl bg-blue-50/80 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-98"
+                                >
+                                    <PictureOutlined className="text-base text-blue-600" />
+                                    <span>Chọn ảnh / tệp từ máy</span>
+                                </button>
+
+                                <input 
+                                    id="camera-input-edit" 
                                     type="file" 
                                     accept="image/*" 
                                     capture="environment" 
@@ -343,25 +351,70 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                                         e.target.value = '';
                                     }} 
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => document.getElementById('camera-input-edit')?.click()}
+                                    className="flex-1 h-11 px-4 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-98"
+                                >
+                                    <CameraOutlined className="text-base text-emerald-600" />
+                                    <span>Chụp ảnh (Điện thoại)</span>
+                                </button>
                             </div>
 
                             <div className="text-[11px] text-slate-400 italic mb-2.5">
                                 💡 Mẹo: Bạn có thể nhấn <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] text-slate-700 font-mono font-bold">Ctrl + V</kbd> để dán ảnh chụp màn hình nhanh vào đây.
                             </div>
 
-                            {/* Danh sách tệp đã đính kèm (chỉ hiện khi có tệp, không bị ô vuông rỗng) */}
+                            {/* Lưới xem trước ảnh tự tạo (Custom Grid) - Rõ nét, có nút xóa đỏ ✕ */}
                             {fileList.length > 0 && (
-                                <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/90">
-                                    <Upload
-                                        {...uploadProps}
-                                        listType="picture-card"
-                                        fileList={fileList}
-                                    >
-                                        {null}
-                                    </Upload>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 p-3 bg-slate-50/80 rounded-2xl border border-slate-200">
+                                    {fileList.map((file, idx) => {
+                                        const isImg = file.url || file.thumbUrl;
+                                        return (
+                                            <div 
+                                                key={file.uid || idx} 
+                                                className="group relative rounded-xl overflow-hidden border border-slate-200 bg-white aspect-square flex flex-col items-center justify-center shadow-2xs"
+                                            >
+                                                {isImg ? (
+                                                    <img 
+                                                        src={file.url || file.thumbUrl} 
+                                                        alt={file.name} 
+                                                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                                                        onClick={() => {
+                                                            uploadProps.onPreview(file);
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div 
+                                                        className="p-2 text-center cursor-pointer flex flex-col items-center justify-center h-full w-full"
+                                                        onClick={() => {
+                                                            if (file.url && !file.url.startsWith('blob:')) window.open(file.url, '_blank');
+                                                        }}
+                                                    >
+                                                        <FileTextOutlined className="text-2xl text-blue-500 mb-1" />
+                                                        <span className="text-[10px] text-slate-600 font-medium line-clamp-2 px-1 break-all">
+                                                            {file.name}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {/* Nút xóa đỏ nổi bật */}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        uploadProps.onRemove(file);
+                                                    }}
+                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xs shadow-md cursor-pointer transition-transform active:scale-90 z-10 font-bold"
+                                                    title="Xóa tệp này"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
-                        </Form.Item>
+                        </div>
                     </Form>
                 </div>
             </Modal>

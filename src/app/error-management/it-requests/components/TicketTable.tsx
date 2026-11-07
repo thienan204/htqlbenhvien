@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge, Tooltip, Modal, Input } from 'antd';
-import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined, PauseCircleOutlined, PlayCircleOutlined, EditOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge, Tooltip, Modal, Input, Dropdown } from 'antd';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined, PauseCircleOutlined, PlayCircleOutlined, EditOutlined, EllipsisOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -590,67 +590,141 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
                         {/* Hàng dưới: Xử lý, Thảo luận, XML, Sửa, Xóa */}
                         <div className="flex items-center justify-center gap-1.5 flex-nowrap">
-                            {record.ma_ba && record.hasXml && (
-                                <Button 
-                                    size="small" 
-                                    type="default"
-                                    icon={<FileTextOutlined />}
-                                    title="Xem hồ sơ XML gốc"
-                                    onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')}
-                                />
-                            )}
+                            {(() => {
+                                const canProcess = Boolean(
+                                    hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && 
+                                    (user?.role === 'ADMIN' || user?.role === targetDepartment)
+                                );
 
-                            {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
-                                <Button size="small" type="primary" ghost className="whitespace-nowrap" onClick={() => onProcessClick(record)}>
-                                    Xử lý
-                                </Button>
-                            )}
-                            
-                            {onChatClick && (
-                                <Badge count={record.unreadMessageCount || 0} size="small" offset={[-4, 4]}>
-                                    <Button 
-                                        size="small" 
-                                        type="dashed" 
-                                        icon={<MessageOutlined />} 
-                                        title={record.unreadMessageCount ? `${record.unreadMessageCount} tin chưa đọc` : 'Thảo luận'} 
-                                        onClick={() => onChatClick(record)} 
-                                    />
-                                </Badge>
-                            )}
+                                // Gom các thao tác phụ vào menu 3 chấm khi đã có nút Xử lý (như tài khoản Admin/CNTT)
+                                const moreMenuItems: any[] = [];
+                                if (canEdit && onEditClick) {
+                                    moreMenuItems.push({
+                                        key: 'edit',
+                                        icon: <EditOutlined className="text-blue-600" />,
+                                        label: <span className="font-medium text-slate-700">Sửa yêu cầu</span>,
+                                        onClick: () => onEditClick(record)
+                                    });
+                                }
+                                if (canDelete) {
+                                    moreMenuItems.push({
+                                        key: 'delete',
+                                        danger: true,
+                                        icon: <DeleteOutlined />,
+                                        label: <span className="font-medium">Xóa yêu cầu</span>,
+                                        onClick: () => {
+                                            Modal.confirm({
+                                                title: 'Xóa yêu cầu?',
+                                                content: 'Bạn có chắc chắn muốn xóa yêu cầu này không?',
+                                                okText: 'Xóa',
+                                                okType: 'danger',
+                                                cancelText: 'Hủy',
+                                                onOk: () => onDeleteTicket(record.id)
+                                            });
+                                        }
+                                    });
+                                }
+                                if (record.ma_ba && record.hasXml) {
+                                    moreMenuItems.push({
+                                        key: 'xml',
+                                        icon: <FileTextOutlined className="text-purple-600" />,
+                                        label: <span>Xem hồ sơ XML</span>,
+                                        onClick: () => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')
+                                    });
+                                }
+                                moreMenuItems.push({
+                                    key: 'share',
+                                    icon: <LinkOutlined className="text-slate-500" />,
+                                    label: <span>Sao chép Link</span>,
+                                    onClick: () => copyTicketShareLink(record.id)
+                                });
 
-                            {/* Chỉ chính người gửi (hoặc Admin) mới được Sửa / Xóa khi phiếu đang Chờ xử lý (PENDING) */}
-                            {canEdit && onEditClick && (
-                                <Tooltip title="Chỉnh sửa nội dung yêu cầu">
-                                    <Button 
-                                        size="small" 
-                                        type="default" 
-                                        icon={<EditOutlined className="text-blue-600" />}
-                                        className="hover:border-blue-500 hover:bg-blue-50 text-blue-600 rounded-md font-medium"
-                                        onClick={() => onEditClick(record)}
-                                    >
-                                        <span className="hidden xl:inline text-xs ml-0.5">Sửa</span>
-                                    </Button>
-                                </Tooltip>
-                            )}
+                                return (
+                                    <>
+                                        {/* Nếu KHÔNG có nút Xử lý (ví dụ Khoa phòng) mà có XML riêng */}
+                                        {!canProcess && record.ma_ba && record.hasXml && (
+                                            <Button 
+                                                size="small" 
+                                                type="default"
+                                                icon={<FileTextOutlined />}
+                                                title="Xem hồ sơ XML gốc"
+                                                onClick={() => window.open(`/xml1-viewer?search=${record.ma_ba}`, '_blank')}
+                                            />
+                                        )}
 
-                            {canDelete && (
-                                <Popconfirm 
-                                    title="Xóa yêu cầu?" 
-                                    description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
-                                    onConfirm={() => onDeleteTicket(record.id)}
-                                    disabled={record.status !== 'PENDING'}
-                                    okText="Xóa"
-                                    cancelText="Hủy"
-                                >
-                                    <Button 
-                                        size="small" 
-                                        danger 
-                                        icon={<DeleteOutlined />} 
-                                        disabled={record.status !== 'PENDING'}
-                                        title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : 'Xóa yêu cầu'}
-                                    />
-                                </Popconfirm>
-                            )}
+                                        {/* Nút Xử lý chính (Dành cho CNTT/Admin) */}
+                                        {canProcess && (
+                                            <Button size="small" type="primary" ghost className="whitespace-nowrap font-medium" onClick={() => onProcessClick(record)}>
+                                                Xử lý
+                                            </Button>
+                                        )}
+                                        
+                                        {/* Nút Chat thảo luận */}
+                                        {onChatClick && (
+                                            <Badge count={record.unreadMessageCount || 0} size="small" offset={[-4, 4]}>
+                                                <Button 
+                                                    size="small" 
+                                                    type="dashed" 
+                                                    icon={<MessageOutlined />} 
+                                                    title={record.unreadMessageCount ? `${record.unreadMessageCount} tin chưa đọc` : 'Thảo luận'} 
+                                                    onClick={() => onChatClick(record)} 
+                                                />
+                                            </Badge>
+                                        )}
+
+                                        {/* KHI CÓ NÚT XỬ LÝ (ADMIN / CNTT): Gom Sửa, Xóa vào menu 3 chấm để cột Thao tác luôn gọn gàng */}
+                                        {canProcess ? (
+                                            moreMenuItems.length > 0 && (
+                                                <Dropdown menu={{ items: moreMenuItems }} trigger={['click']} placement="bottomRight">
+                                                    <Button 
+                                                        size="small" 
+                                                        type="text" 
+                                                        icon={<EllipsisOutlined className="text-slate-600 text-base" />} 
+                                                        className="hover:bg-slate-100 rounded-md"
+                                                        title="Thao tác khác"
+                                                    />
+                                                </Dropdown>
+                                            )
+                                        ) : (
+                                            /* KHI LÀ KHOA PHÒNG (KHÔNG CÓ NÚT XỬ LÝ): Hiển thị trực tiếp nút Sửa & Xóa 1 chạm */
+                                            <>
+                                                {canEdit && onEditClick && (
+                                                    <Tooltip title="Chỉnh sửa nội dung yêu cầu">
+                                                        <Button 
+                                                            size="small" 
+                                                            type="default" 
+                                                            icon={<EditOutlined className="text-blue-600" />}
+                                                            className="hover:border-blue-500 hover:bg-blue-50 text-blue-600 rounded-md font-medium"
+                                                            onClick={() => onEditClick(record)}
+                                                        >
+                                                            <span className="hidden xl:inline text-xs ml-0.5">Sửa</span>
+                                                        </Button>
+                                                    </Tooltip>
+                                                )}
+
+                                                {canDelete && (
+                                                    <Popconfirm 
+                                                        title="Xóa yêu cầu?" 
+                                                        description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
+                                                        onConfirm={() => onDeleteTicket(record.id)}
+                                                        disabled={record.status !== 'PENDING'}
+                                                        okText="Xóa"
+                                                        cancelText="Hủy"
+                                                    >
+                                                        <Button 
+                                                            size="small" 
+                                                            danger 
+                                                            icon={<DeleteOutlined />} 
+                                                            disabled={record.status !== 'PENDING'}
+                                                            title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : 'Xóa yêu cầu'}
+                                                        />
+                                                    </Popconfirm>
+                                                )}
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* Nút Hoàn thành 1-Click (Nhiệm vụ của ai người đó mới được hoàn thành) */}
