@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { sendZaloGroupNotification } from '@/lib/zalo';
-import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow } from '@/lib/shiftUtils';
+import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
 
 // Lấy danh sách nhân viên CNTT
 export async function GET(request: Request) {
@@ -166,39 +166,17 @@ export async function GET(request: Request) {
                             cvName.includes('phó trưởng khoa')
                         );
 
-                        // Tính toán trạng thái nhận việc tiếp theo
-                        let nextIsAvailable = false;
-
-                        if (isFullDayLeave) {
-                            // Nghỉ cả ngày (Nb, P, Ố, TS, KL...): Bắt buộc TẮT nhận việc
-                            nextIsAvailable = false;
-                        } else if (isHalfDayLeave) {
-                            // Nghỉ nửa ngày (Nb/2, P/2): Kiểm tra xem thời điểm hiện tại có đang trong buổi đi làm không
-                            const isWorkingNow = isHalfDayWorkingNow(todayAtt?.session, shiftInfo.shiftType);
-                            if (isOfficeHours && isWorkingNow) {
-                                nextIsAvailable = !isLeader || applyForLeaders;
-                            } else {
-                                // Ngoài giờ hành chính: chỉ bật nếu có ca trực 24h đang chạy
-                                nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
-                            }
-                        } else if (isWorkingFullDay) {
-                            // Đi làm cả ngày (+ hoặc x):
-                            if (isOfficeHours) {
-                                nextIsAvailable = !isLeader || applyForLeaders;
-                            } else {
-                                // Ngoài giờ hành chính (trưa, tối/đêm, cuối tuần/nghỉ lễ): chỉ bật nếu có ca trực
-                                nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
-                            }
-                        } else {
-                            // Các trường hợp khác:
-                            if (hasDutyNow) {
-                                nextIsAvailable = !isLeader || applyForLeaders;
-                            } else if (isOfficeHours && !autoDisableOnLeave) {
-                                nextIsAvailable = u.isAvailable;
-                            } else {
-                                nextIsAvailable = false;
-                            }
-                        }
+                        // Tính toán trạng thái nhận việc chuẩn hóa (Lãnh đạo trực ngày nghỉ mặc định nhận việc)
+                        const nextIsAvailable = computeStaffAvailabilityStatus({
+                            isLeader,
+                            isTeamLeader,
+                            todayAtt,
+                            activeDuty,
+                            shiftInfo,
+                            applyForLeaders,
+                            autoDisableOnLeave,
+                            currentIsAvailable: u.isAvailable
+                        });
 
                         if (u.isAvailable !== nextIsAvailable) {
                             await prisma.user.update({

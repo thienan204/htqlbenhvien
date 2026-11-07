@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
-import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow } from '@/lib/shiftUtils';
+import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 // Trigger nextjs hot reload
@@ -184,36 +184,16 @@ export async function POST(request: Request) {
                 const hasDutyNow = !isFullDayLeave && Boolean(activeDuty || cleanCode === 'T' || cleanCode.startsWith('T/'));
 
                 if (syncAttendanceEnabled) {
-                    let nextIsAvailable = false;
-
-                    if (isFullDayLeave) {
-                        // Nghỉ cả ngày (Nb, P, Ố, TS, KL...): Bắt buộc TẮT nhận việc
-                        nextIsAvailable = false;
-                    } else if (isHalfDayLeave) {
-                        // Nghỉ nửa ngày (Nb/2, P/2): Xét theo buổi làm việc hiện tại
-                        const isWorkingNow = isHalfDayWorkingNow(todayAtt?.session, shiftInfo.shiftType);
-                        if (isOfficeHours && isWorkingNow) {
-                            nextIsAvailable = !isLeader || applyForLeaders;
-                        } else {
-                            nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
-                        }
-                    } else if (isWorkingFullDay) {
-                        // Đi làm cả ngày (+ hoặc x):
-                        if (isOfficeHours) {
-                            nextIsAvailable = !isLeader || applyForLeaders;
-                        } else {
-                            nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
-                        }
-                    } else {
-                        // Chưa chấm công:
-                        if (hasDutyNow) {
-                            nextIsAvailable = !isLeader || applyForLeaders;
-                        } else if (isOfficeHours && !autoDisableOnLeave) {
-                            nextIsAvailable = user.isAvailable;
-                        } else {
-                            nextIsAvailable = false;
-                        }
-                    }
+                    const nextIsAvailable = computeStaffAvailabilityStatus({
+                        isLeader,
+                        isTeamLeader,
+                        todayAtt,
+                        activeDuty,
+                        shiftInfo,
+                        applyForLeaders,
+                        autoDisableOnLeave,
+                        currentIsAvailable: user.isAvailable
+                    });
 
                     if (user.isAvailable !== nextIsAvailable) {
                         await prisma.user.update({

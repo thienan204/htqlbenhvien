@@ -532,14 +532,42 @@ export async function POST(request: Request) {
                     }
                 });
 
-                // Quy định bệnh viện: Nhân viên khoa phòng (!isManager) gửi lên -> CHỈ chia cho Nhân viên Kỹ thuật, LOẠI BỎ Lãnh đạo CNTT
+                // Quy định bệnh viện: Lãnh đạo quản lý phòng không nhận việc trong giờ hành chính ngày thường.
+                // Nhưng NẾU LÃNH ĐẠO ĐI TRỰC (ngày nghỉ cuối tuần/lễ tết hoặc ngoài giờ hành chính) -> ĐƯỢC NHẬN CHIA VIỆC TỰ ĐỘNG!
                 let poolUsers: any[] = availableUsers;
                 if (!isManager) {
+                    const isWeekendOrHoliday = currentShift.shiftType === 'ON_CALL_WEEKEND';
+                    const isOfficeHours = currentShift.isOfficeHours;
+                    const isDutyShift = isWeekendOrHoliday || !isOfficeHours;
+
                     poolUsers = poolUsers.filter((u: any) => {
                         const explicitLevel = u.staff?.chuc_vu_ref?.level;
                         const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
-                        const isLeader = explicitLevel === 'LEVEL_1_BGD' || explicitLevel === 'LEVEL_2_LEADER' || cvCode.includes('TRUONG_PHONG') || cvCode.includes('PHO_TRUONG_PHONG') || cvCode.includes('TRUONG_KHOA');
-                        return !isLeader;
+                        const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
+                        const isTeamLeader = Boolean(
+                            explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+                            explicitLevel === 'LEVEL_2.1' || 
+                            cvCode === 'TO_TRUONG' || 
+                            cvCode.includes('TO_TRUONG') || 
+                            cvName.includes('tổ trưởng')
+                        );
+                        const isLeader = !isTeamLeader && Boolean(
+                            explicitLevel === 'LEVEL_1_BGD' || 
+                            explicitLevel === 'LEVEL_2_LEADER' || 
+                            cvCode.includes('TRUONG_PHONG') || 
+                            cvCode.includes('PHO_TRUONG_PHONG') || 
+                            cvCode.includes('TRUONG_KHOA') || 
+                            cvCode.includes('PHO_TRUONG_KHOA') ||
+                            cvName.includes('trưởng phòng') || 
+                            cvName.includes('phó trưởng phòng') || 
+                            cvName.includes('trưởng khoa') || 
+                            cvName.includes('phó trưởng khoa')
+                        );
+
+                        if (isLeader) {
+                            return isDutyShift && Boolean(u.isAvailable);
+                        }
+                        return true;
                     });
                 }
 

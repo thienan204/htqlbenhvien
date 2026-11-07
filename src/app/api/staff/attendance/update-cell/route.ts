@@ -1,7 +1,114 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
-import { getVietnamTimeParts, getCurrentHospitalShift, getActiveDutyDate, isHalfDayWorkingNow, HospitalShiftConfig } from '@/lib/shiftUtils';
+import { getVietnamTimeParts, getCurrentHospitalShift, getActiveDutyDate, isHalfDayWorkingNow, HospitalShiftConfig, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
+
+async function syncStaffAvailability(staffId: string) {
+    try {
+        const staffRecord = await prisma.staff.findUnique({
+            where: { id: staffId },
+            include: {
+                chuc_vu_ref: true,
+                user: true
+            }
+        });
+
+        if (!staffRecord || !staffRecord.user) return;
+        const isSupportDept = ['KP046', 'KP038', 'KP040'].includes(staffRecord.ma_khoa || '') || ['CNTT', 'VTYT', 'HCQT'].includes(staffRecord.user.role);
+        if (!isSupportDept) return;
+
+        const [itConfigRule, hospitalConfigRule] = await Promise.all([
+            prisma.specializedRule.findUnique({ where: { slug: 'it-request-fields-config' } }),
+            prisma.specializedRule.findUnique({ where: { slug: 'hospital-attendance-config' } })
+        ]);
+        const itConfig: any = itConfigRule?.logicConfig || {};
+        const hospitalConfig: any = hospitalConfigRule?.logicConfig || {};
+        const workHours = hospitalConfig.workHours || {};
+
+        const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
+        const applyForLeaders = itConfig.applyForLeaders === true;
+        const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
+
+        if (!syncAttendanceEnabled) return;
+
+        const morningStart = workHours.morningStart || itConfig.morningStartTime || '07:00';
+        const morningEnd = workHours.morningEnd || itConfig.morningEndTime || '11:30';
+        const afternoonStart = workHours.afternoonStart || itConfig.afternoonStartTime || '13:30';
+        const afternoonEnd = workHours.afternoonEnd || itConfig.afternoonEndTime || itConfig.officeEndTime || '17:00';
+
+        const holidays = Array.isArray(hospitalConfig.holidays)
+            ? hospitalConfig.holidays.map((h: any) => h.date).filter(Boolean)
+            : (Array.isArray(itConfig.holidays) ? itConfig.holidays : []);
+        const makeupWorkdays = Array.isArray(hospitalConfig.makeupWorkdays)
+            ? hospitalConfig.makeupWorkdays.map((m: any) => m.date).filter(Boolean)
+            : (Array.isArray(itConfig.makeupWorkdays) ? itConfig.makeupWorkdays : []);
+
+        const shiftConfig: HospitalShiftConfig = {
+            morningStart,
+            morningEnd,
+            afternoonStart,
+            afternoonEnd,
+            holidays,
+            makeupWorkdays
+        };
+
+        const shiftInfo = getCurrentHospitalShift(shiftConfig);
+        const vnTime = getVietnamTimeParts();
+        const activeDutyDate = getActiveDutyDate(new Date(), morningStart);
+
+        const [todayAtt, activeDuty] = await Promise.all([
+            prisma.staffAttendanceRecord.findFirst({
+                where: { staffId: staffRecord.id, workDate: vnTime.dateStr }
+            }),
+            prisma.staffDutyRecord.findFirst({
+                where: { staffId: staffRecord.id, dutyDate: activeDutyDate }
+            })
+        ]);
+
+        const explicitLevel = (staffRecord.chuc_vu_ref as any)?.level;
+        const cvCode = (staffRecord.chuc_vu_ref?.code || '').toUpperCase();
+        const cvName = (staffRecord.chuc_vu_ref?.name || '').toLowerCase();
+        const isTeamLeader = Boolean(
+            explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+            explicitLevel === 'LEVEL_2.1' || 
+            cvCode === 'TO_TRUONG' || 
+            cvCode.includes('TO_TRUONG') || 
+            cvName.includes('tổ trưởng')
+        );
+        const isLeader = !isTeamLeader && Boolean(
+            explicitLevel === 'LEVEL_1_BGD' ||
+            explicitLevel === 'LEVEL_2_LEADER' ||
+            cvCode.includes('TRUONG_PHONG') ||
+            cvCode.includes('PHO_TRUONG_PHONG') ||
+            cvCode.includes('TRUONG_KHOA') ||
+            cvCode.includes('PHO_TRUONG_KHOA') ||
+            cvName.includes('trưởng phòng') ||
+            cvName.includes('phó trưởng phòng') ||
+            cvName.includes('trưởng khoa') ||
+            cvName.includes('phó trưởng khoa')
+        );
+
+        const nextIsAvailable = computeStaffAvailabilityStatus({
+            isLeader,
+            isTeamLeader,
+            todayAtt,
+            activeDuty,
+            shiftInfo,
+            applyForLeaders,
+            autoDisableOnLeave,
+            currentIsAvailable: staffRecord.user.isAvailable
+        });
+
+        if (staffRecord.user.isAvailable !== nextIsAvailable) {
+            await prisma.user.update({
+                where: { id: staffRecord.user.id },
+                data: { isAvailable: nextIsAvailable }
+            });
+        }
+    } catch (errSync) {
+        console.error('Lỗi tự động đồng bộ trạng thái nhận việc CNTT:', errSync);
+    }
+}
 
 export async function POST(request: Request) {
     try {
@@ -58,6 +165,7 @@ export async function POST(request: Request) {
                     });
                 }
 
+                await syncStaffAvailability(staffId);
                 return NextResponse.json({ success: true, message: `Đã xóa ca trực ngày ${date}` });
             }
 
@@ -141,6 +249,8 @@ export async function POST(request: Request) {
             } catch (errClinical) {
                 console.error('Lỗi đồng bộ sang StaffAttendance (Lâm sàng):', errClinical);
             }
+
+            await syncStaffAvailability(staffId);
 
             return NextResponse.json({ success: true, dutyRecord: updatedDuty });
         }
@@ -338,137 +448,8 @@ export async function POST(request: Request) {
                 }
             }
 
-            // 3. ĐỒNG BỘ TRẠNG THÁI NHẬN VIỆC CNTT (isAvailable) NẾU LÀ NGÀY HÔM NAY
-            if (date === todayStr) {
-                try {
-                    const staffRecord = await prisma.staff.findUnique({
-                        where: { id: staffId },
-                        include: {
-                            chuc_vu_ref: true,
-                            user: true
-                        }
-                    });
-
-                    if (staffRecord && staffRecord.user) {
-                        const isSupportDept = ['KP046', 'KP038', 'KP040'].includes(staffRecord.ma_khoa || '') || ['CNTT', 'VTYT', 'HCQT'].includes(staffRecord.user.role);
-                        
-                        if (isSupportDept) {
-                            // Đọc cấu hình liên kết chấm công & cấu hình toàn viện
-                            const [itConfigRule, hospitalConfigRule] = await Promise.all([
-                                prisma.specializedRule.findUnique({ where: { slug: 'it-request-fields-config' } }),
-                                prisma.specializedRule.findUnique({ where: { slug: 'hospital-attendance-config' } })
-                            ]);
-                            const itConfig: any = itConfigRule?.logicConfig || {};
-                            const hospitalConfig: any = hospitalConfigRule?.logicConfig || {};
-                            const workHours = hospitalConfig.workHours || {};
-
-                            const syncAttendanceEnabled = itConfig.syncAttendanceEnabled !== false;
-                            const applyForLeaders = itConfig.applyForLeaders === true;
-                            const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
-
-                            const morningStart = workHours.morningStart || itConfig.morningStartTime || '07:00';
-                            const morningEnd = workHours.morningEnd || itConfig.morningEndTime || '11:30';
-                            const afternoonStart = workHours.afternoonStart || itConfig.afternoonStartTime || '13:30';
-                            const afternoonEnd = workHours.afternoonEnd || itConfig.afternoonEndTime || itConfig.officeEndTime || '17:00';
-
-                            const holidays = Array.isArray(hospitalConfig.holidays)
-                                ? hospitalConfig.holidays.map((h: any) => h.date).filter(Boolean)
-                                : (Array.isArray(itConfig.holidays) ? itConfig.holidays : []);
-                            const makeupWorkdays = Array.isArray(hospitalConfig.makeupWorkdays)
-                                ? hospitalConfig.makeupWorkdays.map((m: any) => m.date).filter(Boolean)
-                                : (Array.isArray(itConfig.makeupWorkdays) ? itConfig.makeupWorkdays : []);
-
-                            const shiftConfig: HospitalShiftConfig = {
-                                morningStart,
-                                morningEnd,
-                                afternoonStart,
-                                afternoonEnd,
-                                holidays,
-                                makeupWorkdays
-                            };
-
-                            const shiftInfo = getCurrentHospitalShift(shiftConfig);
-                            const isOfficeHours = shiftInfo.isOfficeHours;
-                            const activeDutyDate = getActiveDutyDate(new Date(), morningStart);
-
-                            const explicitLevel = (staffRecord.chuc_vu_ref as any)?.level;
-                            const cvCode = (staffRecord.chuc_vu_ref?.code || '').toUpperCase();
-                            const cvName = (staffRecord.chuc_vu_ref?.name || '').toLowerCase();
-                            const isTeamLeader = Boolean(
-                                explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
-                                explicitLevel === 'LEVEL_2.1' || 
-                                cvCode === 'TO_TRUONG' || 
-                                cvCode.includes('TO_TRUONG') || 
-                                cvName.includes('tổ trưởng')
-                            );
-                            const isLeader = !isTeamLeader && Boolean(
-                                explicitLevel === 'LEVEL_1_BGD' ||
-                                explicitLevel === 'LEVEL_2_LEADER' ||
-                                cvCode.includes('TRUONG_PHONG') ||
-                                cvCode.includes('PHO_TRUONG_PHONG') ||
-                                cvCode.includes('TRUONG_KHOA') ||
-                                cvCode.includes('PHO_TRUONG_KHOA') ||
-                                cvName.includes('trưởng phòng') ||
-                                cvName.includes('phó trưởng phòng') ||
-                                cvName.includes('trưởng khoa') ||
-                                cvName.includes('phó trưởng khoa')
-                            );
-
-                            if (syncAttendanceEnabled) {
-                                const activeDuty = await prisma.staffDutyRecord.findFirst({
-                                    where: {
-                                        staffId: staffRecord.id,
-                                        dutyDate: activeDutyDate
-                                    }
-                                });
-
-                                const isFullDayLeave = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H', 'KL'].includes(cleanCode);
-                                const isHalfDayLeave = ['NB/2', 'P/2'].includes(cleanCode);
-                                const isWorkingFullDay = ['X', '+'].includes(cleanCode);
-                                const hasDutyNow = !isFullDayLeave && Boolean(activeDuty || cleanCode === 'T' || cleanCode.startsWith('T/'));
-
-                                let nextIsAvailable = false;
-
-                                if (isFullDayLeave) {
-                                    // Nghỉ cả ngày: Luôn TẮT
-                                    nextIsAvailable = false;
-                                } else if (isHalfDayLeave) {
-                                    // Nghỉ nửa ngày: Xét theo buổi làm việc hiện tại
-                                    const isWorkingNow = isHalfDayWorkingNow(session, shiftInfo.shiftType);
-                                    if (isOfficeHours && isWorkingNow) {
-                                        nextIsAvailable = !isLeader || applyForLeaders;
-                                    } else {
-                                        nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
-                                    }
-                                } else if (isWorkingFullDay) {
-                                    if (isOfficeHours) {
-                                        nextIsAvailable = !isLeader || applyForLeaders;
-                                    } else {
-                                        nextIsAvailable = hasDutyNow && (!isLeader || applyForLeaders);
-                                    }
-                                } else {
-                                    if (hasDutyNow) {
-                                        nextIsAvailable = !isLeader || applyForLeaders;
-                                    } else if (isOfficeHours && !autoDisableOnLeave) {
-                                        nextIsAvailable = staffRecord.user.isAvailable;
-                                    } else {
-                                        nextIsAvailable = false;
-                                    }
-                                }
-
-                                if (staffRecord.user.isAvailable !== nextIsAvailable) {
-                                    await prisma.user.update({
-                                        where: { id: staffRecord.user.id },
-                                        data: { isAvailable: nextIsAvailable }
-                                    });
-                                }
-                            }
-                        }
-                    }
-                } catch (errSync) {
-                    console.error('Lỗi tự động đồng bộ trạng thái nhận việc CNTT:', errSync);
-                }
-            }
+            // 3. ĐỒNG BỘ TRẠNG THÁI NHẬN VIỆC CNTT (isAvailable)
+            await syncStaffAvailability(staffId);
 
             // 4. ĐỒNG BỘ SANG PHÂN HỆ LÂM SÀNG (StaffAttendance: TRẠNG THÁI & QUYỀN THỰC HIỆN DVKT)
             try {

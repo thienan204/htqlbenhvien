@@ -233,3 +233,102 @@ export function isHalfDayWorkingNow(session: string | null | undefined, shiftTyp
     return false;
 }
 
+/**
+ * Kiểm tra xem mã chấm công / chấm trực có phải là mã đi trực hay không
+ * Bao gồm: T (Trực thường), C (Trực T7/CN), L (Trực lễ), TE (Trực tết), TK (Trực kèm), TT (Thường trú)
+ */
+export function isDutyCode(code?: string | null): boolean {
+    if (!code) return false;
+    const c = code.trim().toUpperCase();
+    return ['T', 'C', 'L', 'TE', 'TK', 'TT'].some(prefix => c === prefix || c.startsWith(prefix + '/'));
+}
+
+export interface StaffAvailabilityInput {
+    isLeader: boolean;
+    isTeamLeader?: boolean;
+    todayAtt?: { code?: string | null; session?: string | null } | null;
+    activeDuty?: { dutyCode?: string | null; dutyType?: string | null } | null;
+    shiftInfo: ShiftInfo;
+    applyForLeaders?: boolean;
+    autoDisableOnLeave?: boolean;
+    currentIsAvailable?: boolean;
+}
+
+/**
+ * Tính toán trạng thái nhận việc (isAvailable) chuẩn hóa cho toàn bệnh viện:
+ * - Kỹ thuật viên / Tổ trưởng: Đi làm hành chính hoặc đi trực -> Bật nhận việc.
+ * - Lãnh đạo (Trưởng/Phó phòng):
+ *   + Nếu CÓ ca trực ngày nghỉ (T7, CN, Lễ, Tết): Mặc định BẬT nhận việc (24/24).
+ *   + Nếu CÓ ca trực ngày hành chính: Trong giờ hành chính làm quản lý; Ngoài giờ hành chính (trưa, tối, đêm) BẬT nhận việc.
+ *   + Không có ca trực: Mặc định không tự nhận việc (trừ khi applyForLeaders = true).
+ * - Nghỉ cả ngày (Nb, P, Ố, TS, KL...): Luôn TẮT nhận việc.
+ */
+export function computeStaffAvailabilityStatus(input: StaffAvailabilityInput): boolean {
+    const {
+        isLeader,
+        todayAtt,
+        activeDuty,
+        shiftInfo,
+        applyForLeaders = false,
+        autoDisableOnLeave = true,
+        currentIsAvailable = false
+    } = input;
+
+    const cleanCode = (todayAtt?.code || '').trim().toUpperCase();
+    const isFullDayLeave = ['P', 'O', 'CO', 'NB', 'K', 'RO', 'TS', 'H', 'KL'].includes(cleanCode);
+    const isHalfDayLeave = ['NB/2', 'P/2'].includes(cleanCode);
+    const isWorkingFullDay = ['X', '+'].includes(cleanCode);
+
+    // Có lịch trực 24h đang chạy (trong DB staffDutyRecord hoặc ký hiệu trực trên bảng chấm công)
+    const hasDutyNow = !isFullDayLeave && Boolean(activeDuty || isDutyCode(cleanCode));
+
+    const isWeekendOrHoliday = shiftInfo.shiftType === 'ON_CALL_WEEKEND';
+    const isOfficeHours = shiftInfo.isOfficeHours;
+
+    if (isFullDayLeave) {
+        return false;
+    }
+
+    if (hasDutyNow) {
+        if (isLeader) {
+            // Lãnh đạo đi trực:
+            // - Ngày nghỉ (T7, CN, Lễ, Tết): Mặc định nhận việc
+            // - Ngày hành chính: Ngoài giờ hành chính (trưa, tối, đêm) nhận việc; Trong giờ hành chính làm quản lý
+            if (isWeekendOrHoliday) {
+                return true;
+            } else if (!isOfficeHours) {
+                return true;
+            } else {
+                return applyForLeaders;
+            }
+        }
+        // Kỹ thuật viên / Tổ trưởng đi trực: Luôn nhận việc
+        return true;
+    }
+
+    // Không có ca trực:
+    if (isHalfDayLeave) {
+        const isWorkingNow = isHalfDayWorkingNow(todayAtt?.session, shiftInfo.shiftType);
+        if (isOfficeHours && isWorkingNow) {
+            return !isLeader || applyForLeaders;
+        }
+        return false;
+    }
+
+    if (isWorkingFullDay) {
+        if (isOfficeHours) {
+            return !isLeader || applyForLeaders;
+        }
+        // Ngoài giờ hành chính mà không có ca trực -> Tắt nhận việc
+        return false;
+    }
+
+    // Trường hợp chưa chấm công hoặc ngày nghỉ không trực:
+    if (isOfficeHours && !autoDisableOnLeave) {
+        return currentIsAvailable;
+    }
+
+    return false;
+}
+
+
