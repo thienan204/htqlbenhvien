@@ -310,7 +310,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                 {phone}
                                             </a>
                                         </div>
-                                        <PhoneCallActions phone={phone} showCall={false} />
+                                        <PhoneCallActions phone={phone} />
                                     </div>
                                 )}
 
