@@ -40,6 +40,8 @@ services:
     volumes:
       - ./nginx-prod.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro # Mount chứng chỉ SSL từ máy chủ vào
+      - ./public/502.html:/usr/share/nginx/html/502.html:ro
+      - ./public/logo.png:/usr/share/nginx/html/htqlbenhvien/logo.png:ro
     depends_on:
       - app-htql
     networks:

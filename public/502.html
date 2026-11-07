@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống đang bảo trì & nâng cấp - BVĐK tỉnh Lạng Sơn</title>
+    <link rel="icon" href="/htqlbenhvien/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 50%, #eff6ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+            max-width: 560px;
+            width: 100%;
+            padding: 40px 32px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .header-logo img {
+            max-height: 48px;
+            width: auto;
+            object-contain: contain;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            margin-bottom: 20px;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2563eb;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        p {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .notice-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: left;
+            font-size: 14px;
+            color: #334155;
+        }
+        .notice-box ul {
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+        .notice-box li {
+            margin-bottom: 4px;
+        }
+        .countdown-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2563eb;
+            margin-bottom: 20px;
+        }
+        .countdown-number {
+            display: inline-block;
+            font-weight: 700;
+            font-size: 18px;
+            color: #1d4ed8;
+            min-width: 24px;
+        }
+        .btn-reload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 12px 28px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        .btn-reload:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+        .footer-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header-logo">
+            <img src="/htqlbenhvien/logo.png" alt="Logo BVĐK tỉnh Lạng Sơn" onerror="this.style.display='none'">
+        </div>
+
+        <div class="badge">
+            <span class="pulse-dot"></span>
+            <span>Bảo trì & Nâng cấp Hệ thống</span>
+        </div>
+
+        <h1>Hệ Thống Đang Tiến Hành Cập Nhật</h1>
+        <p>Hệ thống Quản lý Bệnh viện đang được nâng cấp tính năng mới để phục vụ công tác khám chữa bệnh tốt hơn.</p>
+
+        <div class="notice-box">
+            <strong>📋 Thông tin lưu ý:</strong>
+            <ul>
+                <li>Quá trình cập nhật đang diễn ra tự động và sẽ hoàn tất trong ít phút.</li>
+                <li>Dữ liệu hồ sơ bệnh án và lịch làm việc của bạn được đảm bảo an toàn tuyệt đối.</li>
+                <li>Bạn không cần tắt trình duyệt, trang sẽ tự động nạp lại khi hoàn tất.</li>
+            </ul>
+        </div>
+
+        <div class="countdown-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>Tự động kết nối lại sau: <span id="countdown" class="countdown-number">10</span> giây</span>
+        </div>
+
+        <button class="btn-reload" onclick="reloadPage()">
+            <span>Thử kết nối lại ngay</span>
+        </button>
+
+        <div class="footer-text">
+            Bệnh viện Đa khoa tỉnh Lạng Sơn &bull; Phòng Công nghệ Thông tin
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 10;
+        const countdownEl = document.getElementById('countdown');
+
+        function reloadPage() {
+            window.location.reload();
+        }
+
+        setInterval(function() {
+            timeLeft--;
+            if (countdownEl) countdownEl.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                reloadPage();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

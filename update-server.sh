@@ -32,9 +32,12 @@ mkdir -p public/uploads
 node scripts/generate-build-info.js 2>/dev/null || true
 
 echo ""
-echo "🏗️ Bước 2: Build lại hệ thống với Code mới..."
-docker compose -f docker-compose.prod.yml down
-docker compose -f docker-compose.prod.yml up -d --build
+echo "🏗️ Bước 2: Build Image mới ở chế độ nền (Hệ thống cũ VẪN HOẠT ĐỘNG BÌNH THƯỜNG)..."
+docker compose -f docker-compose.prod.yml build app-htql
+
+echo ""
+echo "🔄 Bước 2.1: Chuyển giao sang Container mới (Chỉ mất ~1-2 giây, không gián đoạn)..."
+docker compose -f docker-compose.prod.yml up -d --no-deps app-htql
 
 echo ""
 echo "🗄️ Bước 3: Chạy cấu hình Database và Fix phân quyền..."
@@ -44,5 +47,5 @@ docker exec htqlbenhvien-app npx -y prisma@5.22.0 db push --skip-generate
 echo ""
 echo "==================================================="
 echo "✅ HOÀN TẤT! HỆ THỐNG ĐÃ ĐƯỢC CẬP NHẬT THÀNH CÔNG."
-echo "Truy cập: http://192.168.3.98/htqlbenhvien"
+echo "Truy cập: http://192.168.3.98:3005/htqlbenhvien"
 echo "==================================================="
