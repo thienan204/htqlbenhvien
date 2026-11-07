@@ -517,10 +517,11 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                             size="middle" 
                                             type="default" 
                                             icon={<EditOutlined />}
-                                            className="rounded-xl text-blue-600 border-blue-200"
+                                            className="rounded-xl text-blue-600 border-blue-300 bg-blue-50/70 hover:bg-blue-100 font-semibold text-xs flex items-center gap-1 shadow-2xs"
                                             onClick={() => onEditClick(ticket)}
-                                            title="Sửa yêu cầu"
-                                        />
+                                        >
+                                            <span>Sửa</span>
+                                        </Button>
                                     )}
                                     {canDelete && (
                                         <Popconfirm 
@@ -534,7 +535,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                 size="middle" 
                                                 danger 
                                                 icon={<DeleteOutlined />} 
-                                                className="rounded-xl"
+                                                className="rounded-xl bg-red-50/70 border-red-200 text-red-600 hover:bg-red-100 shadow-2xs"
                                                 title="Xóa yêu cầu"
                                             />
                                         </Popconfirm>

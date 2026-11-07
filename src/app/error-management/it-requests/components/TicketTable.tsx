@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, message, Image as AntImage, Badge, Tooltip, Modal, Input } from 'antd';
-import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileTextOutlined, MessageOutlined, CheckCircleOutlined, LoadingOutlined, PaperClipOutlined, LinkOutlined, ShareAltOutlined, PauseCircleOutlined, PlayCircleOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { TicketImage } from '@/components/shared/TicketImage';
 import { Ticket } from '../types';
@@ -192,9 +192,13 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                         );
                                     })()}
                                     {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 && (() => {
-                                        const excludeKeys = ['Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm', 'Mã LK', 'Lý do phân việc', 'assignReason', 'Lý do tạm dừng', 'pauseReason'];
+                                        const excludeKeys = [
+                                            'Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm', 
+                                            'Mã LK', 'Lý do phân việc', 'assignReason', 'Lý do tạm dừng', 'pauseReason',
+                                            'createdById', 'creatorUsername', 'creatorStaffId', 'creatorName', 'senderId', 'nguoi_bao_id', 'ma_nv'
+                                        ];
                                         return Object.entries(record.dynamicFields)
-                                            .filter(([k]) => !excludeKeys.includes(k))
+                                            .filter(([k]) => !excludeKeys.includes(k) && !k.startsWith('creator') && !k.startsWith('created') && !k.endsWith('Id'))
                                             .map(([k, v]) => {
                                                 if (k === 'SĐT' || k.toLowerCase() === 'sdt' || k === 'Số điện thoại') {
                                                     const phoneVal = String(v || '').trim();
@@ -616,14 +620,17 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
                             {/* Chỉ chính người gửi (hoặc Admin) mới được Sửa / Xóa khi phiếu đang Chờ xử lý (PENDING) */}
                             {canEdit && onEditClick && (
-                                <Button 
-                                    size="small" 
-                                    type="primary" 
-                                    className="bg-blue-600 hover:bg-blue-500 whitespace-nowrap"
-                                    onClick={() => onEditClick(record)}
-                                >
-                                    Sửa
-                                </Button>
+                                <Tooltip title="Chỉnh sửa nội dung yêu cầu">
+                                    <Button 
+                                        size="small" 
+                                        type="default" 
+                                        icon={<EditOutlined className="text-blue-600" />}
+                                        className="hover:border-blue-500 hover:bg-blue-50 text-blue-600 rounded-md font-medium"
+                                        onClick={() => onEditClick(record)}
+                                    >
+                                        <span className="hidden xl:inline text-xs ml-0.5">Sửa</span>
+                                    </Button>
+                                </Tooltip>
                             )}
 
                             {canDelete && (
