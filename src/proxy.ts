@@ -62,7 +62,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // Define strictly public routes that don't need DB checks
-    const isPublic = ['/login', '/maintenance', '/favicon.ico', '/logo.png'].includes(path) || 
+    const isPublic = ['/login', '/maintenance', '/favicon.ico', '/logo.png', '/logo.ico', '/manifest.json', '/sw.js', '/icon.svg', '/icon.png'].includes(path) || 
         path.startsWith('/_next') || 
         path.startsWith('/images') || 
         path.startsWith('/uploads') || 
@@ -75,7 +75,7 @@ export async function proxy(request: NextRequest) {
     const token = request.cookies.get('auth_token')?.value;
 
     // --- MAINTENANCE MODE CHECK ---
-    if (path !== '/maintenance' && path !== '/login' && path !== '/logo.png' && path !== '/favicon.ico' && !path.startsWith('/api/') && !path.startsWith('/_next') && !path.startsWith('/images') && !path.startsWith('/uploads')) {
+    if (path !== '/maintenance' && path !== '/login' && path !== '/logo.png' && path !== '/logo.ico' && path !== '/favicon.ico' && path !== '/manifest.json' && !path.startsWith('/api/') && !path.startsWith('/_next') && !path.startsWith('/images') && !path.startsWith('/uploads')) {
         let isMaintenance = process.env.MAINTENANCE_MODE === 'true';
         if (!isMaintenance) {
             const maintenanceConfig = await fetchInternal('/api/configs/maintenance');

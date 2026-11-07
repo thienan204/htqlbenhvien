@@ -65,16 +65,16 @@ export default function DesktopShortcutPrompt() {
         if (typeof window === 'undefined') return;
         try {
             const basePath = getBasePath();
-            const targetUrl = `${window.location.origin}${basePath}/error-management/it-requests`;
-            const iconUrl = `${window.location.origin}${basePath}/logo.png`;
+            const targetUrl = `${window.location.origin}${basePath}`;
+            const iconUrl = `${window.location.origin}${basePath}/logo.ico`;
             
             // Script chuẩn cú pháp Windows CMD: dùng tên ASCII không dấu tránh lỗi bảng mã tiếng Việt
             const batContent = 
 `@echo off
 setlocal
-title Cai Dat Loi Tat - BVDK Loc Son
+title Cai Dat Loi Tat - HTQLBENHVIEN
 
-set "TARGET=%USERPROFILE%\\Desktop\\Bao_Loi_CNTT_BVDK_Loc_Son.url"
+set "TARGET=%USERPROFILE%\\Desktop\\HTQLBENHVIEN.url"
 
 (
 echo [InternetShortcut]
@@ -84,11 +84,11 @@ echo IconFile=${iconUrl}
 ) > "%TARGET%"
 
 if exist "%USERPROFILE%\\OneDrive\\Desktop" (
-    copy /Y "%TARGET%" "%USERPROFILE%\\OneDrive\\Desktop\\Bao_Loi_CNTT_BVDK_Loc_Son.url" >nul 2>&1
+    copy /Y "%TARGET%" "%USERPROFILE%\\OneDrive\\Desktop\\HTQLBENHVIEN.url" >nul 2>&1
 )
 
 if exist "C:\\Users\\Public\\Desktop" (
-    copy /Y "%TARGET%" "C:\\Users\\Public\\Desktop\\Bao_Loi_CNTT_BVDK_Loc_Son.url" >nul 2>&1
+    copy /Y "%TARGET%" "C:\\Users\\Public\\Desktop\\HTQLBENHVIEN.url" >nul 2>&1
 )
 
 cls
@@ -96,7 +96,7 @@ echo ========================================================
 echo    DA TAO XONG LOI TAT RA MAN HINH DESKTOP!
 echo ========================================================
 echo.
-echo Icon "Bao_Loi_CNTT_BVDK_Loc_Son" da xuat hien ngoai Desktop.
+echo Icon "HTQLBENHVIEN" da xuat hien ngoai Desktop.
 echo Ban co the dong cua so nay.
 echo.
 pause
@@ -106,7 +106,7 @@ pause
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Cai_Dat_Icon_Desktop.bat';
+            a.download = 'Cai_Dat_Icon_HTQLBENHVIEN.bat';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -123,15 +123,15 @@ pause
         if (typeof window === 'undefined') return;
         try {
             const basePath = getBasePath();
-            const targetUrl = `${window.location.origin}${basePath}/error-management/it-requests`;
-            const iconUrl = `${window.location.origin}${basePath}/logo.png`;
+            const targetUrl = `${window.location.origin}${basePath}`;
+            const iconUrl = `${window.location.origin}${basePath}/logo.ico`;
             
             const urlContent = `[InternetShortcut]\r\nURL=${targetUrl}\r\nIconIndex=0\r\nIconFile=${iconUrl}\r\nHotKey=0\r\n`;
             const blob = new Blob([urlContent], { type: 'application/internet-shortcut' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Bao_Loi_CNTT_BVDK_Loc_Son.url';
+            a.download = 'HTQLBENHVIEN.url';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -204,7 +204,7 @@ pause
                             <span className="text-[10px] bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.2 rounded-full">Tiện ích</span>
                         </div>
                         <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                            Tạo icon ngoài màn hình Desktop để mở báo lỗi CNTT nhanh chỉ với 1 click, không cần gõ link hay nhờ CNTT xuống cài đặt.
+                            Tạo icon ngoài màn hình Desktop để mở Hệ thống Quản lý Bệnh viện nhanh chỉ với 1 click, không cần gõ link hay nhờ CNTT xuống cài đặt.
                         </p>
                     </div>
                 </div>

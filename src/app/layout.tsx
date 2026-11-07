@@ -17,9 +17,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hệ thống Quản lý Bệnh viện - BVĐK Lộc Sơn",
-  description: "Công cụ quản lý, báo lỗi CNTT và kiểm tra hồ sơ Bệnh viện Đa khoa Lộc Sơn",
-  manifest: "/manifest.json",
+  title: "Hệ thống Quản lý Bệnh viện - BVĐK tỉnh Lạng Sơn",
+  description: "Hệ thống Quản lý Bệnh viện - Bệnh viện Đa khoa tỉnh Lạng Sơn",
+  manifest: "/htqlbenhvien/manifest.json",
+  icons: {
+    icon: [
+      { url: '/htqlbenhvien/logo.png', type: 'image/png' },
+      { url: '/htqlbenhvien/favicon.ico' }
+    ],
+    shortcut: '/htqlbenhvien/logo.png',
+    apple: '/htqlbenhvien/logo.png',
+  },
 };
 
 import prisma from "@/lib/prisma";
