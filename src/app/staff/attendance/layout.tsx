@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Card, Tabs, Select, DatePicker, Input, Button, Tag, Dropdown, Tooltip, Alert, Popconfirm, message } from 'antd';
+import { Card, Tabs, Select, DatePicker, Input, Button, Tag, Dropdown, Tooltip, Alert, Popconfirm, message, Modal, Radio } from 'antd';
 import {
     ScheduleOutlined,
     CalendarOutlined,
@@ -148,8 +148,13 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     // Khởi tạo cả tháng
+    const [isInitModalOpen, setIsInitModalOpen] = React.useState(false);
+    const [initCode, setInitCode] = React.useState<'+' | 'x'>('+');
+    const [initLoading, setInitLoading] = React.useState(false);
+
     const handleInitMonth = async () => {
         try {
+            setInitLoading(true);
             const basePath = getBasePath();
             const monthYear = selectedDate.format('YYYY-MM');
             const res = await fetch(`${basePath}/api/staff/attendance/init-month`, {
@@ -158,7 +163,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                 body: JSON.stringify({
                     ma_khoa: selectedDept,
                     monthYear,
-                    code: '+'
+                    code: initCode
                 })
             });
             if (!res.ok) {
@@ -172,13 +177,16 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
             }
             const data = await res.json();
             if (data.success) {
-                message.success(data.message || 'Khởi tạo công cả tháng thành công');
+                message.success(data.message || `Khởi tạo công cả tháng với ký hiệu "${initCode}" thành công`);
+                setIsInitModalOpen(false);
                 fetchData();
             } else {
                 message.error(data.error || 'Khởi tạo thất bại');
             }
         } catch (e) {
             message.error('Lỗi kết nối khi khởi tạo');
+        } finally {
+            setInitLoading(false);
         }
     };
 
@@ -318,30 +326,98 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                                     </span>
                                 </Tooltip>
 
-                                <Popconfirm
-                                    title="⚡ Khởi tạo công cả tháng?"
-                                    description={
-                                        <div className="max-w-xs text-xs space-y-1.5 py-1">
-                                            <p>Tự động điền công đi làm (<b>+</b>) cho tất cả cán bộ trong tháng <b>{selectedDate.format('MM/YYYY')}</b>.</p>
-                                            <p className="text-emerald-700 font-medium">✓ <b>Mặc định điền Thứ 2 - Thứ 6</b> (tự động bỏ qua Thứ 7 & Chủ Nhật).</p>
-                                            <p className="text-purple-700 font-medium">✓ Tự động bỏ qua các ngày nghỉ Lễ/Tết đã cấu hình.</p>
-                                            <p className="text-blue-700">✓ Tự động điền Thứ 7/CN nếu có lịch làm bù.</p>
-                                            <p className="text-slate-500 italic">✓ Không ghi đè các ô đã chấm trước đó.</p>
-                                        </div>
-                                    }
-                                    onConfirm={handleInitMonth}
-                                    okText="Khởi tạo ngay"
-                                    cancelText="Hủy"
+                                <Button 
+                                    icon={<ThunderboltOutlined className="text-amber-500" />}
+                                    onClick={() => setIsInitModalOpen(true)}
+                                    className="font-semibold text-slate-700 hover:text-amber-600 border-amber-300 hover:border-amber-400 bg-amber-50/50"
                                 >
-                                    <Button 
-                                        icon={<ThunderboltOutlined className="text-amber-500" />}
-                                        className="font-semibold text-slate-700 hover:text-amber-600 border-amber-300 hover:border-amber-400 bg-amber-50/50"
-                                    >
-                                        ⚡ Khởi Tạo Công Cả Tháng
-                                    </Button>
-                                </Popconfirm>
+                                    ⚡ Khởi Tạo Công Cả Tháng
+                                </Button>
                             </>
                         )}
+
+                        {/* Modal Lựa chọn ký hiệu chấm công (+ hoặc x) khi khởi tạo cả tháng */}
+                        <Modal
+                            title={
+                                <div className="flex items-center gap-2 text-slate-800 pb-2 border-b border-slate-100">
+                                    <ThunderboltOutlined className="text-amber-500 text-lg" />
+                                    <span className="font-bold text-base">Khởi Tạo Công Cả Tháng: {selectedDate.format('MM/YYYY')}</span>
+                                </div>
+                            }
+                            open={isInitModalOpen}
+                            onCancel={() => !initLoading && setIsInitModalOpen(false)}
+                            onOk={handleInitMonth}
+                            confirmLoading={initLoading}
+                            okText="Khởi tạo ngay"
+                            cancelText="Hủy"
+                            centered
+                            width={460}
+                        >
+                            <div className="py-3 space-y-4">
+                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs text-slate-600">
+                                    <p className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                        <span>📋</span> Quy tắc tự động điền công:
+                                    </p>
+                                    <p className="text-emerald-700 font-medium flex items-center gap-1.5">
+                                        <span>✓</span> <b>Mặc định điền Thứ 2 - Thứ 6</b> (tự động bỏ qua Thứ 7 & Chủ Nhật).
+                                    </p>
+                                    <p className="text-purple-700 font-medium flex items-center gap-1.5">
+                                        <span>✓</span> Tự động bỏ qua các ngày nghỉ Lễ/Tết đã cấu hình.
+                                    </p>
+                                    <p className="text-blue-700 flex items-center gap-1.5">
+                                        <span>✓</span> Tự động điền ngày cuối tuần nếu có lịch làm bù.
+                                    </p>
+                                    <p className="text-slate-500 italic flex items-center gap-1.5">
+                                        <span>✓</span> <b>Không ghi đè</b> lên các ô đã chấm trước đó.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                                        Chọn ký hiệu công đi làm:
+                                    </label>
+                                    <Radio.Group
+                                        value={initCode}
+                                        onChange={e => setInitCode(e.target.value)}
+                                        className="w-full grid grid-cols-2 gap-3"
+                                    >
+                                        <Radio.Button
+                                            value="+"
+                                            className={`!h-13 !flex !items-center !justify-center !rounded-xl !border font-medium text-xs sm:text-sm ${
+                                                initCode === '+' 
+                                                    ? '!border-blue-500 !bg-blue-50/60 !text-blue-700 ring-2 ring-blue-500/20' 
+                                                    : '!border-slate-200 hover:!border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-2xl font-bold text-blue-600 leading-none pb-0.5">+</span>
+                                                <div className="text-left">
+                                                    <div className="font-bold">Ký hiệu +</div>
+                                                    <div className="text-[11px] text-slate-400 font-normal">(Mặc định)</div>
+                                                </div>
+                                            </div>
+                                        </Radio.Button>
+
+                                        <Radio.Button
+                                            value="x"
+                                            className={`!h-13 !flex !items-center !justify-center !rounded-xl !border font-medium text-xs sm:text-sm ${
+                                                initCode === 'x' 
+                                                    ? '!border-emerald-500 !bg-emerald-50/60 !text-emerald-700 ring-2 ring-emerald-500/20' 
+                                                    : '!border-slate-200 hover:!border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-2xl font-bold text-emerald-600 leading-none">x</span>
+                                                <div className="text-left">
+                                                    <div className="font-bold">Ký hiệu x</div>
+                                                    <div className="text-[11px] text-slate-400 font-normal">(Theo dõi x)</div>
+                                                </div>
+                                            </div>
+                                        </Radio.Button>
+                                    </Radio.Group>
+                                </div>
+                            </div>
+                        </Modal>
 
                         {/* Nút Xuất Excel */}
                         <Dropdown menu={{ items: exportMenuItems }}>
