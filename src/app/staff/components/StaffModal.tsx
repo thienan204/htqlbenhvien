@@ -1,9 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { message } from 'antd';
 import dayjs from 'dayjs';
-import DynamicForm, { FieldConfig } from '@/components/shared/DynamicForm';
+import ModularFormModal, { FormSectionDef } from '@/components/shared/ModularFormModal';
+import { 
+    UserOutlined, 
+    HomeOutlined, 
+    MedicineBoxOutlined, 
+    DollarOutlined, 
+    DisconnectOutlined 
+} from '@ant-design/icons';
 
 interface StaffModalProps {
     open: boolean;
@@ -76,7 +83,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
 
         const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong', 'ngay_nghi_viec', 'ngay_qd_nghi_viec'];
         dateFields.forEach(field => {
-            if (payload[field]) {
+            if (payload[field] && dayjs.isDayjs(payload[field])) {
                 payload[field] = payload[field].toISOString();
             }
         });
@@ -97,73 +104,134 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
         }
     };
 
-    const initialData = staffData ? { ...staffData } : {
-        trang_thai_id: workingStatuses.find(s => s.code === 'DANG_LAM_VIEC')?.id
-    };
-    if (initialData) {
-        const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong', 'ngay_nghi_viec', 'ngay_qd_nghi_viec'];
-        dateFields.forEach(field => {
-            if (initialData[field]) {
-                initialData[field] = dayjs(initialData[field]);
+    const initialData = useMemo(() => {
+        const data = staffData ? { ...staffData } : {
+            trang_thai_id: workingStatuses.find(s => s.code === 'DANG_LAM_VIEC')?.id
+        };
+        if (data) {
+            const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong', 'ngay_nghi_viec', 'ngay_qd_nghi_viec'];
+            dateFields.forEach(field => {
+                if (data[field]) {
+                    data[field] = dayjs(data[field]);
+                }
+            });
+        }
+        return data;
+    }, [staffData, workingStatuses]);
+
+    const wardOptions = useMemo(() => {
+        return wards.map(w => ({ 
+            value: w.id, 
+            label: w.parent ? `${w.name} (${w.parent.name})` : w.name 
+        }));
+    }, [wards]);
+
+    // Định nghĩa 5 phân nhóm nghiệp vụ hồ sơ nhân sự chuẩn Bộ Y tế
+    const sections: FormSectionDef[] = useMemo(() => {
+        return [
+            {
+                key: 'personal',
+                title: 'Định danh & Cá nhân',
+                icon: <UserOutlined />,
+                description: 'Thông tin cá nhân, định danh CCCD và bảo hiểm y tế/xã hội',
+                fields: [
+                    { name: 'ma_nv', label: 'Mã NV', type: 'text', required: true, span: 6, placeholder: 'VD: BV001...' },
+                    { name: 'ho_ten', label: 'Họ và tên', type: 'text', required: true, span: 10, placeholder: 'Họ và tên cán bộ...' },
+                    { name: 'gioi_tinh_id', label: 'Giới tính', type: 'select', span: 4, options: genders.map(g => ({ value: g.id, label: g.name })) },
+                    { name: 'ngay_sinh', label: 'Ngày sinh', type: 'date', span: 4 },
+                    { name: 'cccd', label: 'Số CCCD', type: 'text', span: 6, placeholder: '12 chữ số...' },
+                    { name: 'ngay_cap_cccd', label: 'Ngày cấp CCCD', type: 'date', span: 6 },
+                    { name: 'noi_cap_cccd', label: 'Nơi cấp CCCD', type: 'text', span: 6, placeholder: 'Cục Cảnh sát QLHC...' },
+                    { name: 'dan_toc_id', label: 'Dân tộc', type: 'select', span: 6, options: ethnicities.map(e => ({ value: e.id, label: e.name })) },
+                    { name: 'so_dien_thoai', label: 'Số điện thoại', type: 'text', span: 8, placeholder: 'Số di động liên hệ...' },
+                    { name: 'ma_bhxh', label: 'Mã số BHXH', type: 'text', span: 8, placeholder: 'Mã sổ BHXH...' },
+                    { name: 'ma_ho_gia_dinh', label: 'Mã hộ gia đình', type: 'text', span: 8, placeholder: 'Mã HGĐ BHYT...' },
+                    { name: 'dia_chi', label: 'Địa chỉ thường trú (Mô tả chi tiết)', type: 'text', span: 24, placeholder: 'Số nhà, đường, thôn/xóm...' },
+                ]
+            },
+            {
+                key: 'address',
+                title: 'Hộ khẩu & Địa chỉ',
+                icon: <HomeOutlined />,
+                description: 'Địa chỉ khai sinh, quê quán và nơi ở hiện tại theo 3 cấp hành chính',
+                fields: [
+                    { name: 'noi_sinh_ward_id', label: 'Nơi đăng ký khai sinh (Xã/Phường)', type: 'autocomplete', span: 12, options: wardOptions, placeholder: 'Gõ để tìm xã/phường...' },
+                    { name: 'noi_sinh_thon', label: 'Chi tiết nơi sinh (Thôn/Xóm/Số nhà)', type: 'text', span: 12, placeholder: 'Thôn, xóm, bản, tổ dân phố...' },
+                    { name: 'que_quan_ward_id', label: 'Quê quán (Xã/Phường)', type: 'autocomplete', span: 12, options: wardOptions, placeholder: 'Gõ để tìm quê quán...' },
+                    { name: 'que_quan_thon', label: 'Chi tiết quê quán (Thôn/Xóm/Số nhà)', type: 'text', span: 12, placeholder: 'Thôn, xóm, bản, tổ dân phố...' },
+                    { name: 'noi_o_ward_id', label: 'Nơi ở hiện tại (Xã/Phường)', type: 'autocomplete', span: 12, options: wardOptions, placeholder: 'Gõ để tìm nơi ở...' },
+                    { name: 'noi_o_thon', label: 'Chi tiết nơi ở (Thôn/Xóm/Số nhà)', type: 'text', span: 12, placeholder: 'Thôn, xóm, bản, tổ dân phố...' },
+                ]
+            },
+            {
+                key: 'employment',
+                title: 'Công tác & Chuyên môn',
+                icon: <MedicineBoxOutlined />,
+                description: 'Vị trí công tác, khoa phòng, chức danh chuyên môn y tế và chức vụ',
+                fields: [
+                    { name: 'ma_khoa', label: 'Khoa / Phòng', type: 'select', required: true, span: 8, options: departments.map(d => ({ value: d.ma_khoa, label: d.ten_khoa })) },
+                    { name: 'trang_thai_id', label: 'Trạng thái làm việc', type: 'select', span: 8, options: workingStatuses.map(s => ({ value: s.id, label: s.name })) },
+                    { name: 'loai_hop_dong_id', label: 'Loại hợp đồng', type: 'select', span: 8, options: contracts.map(c => ({ value: c.id, label: c.name })) },
+                    { name: 'chuc_vu_id', label: 'Chức vụ', type: 'select', span: 6, options: positions.map(p => ({ value: p.id, label: p.name })) },
+                    { name: 'vi_tri_viec_lam_id', label: 'Vị trí việc làm', type: 'select', span: 6, options: jobPositions.map(p => ({ value: p.id, label: p.name })) },
+                    { name: 'chuc_danh_id', label: 'Chức danh nghề nghiệp', type: 'select', span: 6, options: jobTitles.map(t => ({ value: t.id, label: t.name })) },
+                    { name: 'trinh_do_id', label: 'Trình độ chuyên môn', type: 'select', span: 6, options: qualifications.map(q => ({ value: q.id, label: q.name })) },
+                    { name: 'vi_tri_bhyt_id', label: 'Vị trí chuyên môn (Mẫu 02 BHYT)', type: 'select', span: 24, options: bhytPositions.map(p => ({ value: p.id, label: `${p.code} - ${p.name}` })) },
+                ]
+            },
+            {
+                key: 'salary',
+                title: 'Tuyển dụng & Tiền lương',
+                icon: <DollarOutlined />,
+                description: 'Quyết định tuyển dụng, nâng lương, ngạch bậc và hệ số lương',
+                fields: [
+                    { name: 'so_qd_tuyen_dung', label: 'Số QĐ Tuyển dụng', type: 'text', span: 8, placeholder: 'Số quyết định tuyển dụng...' },
+                    { name: 'ngay_tuyen_dung', label: 'Ngày tuyển dụng', type: 'date', span: 8 },
+                    { name: 'thoi_diem_nang_luong', label: 'Thời điểm nâng lương', type: 'date', span: 8 },
+                    { name: 'ma_ngach_id', label: 'Mã ngạch', type: 'select', span: 6, options: ngachLuongs.map(t => ({ value: t.id, label: t.name })) },
+                    { name: 'he_so_luong_id', label: 'Hệ số lương', type: 'select', span: 6, options: heSoLuongs.map(t => ({ value: t.id, label: t.name })) },
+                    { name: 'bac_luong_id', label: 'Bậc lương', type: 'select', span: 6, options: bacLuongs.map(t => ({ value: t.id, label: t.name })) },
+                    { name: 'phu_cap_tnvk_id', label: 'Phụ cấp TNVK (%)', type: 'select', span: 6, options: phuCaps.map(t => ({ value: t.id, label: t.name })) },
+                ]
+            },
+            {
+                key: 'resignation',
+                title: 'Chuyển công tác / Nghỉ việc',
+                icon: <DisconnectOutlined />,
+                description: 'Thông tin khi nhân viên chuyển viện, chuyển công tác hoặc nghỉ chế độ',
+                fields: [
+                    { name: 'ngay_nghi_viec', label: 'Ngày nghỉ việc / chuyển công tác', type: 'date', span: 8 },
+                    { name: 'so_qd_nghi_viec', label: 'Số QĐ nghỉ việc / chuyển công tác', type: 'text', span: 8, placeholder: 'Số quyết định thôi việc...' },
+                    { name: 'ngay_qd_nghi_viec', label: 'Ngày ký QĐ', type: 'date', span: 8 },
+                    { name: 'don_vi_chuyen_den', label: 'Cơ quan / Đơn vị chuyển đến (nếu có)', type: 'text', span: 12, placeholder: 'Tên đơn vị, bệnh viện chuyển đến...' },
+                    { name: 'ly_do_nghi_viec', label: 'Lý do / Ghi chú nghỉ việc, chuyển đi', type: 'textarea', span: 12, placeholder: 'Nghỉ hưu, chuyển công tác theo nguyện vọng...' },
+                ]
             }
-        });
-    }
-
-    const wardOptions = wards.map(w => ({ value: w.id, label: w.parent ? `${w.name} (${w.parent.name})` : w.name }));
-
-    const fieldsConfig: FieldConfig[] = [
-        { id: 'ma_nv', label: 'Mã NV (Bắt buộc)', type: 'input', required: true, span: 12 },
-        { id: 'ho_ten', label: 'Họ và tên (Bắt buộc)', type: 'input', required: true, span: 12 },
-        { id: 'ngay_sinh', label: 'Ngày sinh', type: 'date', span: 8 },
-        { id: 'gioi_tinh_id', label: 'Giới tính', type: 'select', span: 8, options: genders.map(g => ({ value: g.id, label: g.name })) },
-        { id: 'so_dien_thoai', label: 'Số điện thoại', type: 'input', span: 8 },
-        { id: 'cccd', label: 'Căn cước công dân', type: 'input', span: 8 },
-        { id: 'ngay_cap_cccd', label: 'Ngày cấp CCCD', type: 'date', span: 8 },
-        { id: 'noi_cap_cccd', label: 'Nơi cấp CCCD', type: 'input', span: 8 },
-        { id: 'ma_bhxh', label: 'Mã số BHXH', type: 'input', span: 8 },
-        { id: 'ma_ho_gia_dinh', label: 'Mã hộ gia đình', type: 'input', span: 8 },
-        { id: 'dan_toc_id', label: 'Dân tộc', type: 'select', span: 8, options: ethnicities.map(e => ({ value: e.id, label: e.name })) },
-        { id: 'dia_chi', label: 'Địa chỉ thường trú (Mô tả)', type: 'input', span: 24 },
-        
-        { id: 'noi_sinh_ward_id', label: 'Nơi đăng ký khai sinh (Xã/Phường)', type: 'autocomplete', span: 12, options: wardOptions },
-        { id: 'noi_sinh_thon', label: 'Chi tiết (Thôn/Xóm/Số nhà)', type: 'input', span: 12 },
-        { id: 'que_quan_ward_id', label: 'Quê quán (Xã/Phường)', type: 'autocomplete', span: 12, options: wardOptions },
-        { id: 'que_quan_thon', label: 'Chi tiết (Thôn/Xóm/Số nhà)', type: 'input', span: 12 },
-        { id: 'noi_o_ward_id', label: 'Nơi ở hiện tại (Xã/Phường)', type: 'autocomplete', span: 12, options: wardOptions },
-        { id: 'noi_o_thon', label: 'Chi tiết (Thôn/Xóm/Số nhà)', type: 'input', span: 12 },
-
-        { id: 'ma_khoa', label: 'Khoa / Phòng (Bắt buộc)', type: 'select', required: true, span: 12, options: departments.map(d => ({ value: d.ma_khoa, label: d.ten_khoa })) },
-        { id: 'trang_thai_id', label: 'Trạng thái làm việc', type: 'select', span: 12, options: workingStatuses.map(s => ({ value: s.id, label: s.name })) },
-        { id: 'ngay_nghi_viec', label: 'Ngày nghỉ việc / chuyển công tác', type: 'date', span: 8 },
-        { id: 'so_qd_nghi_viec', label: 'Số QĐ nghỉ việc / chuyển công tác', type: 'input', span: 8 },
-        { id: 'ngay_qd_nghi_viec', label: 'Ngày ký QĐ', type: 'date', span: 8 },
-        { id: 'don_vi_chuyen_den', label: 'Cơ quan / Đơn vị chuyển đến (nếu có)', type: 'input', span: 12 },
-        { id: 'ly_do_nghi_viec', label: 'Lý do / Ghi chú nghỉ việc, chuyển đi', type: 'input', span: 12 },
-        { id: 'loai_hop_dong_id', label: 'Loại hợp đồng', type: 'select', span: 12, options: contracts.map(c => ({ value: c.id, label: c.name })) },
-        { id: 'chuc_vu_id', label: 'Chức vụ', type: 'select', span: 12, options: positions.map(p => ({ value: p.id, label: p.name })) },
-        { id: 'vi_tri_viec_lam_id', label: 'Vị trí việc làm', type: 'select', span: 12, options: jobPositions.map(p => ({ value: p.id, label: p.name })) },
-        { id: 'chuc_danh_id', label: 'Chức danh nghề nghiệp', type: 'select', span: 12, options: jobTitles.map(t => ({ value: t.id, label: t.name })) },
-        { id: 'trinh_do_id', label: 'Trình độ chuyên môn', type: 'select', span: 12, options: qualifications.map(q => ({ value: q.id, label: q.name })) },
-        { id: 'vi_tri_bhyt_id', label: 'Vị trí chuyên môn (Mẫu 02 BHYT)', type: 'select', span: 24, options: bhytPositions.map(p => ({ value: p.id, label: `${p.code} - ${p.name}` })) },
-
-        { id: 'so_qd_tuyen_dung', label: 'Số QĐ Tuyển dụng', type: 'input', span: 8 },
-        { id: 'ngay_tuyen_dung', label: 'Ngày tuyển dụng', type: 'date', span: 8 },
-        { id: 'thoi_diem_nang_luong', label: 'Thời điểm nâng lương', type: 'date', span: 8 },
-        { id: 'ma_ngach_id', label: 'Mã ngạch', type: 'select', span: 6, options: ngachLuongs.map(t => ({ value: t.id, label: t.name })) },
-        { id: 'he_so_luong_id', label: 'Hệ số lương', type: 'select', span: 6, options: heSoLuongs.map(t => ({ value: t.id, label: t.name })) },
-        { id: 'bac_luong_id', label: 'Bậc lương', type: 'select', span: 6, options: bacLuongs.map(t => ({ value: t.id, label: t.name })) },
-        { id: 'phu_cap_tnvk_id', label: 'Phụ cấp TNVK (%)', type: 'select', span: 6, options: phuCaps.map(t => ({ value: t.id, label: t.name })) },
-    ];
+        ];
+    }, [departments, genders, contracts, positions, jobTitles, jobPositions, qualifications, ethnicities, bhytPositions, wardOptions, ngachLuongs, heSoLuongs, bacLuongs, phuCaps, workingStatuses]);
 
     return (
-        <DynamicForm
+        <ModularFormModal
             formId="staff_management_form"
-            title={staffData?.id ? 'Sửa thông tin Nhân sự' : 'Thêm Nhân sự mới'}
+            title={
+                staffData?.id ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span>✏️ Cập nhật Hồ sơ Nhân sự:</span>
+                        <span className="text-blue-600 font-bold">{staffData.ho_ten}</span>
+                        <span className="text-xs font-mono font-normal bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg border border-slate-200">
+                            {staffData.ma_nv}
+                        </span>
+                    </div>
+                ) : (
+                    <span>➕ Thêm Nhân sự mới</span>
+                )
+            }
             open={open}
             onClose={onClose}
             onSubmit={handleSave}
             initialData={initialData}
-            fieldsConfig={fieldsConfig}
+            sections={sections}
+            width={1050}
         />
     );
 }
