@@ -163,7 +163,41 @@ export default function StaffPage() {
             title: 'Họ và tên',
             dataIndex: 'ho_ten',
             key: 'ho_ten',
-            render: (text: string) => <span className="font-medium text-slate-800">{text}</span>
+            render: (text: string, record: any) => {
+                const status = record.trang_thai_ref;
+                const code = status?.code;
+                const isSpecialStatus = code && code !== 'DANG_LAM_VIEC';
+
+                return (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-slate-800">{text}</span>
+                        {isSpecialStatus && (
+                            <>
+                                {code === 'DA_NGHI_VIEC' && (
+                                    <Tag color="error" className="!mr-0 text-[11px] px-1.5 py-0 leading-tight">
+                                        Đã nghỉ việc
+                                    </Tag>
+                                )}
+                                {code === 'THUYEN_CHUYEN' && (
+                                    <Tag color="warning" className="!mr-0 text-[11px] px-1.5 py-0 leading-tight">
+                                        Chuyển công tác
+                                    </Tag>
+                                )}
+                                {code === 'NGHI_HUU' && (
+                                    <Tag color="purple" className="!mr-0 text-[11px] px-1.5 py-0 leading-tight">
+                                        Nghỉ hưu
+                                    </Tag>
+                                )}
+                                {code !== 'DA_NGHI_VIEC' && code !== 'THUYEN_CHUYEN' && code !== 'NGHI_HUU' && (
+                                    <Tag color="blue" className="!mr-0 text-[11px] px-1.5 py-0 leading-tight">
+                                        {status.name}
+                                    </Tag>
+                                )}
+                            </>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             title: 'Trình độ',
@@ -179,23 +213,6 @@ export default function StaffPage() {
             title: 'Khoa / Phòng',
             key: 'khoa',
             render: (_: any, record: any) => record.department ? record.department.ten_khoa : record.ma_khoa
-        },
-        {
-            title: 'Trạng thái',
-            key: 'trang_thai',
-            width: 140,
-            align: 'center' as const,
-            render: (_: any, record: any) => {
-                const status = record.trang_thai_ref;
-                if (!status) return <Tag color="default">Chưa rõ</Tag>;
-                const code = status.code;
-                if (code === 'DANG_LAM_VIEC') return <Tag color="success">Đang làm việc</Tag>;
-                if (code === 'DA_NGHI_VIEC') return <Tag color="error">Đã nghỉ việc</Tag>;
-                if (code === 'THUYEN_CHUYEN') return <Tag color="warning">Chuyển công tác</Tag>;
-                if (code === 'NGHI_HUU') return <Tag color="purple">Nghỉ hưu</Tag>;
-                if (code === 'NGHI_THAI_SAN') return <Tag color="magenta">Nghỉ thai sản</Tag>;
-                return <Tag color="blue">{status.name}</Tag>;
-            }
         },
         {
             title: 'Thao tác',
