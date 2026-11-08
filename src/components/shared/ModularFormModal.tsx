@@ -576,7 +576,7 @@ export default function ModularFormModal({
                 }
                 open={isConfigDrawerOpen}
                 onClose={() => setIsConfigDrawerOpen(false)}
-                width={420}
+                size={420}
                 className="config-form-drawer"
                 footer={
                     <div className="flex items-center justify-between">
