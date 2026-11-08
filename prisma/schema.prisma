@@ -1809,12 +1809,20 @@ model Xml15 {
 }
 
 model SystemConfig {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  key          String   @unique
+  value        String
+  description  String?
+  title        String?
+  category     String?  @default("MODULE") // "SYSTEM" (Quy trình) hoặc "MODULE" (Hiển thị & Cục bộ)
+  module       String?  // Mã phân hệ: "CHAM_CONG", "NHAN_SU", "CNTT", "BHYT", "HE_THONG"...
+  route        String?  // Route áp dụng: "/staff/attendance", "/staff"...
+  dataType     String?  @default("BOOLEAN") // "BOOLEAN", "STRING", "NUMBER", "SELECT", "MULTI_SELECT", "JSON"
+  options      String?  // JSON options nếu là SELECT (ví dụ: [{"label":"Dấu +","value":"+"},{"label":"Dấu x","value":"x"}])
+  defaultValue String?  // Giá trị mặc định an toàn
+  order        Int?     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model StaffAttendance {

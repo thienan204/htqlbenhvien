@@ -152,7 +152,35 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     const [initCode, setInitCode] = React.useState<'+' | 'x'>('+');
     const [initLoading, setInitLoading] = React.useState(false);
 
-    const handleInitMonth = async () => {
+    // Đọc cấu hình từ Module Cấu hình
+    const [allowChooseSymbol, setAllowChooseSymbol] = React.useState(false);
+    const [defaultInitSymbol, setDefaultInitSymbol] = React.useState<'+' | 'x'>('+');
+
+    React.useEffect(() => {
+        const fetchAttendanceConfigs = async () => {
+            try {
+                const res = await fetch('/api/system-config?module=CHAM_CONG');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data.configs)) {
+                        const chooseConf = data.configs.find((c: any) => c.key === 'ATTENDANCE_ALLOW_CHOOSE_SYMBOL_ON_INIT');
+                        if (chooseConf) {
+                            setAllowChooseSymbol(chooseConf.value === 'true' || chooseConf.value === '1');
+                        }
+                        const defaultSymbolConf = data.configs.find((c: any) => c.key === 'ATTENDANCE_DEFAULT_INIT_SYMBOL');
+                        if (defaultSymbolConf?.value === 'x' || defaultSymbolConf?.value === '+') {
+                            setDefaultInitSymbol(defaultSymbolConf.value);
+                            setInitCode(defaultSymbolConf.value);
+                        }
+                    }
+                }
+            } catch (e) {}
+        };
+        fetchAttendanceConfigs();
+    }, []);
+
+    const handleInitMonth = async (customCode?: '+' | 'x') => {
+        const codeToUse = customCode || initCode || defaultInitSymbol;
         try {
             setInitLoading(true);
             const basePath = getBasePath();
@@ -163,7 +191,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                 body: JSON.stringify({
                     ma_khoa: selectedDept,
                     monthYear,
-                    code: initCode
+                    code: codeToUse
                 })
             });
             if (!res.ok) {
@@ -177,7 +205,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
             }
             const data = await res.json();
             if (data.success) {
-                message.success(data.message || `Khởi tạo công cả tháng với ký hiệu "${initCode}" thành công`);
+                message.success(data.message || `Khởi tạo công cả tháng với ký hiệu "${codeToUse}" thành công`);
                 setIsInitModalOpen(false);
                 fetchData();
             } else {
@@ -187,6 +215,29 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
             message.error('Lỗi kết nối khi khởi tạo');
         } finally {
             setInitLoading(false);
+        }
+    };
+
+    const handleClickInitButton = () => {
+        if (allowChooseSymbol) {
+            // Khi BẬT trong Module Cấu hình -> Mở Modal cho chọn giữa + và x
+            setIsInitModalOpen(true);
+        } else {
+            // Khi TẮT trong Module Cấu hình (mặc định) -> Xác nhận nhanh và điền ký hiệu mặc định toàn viện ngay
+            Modal.confirm({
+                title: `⚡ Khởi tạo công cả tháng ${selectedDate.format('MM/YYYY')}?`,
+                content: (
+                    <div className="text-xs space-y-1.5 py-1 text-slate-600">
+                        <p>Tự động điền công (<b>{defaultInitSymbol}</b>) cho tất cả cán bộ trong tháng <b>{selectedDate.format('MM/YYYY')}</b>.</p>
+                        <p className="text-emerald-700 font-medium">✓ Điền Thứ 2 - Thứ 6 (tự động bỏ qua Thứ 7 & CN).</p>
+                        <p className="text-purple-700 font-medium">✓ Tự động bỏ qua ngày nghỉ Lễ/Tết toàn viện.</p>
+                        <p className="text-slate-400 italic">✓ Không ghi đè các ô đã chấm trước đó.</p>
+                    </div>
+                ),
+                okText: 'Khởi tạo ngay',
+                cancelText: 'Hủy',
+                onOk: () => handleInitMonth(defaultInitSymbol)
+            });
         }
     };
 
@@ -328,7 +379,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
 
                                 <Button 
                                     icon={<ThunderboltOutlined className="text-amber-500" />}
-                                    onClick={() => setIsInitModalOpen(true)}
+                                    onClick={handleClickInitButton}
                                     className="font-semibold text-slate-700 hover:text-amber-600 border-amber-300 hover:border-amber-400 bg-amber-50/50"
                                 >
                                     ⚡ Khởi Tạo Công Cả Tháng
@@ -346,7 +397,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                             }
                             open={isInitModalOpen}
                             onCancel={() => !initLoading && setIsInitModalOpen(false)}
-                            onOk={handleInitMonth}
+                            onOk={() => handleInitMonth()}
                             confirmLoading={initLoading}
                             okText="Khởi tạo ngay"
                             cancelText="Hủy"

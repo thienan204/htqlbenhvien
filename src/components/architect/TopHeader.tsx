@@ -5,7 +5,8 @@ import {
     AppstoreOutlined, SearchOutlined,
     BellOutlined, MessageOutlined, LogoutOutlined, UserOutlined, KeyOutlined,
     MenuFoldOutlined, MenuUnfoldOutlined, LayoutOutlined, DashboardOutlined,
-    QrcodeOutlined, BookOutlined, InfoCircleOutlined, SafetyCertificateOutlined
+    QrcodeOutlined, BookOutlined, InfoCircleOutlined, SafetyCertificateOutlined,
+    SettingOutlined
 } from '@ant-design/icons';
 import { Button, Badge, Avatar, Dropdown, Tooltip, message } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
@@ -189,6 +190,11 @@ const TopHeader = ({
                                     label: 'Dashboard Builder',
                                     icon: <AppstoreOutlined />,
                                     onClick: () => router.push('/admin/dashboard-cards')
+                                }, {
+                                    key: 'system-config',
+                                    label: 'Cấu hình Hệ thống & Phân hệ',
+                                    icon: <SettingOutlined className="text-blue-600" />,
+                                    onClick: () => router.push('/system-config')
                                 }, {
                                     type: 'divider' as const
                                 }] : []),
