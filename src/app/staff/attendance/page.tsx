@@ -151,7 +151,7 @@ export default function AttendanceSheetPage() {
             width: 45,
             fixed: 'left',
             align: 'center',
-            className: 'bg-slate-50 font-medium'
+            className: 'col-stt font-medium text-slate-700'
         },
         {
             title: 'Họ và Tên',
@@ -159,7 +159,7 @@ export default function AttendanceSheetPage() {
             key: 'ho_ten',
             width: 170,
             fixed: 'left',
-            className: 'bg-slate-50',
+            className: 'col-ho-ten',
             render: (name: string, record: StaffMatrixData) => {
                 const hasPosition = Boolean(record.chuc_vu && record.chuc_vu.trim() !== '' && record.chuc_vu.trim().toLowerCase() !== 'cán bộ');
                 const isResignedInMonth = Boolean(record.isResignedInMonth && record.resignedDay);
@@ -515,7 +515,7 @@ export default function AttendanceSheetPage() {
             width: 70,
             align: 'center',
             fixed: 'right',
-            className: 'bg-emerald-50 font-bold text-emerald-800'
+            className: 'col-luong-tg text-center font-bold text-emerald-800'
         },
         {
             title: 'Không lương',
@@ -524,7 +524,7 @@ export default function AttendanceSheetPage() {
             width: 70,
             align: 'center',
             fixed: 'right',
-            className: 'bg-slate-50 text-slate-600 font-medium'
+            className: 'col-khong-luong text-center text-slate-600 font-medium'
         },
         {
             title: 'Hưởng BHXH',
@@ -533,7 +533,7 @@ export default function AttendanceSheetPage() {
             width: 70,
             align: 'center',
             fixed: 'right',
-            className: 'bg-rose-50 text-rose-700 font-medium'
+            className: 'col-huong-bhxh text-center text-rose-700 font-semibold'
         },
         {
             title: (
@@ -546,7 +546,7 @@ export default function AttendanceSheetPage() {
             key: 'monthlyNote',
             width: 140,
             fixed: 'right',
-            className: 'bg-amber-50/40 hover:bg-amber-100/50 cursor-pointer transition-colors',
+            className: 'col-ghi-chu hover:opacity-90 cursor-pointer transition-colors',
             render: (note: string, record: StaffMatrixData) => {
                 const hasNote = Boolean(note && note.trim() !== '');
                 return (

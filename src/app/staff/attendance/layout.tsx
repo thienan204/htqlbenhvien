@@ -501,6 +501,80 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                 </div>
             </Card>
 
+            {/* Scoped CSS cho các cột cố định (Freeze Panes) của Bảng Chấm Công */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                /* 1. Vùng cố định TRÁI: STT và Họ & Tên */
+                .attendance-matrix-table .ant-table-cell-fix-left {
+                    background-color: #f8fafc !important;
+                }
+                .attendance-matrix-table tr:hover > td.ant-table-cell-fix-left {
+                    background-color: #f1f5f9 !important;
+                }
+                .attendance-matrix-table .ant-table-thead > tr > th.ant-table-cell-fix-left {
+                    background-color: #e2e8f0 !important;
+                    color: #1e293b !important;
+                    font-weight: 700 !important;
+                }
+                .attendance-matrix-table .ant-table-cell-fix-left-last {
+                    border-right: 2px solid #cbd5e1 !important;
+                    box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.12) !important;
+                }
+
+                /* 2. Vùng cố định PHẢI: Lương TG, Không lương, Hưởng BHXH, Ghi Chú */
+                .attendance-matrix-table .ant-table-cell-fix-right {
+                    background-color: #f8fafc !important;
+                }
+                .attendance-matrix-table .ant-table-cell-fix-right-first {
+                    border-left: 2px solid #cbd5e1 !important;
+                    box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.12) !important;
+                }
+                .attendance-matrix-table .ant-table-thead > tr > th.ant-table-cell-fix-right {
+                    background-color: #f1f5f9 !important;
+                    color: #1e293b !important;
+                    font-weight: 700 !important;
+                }
+
+                /* 3. Màu nền riêng cho từng cột tổng kết công bên phải */
+                .attendance-matrix-table td.col-luong-tg,
+                .attendance-matrix-table .col-luong-tg {
+                    background-color: #ecfdf5 !important;
+                    color: #065f46 !important;
+                    font-weight: 700 !important;
+                }
+                .attendance-matrix-table tr:hover > td.col-luong-tg {
+                    background-color: #d1fae5 !important;
+                }
+
+                .attendance-matrix-table td.col-khong-luong,
+                .attendance-matrix-table .col-khong-luong {
+                    background-color: #f8fafc !important;
+                    color: #475569 !important;
+                    font-weight: 600 !important;
+                }
+                .attendance-matrix-table tr:hover > td.col-khong-luong {
+                    background-color: #f1f5f9 !important;
+                }
+
+                .attendance-matrix-table td.col-huong-bhxh,
+                .attendance-matrix-table .col-huong-bhxh {
+                    background-color: #fff1f2 !important;
+                    color: #be123c !important;
+                    font-weight: 700 !important;
+                }
+                .attendance-matrix-table tr:hover > td.col-huong-bhxh {
+                    background-color: #ffe4e6 !important;
+                }
+
+                .attendance-matrix-table td.col-ghi-chu,
+                .attendance-matrix-table .col-ghi-chu {
+                    background-color: #fffbeb !important;
+                    color: #334155 !important;
+                }
+                .attendance-matrix-table tr:hover > td.col-ghi-chu {
+                    background-color: #fef3c7 !important;
+                }
+            ` }} />
+
             {/* Modal Ghi Chú Tháng */}
             <NoteEditModal />
 
