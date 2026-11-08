@@ -422,7 +422,7 @@ export default function ModularFormModal({
                         <div className="flex items-center gap-2 shrink-0">
                             {extraHeaderActions}
 
-                            {/* Bộ chuyển đổi Chế độ xem: Phân theo Tab <-> Cuộn 1 trang */}
+                            {/* Bộ chuyển đổi Chế độ xem: Phân theo Tab <-> Cuộn 1 trang (Kiểu Icon căn giữa chuẩn) */}
                             <Segmented
                                 size="middle"
                                 value={viewMode}
@@ -433,25 +433,27 @@ export default function ModularFormModal({
                                 }}
                                 options={[
                                     {
-                                        label: (
-                                            <span className="flex items-center gap-1 text-xs font-semibold px-1">
-                                                <AppstoreOutlined />
-                                                <span className="hidden xs:inline">Phân Tab</span>
-                                            </span>
-                                        ),
-                                        value: 'tabs'
+                                        value: 'tabs',
+                                        icon: (
+                                            <Tooltip title="Chế độ Phân Tab">
+                                                <div className="w-7 h-7 flex items-center justify-center">
+                                                    <AppstoreOutlined className="text-[15px]" />
+                                                </div>
+                                            </Tooltip>
+                                        )
                                     },
                                     {
-                                        label: (
-                                            <span className="flex items-center gap-1 text-xs font-semibold px-1">
-                                                <BarsOutlined />
-                                                <span className="hidden xs:inline">Cuộn 1 trang</span>
-                                            </span>
-                                        ),
-                                        value: 'continuous'
+                                        value: 'continuous',
+                                        icon: (
+                                            <Tooltip title="Chế độ Cuộn 1 trang">
+                                                <div className="w-7 h-7 flex items-center justify-center">
+                                                    <BarsOutlined className="text-[15px]" />
+                                                </div>
+                                            </Tooltip>
+                                        )
                                     }
                                 ]}
-                                className="bg-slate-100/90 p-0.5 rounded-lg border border-slate-200"
+                                className="bg-slate-100 p-0.5 rounded-lg border border-slate-200 [&_.ant-segmented-item-label]:!p-0 [&_.ant-segmented-item-label]:!flex [&_.ant-segmented-item-label]:!items-center [&_.ant-segmented-item-label]:!justify-center [&_.ant-segmented-item-icon]:!m-0 [&_.ant-segmented-item-icon]:!flex [&_.ant-segmented-item-icon]:!items-center [&_.ant-segmented-item-icon]:!justify-center"
                             />
 
                             {/* Nút Cấu hình Form */}
