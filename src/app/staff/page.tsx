@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Card, Space, Tag, Input, Popconfirm, message, Select, Dropdown } from 'antd';
-import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined, DownloadOutlined, CalendarOutlined, ScheduleOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined, SearchOutlined, TeamOutlined, DeleteOutlined, SyncOutlined, DownloadOutlined, CalendarOutlined, ScheduleOutlined, MoreOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import ImportStaffModal from './components/ImportStaffModal';
 import StaffModal from './components/StaffModal';
@@ -217,30 +217,79 @@ export default function StaffPage() {
         {
             title: 'Thao tác',
             key: 'action',
-            render: (_: any, record: any) => (
-                <Space wrap size="small">
-                    <Button size="small" onClick={() => {
-                        setSelectedStaff(record);
-                        setIsStaffDetailsModalOpen(true);
-                    }}>👁️ Xem</Button>
-                    <Button size="small" type="primary" ghost onClick={() => {
-                        setSelectedStaff(record);
-                        setIsStaffModalOpen(true);
-                    }}>Sửa</Button>
-                    <Button size="small" className="text-emerald-600 border-emerald-600 hover:bg-emerald-50" onClick={() => {
-                        setSelectedStaff(record);
-                        setIsWorkHistoryModalOpen(true);
-                    }}>🏢 Lịch sử khoa</Button>
-                    <Button size="small" onClick={() => {
-                        setSelectedStaff(record);
-                        setIsCertModalOpen(true);
-                    }}>🪪 Quản lý CCHN</Button>
-                    <Button size="small" className="text-amber-600 border-amber-600 hover:bg-amber-50" onClick={() => {
-                        setSelectedStaff(record);
-                        setIsTrainingModalOpen(true);
-                    }}>🎓 Đào tạo</Button>
-                </Space>
-            )
+            width: 160,
+            align: 'center' as const,
+            render: (_: any, record: any) => {
+                const moreMenuItems = [
+                    {
+                        key: 'history',
+                        icon: <span className="text-sm">🏢</span>,
+                        label: 'Lịch sử luân chuyển khoa',
+                        onClick: () => {
+                            setSelectedStaff(record);
+                            setIsWorkHistoryModalOpen(true);
+                        }
+                    },
+                    {
+                        key: 'cchn',
+                        icon: <span className="text-sm">🪪</span>,
+                        label: 'Quản lý CCHN',
+                        onClick: () => {
+                            setSelectedStaff(record);
+                            setIsCertModalOpen(true);
+                        }
+                    },
+                    {
+                        key: 'training',
+                        icon: <span className="text-sm">🎓</span>,
+                        label: 'Quá trình đào tạo',
+                        onClick: () => {
+                            setSelectedStaff(record);
+                            setIsTrainingModalOpen(true);
+                        }
+                    }
+                ];
+
+                return (
+                    <div className="flex items-center justify-center gap-1.5">
+                        <Button 
+                            size="small" 
+                            className="rounded-md text-xs px-2 h-7"
+                            onClick={() => {
+                                setSelectedStaff(record);
+                                setIsStaffDetailsModalOpen(true);
+                            }}
+                        >
+                            👁️ Xem
+                        </Button>
+                        <Button 
+                            size="small" 
+                            type="primary" 
+                            ghost 
+                            className="rounded-md text-xs px-2 h-7"
+                            onClick={() => {
+                                setSelectedStaff(record);
+                                setIsStaffModalOpen(true);
+                            }}
+                        >
+                            ✏️ Sửa
+                        </Button>
+                        <Dropdown 
+                            menu={{ items: moreMenuItems }} 
+                            trigger={['click']}
+                            placement="bottomRight"
+                        >
+                            <Button 
+                                size="small" 
+                                className="rounded-md text-xs px-1.5 h-7 text-slate-600 hover:text-blue-600 hover:border-blue-400"
+                                title="Thao tác khác"
+                            >
+                                <MoreOutlined className="text-sm" />
+                            </Button>
+                        </Dropdown>
+                    </div>
+                );
+            }
         }
     ];
 
