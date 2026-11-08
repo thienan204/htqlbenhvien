@@ -245,7 +245,7 @@ export default function ModularFormModal({
                     <InputNumber
                         placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`}
                         disabled={field.disabled}
-                        className="w-full !rounded-xl !h-10 leading-10 text-sm"
+                        className="w-full !rounded-lg !h-9 leading-9 text-[13px] border-slate-300 hover:border-blue-400 focus:border-blue-500 shadow-2xs"
                     />
                 );
             case 'select':
@@ -259,8 +259,8 @@ export default function ModularFormModal({
                         filterOption={(input, option) =>
                             String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                         }
-                        className="w-full !rounded-xl text-sm"
-                        style={{ height: 40 }}
+                        className="w-full !rounded-lg text-[13px] [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 hover:[&_.ant-select-selector]:!border-blue-400 [&_.ant-select-selector]:!h-9 [&_.ant-select-selection-item]:!leading-9 [&_.ant-select-selection-placeholder]:!leading-9 shadow-2xs"
+                        style={{ height: 36 }}
                     />
                 );
             case 'autocomplete':
@@ -273,8 +273,8 @@ export default function ModularFormModal({
                         filterOption={(input, option) =>
                             String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                         }
-                        className="w-full !rounded-xl text-sm"
-                        style={{ height: 40 }}
+                        className="w-full !rounded-lg text-[13px] [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 hover:[&_.ant-select-selector]:!border-blue-400 [&_.ant-select-selector]:!h-9 [&_.ant-select-selection-item]:!leading-9 [&_.ant-select-selection-placeholder]:!leading-9 shadow-2xs"
+                        style={{ height: 36 }}
                     />
                 );
             case 'date':
@@ -283,7 +283,7 @@ export default function ModularFormModal({
                         format="DD/MM/YYYY"
                         placeholder={field.placeholder || 'Chọn ngày'}
                         disabled={field.disabled}
-                        className="w-full !rounded-xl !h-10 text-sm"
+                        className="w-full !rounded-lg !h-9 text-[13px] border-slate-300 hover:border-blue-400 focus:border-blue-500 shadow-2xs"
                     />
                 );
             case 'textarea':
@@ -292,16 +292,18 @@ export default function ModularFormModal({
                         rows={3}
                         placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`}
                         disabled={field.disabled}
-                        className="!rounded-xl text-sm py-2"
+                        className="!rounded-lg text-[13px] py-1.5 border-slate-300 hover:border-blue-400 focus:border-blue-500 shadow-2xs"
                     />
                 );
             case 'switch':
                 return (
-                    <Switch
-                        checkedChildren="Bật"
-                        unCheckedChildren="Tắt"
-                        disabled={field.disabled}
-                    />
+                    <div className="pt-1">
+                        <Switch
+                            checkedChildren="Bật"
+                            unCheckedChildren="Tắt"
+                            disabled={field.disabled}
+                        />
+                    </div>
                 );
             case 'text':
             default:
@@ -311,7 +313,7 @@ export default function ModularFormModal({
                         placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}...`}
                         disabled={field.disabled}
                         allowClear
-                        className="!rounded-xl !h-10 text-sm"
+                        className="!rounded-lg !h-9 text-[13px] border-slate-300 hover:border-blue-400 focus:border-blue-500 shadow-2xs"
                     />
                 );
         }
@@ -323,14 +325,14 @@ export default function ModularFormModal({
 
         if (visibleFields.length === 0) {
             return (
-                <div className="py-6 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <div className="py-6 text-center text-slate-400 text-xs italic bg-slate-50 rounded-lg border border-dashed border-slate-200">
                     Tất cả các trường trong mục này đã được ẩn trong Cấu hình Form.
                 </div>
             );
         }
 
         return (
-            <Row gutter={[16, 10]}>
+            <Row gutter={[16, 0]}>
                 {visibleFields.map(field => {
                     const span = field.span || 8;
                     const isRequired = Boolean(field.required);
@@ -348,18 +350,18 @@ export default function ModularFormModal({
                             <Form.Item
                                 name={field.name}
                                 label={
-                                    <span className="font-semibold text-slate-700 text-xs sm:text-[13px] flex items-center gap-1">
-                                        {field.label}
-                                        {isRequired && <span className="text-red-500">*</span>}
+                                    <span className="font-medium text-slate-700 text-[13px] flex items-center gap-1 leading-tight">
+                                        <span>{field.label}</span>
+                                        {isRequired && <span className="text-red-500 font-bold ml-0.5">*</span>}
                                         {field.tooltip && (
                                             <Tooltip title={field.tooltip}>
-                                                <ExclamationCircleOutlined className="text-slate-400 text-[11px]" />
+                                                <ExclamationCircleOutlined className="text-slate-400 text-[11px] ml-0.5" />
                                             </Tooltip>
                                         )}
                                     </span>
                                 }
                                 rules={rules}
-                                className="mb-2.5"
+                                className="!mb-3.5"
                                 valuePropName={field.type === 'switch' ? 'checked' : 'value'}
                             >
                                 {renderFormFieldWidget(field)}
@@ -377,8 +379,8 @@ export default function ModularFormModal({
             const errorCount = tabErrors[section.key] || 0;
 
             const tabLabel = (
-                <span className="flex items-center gap-1.5 font-medium text-xs sm:text-sm px-1">
-                    {section.icon && <span className="text-base">{section.icon}</span>}
+                <span className="flex items-center gap-1.5 font-medium text-xs sm:text-[13px] px-0.5 whitespace-nowrap">
+                    {section.icon && <span className="text-sm">{section.icon}</span>}
                     <span>{section.title}</span>
                     {errorCount > 0 && (
                         <Badge count={errorCount} size="small" className="ml-1" />
@@ -390,10 +392,10 @@ export default function ModularFormModal({
                 key: section.key,
                 label: tabLabel,
                 children: (
-                    <div className="pt-2 pb-1">
+                    <div className="pt-1.5 pb-1">
                         {section.description && (
-                            <div className="mb-3 text-xs text-slate-500 bg-blue-50/60 border border-blue-100 p-2 rounded-xl flex items-center gap-1.5">
-                                <span className="text-blue-500">ℹ️</span>
+                            <div className="mb-2.5 text-xs text-slate-500 bg-blue-50/60 border border-blue-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                                <span className="text-blue-500 text-xs">ℹ️</span>
                                 <span>{section.description}</span>
                             </div>
                         )}
@@ -449,7 +451,7 @@ export default function ModularFormModal({
                                         value: 'continuous'
                                     }
                                 ]}
-                                className="bg-slate-100/90 p-0.5 rounded-xl border border-slate-200"
+                                className="bg-slate-100/90 p-0.5 rounded-lg border border-slate-200"
                             />
 
                             {/* Nút Cấu hình Form */}
@@ -458,7 +460,7 @@ export default function ModularFormModal({
                                     size="middle"
                                     icon={<SettingOutlined className="text-slate-600" />}
                                     onClick={() => setIsConfigDrawerOpen(true)}
-                                    className="rounded-xl border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-400 font-medium text-xs flex items-center gap-1"
+                                    className="rounded-lg border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-400 font-medium text-xs flex items-center gap-1"
                                 >
                                     <span className="hidden sm:inline">Cấu hình</span>
                                 </Button>
@@ -474,10 +476,11 @@ export default function ModularFormModal({
                 className="max-w-[96vw]"
                 styles={{
                     body: {
-                        maxHeight: 'calc(85vh - 130px)',
+                        maxHeight: 'calc(88vh - 120px)',
                         overflowY: 'auto',
                         paddingRight: '6px',
-                        paddingTop: '12px'
+                        paddingTop: '10px',
+                        paddingBottom: '4px'
                     }
                 }}
                 footer={
@@ -489,7 +492,7 @@ export default function ModularFormModal({
                             <Button
                                 onClick={onClose}
                                 disabled={submitting || loading}
-                                className="h-10 px-5 rounded-xl text-slate-600 font-medium hover:bg-slate-50 flex-1 sm:flex-initial"
+                                className="h-9 px-4 rounded-lg text-slate-600 font-medium hover:bg-slate-50 flex-1 sm:flex-initial text-sm"
                             >
                                 {cancelText}
                             </Button>
@@ -498,7 +501,7 @@ export default function ModularFormModal({
                                 icon={<SaveOutlined />}
                                 onClick={handleOk}
                                 loading={submitting || loading}
-                                className="h-10 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold shadow-xs flex-1 sm:flex-initial"
+                                className="h-9 px-5 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold shadow-xs flex-1 sm:flex-initial text-sm"
                             >
                                 {submitText}
                             </Button>
@@ -511,7 +514,8 @@ export default function ModularFormModal({
                     layout="vertical"
                     preserve={true}
                     scrollToFirstError={true}
-                    className="staff-modular-form"
+                    requiredMark={false}
+                    className="staff-modular-form [&_.ant-form-item-label]:!pb-0.5 [&_.ant-form-item-label>label]:!text-slate-700 [&_.ant-form-item-label>label]:!text-[13px] [&_.ant-form-item-label>label]:!font-medium [&_.ant-form-item-label>label]:!h-auto"
                 >
                     {/* CHẾ ĐỘ 1: PHÂN CHIA THEO TAB (Antd Tabs type="card") */}
                     {viewMode === 'tabs' ? (
@@ -520,7 +524,7 @@ export default function ModularFormModal({
                             activeKey={activeTabKey}
                             onChange={setActiveTabKey}
                             items={tabItems}
-                            className="modular-form-tabs"
+                            className="modular-form-tabs [&_.ant-tabs-nav]:!mb-2.5 [&_.ant-tabs-tab]:!px-3 [&_.ant-tabs-tab]:!py-1.5 [&_.ant-tabs-tab]:!rounded-t-lg"
                         />
                     ) : (
                         /* CHẾ ĐỘ 2: CUỘN 1 TRANG LIÊN TỤC (Từng nhóm trong thẻ Card sang trọng) */
@@ -680,3 +684,4 @@ export default function ModularFormModal({
         </>
     );
 }
+

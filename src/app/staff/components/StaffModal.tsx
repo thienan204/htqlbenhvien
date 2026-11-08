@@ -135,17 +135,24 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
                 icon: <UserOutlined />,
                 description: 'Thông tin cá nhân, định danh CCCD và bảo hiểm y tế/xã hội',
                 fields: [
+                    // Hàng 1 (24 cols): Mã NV (6) | Họ tên (10) | Giới tính (4) | Ngày sinh (4)
                     { name: 'ma_nv', label: 'Mã NV', type: 'text', required: true, span: 6, placeholder: 'VD: BV001...' },
                     { name: 'ho_ten', label: 'Họ và tên', type: 'text', required: true, span: 10, placeholder: 'Họ và tên cán bộ...' },
                     { name: 'gioi_tinh_id', label: 'Giới tính', type: 'select', span: 4, options: genders.map(g => ({ value: g.id, label: g.name })) },
                     { name: 'ngay_sinh', label: 'Ngày sinh', type: 'date', span: 4 },
+
+                    // Hàng 2 (24 cols): Số ĐT (6) | Số CCCD (6) | Ngày cấp (6) | Nơi cấp (6)
+                    { name: 'so_dien_thoai', label: 'Số điện thoại', type: 'text', span: 6, placeholder: 'Số di động liên hệ...' },
                     { name: 'cccd', label: 'Số CCCD', type: 'text', span: 6, placeholder: '12 chữ số...' },
                     { name: 'ngay_cap_cccd', label: 'Ngày cấp CCCD', type: 'date', span: 6 },
                     { name: 'noi_cap_cccd', label: 'Nơi cấp CCCD', type: 'text', span: 6, placeholder: 'Cục Cảnh sát QLHC...' },
+
+                    // Hàng 3 (24 cols): Dân tộc (6) | Mã BHXH (9) | Mã hộ gia đình (9)
                     { name: 'dan_toc_id', label: 'Dân tộc', type: 'select', span: 6, options: ethnicities.map(e => ({ value: e.id, label: e.name })) },
-                    { name: 'so_dien_thoai', label: 'Số điện thoại', type: 'text', span: 8, placeholder: 'Số di động liên hệ...' },
-                    { name: 'ma_bhxh', label: 'Mã số BHXH', type: 'text', span: 8, placeholder: 'Mã sổ BHXH...' },
-                    { name: 'ma_ho_gia_dinh', label: 'Mã hộ gia đình', type: 'text', span: 8, placeholder: 'Mã HGĐ BHYT...' },
+                    { name: 'ma_bhxh', label: 'Mã số BHXH', type: 'text', span: 9, placeholder: 'Mã sổ BHXH...' },
+                    { name: 'ma_ho_gia_dinh', label: 'Mã hộ gia đình', type: 'text', span: 9, placeholder: 'Mã HGĐ BHYT...' },
+
+                    // Hàng 4 (24 cols): Địa chỉ thường trú mô tả
                     { name: 'dia_chi', label: 'Địa chỉ thường trú (Mô tả chi tiết)', type: 'text', span: 24, placeholder: 'Số nhà, đường, thôn/xóm...' },
                 ]
             },
@@ -181,7 +188,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
             },
             {
                 key: 'salary',
-                title: 'Tuyển dụng & Tiền lương',
+                title: 'Tuyển dụng & Lương',
                 icon: <DollarOutlined />,
                 description: 'Quyết định tuyển dụng, nâng lương, ngạch bậc và hệ số lương',
                 fields: [
@@ -196,7 +203,7 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
             },
             {
                 key: 'resignation',
-                title: 'Chuyển công tác / Nghỉ việc',
+                title: 'Nghỉ việc / Chuyển đi',
                 icon: <DisconnectOutlined />,
                 description: 'Thông tin khi nhân viên chuyển viện, chuyển công tác hoặc nghỉ chế độ',
                 fields: [
