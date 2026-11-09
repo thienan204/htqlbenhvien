@@ -87,13 +87,12 @@ export default function SidebarClient({ rules, menus = [], isOpen, adminMode = f
             <div className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-slate-200">
                 
                 {rootMenus.map(group => {
-                    const isGroupAdmin = group.isAdminOnly || isMenuAdmin(group, rules, menus, adminOnlyPaths);
-                    if (adminMode && !isGroupAdmin) return null;
-                    if (!adminMode && isGroupAdmin) return null;
-
                     const children = menus.filter(m => m.parentId === group.id).sort((a, b) => a.order - b.order);
+                    const isGroupAdmin = group.isAdminOnly || isMenuAdmin(group, rules, menus, adminOnlyPaths);
 
                     if (children.length === 0) {
+                        if (adminMode && !isGroupAdmin) return null;
+                        if (!adminMode && isGroupAdmin) return null;
                         const isActive = group.path === '/' ? pathname === '/' : (group.path && pathname.startsWith(group.path));
                         return (
                             <div key={group.id} className="px-3 mb-2">

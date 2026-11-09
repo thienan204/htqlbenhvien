@@ -186,7 +186,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                 {paginatedTickets.map((ticket, index) => {
                     const dept = departments.find(d => d.ma_khoa === ticket.ma_khoa);
                     const isMyTask = Boolean(ticket.assigneeId) && ticket.assigneeId === user?.id;
-                    const canReceive = hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (
+                    const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && user?.role === targetDepartment));
+                    const hasEditPerm = Boolean(isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT'));
+                    const canReceive = hasEditPerm && (
                         (assignmentMode === 'A' && !ticket.assigneeId) ||
                         (isMyTask && ticket.status === 'PENDING')
                     );
@@ -445,7 +447,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                     )}
 
                                     {/* Nút Xử lý chính */}
-                                    {hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (user?.role === 'ADMIN' || user?.role === targetDepartment) && (
+                                    {Boolean(isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT')) && (
                                         <Button 
                                             size="middle" 
                                             type="primary" 
@@ -479,8 +481,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 <div className="flex items-center gap-1.5">
                                     {(() => {
                                         const canProcess = Boolean(
-                                            hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && 
-                                            (user?.role === 'ADMIN' || user?.role === targetDepartment)
+                                            isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
                                         );
 
                                         const moreMenuItems: any[] = [];

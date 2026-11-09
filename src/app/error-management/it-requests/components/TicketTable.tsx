@@ -466,7 +466,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             }),
             render: (_: any, record: Ticket) => {
                 const isMyTask = Boolean(record.assigneeId) && record.assigneeId === user?.id;
-                const canReceive = hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && (
+                const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && user?.role === targetDepartment));
+                const hasEditPerm = Boolean(isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT'));
+                const canReceive = hasEditPerm && (
                     (assignmentMode === 'A' && !record.assigneeId) ||
                     (isMyTask && record.status === 'PENDING')
                 );
@@ -592,8 +594,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                             {(() => {
                                 const canProcess = Boolean(
-                                    hasPermission('MENU_ERROR_REQUESTS', 'EDIT') && 
-                                    (user?.role === 'ADMIN' || user?.role === targetDepartment)
+                                    isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
                                 );
 
                                 // Gom các thao tác phụ vào menu 3 chấm khi đã có nút Xử lý (như tài khoản Admin/CNTT)

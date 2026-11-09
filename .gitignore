@@ -48,8 +48,10 @@ api-*.txt
 !scripts/seed-standardized-menus.js
 !scripts/sync-menu-only.js
 !scripts/seed-attendance-statuses.js
+!scripts/system_health_check.js
 *debug*.js
 *test*.js
+!scripts/system_health_check.js
 *.log
 
 # custom

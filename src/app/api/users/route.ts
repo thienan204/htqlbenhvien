@@ -5,18 +5,32 @@ import { getCurrentUser } from '@/actions/auth';
 
 const prisma = new PrismaClient();
 
-// Hàm kiểm tra quyền ADMIN
-async function requireAdmin() {
+// Hàm kiểm tra quyền xem / thao tác danh sách người dùng
+async function checkUserAccess(action: 'VIEW' | 'EDIT' | 'DELETE' = 'VIEW') {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'ADMIN') {
+    if (!user) {
         throw new Error('Unauthorized');
     }
-    return user;
+    // ADMIN và CNTT có toàn quyền
+    if (user.role === 'ADMIN' || user.role === 'CNTT') {
+        return user;
+    }
+    // Kiểm tra quyền MENU_USERS
+    const perms: any = user.permissions;
+    if (Array.isArray(perms) && (perms.includes('*') || perms.includes('MENU_USERS'))) {
+        return user;
+    }
+    if (typeof perms === 'object' && perms?.MENU_USERS) {
+        if (action === 'VIEW' && perms.MENU_USERS.VIEW) return user;
+        if (action === 'EDIT' && (perms.MENU_USERS.EDIT || perms.MENU_USERS.VIEW)) return user;
+        if (action === 'DELETE' && perms.MENU_USERS.DELETE) return user;
+    }
+    throw new Error('Unauthorized');
 }
 
 export async function GET() {
     try {
-        await requireAdmin();
+        await checkUserAccess('VIEW');
         const users = await prisma.user.findMany({
             orderBy: { createdAt: 'desc' },
             select: {
@@ -44,7 +58,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        await requireAdmin();
+        await checkUserAccess('EDIT');
         const body = await request.json();
         const { username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS, isActive } = body;
 
@@ -100,7 +114,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     try {
-        await requireAdmin();
+        await checkUserAccess('EDIT');
         const body = await request.json();
         const { id, username, password, name, role, ma_khoa, telegram_id, staffId, userHIS, idHIS, isActive } = body;
 
@@ -147,7 +161,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
-        await requireAdmin();
+        await checkUserAccess('DELETE');
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 

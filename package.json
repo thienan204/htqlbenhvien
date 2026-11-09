@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed:attendance": "node scripts/seed-attendance-statuses.js",
-    "git-push": "node scripts/export-data.js && git add . && git commit -m \"auto backup data\" && git push"
+    "check:sanity": "node scripts/system_health_check.js",
+    "pre-flight": "node scripts/system_health_check.js",
+    "git-push": "node scripts/system_health_check.js && node scripts/export-data.js && git add . && git commit -m \"auto backup data\" && git push"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

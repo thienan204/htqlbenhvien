@@ -60,13 +60,13 @@ export default function HorizontalMenuClient({ rules, menus = [], adminMode = fa
     const activeKeys: string[] = [];
 
     for (const group of rootMenus) {
-        const isGroupAdmin = group.isAdminOnly || isMenuAdmin(group, rules, menus, adminOnlyPaths);
-        if (adminMode && !isGroupAdmin) continue;
-        if (!adminMode && isGroupAdmin) continue;
-
         const children = menus.filter(m => m.parentId === group.id).sort((a, b) => a.order - b.order);
-        
+        const isGroupAdmin = group.isAdminOnly || isMenuAdmin(group, rules, menus, adminOnlyPaths);
+
         if (children.length === 0) {
+            if (adminMode && !isGroupAdmin) continue;
+            if (!adminMode && isGroupAdmin) continue;
+
             const isActive = group.path === '/' ? pathname === '/' : (group.path && pathname.startsWith(group.path));
             if (isActive) activeKeys.push(group.id);
 

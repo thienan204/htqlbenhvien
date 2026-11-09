@@ -43,10 +43,8 @@ export function AuthProvider({ user, guestPermissions, children }: { user: UserP
         // Tương thích ngược: Nếu permissions đang lưu kiểu mảng string
         if (Array.isArray(user.permissions)) {
             if (user.permissions.includes('*')) return true;
-            if (action === 'VIEW') {
-                return user.permissions.includes(menuCode);
-            }
-            return false;
+            if (action === 'DELETE') return false;
+            return user.permissions.includes(menuCode);
         }
 
         // Kiểu đối tượng mới: { "MENU_CODE": { "VIEW": true, "EDIT": true, "DELETE": false } }
