@@ -11,19 +11,25 @@ async function checkUserAccess(action: 'VIEW' | 'EDIT' | 'DELETE' = 'VIEW') {
     if (!user) {
         throw new Error('Unauthorized');
     }
-    // ADMIN và CNTT có toàn quyền
-    if (user.role === 'ADMIN' || user.role === 'CNTT') {
+    // ADMIN có toàn quyền
+    if (user.role === 'ADMIN') {
         return user;
     }
-    // Kiểm tra quyền MENU_USERS
+    // Kiểm tra quyền MENU_USERS hoặc users từ permissions
     const perms: any = user.permissions;
-    if (Array.isArray(perms) && (perms.includes('*') || perms.includes('MENU_USERS'))) {
+    if (Array.isArray(perms) && (perms.includes('*') || perms.includes('MENU_USERS') || perms.includes('users'))) {
+        if (action === 'DELETE') {
+            throw new Error('Unauthorized');
+        }
         return user;
     }
-    if (typeof perms === 'object' && perms?.MENU_USERS) {
-        if (action === 'VIEW' && perms.MENU_USERS.VIEW) return user;
-        if (action === 'EDIT' && (perms.MENU_USERS.EDIT || perms.MENU_USERS.VIEW)) return user;
-        if (action === 'DELETE' && perms.MENU_USERS.DELETE) return user;
+    if (typeof perms === 'object' && perms) {
+        const userPerm = perms.users || perms.MENU_USERS;
+        if (userPerm) {
+            if (action === 'VIEW' && (userPerm.VIEW || userPerm.EDIT || userPerm.DELETE)) return user;
+            if (action === 'EDIT' && userPerm.EDIT) return user;
+            if (action === 'DELETE' && userPerm.DELETE) return user;
+        }
     }
     throw new Error('Unauthorized');
 }

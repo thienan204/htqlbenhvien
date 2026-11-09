@@ -5,17 +5,28 @@ import { getCurrentUser } from '@/actions/auth';
 
 const prisma = new PrismaClient();
 
-async function requireAdmin() {
+async function requireEditAccess() {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'ADMIN') {
+    if (!user) {
         throw new Error('Unauthorized');
     }
-    return user;
+    if (user.role === 'ADMIN') {
+        return user;
+    }
+    const perms: any = user.permissions;
+    if (Array.isArray(perms) && (perms.includes('*') || perms.includes('MENU_USERS') || perms.includes('users'))) {
+        return user;
+    }
+    if (typeof perms === 'object' && perms) {
+        const userPerm = perms.users || perms.MENU_USERS;
+        if (userPerm && userPerm.EDIT) return user;
+    }
+    throw new Error('Unauthorized');
 }
 
 export async function POST(request: Request) {
     try {
-        await requireAdmin();
+        await requireEditAccess();
         const body = await request.json();
         
         if (!Array.isArray(body)) {

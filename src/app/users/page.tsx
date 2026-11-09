@@ -5,6 +5,7 @@ import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Card, P
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, SearchOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface User {
     id: string;
@@ -21,6 +22,11 @@ interface User {
 }
 
 export default function UsersPage() {
+    const { user: currentUser, hasPermission } = useAuth();
+    const isAdmin = currentUser?.role === 'ADMIN';
+    const canEdit = isAdmin || hasPermission('users', 'EDIT') || hasPermission('MENU_USERS', 'EDIT');
+    const canDelete = isAdmin || hasPermission('users', 'DELETE') || hasPermission('MENU_USERS', 'DELETE');
+
     const [users, setUsers] = useState<User[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [allStaffs, setAllStaffs] = useState<any[]>([]);
@@ -127,6 +133,10 @@ export default function UsersPage() {
     };
 
     const handleImportExcel = (file: File) => {
+        if (!canEdit) {
+            message.warning('Bạn không có quyền nhập dữ liệu tài khoản');
+            return false;
+        }
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -174,6 +184,10 @@ export default function UsersPage() {
     };
 
     const handleSave = async (values: any) => {
+        if (!canEdit) {
+            message.warning('Bạn không có quyền thực hiện thao tác này');
+            return;
+        }
         const isUpdate = !!selectedUser;
         const url = '/api/users';
         const method = isUpdate ? 'PUT' : 'POST';
@@ -204,6 +218,10 @@ export default function UsersPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!canDelete) {
+            message.warning('Bạn không có quyền xóa tài khoản');
+            return;
+        }
         try {
             const res = await fetch(`/api/users?id=${id}`, {
                 method: 'DELETE'
@@ -222,6 +240,10 @@ export default function UsersPage() {
     };
 
     const openModal = (user: User | null = null) => {
+        if (!canEdit) {
+            message.warning('Bạn không có quyền thực hiện thao tác này');
+            return;
+        }
         setSelectedUser(user);
         if (user) {
             setSelectedRole(user.role);
@@ -312,15 +334,22 @@ export default function UsersPage() {
             key: 'action',
             render: (_: any, record: User) => (
                 <Space>
-                    <Button size="small" type="primary" ghost icon={<EditOutlined />} onClick={() => openModal(record)} />
-                    <Popconfirm
-                        title="Bạn có chắc chắn muốn xóa tài khoản này?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Xóa"
-                        cancelText="Hủy"
-                    >
-                        <Button size="small" danger icon={<DeleteOutlined />} disabled={record.username === 'admin'} />
-                    </Popconfirm>
+                    {canEdit && (
+                        <Button size="small" type="primary" ghost icon={<EditOutlined />} onClick={() => openModal(record)} />
+                    )}
+                    {canDelete && (
+                        <Popconfirm
+                            title="Bạn có chắc chắn muốn xóa tài khoản này?"
+                            onConfirm={() => handleDelete(record.id)}
+                            okText="Xóa"
+                            cancelText="Hủy"
+                        >
+                            <Button size="small" danger icon={<DeleteOutlined />} disabled={record.username === 'admin'} />
+                        </Popconfirm>
+                    )}
+                    {!canEdit && !canDelete && (
+                        <span className="text-slate-400 italic text-xs">Chỉ xem</span>
+                    )}
                 </Space>
             )
         }
@@ -352,12 +381,16 @@ export default function UsersPage() {
                     <Button icon={<DownloadOutlined />} onClick={handleExportTemplate}>
                         Tải File Mẫu
                     </Button>
-                    <Upload beforeUpload={handleImportExcel} showUploadList={false} accept=".xlsx,.xls">
-                        <Button icon={<UploadOutlined />}>Nhập Excel</Button>
-                    </Upload>
-                    <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => openModal()}>
-                        Tạo Tài khoản mới
-                    </Button>
+                    {canEdit && (
+                        <Upload beforeUpload={handleImportExcel} showUploadList={false} accept=".xlsx,.xls">
+                            <Button icon={<UploadOutlined />}>Nhập Excel</Button>
+                        </Upload>
+                    )}
+                    {canEdit && (
+                        <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => openModal()}>
+                            Tạo Tài khoản mới
+                        </Button>
+                    )}
                 </Space>
             </div>
 
