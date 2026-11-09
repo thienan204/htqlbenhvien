@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/actions/auth';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { sendZaloGroupNotification } from '@/lib/zalo';
 import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
-import { getSystemConfig } from '@/lib/systemConfig';
+import { getSystemConfig, isSystemConfigEnabled } from '@/lib/systemConfig';
 
 // Lấy danh sách nhân viên CNTT
 export async function GET(request: Request) {
@@ -63,15 +63,50 @@ export async function GET(request: Request) {
             console.warn('Lỗi kiểm tra mã khoa trong duty-roster:', eDept);
         }
 
-        const users = await prisma.user.findMany({
-            where: {
+        // Đọc cấu hình: Có tự động bổ sung Lãnh đạo Khoa/Phòng ngoài role vào lịch trực hay không
+        // Mặc định: false (Hướng 1 - Chuẩn hóa 100% theo Role targetDepartment)
+        // Khi bật: true (Hướng 2 - Tự động bổ sung Lãnh đạo phòng dù tài khoản chưa đổi role)
+        const includeDeptLeaders = await isSystemConfigEnabled('DUTY_ROSTER_INCLUDE_DEPT_LEADERS', false);
+
+        let whereClause: any;
+        if (includeDeptLeaders) {
+            // Hướng 2: Lấy role targetDepartment HOẶC (thuộc phòng ban VÀ có chức vụ Lãnh đạo)
+            whereClause = {
                 OR: [
                     { role: targetDepartment },
-                    { ma_khoa: deptCode },
-                    { staff: { ma_khoa: deptCode } },
+                    {
+                        AND: [
+                            {
+                                OR: [
+                                    { ma_khoa: deptCode },
+                                    { staff: { ma_khoa: deptCode } }
+                                ]
+                            },
+                            {
+                                staff: {
+                                    OR: [
+                                        { chuc_vu_ref: { level: { in: ['LEVEL_1_BGD', 'LEVEL_2_LEADER'] } } },
+                                        { chuc_vu_ref: { code: { in: ['TRUONG_PHONG', 'PHO_TRUONG_PHONG', 'TRUONG_KHOA', 'PHO_TRUONG_KHOA'] } } }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
                     ...(userId ? [{ id: userId }] : [])
                 ]
-            },
+            };
+        } else {
+            // Hướng 1 (Mặc định): Chỉ lấy đúng các tài khoản có Role chuyên trách (role === targetDepartment)
+            whereClause = {
+                OR: [
+                    { role: targetDepartment },
+                    ...(userId ? [{ id: userId }] : [])
+                ]
+            };
+        }
+
+        const users = await prisma.user.findMany({
+            where: whereClause,
             orderBy: {
                 dutyOrder: 'asc'
             },
@@ -234,7 +269,30 @@ export async function GET(request: Request) {
             console.error('Lỗi tự động đồng bộ duty-roster với bảng chấm công & cấu hình toàn viện:', eSync);
         }
 
-        const formatted = users.map(u => {
+        const formatted = users
+            .filter(u => {
+                if (includeDeptLeaders) {
+                    const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
+                    const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
+                    const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
+                    const isLeader = Boolean(
+                        explicitLevel === 'LEVEL_1_BGD' || 
+                        explicitLevel === 'LEVEL_2_LEADER' || 
+                        cvCode.includes('TRUONG_PHONG') || 
+                        cvCode.includes('PHO_TRUONG_PHONG') || 
+                        cvCode.includes('TRUONG_KHOA') || 
+                        cvCode.includes('PHO_TRUONG_KHOA') ||
+                        cvName.includes('trưởng phòng') || 
+                        cvName.includes('phó trưởng phòng') || 
+                        cvName.includes('trưởng khoa') || 
+                        cvName.includes('phó trưởng khoa')
+                    );
+                    return u.role === targetDepartment || isLeader || u.id === userId;
+                }
+                // Hướng 1 (Mặc định): Chỉ cho phép người có role === targetDepartment hoặc chính tài khoản userId yêu cầu
+                return u.role === targetDepartment || u.id === userId;
+            })
+            .map(u => {
             const explicitLevel = (u.staff?.chuc_vu_ref as any)?.level;
             const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
             const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();

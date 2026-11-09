@@ -122,6 +122,18 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         dataType: 'STRING',
         defaultValue: 'KP040',
         order: 22
+    },
+    {
+        key: 'DUTY_ROSTER_INCLUDE_DEPT_LEADERS',
+        value: 'false',
+        title: 'Tự động bổ sung Lãnh đạo Khoa/Phòng vào danh sách trực & nhận việc',
+        description: 'Khi TẮT (Mặc định - Hướng 1): Chỉ lấy đúng các nhân sự được phân quyền Role chuyên trách (ví dụ Role CNTT, VTYT, HCQT) vào lịch trực. Khi BẬT (Hướng 2): Tự động bổ sung thêm Lãnh đạo (Trưởng/Phó phòng) thuộc biên chế phòng ban vào danh sách trực dù tài khoản Lãnh đạo chưa đổi Role sang CNTT/VTYT/HCQT.',
+        category: 'MODULE',
+        module: 'XU_LY_SU_CO',
+        route: '/error-management/duty-roster',
+        dataType: 'BOOLEAN',
+        defaultValue: 'false',
+        order: 25
     }
 ];
 
