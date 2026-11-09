@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/actions/auth';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { sendZaloGroupNotification } from '@/lib/zalo';
 import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
+import { getSystemConfig } from '@/lib/systemConfig';
 
 // Lấy danh sách nhân viên CNTT
 export async function GET(request: Request) {
@@ -24,10 +25,50 @@ export async function GET(request: Request) {
             console.warn('Lỗi đọc avatar trong duty-roster:', e);
         }
 
+        // Xác định mã khoa/phòng động từ cấu hình hệ thống (kèm tự động dò tìm trong bảng Department)
+        let defaultDeptCode = 'KP046';
+        let deptKeyword = 'Công nghệ thông tin';
+        if (targetDepartment === 'VTYT') {
+            defaultDeptCode = 'KP038';
+            deptKeyword = 'Vật tư';
+        } else if (targetDepartment === 'HCQT') {
+            defaultDeptCode = 'KP040';
+            deptKeyword = 'Hành chính';
+        }
+
+        let deptCode = await getSystemConfig(`TARGET_DEPT_MAPPING_${targetDepartment}`, defaultDeptCode);
+
+        // Kiểm tra xem mã khoa này có trong bảng Department không; nếu không, tự động dò tìm theo tên phòng ban
+        try {
+            const existingDept = await prisma.department.findUnique({
+                where: { ma_khoa: deptCode },
+                select: { ma_khoa: true }
+            });
+
+            if (!existingDept) {
+                const matchedDept = await prisma.department.findFirst({
+                    where: {
+                        ten_khoa: {
+                            contains: deptKeyword,
+                            mode: 'insensitive'
+                        }
+                    },
+                    select: { ma_khoa: true }
+                });
+                if (matchedDept?.ma_khoa) {
+                    deptCode = matchedDept.ma_khoa;
+                }
+            }
+        } catch (eDept) {
+            console.warn('Lỗi kiểm tra mã khoa trong duty-roster:', eDept);
+        }
+
         const users = await prisma.user.findMany({
             where: {
                 OR: [
                     { role: targetDepartment },
+                    { ma_khoa: deptCode },
+                    { staff: { ma_khoa: deptCode } },
                     ...(userId ? [{ id: userId }] : [])
                 ]
             },
@@ -113,7 +154,8 @@ export async function GET(request: Request) {
                 for (const u of users) {
                     if (u.staffId) {
                         // Trạng thái nhận việc chỉ áp dụng riêng cho CNTT, VTYT, HCQT
-                        const isSupportDept = ['KP046', 'KP038', 'KP040'].includes(u.ma_khoa || u.staff?.ma_khoa || '') || ['CNTT', 'VTYT', 'HCQT'].includes(u.role);
+                        const userDept = u.ma_khoa || u.staff?.ma_khoa || '';
+                        const isSupportDept = userDept === deptCode || ['KP046', 'KP038', 'KP040'].includes(userDept) || ['CNTT', 'VTYT', 'HCQT'].includes(u.role);
                         if (!isSupportDept) continue;
 
                         const [todayAtt, activeDuty] = await Promise.all([
@@ -225,7 +267,9 @@ export async function GET(request: Request) {
                 username: u.username,
                 name: u.name || u.staff?.ho_ten || u.username,
                 avatar: avatarMap.get(u.id) || null,
-                role: u.role,
+                role: targetDepartment,
+                actualRole: u.role,
+                departmentRole: targetDepartment,
                 isAvailable: u.isAvailable,
                 dutyOrder: u.dutyOrder,
                 autoAssignDisabled: u.autoAssignDisabled,

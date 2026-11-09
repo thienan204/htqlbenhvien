@@ -87,9 +87,9 @@ export function useITRequestData(isAdmin: boolean, userRole: string | undefined,
                     const data = await res.json();
                     const isManagerOrAdmin = isAdmin;
                     if (isManagerOrAdmin) {
-                        setItUsers(data.filter((u: any) => u.role === targetDepartment));
+                        setItUsers(data.filter((u: any) => u.role === targetDepartment || u.departmentRole === targetDepartment));
                     } else {
-                        setItUsers(data.filter((u: any) => u.isAvailable && u.role === targetDepartment));
+                        setItUsers(data.filter((u: any) => (u.isAvailable || u.isLeader) && (u.role === targetDepartment || u.departmentRole === targetDepartment)));
                     }
                 }
             } catch (error) {

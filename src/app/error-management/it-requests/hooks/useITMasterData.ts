@@ -53,9 +53,13 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 const data = await res.json();
                 const isManagerOrAdmin = user?.role === 'ADMIN' || (user as any)?.isManager;
                 if (isManagerOrAdmin) {
-                    setItUsers(data.filter((u: ITUser) => u.role === targetDepartment));
+                    setItUsers(data.filter((u: ITUser) => u.role === targetDepartment || u.departmentRole === targetDepartment));
                 } else {
-                    setItUsers(data.filter((u: ITUser) => u.isAvailable && u.role === targetDepartment));
+                    // Kỹ thuật viên thường: Lấy những ai đang sẵn sàng nhận việc HOẶC là Lãnh đạo phòng (để chuyển giao / xin ý kiến)
+                    setItUsers(data.filter((u: ITUser) => 
+                        (u.role === targetDepartment || u.departmentRole === targetDepartment) &&
+                        (u.isAvailable || u.isLeader)
+                    ));
                 }
                 if (user) {
                     const me = data.find((u: ITUser) => u.id === user.id);

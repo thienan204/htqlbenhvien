@@ -84,6 +84,44 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         dataType: 'BOOLEAN',
         defaultValue: 'false',
         order: 2
+    },
+
+    // --- CẤU HÌNH PHÂN HỆ: QUẢN LÝ SỰ CỐ & YÊU CẦU HỖ TRỢ (/error-management) ---
+    {
+        key: 'TARGET_DEPT_MAPPING_CNTT',
+        value: 'KP046',
+        title: 'Mã khoa/phòng phụ trách: Công nghệ thông tin',
+        description: 'Mã khoa trong danh mục Bệnh viện ứng với bộ phận tiếp nhận xử lý sự cố CNTT. Mặc định là KP046.',
+        category: 'SYSTEM',
+        module: 'XU_LY_SU_CO',
+        route: '/error-management/it-requests',
+        dataType: 'STRING',
+        defaultValue: 'KP046',
+        order: 20
+    },
+    {
+        key: 'TARGET_DEPT_MAPPING_VTYT',
+        value: 'KP038',
+        title: 'Mã khoa/phòng phụ trách: Vật tư - Thiết bị Y tế',
+        description: 'Mã khoa trong danh mục Bệnh viện ứng với bộ phận tiếp nhận yêu cầu VTYT. Mặc định là KP038.',
+        category: 'SYSTEM',
+        module: 'XU_LY_SU_CO',
+        route: '/error-management/vtyt-requests',
+        dataType: 'STRING',
+        defaultValue: 'KP038',
+        order: 21
+    },
+    {
+        key: 'TARGET_DEPT_MAPPING_HCQT',
+        value: 'KP040',
+        title: 'Mã khoa/phòng phụ trách: Hành chính Quản trị',
+        description: 'Mã khoa trong danh mục Bệnh viện ứng với bộ phận tiếp nhận yêu cầu HCQT. Mặc định là KP040.',
+        category: 'SYSTEM',
+        module: 'XU_LY_SU_CO',
+        route: '/error-management/hcqt-requests',
+        dataType: 'STRING',
+        defaultValue: 'KP040',
+        order: 22
     }
 ];
 
@@ -116,3 +154,4 @@ export async function isSystemConfigEnabled(key: string, defaultVal: boolean = f
     const val = await getSystemConfig(key, defaultVal ? 'true' : 'false');
     return val === 'true' || val === '1';
 }
+

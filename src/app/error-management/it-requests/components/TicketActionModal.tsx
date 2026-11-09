@@ -306,21 +306,40 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                             disabled={!canChangeAssignee} 
                             size="large" 
                             className="!rounded-xl"
-                            placeholder="Chọn kỹ thuật viên phụ trách"
+                            placeholder="Chọn người xử lý hoặc chuyển giao"
                         >
-                            {displayedUsers.map(u => {
-                                let statusBadge = '';
-                                if (u.autoAssignDisabled) {
-                                    statusBadge = `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})`;
-                                } else if (!u.isAvailable) {
-                                    statusBadge = '(🔴 Tắt nhận việc)';
-                                }
-                                return (
-                                    <Select.Option key={u.id} value={u.id}>
-                                        {u.name || u.username} {statusBadge}
-                                    </Select.Option>
-                                );
-                            })}
+                            {displayedUsers.some(u => u.isLeader) && (
+                                <Select.OptGroup label={`👑 Lãnh đạo phòng ${targetDepartment} (Chỉ đạo / Tiếp nhận bàn giao)`}>
+                                    {displayedUsers.filter(u => u.isLeader).map(u => {
+                                        let statusBadge = '';
+                                        if (u.autoAssignDisabled) {
+                                            statusBadge = `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})`;
+                                        } else if (!u.isAvailable) {
+                                            statusBadge = '(🔴 Tắt nhận việc)';
+                                        }
+                                        return (
+                                            <Select.Option key={u.id} value={u.id}>
+                                                ⭐ {u.name || u.username} {u.chuc_vu ? `(${u.chuc_vu})` : '(Lãnh đạo)'} {statusBadge}
+                                            </Select.Option>
+                                        );
+                                    })}
+                                </Select.OptGroup>
+                            )}
+                            <Select.OptGroup label={`🛠️ Nhân viên Kỹ thuật ${targetDepartment}`}>
+                                {displayedUsers.filter(u => !u.isLeader).map(u => {
+                                    let statusBadge = '';
+                                    if (u.autoAssignDisabled) {
+                                        statusBadge = `(🎯 Đang tập trung: ${u.focusReason || 'Nhiệm vụ riêng'})`;
+                                    } else if (!u.isAvailable) {
+                                        statusBadge = '(🔴 Tắt nhận việc)';
+                                    }
+                                    return (
+                                        <Select.Option key={u.id} value={u.id}>
+                                            {u.name || u.username} {statusBadge}
+                                        </Select.Option>
+                                    );
+                                })}
+                            </Select.OptGroup>
                         </Select>
                     </Form.Item>
                 </div>

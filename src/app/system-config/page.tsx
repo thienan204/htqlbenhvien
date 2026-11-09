@@ -462,3 +462,4 @@ export default function SystemConfigPage() {
         </div>
     );
 }
+

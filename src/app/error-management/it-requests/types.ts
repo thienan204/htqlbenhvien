@@ -47,7 +47,13 @@ export interface ITUser {
     username: string;
     name: string;
     role?: string | null;
+    departmentRole?: string | null;
     isAvailable: boolean;
     autoAssignDisabled?: boolean;
     focusReason?: string | null;
+    isLeader?: boolean;
+    isTeamLeader?: boolean;
+    phone?: string | null;
+    chuc_vu?: string | null;
+    avatar?: string | null;
 }
