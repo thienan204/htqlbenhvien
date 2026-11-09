@@ -46,6 +46,9 @@ interface ConfigItem {
     defaultValue: string | null;
     order: number | null;
     updatedAt: string;
+    tooltipOn?: string | null;
+    tooltipOff?: string | null;
+    helpText?: string | null;
 }
 
 export default function SystemConfigPage() {
@@ -161,7 +164,7 @@ export default function SystemConfigPage() {
         });
     }, [configs, activeTab, selectedModule, searchText]);
 
-    // Render linh hoạt theo từng kiểu dữ liệu (Adaptive Value Control)
+    // Render linh hoạt theo từng kiểu dữ liệu (Adaptive Value Control) kèm Tooltip
     const renderValueControl = (item: ConfigItem) => {
         const isSaving = savingKeys[item.key] || false;
         const type = item.dataType || 'BOOLEAN';
@@ -169,21 +172,28 @@ export default function SystemConfigPage() {
         switch (type) {
             case 'BOOLEAN': {
                 const isChecked = item.value === 'true' || item.value === '1';
+                const currentTooltip = isChecked 
+                    ? (item.tooltipOn || `🟢 Đang BẬT: Tính năng "${item.title || item.key}" đang được kích hoạt.`)
+                    : (item.tooltipOff || `⚪ Đang TẮT: Tính năng "${item.title || item.key}" đang tắt, hệ thống áp dụng chế độ mặc định ban đầu.`);
+
                 return (
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={isChecked}
-                            loading={isSaving}
-                            disabled={!isAdmin}
-                            onChange={(checked) => handleUpdateConfig(item.key, checked ? 'true' : 'false')}
-                            checkedChildren="BẬT"
-                            unCheckedChildren="TẮT"
-                            className={isChecked ? 'bg-blue-600' : 'bg-slate-300'}
-                        />
-                        <span className={`text-xs font-semibold ${isChecked ? 'text-blue-600' : 'text-slate-400'}`}>
-                            {isChecked ? 'Đang kích hoạt' : 'Đang tắt'}
-                        </span>
-                    </div>
+                    <Tooltip title={currentTooltip} placement="left" overlayClassName="max-w-xs">
+                        <div className="flex items-center gap-2 cursor-pointer group py-1">
+                            <Switch
+                                checked={isChecked}
+                                loading={isSaving}
+                                disabled={!isAdmin}
+                                onChange={(checked) => handleUpdateConfig(item.key, checked ? 'true' : 'false')}
+                                checkedChildren="BẬT"
+                                unCheckedChildren="TẮT"
+                                className={isChecked ? 'bg-blue-600' : 'bg-slate-300'}
+                            />
+                            <span className={`text-xs font-semibold ${isChecked ? 'text-blue-600' : 'text-slate-400'}`}>
+                                {isChecked ? 'Đang kích hoạt' : 'Đang tắt'}
+                            </span>
+                            <InfoCircleOutlined className="text-[12px] text-slate-300 group-hover:text-blue-500 transition-colors" />
+                        </div>
+                    </Tooltip>
                 );
             }
 
@@ -193,56 +203,68 @@ export default function SystemConfigPage() {
                     { label: 'Dấu x (Đi làm)', value: 'x' }
                 ];
                 return (
-                    <Select
-                        value={item.value || item.defaultValue || ''}
-                        loading={isSaving}
-                        disabled={!isAdmin}
-                        onChange={(val) => handleUpdateConfig(item.key, String(val))}
-                        options={options}
-                        className="w-48 text-xs font-medium"
-                        size="middle"
-                    />
+                    <Tooltip title={item.helpText || item.description || 'Chọn giá trị áp dụng'} placement="left">
+                        <div className="inline-block">
+                            <Select
+                                value={item.value || item.defaultValue || ''}
+                                loading={isSaving}
+                                disabled={!isAdmin}
+                                onChange={(val) => handleUpdateConfig(item.key, String(val))}
+                                options={options}
+                                className="w-48 text-xs font-medium"
+                                size="middle"
+                            />
+                        </div>
+                    </Tooltip>
                 );
             }
 
             case 'NUMBER': {
                 return (
-                    <InputNumber
-                        value={Number(item.value || item.defaultValue || 0)}
-                        disabled={!isAdmin}
-                        onBlur={(e) => {
-                            const val = e.target.value;
-                            if (val !== item.value) {
-                                handleUpdateConfig(item.key, val);
-                            }
-                        }}
-                        onPressEnter={(e: any) => {
-                            handleUpdateConfig(item.key, e.target.value);
-                        }}
-                        className="w-32"
-                        size="middle"
-                    />
+                    <Tooltip title={item.helpText || item.description || 'Nhập giá trị số'} placement="left">
+                        <div className="inline-block">
+                            <InputNumber
+                                value={Number(item.value || item.defaultValue || 0)}
+                                disabled={!isAdmin}
+                                onBlur={(e) => {
+                                    const val = e.target.value;
+                                    if (val !== item.value) {
+                                        handleUpdateConfig(item.key, val);
+                                    }
+                                }}
+                                onPressEnter={(e: any) => {
+                                    handleUpdateConfig(item.key, e.target.value);
+                                }}
+                                className="w-32"
+                                size="middle"
+                            />
+                        </div>
+                    </Tooltip>
                 );
             }
 
             case 'STRING':
             default: {
                 return (
-                    <Input
-                        defaultValue={item.value || ''}
-                        disabled={!isAdmin}
-                        onBlur={(e) => {
-                            if (e.target.value !== item.value) {
-                                handleUpdateConfig(item.key, e.target.value);
-                            }
-                        }}
-                        onPressEnter={(e: any) => {
-                            handleUpdateConfig(item.key, e.target.value);
-                        }}
-                        placeholder="Nhập giá trị cấu hình..."
-                        className="w-64 text-xs"
-                        size="middle"
-                    />
+                    <Tooltip title={item.helpText || item.description || 'Nhập chuỗi giá trị'} placement="left">
+                        <div className="inline-block">
+                            <Input
+                                defaultValue={item.value || ''}
+                                disabled={!isAdmin}
+                                onBlur={(e) => {
+                                    if (e.target.value !== item.value) {
+                                        handleUpdateConfig(item.key, e.target.value);
+                                    }
+                                }}
+                                onPressEnter={(e: any) => {
+                                    handleUpdateConfig(item.key, e.target.value);
+                                }}
+                                placeholder="Nhập giá trị cấu hình..."
+                                className="w-64 text-xs"
+                                size="middle"
+                            />
+                        </div>
+                    </Tooltip>
                 );
             }
         }
@@ -296,6 +318,20 @@ export default function SystemConfigPage() {
                         {item.description && (
                             <div className="text-xs text-slate-500 mt-1 leading-relaxed">
                                 {item.description}
+                            </div>
+                        )}
+                        {item.dataType === 'BOOLEAN' && (item.tooltipOff || item.tooltipOn) && (
+                            <div className="mt-2 flex flex-col gap-1.5 text-[11px]">
+                                {item.tooltipOff && (
+                                    <div className="text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md max-w-fit leading-relaxed shadow-2xs">
+                                        <span className="font-semibold text-slate-700">⚪ Khi TẮT:</span> {item.tooltipOff.replace(/^⚪\s*(Đang\s*TẮT[^:]*:\s*)?/i, '')}
+                                    </div>
+                                )}
+                                {item.tooltipOn && (
+                                    <div className="text-blue-700 bg-blue-50/70 border border-blue-200/80 px-2.5 py-1 rounded-md max-w-fit leading-relaxed shadow-2xs">
+                                        <span className="font-semibold text-blue-900">🟢 Khi BẬT:</span> {item.tooltipOn.replace(/^🟢\s*(Đang\s*BẬT[^:]*:\s*)?/i, '')}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

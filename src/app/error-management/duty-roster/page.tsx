@@ -267,7 +267,14 @@ export default function DutyRosterPage() {
 
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 mb-1">{title}</h1>
+                    <div className="flex items-center gap-3 flex-wrap mb-1">
+                        <h1 className="text-2xl font-bold text-slate-800 m-0">{title}</h1>
+                        <Tooltip title="Lịch trực lọc chuẩn 100% theo các tài khoản có Role chuyên trách. Để thay đổi hoặc tự động bổ sung Lãnh đạo ngoài role, vui lòng truy cập Cấu hình hệ thống (/system-config).">
+                            <Tag color="blue" className="font-semibold text-xs rounded-full px-2.5 py-0.5 border-none shadow-2xs cursor-help">
+                                🛡️ Phân quyền chuẩn Role: {activeTab}
+                            </Tag>
+                        </Tooltip>
+                    </div>
                     <p className="text-slate-500 m-0">Sắp xếp thứ tự ưu tiên nhận phiếu yêu cầu hỗ trợ từ các Khoa.</p>
                 </div>
                 <Space>

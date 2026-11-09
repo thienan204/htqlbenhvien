@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
             ]
         });
 
-        // Format options từ JSON string thành array
+        // Format options từ JSON string thành array & gắn tooltipOn, tooltipOff, helpText
         const formattedConfigs = configs.map(c => {
             let parsedOptions = null;
             if (c.options) {
@@ -83,9 +83,13 @@ export async function GET(request: NextRequest) {
                     parsedOptions = JSON.parse(c.options);
                 } catch (e) {}
             }
+            const predefined = PREDEFINED_CONFIGS.find(p => p.key === c.key);
             return {
                 ...c,
-                parsedOptions
+                parsedOptions,
+                tooltipOn: predefined?.tooltipOn || null,
+                tooltipOff: predefined?.tooltipOff || null,
+                helpText: predefined?.helpText || null
             };
         });
 

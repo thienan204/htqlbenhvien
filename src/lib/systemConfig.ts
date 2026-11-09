@@ -12,6 +12,9 @@ export interface SystemConfigDef {
     options?: { label: string; value: string }[];
     defaultValue: string;
     order?: number;
+    tooltipOn?: string;
+    tooltipOff?: string;
+    helpText?: string;
 }
 
 // Danh mục các cấu hình được định nghĩa sẵn trong hệ thống
@@ -27,7 +30,9 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/staff/attendance',
         dataType: 'BOOLEAN',
         defaultValue: 'false',
-        order: 1
+        order: 1,
+        tooltipOff: '⚪ Đang TẮT (Khởi tạo 1-chạm): Bấm nút "Khởi tạo công cả tháng" sẽ tự động điền ký hiệu làm việc mặc định toàn viện (+) ngay lập tức trong 1 click, không hỏi thêm.',
+        tooltipOn: '🟢 Đang BẬT (Hỏi chọn ký hiệu): Bấm nút khởi tạo sẽ mở hộp thoại cho phép người quản lý chủ động chọn điền ký hiệu + (chuẩn Bộ Y tế) hoặc x (theo ca) cho toàn khoa phòng.'
     },
     {
         key: 'ATTENDANCE_DEFAULT_INIT_SYMBOL',
@@ -43,7 +48,8 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
             { label: 'Ký hiệu x (Đi làm)', value: 'x' }
         ],
         defaultValue: '+',
-        order: 2
+        order: 2,
+        helpText: '💡 Ký hiệu chấm công đi làm mặc định toàn viện khi chấm nhanh hoặc khởi tạo tự động. Dấu (+) là chuẩn Bộ Y tế, dấu (x) là đi làm theo ca.'
     },
 
     // --- CẤU HÌNH PHÂN HỆ: NHÂN SỰ (/staff) ---
@@ -57,7 +63,9 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/staff',
         dataType: 'BOOLEAN',
         defaultValue: 'false',
-        order: 10
+        order: 10,
+        tooltipOff: '⚪ Đang TẮT (Gọn gàng sạch sẽ): Bảng danh bạ nhân sự mặc định chỉ hiển thị các cán bộ nhân viên đang công tác tại bệnh viện, ẩn hoàn toàn nhân sự đã thôi việc.',
+        tooltipOn: '🟢 Đang BẬT (Hiển thị đầy đủ): Bảng danh bạ nhân sự hiển thị cả các nhân sự đã thôi việc / chấm dứt hợp đồng (có kèm Tag đỏ cảnh báo "Đã nghỉ việc").'
     },
 
     // --- CẤU HÌNH HỆ THỐNG / QUY TRÌNH TOÀN VIỆN ---
@@ -71,7 +79,8 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/staff/attendance',
         dataType: 'NUMBER',
         defaultValue: '5',
-        order: 1
+        order: 1,
+        helpText: '💡 Số ngày trong tháng tiếp theo mà hệ thống tự động khóa sổ chấm công toàn viện (Ví dụ đặt là 5 thì đúng ngày mùng 5 hàng tháng sẽ chốt dữ liệu, không cho sửa công tháng trước).'
     },
     {
         key: 'SYSTEM_MAINTENANCE_MODE',
@@ -83,7 +92,9 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: 'ALL',
         dataType: 'BOOLEAN',
         defaultValue: 'false',
-        order: 2
+        order: 2,
+        tooltipOff: '⚪ Đang TẮT (Hoạt động bình thường): Hệ thống mở cửa phục vụ toàn thể cán bộ, y bác sĩ và nhân viên bệnh viện đăng nhập và làm việc bình thường.',
+        tooltipOn: '🟢 Đang BẬT (Khóa bảo trì khẩn cấp): Toàn viện tạm ngừng truy cập, chỉ tài khoản Quản trị viên (ADMIN) mới có thể đăng nhập để bảo trì hệ thống và cơ sở dữ liệu.'
     },
 
     // --- CẤU HÌNH PHÂN HỆ: QUẢN LÝ SỰ CỐ & YÊU CẦU HỖ TRỢ (/error-management) ---
@@ -97,7 +108,8 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/error-management/it-requests',
         dataType: 'STRING',
         defaultValue: 'KP046',
-        order: 20
+        order: 20,
+        helpText: '💡 Mã khoa trong danh mục bệnh viện ứng với bộ phận tiếp nhận xử lý sự cố CNTT. Mặc định là KP046.'
     },
     {
         key: 'TARGET_DEPT_MAPPING_VTYT',
@@ -109,7 +121,8 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/error-management/vtyt-requests',
         dataType: 'STRING',
         defaultValue: 'KP038',
-        order: 21
+        order: 21,
+        helpText: '💡 Mã khoa trong danh mục bệnh viện ứng với bộ phận tiếp nhận yêu cầu Vật tư Y tế. Mặc định là KP038.'
     },
     {
         key: 'TARGET_DEPT_MAPPING_HCQT',
@@ -121,7 +134,8 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/error-management/hcqt-requests',
         dataType: 'STRING',
         defaultValue: 'KP040',
-        order: 22
+        order: 22,
+        helpText: '💡 Mã khoa trong danh mục bệnh viện ứng với bộ phận tiếp nhận yêu cầu Hành chính Quản trị. Mặc định là KP040.'
     },
     {
         key: 'DUTY_ROSTER_INCLUDE_DEPT_LEADERS',
@@ -133,7 +147,9 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         route: '/error-management/duty-roster',
         dataType: 'BOOLEAN',
         defaultValue: 'false',
-        order: 25
+        order: 25,
+        tooltipOff: '⚪ Đang TẮT (Hướng 1 - Chuẩn hóa theo Role): Lọc chuẩn 100% theo Role chuyên trách. Chỉ nhân sự có đúng Role (ví dụ CNTT) mới ở trong lịch trực. Nhân sự khoa phòng có Role khác (như bạn Trang - KHOA_PHONG) dứt khoát không bao giờ xuất hiện.',
+        tooltipOn: '🟢 Đang BẬT (Hướng 2 - Tự động bổ sung): Tự động nhận diện và đưa Lãnh đạo Khoa/Phòng (Trưởng/Phó phòng) vào danh sách trực để nhân viên tiện chuyển việc, ngay cả khi tài khoản Lãnh đạo chưa đổi sang Role kỹ thuật.'
     }
 ];
 
