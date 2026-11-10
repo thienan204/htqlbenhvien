@@ -1,24 +1,5 @@
 [
   {
-    "id": "cmv4yhj7c0002n49wwxkoivue",
-    "name": "Cấu hình âm thanh của Hoàng Thế Lâm",
-    "slug": "user-sound-cmr5tcqqb009n3l00o4p17w4q",
-    "description": "Cài đặt nhạc chuông cá nhân của người dùng ID: cmr5tcqqb009n3l00o4p17w4q",
-    "isActive": true,
-    "order": 0,
-    "ruleType": "USER_SOUND_CONFIG",
-    "logicConfig": {
-      "url": "https://www.youtube.com/watch?v=u1eAt7VkjqA",
-      "mode": "CUSTOM",
-      "name": "",
-      "type": "YOUTUBE",
-      "duration": 30
-    },
-    "sqlQuery": null,
-    "createdAt": "2026-10-12T07:54:12.210Z",
-    "updatedAt": "2026-10-12T12:30:09.281Z"
-  },
-  {
     "id": "cmvm5cus90002vefhxbx2qjkq",
     "name": "Mẫu câu trả lời nhanh dùng chung toàn viện",
     "slug": "it-request-quick-replies",
@@ -64,8 +45,9 @@
       "holidays": [],
       "maBaLength": 11,
       "zaloEnabled": false,
+      "noStaffPhone": "02053600553",
       "maxFileSizeMB": 10,
-      "officeEndTime": "17:00",
+      "officeEndTime": "16:55",
       "assignmentMode": "C",
       "hardwareErrors": [
         "Thay mực máy in",
@@ -74,7 +56,7 @@
       ],
       "makeupWorkdays": [],
       "maxImageSizeMB": 10,
-      "morningEndTime": "11:30",
+      "morningEndTime": "11:25",
       "softwareErrors": [
         "Lấy lại BN",
         "Huỷ ký số giấy ra viện",
@@ -82,8 +64,10 @@
       ],
       "telegramChatId": "",
       "zaloWebhookUrl": "",
-      "afternoonEndTime": "17:00",
+      "applyForLeaders": false,
+      "afternoonEndTime": "16:55",
       "morningStartTime": "07:00",
+      "saveAssignReason": true,
       "telegramBotToken": "",
       "notificationSound": {
         "url": "",
@@ -91,48 +75,73 @@
         "duration": 7
       },
       "afternoonStartTime": "13:30",
+      "autoDisableOnLeave": true,
       "maxConcurrentTasks": 2,
       "hardwareErrorsConfig": [
         {
-          "id": "err_0_1792633545566",
+          "id": "err_0_1793674971545",
           "name": "Thay mực máy in",
           "isVisible": true
         },
         {
-          "id": "err_1_1792633545566",
+          "id": "err_1_1793674971545",
           "name": "Máy tính không lên",
           "isVisible": true
         },
         {
-          "id": "err_2_1792633545566",
+          "id": "err_2_1793674971545",
           "name": "Mất mạng internnet",
           "isVisible": true
         }
       ],
       "softwareErrorsConfig": [
         {
-          "id": "err_0_1792633545566",
+          "id": "err_0_1793674971545",
           "name": "Lấy lại BN",
           "isVisible": true
         },
         {
-          "id": "err_1_1792633545566",
+          "id": "err_1_1793674971545",
           "name": "Huỷ ký số giấy ra viện",
           "isVisible": true
         },
         {
-          "id": "err_2_1792633545566",
+          "id": "err_2_1793674971545",
           "name": "Huỷ ký số lãnh đạo BA",
           "isVisible": true
         }
       ],
       "allowedFileExtensions": ".jpg,.jpeg,.png,.gif,.pdf,.docx,.xlsx,.doc,.xls,.zip,.rar",
       "noStaffWarningEnabled": true,
-      "noStaffWarningMessage": "Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ! \nSĐT thoại trực CNTT: 02053.600.553"
+      "noStaffWarningMessage": "Hiện tại nhân viên trực CNTT đang có việc tại khoa phòng nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhân viên trực. Nếu là sự cố khẩn cấp ảnh hưởng đến hoạt động khám chữa bệnh, vui lòng gọi điện thoại trực để được hỗ trợ!\nSĐT thoại trực CNTT: 02053600553",
+      "syncAttendanceEnabled": true,
+      "preserveStatusOnLogout": true,
+      "dutyShiftWarningEnabled": true,
+      "supportSessionTimeoutHours": 8,
+      "departmentSessionTimeoutMinutes": 30
     },
     "sqlQuery": null,
     "createdAt": "2026-06-23T15:37:52.985Z",
-    "updatedAt": "2026-10-22T01:45:45.571Z"
+    "updatedAt": "2026-11-10T15:09:00.234Z"
+  },
+  {
+    "id": "cmv4yhj7c0002n49wwxkoivue",
+    "name": "Cấu hình âm thanh của Hoàng Thế Lâm",
+    "slug": "user-sound-cmr5tcqqb009n3l00o4p17w4q",
+    "description": "Cài đặt nhạc chuông cá nhân của người dùng ID: cmr5tcqqb009n3l00o4p17w4q",
+    "isActive": true,
+    "order": 0,
+    "ruleType": "USER_SOUND_CONFIG",
+    "logicConfig": {
+      "url": "https://www.youtube.com/watch?v=u1eAt7VkjqA",
+      "mode": "CUSTOM",
+      "name": "",
+      "type": "YOUTUBE",
+      "duration": 30
+    },
+    "sqlQuery": null,
+    "createdAt": "2026-10-12T07:54:12.210Z",
+    "updatedAt": "2026-10-12T12:30:09.281Z"
   },
   {
     "id": "cml7t7c6c0000ook5q6yqi80x",
@@ -163,6 +172,62 @@
     "sqlQuery": null,
     "createdAt": "2026-02-04T09:12:33.636Z",
     "updatedAt": "2026-07-27T10:00:37.691Z"
+  },
+  {
+    "id": "cmvzfpil2002wv4twka4yx7h1",
+    "name": "Cấu hình Chấm công, Khung giờ & Ngày nghỉ Lễ Toàn Viện",
+    "slug": "hospital-attendance-config",
+    "description": null,
+    "isActive": true,
+    "order": 1,
+    "ruleType": "SYSTEM_CONFIG",
+    "logicConfig": {
+      "holidays": [
+        {
+          "id": "h_newyear",
+          "date": "2026-01-01",
+          "name": "Tết Dương Lịch",
+          "allowanceDays": 2
+        },
+        {
+          "id": "h_reunification",
+          "date": "2026-04-30",
+          "name": "Giải phóng Miền Nam 30/4",
+          "allowanceDays": 2
+        },
+        {
+          "id": "h_labor",
+          "date": "2026-05-01",
+          "name": "Quốc Tế Lao Động 1/5",
+          "allowanceDays": 2
+        },
+        {
+          "id": "h_national_1",
+          "date": "2026-09-02",
+          "name": "Quốc Khánh 2/9",
+          "allowanceDays": 2
+        },
+        {
+          "id": "h_national_2",
+          "date": "2026-09-03",
+          "name": "Nghỉ Lễ Quốc Khánh",
+          "allowanceDays": 2
+        }
+      ],
+      "updatedAt": "2026-11-02T15:49:23.396Z",
+      "updatedBy": "cmmsk8wy90000xzvfxm9b0uut",
+      "workHours": {
+        "morningEnd": "11:30",
+        "afternoonEnd": "17:00",
+        "morningStart": "07:00",
+        "afternoonStart": "13:30",
+        "standardDailyHours": 8
+      },
+      "makeupWorkdays": []
+    },
+    "sqlQuery": null,
+    "createdAt": "2026-11-02T15:49:23.406Z",
+    "updatedAt": "2026-11-02T15:49:23.406Z"
   },
   {
     "id": "cml88004h0000ksk5fz4t5o6k",

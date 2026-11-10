@@ -209,6 +209,7 @@ export async function POST(request: Request) {
         let targetHolidays: string[] = [];
         let targetMakeupWorkdays: string[] = [];
         let targetNoStaffWarningEnabled = true;
+        let targetDutyShiftWarningEnabled = true;
         let targetNoStaffWarningMessage = 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!';
         let targetNoStaffPhone = '';
         let targetSaveAssignReason = true;
@@ -230,6 +231,7 @@ export async function POST(request: Request) {
                 if (Array.isArray(config.holidays)) targetHolidays = config.holidays;
                 if (Array.isArray(config.makeupWorkdays)) targetMakeupWorkdays = config.makeupWorkdays;
                 if (config.noStaffWarningEnabled !== undefined) targetNoStaffWarningEnabled = Boolean(config.noStaffWarningEnabled);
+                if (config.dutyShiftWarningEnabled !== undefined) targetDutyShiftWarningEnabled = Boolean(config.dutyShiftWarningEnabled);
                 if (config.noStaffWarningMessage) targetNoStaffWarningMessage = config.noStaffWarningMessage;
                 if (config.noStaffPhone) targetNoStaffPhone = config.noStaffPhone;
                 if (config.saveAssignReason !== undefined) targetSaveAssignReason = Boolean(config.saveAssignReason);
@@ -973,8 +975,13 @@ export async function POST(request: Request) {
             });
         }
 
-        const warningMessage = (!finalAssignee && targetNoStaffWarningEnabled) ? targetNoStaffWarningMessage : null;
-        const warningPhone = (!finalAssignee && targetNoStaffWarningEnabled) ? (targetNoStaffPhone || null) : null;
+        const isDutyShift = !currentShift.isOfficeHours;
+        const isNoStaff = !finalAssignee;
+        const shouldShowWarning = targetNoStaffWarningEnabled && (
+            isNoStaff || (targetDutyShiftWarningEnabled && isDutyShift)
+        );
+        const warningMessage = shouldShowWarning ? targetNoStaffWarningMessage : null;
+        const warningPhone = shouldShowWarning ? (targetNoStaffPhone || null) : null;
 
         return NextResponse.json({
             ...newRequest,

@@ -203,8 +203,13 @@ export default function ModularFormModal({
     const handleOk = async () => {
         try {
             setSubmitting(true);
-            const values = await form.validateFields();
-            const result = await onSubmit(values);
+            const validatedValues = await form.validateFields();
+            // Thu thập toàn bộ giá trị của form (bảo toàn tất cả các tab và giá trị đã khởi tạo)
+            const allValues = {
+                ...form.getFieldsValue(true),
+                ...validatedValues
+            };
+            const result = await onSubmit(allValues);
             if (result !== false) {
                 form.resetFields();
             }
@@ -391,6 +396,7 @@ export default function ModularFormModal({
             return {
                 key: section.key,
                 label: tabLabel,
+                forceRender: true,
                 children: (
                     <div className="pt-1.5 pb-1">
                         {section.description && (
@@ -525,6 +531,7 @@ export default function ModularFormModal({
                             type="card"
                             activeKey={activeTabKey}
                             onChange={setActiveTabKey}
+                            destroyInactiveTabPane={false}
                             items={tabItems}
                             className="modular-form-tabs [&_.ant-tabs-nav]:!mb-2.5 [&_.ant-tabs-tab]:!px-3 [&_.ant-tabs-tab]:!py-1.5 [&_.ant-tabs-tab]:!rounded-t-lg"
                         />

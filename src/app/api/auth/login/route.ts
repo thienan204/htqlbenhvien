@@ -102,11 +102,11 @@ export async function POST(request: Request) {
                 const applyForLeaders = itConfig.applyForLeaders === true;
                 const autoDisableOnLeave = itConfig.autoDisableOnLeave !== false;
 
-                // Lấy khung giờ: Ưu tiên Cấu hình toàn viện (hospital-attendance-config)
-                const morningStart = workHours.morningStart || itConfig.morningStartTime || '07:00';
-                const morningEnd = workHours.morningEnd || itConfig.morningEndTime || '11:30';
-                const afternoonStart = workHours.afternoonStart || itConfig.afternoonStartTime || '13:30';
-                const afternoonEnd = workHours.afternoonEnd || itConfig.afternoonEndTime || itConfig.officeEndTime || '17:00';
+                // Lấy khung giờ: ƯU TIÊN LẤY TỪ CẤU HÌNH NHẬN VIỆC (itConfig), NẾU KHÔNG CÓ MỚI DÙNG TOÀN VIỆN (workHours)
+                const morningStart = itConfig.morningStartTime || workHours.morningStart || '07:00';
+                const morningEnd = itConfig.morningEndTime || workHours.morningEnd || '11:30';
+                const afternoonStart = itConfig.afternoonStartTime || workHours.afternoonStart || '13:30';
+                const afternoonEnd = itConfig.afternoonEndTime || itConfig.officeEndTime || workHours.afternoonEnd || '17:00';
 
                 const holidays = Array.isArray(hospitalConfig.holidays)
                     ? hospitalConfig.holidays.map((h: any) => h.date).filter(Boolean)

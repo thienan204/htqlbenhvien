@@ -88,22 +88,36 @@ export async function POST(request: Request) {
             trainings
         } = body;
 
-        if (!ho_ten || !ma_nv || !ma_khoa) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-        }
+        let finalHoTen = ho_ten ? String(ho_ten).trim() : '';
+        let finalMaNv = ma_nv ? String(ma_nv).trim() : '';
+        let finalMaKhoa = ma_khoa ? String(ma_khoa).trim() : '';
 
         if (id) {
-            // Kiểm tra xem khoa phòng có thay đổi không
+            // Kiểm tra xem nhân sự có tồn tại không
             const existingStaff = await prisma.staff.findUnique({
                 where: { id },
-                select: { ma_khoa: true, chuc_vu_id: true }
+                select: { id: true, ma_khoa: true, chuc_vu_id: true, ho_ten: true, ma_nv: true }
             });
+
+            if (existingStaff) {
+                if (!finalHoTen) finalHoTen = existingStaff.ho_ten;
+                if (!finalMaNv) finalMaNv = existingStaff.ma_nv;
+                if (!finalMaKhoa) finalMaKhoa = existingStaff.ma_khoa;
+            }
+
+            if (!finalHoTen || !finalMaNv || !finalMaKhoa) {
+                return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            }
 
             // Update existing
             const updated = await prisma.staff.update({
                 where: { id },
                 data: { 
-                    ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
+                    ho_ten: finalHoTen,
+                    ma_nv: finalMaNv,
+                    so_dien_thoai: so_dien_thoai !== undefined ? (so_dien_thoai || null) : undefined,
+                    dia_chi: dia_chi !== undefined ? (dia_chi || null) : undefined,
+                    ma_khoa: finalMaKhoa, 
                     trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
                     vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
                     ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
@@ -118,15 +132,17 @@ export async function POST(request: Request) {
                     ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
                     don_vi_chuyen_den: don_vi_chuyen_den || null,
                     ly_do_nghi_viec: ly_do_nghi_viec || null,
-                    trainings: {
-                        deleteMany: {},
-                        create: trainings || []
-                    }
+                    ...(Array.isArray(trainings) ? {
+                        trainings: {
+                            deleteMany: {},
+                            create: trainings
+                        }
+                    } : {})
                 }
             });
 
             // Nếu mã khoa thay đổi, tự động ghi nhận lịch sử công tác và sync User
-            if (existingStaff && existingStaff.ma_khoa !== ma_khoa) {
+            if (existingStaff && existingStaff.ma_khoa !== finalMaKhoa) {
                 try {
                     // Chốt mốc hiện tại cũ
                     await prisma.staffWorkHistory.updateMany({
@@ -138,7 +154,7 @@ export async function POST(request: Request) {
                     await prisma.staffWorkHistory.create({
                         data: {
                             staffId: id,
-                            ma_khoa,
+                            ma_khoa: finalMaKhoa,
                             chuc_vu_id: chuc_vu_id || existingStaff.chuc_vu_id || null,
                             tu_ngay: new Date(),
                             isCurrent: true,
@@ -149,7 +165,7 @@ export async function POST(request: Request) {
                     // Đồng bộ sang bảng User
                     await prisma.user.updateMany({
                         where: { staffId: id },
-                        data: { ma_khoa }
+                        data: { ma_khoa: finalMaKhoa }
                     });
                 } catch (errHist) {
                     console.error('Lỗi tự động lưu lịch sử chuyển khoa:', errHist);
@@ -158,10 +174,14 @@ export async function POST(request: Request) {
 
             return NextResponse.json(updated);
         } else {
+            if (!finalHoTen || !finalMaNv || !finalMaKhoa) {
+                return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            }
+
             // Create new
             const created = await prisma.staff.create({
                 data: { 
-                    ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
+                    ho_ten: finalHoTen, ma_nv: finalMaNv, so_dien_thoai, dia_chi, ma_khoa: finalMaKhoa, 
                     trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
                     vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
                     ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,

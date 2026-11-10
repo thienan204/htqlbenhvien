@@ -74,6 +74,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
                             name: data.name,
                             avatar: data.avatar || null,
                             telegram_id: data.telegram_id,
+                            userHIS: data.userHIS || '',
                             isAvailable: data.isAvailable,
                             ho_ten: data.staff?.ho_ten,
                             so_dien_thoai: data.staff?.so_dien_thoai,
@@ -138,8 +139,9 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
 
     const fieldsConfig: FieldConfig[] = [
         { id: 'username', label: 'Tên đăng nhập', type: 'input', disabled: true, span: 12 },
+        { id: 'userHIS', label: 'Tên đăng nhập HIS (userHIS)', type: 'input', placeholder: 'Nhập tài khoản HIS nếu có', span: 12 },
         { id: 'name', label: 'Tên hiển thị', type: 'input', required: true, span: 12 },
-        { id: 'telegram_id', label: 'Telegram ID', type: 'input', span: 24 },
+        { id: 'telegram_id', label: 'Telegram ID', type: 'input', placeholder: 'Nhập telegram id...', span: 12 },
     ];
 
     if (user?.role === 'CNTT') {
@@ -241,6 +243,7 @@ export default function EditProfileModal({ open, onClose, initialTab = '1' }: Ed
                                     deptName={departments.find(d => d.ma_khoa === (initialData?.ma_khoa || (user as any)?.ma_khoa))?.ten_khoa || (user as any)?.ten_khoa}
                                     staffMaNv={initialData?.ma_nv || (user as any)?.ma_nv}
                                     staffCccd={initialData?.cccd || (user as any)?.cccd}
+                                    userHIS={initialData?.userHIS}
                                 />
                                 <DynamicForm
                                     formId="profile_update_form"

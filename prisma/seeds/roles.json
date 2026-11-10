@@ -168,7 +168,7 @@
     "name": "Khoa phòng",
     "description": null,
     "createdAt": "2026-07-04T03:42:49.532Z",
-    "updatedAt": "2026-07-04T03:42:49.532Z",
+    "updatedAt": "2026-11-10T13:08:50.856Z",
     "permissions": {
       "roles": {},
       "users": {},
@@ -178,7 +178,9 @@
         "VIEW": true
       },
       "MENU_IT_REPORT": {},
-      "MENU_XML_RULES": {},
+      "MENU_XML_RULES": {
+        "VIEW": true
+      },
       "menu_bcnhapkho": {},
       "MENU_CATALOG_01": {},
       "MENU_CATALOG_02": {},
@@ -192,6 +194,9 @@
       "MENU_DEPARTMENTS": {},
       "MENU_EXCEL_RULES": {},
       "lOI_XML_CHUYENDE": {
+        "VIEW": true
+      },
+      "MENU_CHUYEN_DE_CCHN": {
         "VIEW": true
       },
       "MENU_DOC_FILE_EXCEL": {

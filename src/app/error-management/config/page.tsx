@@ -40,6 +40,7 @@ export default function ITConfigPage() {
     const [newHolidayInput, setNewHolidayInput] = useState<string>('');
     const [newMakeupInput, setNewMakeupInput] = useState<string>('');
     const [noStaffWarningEnabled, setNoStaffWarningEnabled] = useState<boolean>(true);
+    const [dutyShiftWarningEnabled, setDutyShiftWarningEnabled] = useState<boolean>(true);
     const [noStaffWarningMessage, setNoStaffWarningMessage] = useState<string>('');
     const [noStaffPhone, setNoStaffPhone] = useState<string>('');
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(15);
@@ -130,6 +131,7 @@ export default function ITConfigPage() {
                 setHolidays(Array.isArray(data.holidays) ? data.holidays : []);
                 setMakeupWorkdays(Array.isArray(data.makeupWorkdays) ? data.makeupWorkdays : []);
                 setNoStaffWarningEnabled(data.noStaffWarningEnabled !== undefined ? Boolean(data.noStaffWarningEnabled) : true);
+                setDutyShiftWarningEnabled(data.dutyShiftWarningEnabled !== undefined ? Boolean(data.dutyShiftWarningEnabled) : true);
                 setNoStaffWarningMessage(data.noStaffWarningMessage || '');
                 setNoStaffPhone(data.noStaffPhone || '');
                 setMaxImageSizeMB(data.maxFileSizeMB || data.maxImageSizeMB || 15);
@@ -304,6 +306,7 @@ export default function ITConfigPage() {
                 holidays,
                 makeupWorkdays,
                 noStaffWarningEnabled,
+                dutyShiftWarningEnabled,
                 noStaffWarningMessage: noStaffWarningMessage.trim(),
                 noStaffPhone: noStaffPhone.trim(),
                 maxImageSizeMB,
@@ -1283,6 +1286,25 @@ export default function ITConfigPage() {
                         className="border border-slate-200"
                     >
                         <div className="flex flex-col gap-3">
+                            <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <div className="text-xs font-semibold text-amber-950 flex items-center gap-1.5">
+                                        <span>🌙 Trong Giờ trực: Vừa gửi việc cho nhân viên trực vừa hiện Cảnh báo & Hotline cho Khoa/Phòng</span>
+                                    </div>
+                                    <div className="text-[11px] text-amber-800 mt-1 leading-relaxed">
+                                        Khi bật tùy chọn này: Các yêu cầu gửi trong giờ trực (buổi trưa, tối/đêm, cuối tuần, ngày lễ) sẽ <b>vẫn tự động phân công cho nhân viên trực</b> (nếu có nhân viên trực đang sẵn sàng), đồng thời <b>vẫn hiển thị bảng cảnh báo Hotline</b> để Khoa/Phòng biết và gọi khẩn cấp khi cần. Nếu nhân viên trực đang bật chế độ tập trung hoặc không có ai trực, hệ thống vẫn hiển thị bảng cảnh báo này.
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={dutyShiftWarningEnabled} 
+                                    onChange={checked => setDutyShiftWarningEnabled(checked)} 
+                                    checkedChildren="Bật" 
+                                    unCheckedChildren="Tắt"
+                                    disabled={!isAdmin}
+                                    className="shrink-0 self-start sm:self-center"
+                                />
+                            </div>
+
                             <div>
                                 <div className="text-xs font-semibold text-slate-700 mb-1">
                                     Nội dung thông điệp cảnh báo hiển thị cho Khoa/Phòng:

@@ -76,15 +76,21 @@ export default function StaffModal({ open, onClose, onSuccess, staffData }: Staf
     const handleSave = async (values: any) => {
         const isUpdate = !!staffData;
         
+        // Kế thừa toàn bộ thông tin nhân sự ban đầu để không bao giờ bị thiếu các trường (ho_ten, ma_nv, ma_khoa,...) khi cập nhật
         const payload = {
+            ...(staffData || {}),
             ...values,
             id: staffData?.id,
         };
 
         const dateFields = ['ngay_sinh', 'ngay_cap_cccd', 'ngay_tuyen_dung', 'thoi_diem_nang_luong', 'ngay_nghi_viec', 'ngay_qd_nghi_viec'];
         dateFields.forEach(field => {
-            if (payload[field] && dayjs.isDayjs(payload[field])) {
-                payload[field] = payload[field].toISOString();
+            if (payload[field]) {
+                if (dayjs.isDayjs(payload[field])) {
+                    payload[field] = payload[field].toISOString();
+                } else if (payload[field] instanceof Date) {
+                    payload[field] = payload[field].toISOString();
+                }
             }
         });
 

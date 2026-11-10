@@ -13,7 +13,8 @@ import {
     CloseCircleOutlined,
     FolderOutlined,
     InfoCircleOutlined,
-    FormOutlined
+    FormOutlined,
+    CheckCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -34,6 +35,18 @@ interface MenuItemPermission {
     order: number;
 }
 
+// Bảng ánh xạ bí danh quyền (Aliases) để tương thích 100% giữa mã quyền cũ và mã menu mới
+export const PERMISSION_ALIASES: Record<string, string[]> = {
+    MENU_CHUYEN_DE_CCHN: ['MENU_CHUYEN_DE'],
+    MENU_XML_RULES: ['MENU_XML_ERRORS', 'lOI_XML_CHUYENDE'],
+    MENU_USERS: ['users'],
+    MENU_ROLES: ['roles'],
+    MENU_STAFF: ['staff'],
+    MENU_PTTT_EXCEL: ['menuthuthp'],
+    MENU_DEPARTMENTS: ['departments'],
+    MENU_SPECIALIZED_RULES: ['rules'],
+};
+
 export default function RolesPage() {
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(false);
@@ -42,6 +55,9 @@ export default function RolesPage() {
     const [form] = Form.useForm();
     const [menuPermissions, setMenuPermissions] = useState<MenuItemPermission[]>([]);
     const [permSearchText, setPermSearchText] = useState('');
+    
+    // Quản lý trạng thái phân quyền độc lập bằng React State để không bị lỗi unmount khi tìm kiếm
+    const [rolePermissions, setRolePermissions] = useState<Record<string, { VIEW?: boolean; EDIT?: boolean; DELETE?: boolean }>>({});
 
     const fetchRoles = async () => {
         setLoading(true);
@@ -122,14 +138,167 @@ export default function RolesPage() {
         fetchMenus();
     }, []);
 
+    const openModal = (role: Role | null = null) => {
+        setSelectedRole(role);
+        setPermSearchText('');
+        if (role) {
+            let normalizedPermissions: Record<string, { VIEW?: boolean; EDIT?: boolean; DELETE?: boolean }> = {};
+            if (Array.isArray(role.permissions)) {
+                role.permissions.forEach(code => {
+                    normalizedPermissions[code] = { VIEW: true, EDIT: false, DELETE: false };
+                });
+            } else if (typeof role.permissions === 'object' && role.permissions !== null) {
+                normalizedPermissions = JSON.parse(JSON.stringify(role.permissions));
+            }
+
+            // Đồng bộ 2 chiều các mã quyền cũ (legacy aliases) sang mã chuẩn của bảng Menu
+            Object.entries(PERMISSION_ALIASES).forEach(([canonical, aliases]) => {
+                if (!normalizedPermissions[canonical] || (!normalizedPermissions[canonical].VIEW && !normalizedPermissions[canonical].EDIT && !normalizedPermissions[canonical].DELETE)) {
+                    for (const alias of aliases) {
+                        if (normalizedPermissions[alias] && (normalizedPermissions[alias].VIEW || normalizedPermissions[alias].EDIT || normalizedPermissions[alias].DELETE)) {
+                            normalizedPermissions[canonical] = { ...normalizedPermissions[alias] };
+                            break;
+                        }
+                    }
+                }
+            });
+
+            setRolePermissions(normalizedPermissions);
+
+            form.setFieldsValue({
+                code: role.code,
+                name: role.name,
+                description: role.description
+            });
+        } else {
+            setRolePermissions({});
+            form.resetFields();
+        }
+        setIsModalVisible(true);
+    };
+
+    // Toggle quyền đơn lẻ Xem / Sửa / Xóa
+    const handleTogglePerm = (menuCode: string, action: 'VIEW' | 'EDIT' | 'DELETE', checked: boolean) => {
+        setRolePermissions(prev => {
+            const current = prev[menuCode] || { VIEW: false, EDIT: false, DELETE: false };
+            const next = { ...current, [action]: checked };
+
+            // Logic liên kết quyền:
+            // 1. Nếu chọn Sửa hoặc Xóa -> tự động tick Xem
+            if (action !== 'VIEW' && checked) {
+                next.VIEW = true;
+            }
+            // 2. Nếu bỏ chọn Xem -> tự động bỏ cả Sửa và Xóa
+            if (action === 'VIEW' && !checked) {
+                next.EDIT = false;
+                next.DELETE = false;
+            }
+
+            const updated = {
+                ...prev,
+                [menuCode]: next
+            };
+
+            // Nếu menuCode có aliases, đồng bộ luôn sang aliases
+            const aliases = PERMISSION_ALIASES[menuCode];
+            if (aliases) {
+                aliases.forEach(alias => {
+                    updated[alias] = { ...next };
+                });
+            }
+
+            return updated;
+        });
+    };
+
+    // Áp dụng quyền hàng loạt (batch preset)
+    const applyBatchPermission = (targetMenus: MenuItemPermission[], preset: 'VIEW_ONLY' | 'EDIT_NO_DELETE' | 'FULL' | 'CLEAR') => {
+        setRolePermissions(prev => {
+            const updated = { ...prev };
+            targetMenus.forEach(m => {
+                let permVal = { VIEW: false, EDIT: false, DELETE: false };
+                if (preset === 'VIEW_ONLY') {
+                    permVal = { VIEW: true, EDIT: false, DELETE: false };
+                } else if (preset === 'EDIT_NO_DELETE') {
+                    permVal = { VIEW: true, EDIT: true, DELETE: false };
+                } else if (preset === 'FULL') {
+                    permVal = { VIEW: true, EDIT: true, DELETE: true };
+                } else if (preset === 'CLEAR') {
+                    permVal = { VIEW: false, EDIT: false, DELETE: false };
+                }
+                updated[m.value] = permVal;
+
+                // Đồng bộ aliases nếu có
+                const aliases = PERMISSION_ALIASES[m.value];
+                if (aliases) {
+                    aliases.forEach(alias => {
+                        updated[alias] = { ...permVal };
+                    });
+                }
+            });
+            return updated;
+        });
+    };
+
+    // Gán nhanh quyền cho 1 chức năng riêng lẻ
+    const applySinglePermission = (menuCode: string, preset: 'VIEW_ONLY' | 'EDIT_NO_DELETE' | 'FULL' | 'CLEAR') => {
+        setRolePermissions(prev => {
+            const updated = { ...prev };
+            let permVal = { VIEW: false, EDIT: false, DELETE: false };
+            if (preset === 'VIEW_ONLY') {
+                permVal = { VIEW: true, EDIT: false, DELETE: false };
+            } else if (preset === 'EDIT_NO_DELETE') {
+                permVal = { VIEW: true, EDIT: true, DELETE: false };
+            } else if (preset === 'FULL') {
+                permVal = { VIEW: true, EDIT: true, DELETE: true };
+            } else if (preset === 'CLEAR') {
+                permVal = { VIEW: false, EDIT: false, DELETE: false };
+            }
+            updated[menuCode] = permVal;
+
+            const aliases = PERMISSION_ALIASES[menuCode];
+            if (aliases) {
+                aliases.forEach(alias => {
+                    updated[alias] = { ...permVal };
+                });
+            }
+            return updated;
+        });
+    };
+
     const handleSave = async (values: any) => {
         const isUpdate = !!selectedRole;
         const url = '/api/roles';
         const method = isUpdate ? 'PUT' : 'POST';
         
+        // Chuẩn hóa và làm sạch permissions: chỉ giữ các quyền có VIEW, EDIT hoặc DELETE = true
+        const cleanedPermissions: Record<string, { VIEW?: boolean; EDIT?: boolean; DELETE?: boolean }> = {};
+        
+        Object.entries(rolePermissions).forEach(([code, p]) => {
+            if (p && (p.VIEW || p.EDIT || p.DELETE)) {
+                cleanedPermissions[code] = {
+                    VIEW: !!p.VIEW,
+                    EDIT: !!p.EDIT,
+                    DELETE: !!p.DELETE
+                };
+            }
+        });
+
+        // Đồng bộ alias 2 chiều khi lưu để đảm bảo tuyệt đối không bị thiếu mã quyền
+        Object.entries(PERMISSION_ALIASES).forEach(([canonical, aliases]) => {
+            if (cleanedPermissions[canonical]) {
+                aliases.forEach(alias => {
+                    cleanedPermissions[alias] = { ...cleanedPermissions[canonical] };
+                });
+            }
+        });
+
         const payload = {
             id: selectedRole?.id,
-            ...values
+            code: values.code,
+            name: values.name,
+            description: values.description,
+            permissions: cleanedPermissions
         };
 
         try {
@@ -170,69 +339,6 @@ export default function RolesPage() {
         }
     };
 
-    const openModal = (role: Role | null = null) => {
-        setSelectedRole(role);
-        setPermSearchText('');
-        if (role) {
-            let normalizedPermissions: any = {};
-            if (Array.isArray(role.permissions)) {
-                role.permissions.forEach(code => {
-                    normalizedPermissions[code] = { VIEW: true, EDIT: false, DELETE: false };
-                });
-            } else if (typeof role.permissions === 'object' && role.permissions !== null) {
-                normalizedPermissions = role.permissions;
-            }
-
-            form.setFieldsValue({
-                code: role.code,
-                name: role.name,
-                description: role.description,
-                permissions: normalizedPermissions
-            });
-        } else {
-            form.resetFields();
-        }
-        setIsModalVisible(true);
-    };
-
-    // Áp dụng quyền hàng loạt (batch preset)
-    const applyBatchPermission = (targetMenus: MenuItemPermission[], preset: 'VIEW_ONLY' | 'EDIT_NO_DELETE' | 'FULL' | 'CLEAR') => {
-        const currentPerms = form.getFieldValue('permissions') || {};
-        const updated = { ...currentPerms };
-
-        targetMenus.forEach(m => {
-            if (preset === 'VIEW_ONLY') {
-                updated[m.value] = { VIEW: true, EDIT: false, DELETE: false };
-            } else if (preset === 'EDIT_NO_DELETE') {
-                updated[m.value] = { VIEW: true, EDIT: true, DELETE: false };
-            } else if (preset === 'FULL') {
-                updated[m.value] = { VIEW: true, EDIT: true, DELETE: true };
-            } else if (preset === 'CLEAR') {
-                updated[m.value] = { VIEW: false, EDIT: false, DELETE: false };
-            }
-        });
-
-        form.setFieldsValue({ permissions: updated });
-    };
-
-    // Gán nhanh quyền cho 1 chức năng riêng lẻ
-    const applySinglePermission = (menuCode: string, preset: 'VIEW_ONLY' | 'EDIT_NO_DELETE' | 'FULL' | 'CLEAR') => {
-        const currentPerms = form.getFieldValue('permissions') || {};
-        const updated = { ...currentPerms };
-
-        if (preset === 'VIEW_ONLY') {
-            updated[menuCode] = { VIEW: true, EDIT: false, DELETE: false };
-        } else if (preset === 'EDIT_NO_DELETE') {
-            updated[menuCode] = { VIEW: true, EDIT: true, DELETE: false };
-        } else if (preset === 'FULL') {
-            updated[menuCode] = { VIEW: true, EDIT: true, DELETE: true };
-        } else if (preset === 'CLEAR') {
-            updated[menuCode] = { VIEW: false, EDIT: false, DELETE: false };
-        }
-
-        form.setFieldsValue({ permissions: updated });
-    };
-
     // Lọc danh sách menu theo từ khóa tìm kiếm
     const filteredMenus = useMemo(() => {
         if (!permSearchText.trim()) return menuPermissions;
@@ -256,6 +362,24 @@ export default function RolesPage() {
         });
         return Array.from(map.entries());
     }, [filteredMenus]);
+
+    // Đếm tổng số chức năng duy nhất đang được kích hoạt trong rolePermissions
+    const activePermCount = useMemo(() => {
+        const uniqueMenus = new Set<string>();
+        Object.entries(rolePermissions).forEach(([code, p]) => {
+            if (p?.VIEW || p?.EDIT || p?.DELETE) {
+                let canon = code;
+                for (const [canonical, aliases] of Object.entries(PERMISSION_ALIASES)) {
+                    if (code === canonical || aliases.includes(code)) {
+                        canon = canonical;
+                        break;
+                    }
+                }
+                uniqueMenus.add(canon);
+            }
+        });
+        return uniqueMenus.size;
+    }, [rolePermissions]);
 
     const columns = [
         {
@@ -285,7 +409,20 @@ export default function RolesPage() {
                 if (Array.isArray(record.permissions)) {
                     count = record.permissions.length;
                 } else if (typeof record.permissions === 'object' && record.permissions !== null) {
-                    count = Object.values(record.permissions).filter((p: any) => p?.VIEW || p?.EDIT || p?.DELETE).length;
+                    const uniqueMenus = new Set<string>();
+                    Object.entries(record.permissions).forEach(([code, p]: [string, any]) => {
+                        if (p?.VIEW || p?.EDIT || p?.DELETE) {
+                            let canon = code;
+                            for (const [canonical, aliases] of Object.entries(PERMISSION_ALIASES)) {
+                                if (code === canonical || aliases.includes(code)) {
+                                    canon = canonical;
+                                    break;
+                                }
+                            }
+                            uniqueMenus.add(canon);
+                        }
+                    });
+                    count = uniqueMenus.size;
                 }
                 return <Tag color={count > 0 ? 'green' : 'default'}>{count} menu</Tag>;
             }
@@ -348,9 +485,16 @@ export default function RolesPage() {
 
             <Modal
                 title={
-                    <div className="flex items-center gap-2 text-lg font-bold text-slate-800">
-                        <SafetyCertificateOutlined className="text-purple-600" />
-                        {selectedRole ? `Cập nhật Phân quyền Vai trò: ${selectedRole.name}` : "Tạo Vai trò (Role) mới"}
+                    <div className="flex items-center justify-between pr-8">
+                        <div className="flex items-center gap-2 text-lg font-bold text-slate-800">
+                            <SafetyCertificateOutlined className="text-purple-600" />
+                            {selectedRole ? `Cập nhật Phân quyền Vai trò: ${selectedRole.name}` : "Tạo Vai trò (Role) mới"}
+                        </div>
+                        {selectedRole && selectedRole.code !== 'ADMIN' && (
+                            <Tag color="purple" icon={<CheckCircleOutlined />} className="text-xs px-2 py-0.5 font-semibold">
+                                Đang chọn: <b>{activePermCount}</b> chức năng
+                            </Tag>
+                        )}
                     </div>
                 }
                 open={isModalVisible}
@@ -365,23 +509,6 @@ export default function RolesPage() {
                     form={form} 
                     layout="vertical" 
                     onFinish={handleSave}
-                    onValuesChange={(changedValues) => {
-                        if (changedValues.permissions) {
-                            const changedMenu = Object.keys(changedValues.permissions)[0];
-                            if (changedMenu) {
-                                const perms = changedValues.permissions[changedMenu];
-                                // Nếu chọn Sửa hoặc Xóa -> tự động tick Xem
-                                if (perms?.EDIT === true || perms?.DELETE === true) {
-                                    form.setFieldValue(['permissions', changedMenu, 'VIEW'], true);
-                                }
-                                // Nếu bỏ chọn Xem -> tự động bỏ cả Sửa và Xóa
-                                if (perms?.VIEW === false) {
-                                    form.setFieldValue(['permissions', changedMenu, 'EDIT'], false);
-                                    form.setFieldValue(['permissions', changedMenu, 'DELETE'], false);
-                                }
-                            }
-                        }
-                    }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Form.Item name="code" label="Mã Role (In hoa, viết liền)" rules={[{ required: true, message: 'Bắt buộc nhập mã vai trò' }]}>
@@ -546,74 +673,80 @@ export default function RolesPage() {
 
                                                 {/* Danh sách các chức năng con trong nhóm */}
                                                 <div className="space-y-1 pl-1 pr-1">
-                                                    {items.map(menu => (
-                                                        <div key={menu.value} className="grid grid-cols-12 gap-2 items-center hover:bg-purple-50/40 px-2 py-1.5 rounded-md transition-colors text-xs">
-                                                            <div className="col-span-5">
-                                                                <div className="font-semibold text-slate-800 leading-tight">{menu.label}</div>
-                                                                <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                                                                    <code className="bg-slate-100 text-slate-600 px-1 py-0.5 rounded text-[10px]">{menu.value}</code>
-                                                                    {menu.path && <span className="truncate max-w-[150px]">{menu.path}</span>}
+                                                    {items.map(menu => {
+                                                        const p = rolePermissions[menu.value] || {};
+                                                        return (
+                                                            <div key={menu.value} className="grid grid-cols-12 gap-2 items-center hover:bg-purple-50/40 px-2 py-1.5 rounded-md transition-colors text-xs">
+                                                                <div className="col-span-5">
+                                                                    <div className="font-semibold text-slate-800 leading-tight">{menu.label}</div>
+                                                                    <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                                                        <code className="bg-slate-100 text-slate-600 px-1 py-0.5 rounded text-[10px]">{menu.value}</code>
+                                                                        {menu.path && <span className="truncate max-w-[150px]">{menu.path}</span>}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-span-1 flex justify-center">
+                                                                    <Checkbox 
+                                                                        checked={!!p.VIEW} 
+                                                                        onChange={e => handleTogglePerm(menu.value, 'VIEW', e.target.checked)} 
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-1 flex justify-center">
+                                                                    <Checkbox 
+                                                                        checked={!!p.EDIT} 
+                                                                        onChange={e => handleTogglePerm(menu.value, 'EDIT', e.target.checked)} 
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-1 flex justify-center">
+                                                                    <Checkbox 
+                                                                        checked={!!p.DELETE} 
+                                                                        onChange={e => handleTogglePerm(menu.value, 'DELETE', e.target.checked)} 
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-4 flex justify-center items-center gap-1">
+                                                                    <Tooltip title="Chỉ xem: Bật Xem, tắt Sửa & Xóa">
+                                                                        <Button 
+                                                                            size="small" 
+                                                                            type="dashed" 
+                                                                            className="text-[10px] h-5 px-1 text-blue-600"
+                                                                            onClick={() => applySinglePermission(menu.value, 'VIEW_ONLY')}
+                                                                        >
+                                                                            Chỉ xem
+                                                                        </Button>
+                                                                    </Tooltip>
+                                                                    <Tooltip title="Xem & Sửa: Cho phép sửa nhưng không cho xóa">
+                                                                        <Button 
+                                                                            size="small" 
+                                                                            type="dashed" 
+                                                                            className="text-[10px] h-5 px-1 text-amber-600"
+                                                                            onClick={() => applySinglePermission(menu.value, 'EDIT_NO_DELETE')}
+                                                                        >
+                                                                            Sửa (ko xóa)
+                                                                        </Button>
+                                                                    </Tooltip>
+                                                                    <Tooltip title="Toàn quyền: Đầy đủ Xem, Sửa, Xóa">
+                                                                        <Button 
+                                                                            size="small" 
+                                                                            type="dashed" 
+                                                                            className="text-[10px] h-5 px-1 text-emerald-600"
+                                                                            onClick={() => applySinglePermission(menu.value, 'FULL')}
+                                                                        >
+                                                                            Full
+                                                                        </Button>
+                                                                    </Tooltip>
+                                                                    <Tooltip title="Bỏ chọn chức năng này">
+                                                                        <Button 
+                                                                            size="small" 
+                                                                            type="text" 
+                                                                            className="text-[10px] h-5 px-1 text-slate-400 hover:text-red-500"
+                                                                            onClick={() => applySinglePermission(menu.value, 'CLEAR')}
+                                                                        >
+                                                                            X
+                                                                        </Button>
+                                                                    </Tooltip>
                                                                 </div>
                                                             </div>
-                                                            <div className="col-span-1 flex justify-center">
-                                                                <Form.Item name={['permissions', menu.value, 'VIEW']} valuePropName="checked" className="mb-0">
-                                                                    <Checkbox />
-                                                                </Form.Item>
-                                                            </div>
-                                                            <div className="col-span-1 flex justify-center">
-                                                                <Form.Item name={['permissions', menu.value, 'EDIT']} valuePropName="checked" className="mb-0">
-                                                                    <Checkbox />
-                                                                </Form.Item>
-                                                            </div>
-                                                            <div className="col-span-1 flex justify-center">
-                                                                <Form.Item name={['permissions', menu.value, 'DELETE']} valuePropName="checked" className="mb-0">
-                                                                    <Checkbox />
-                                                                </Form.Item>
-                                                            </div>
-                                                            <div className="col-span-4 flex justify-center items-center gap-1">
-                                                                <Tooltip title="Chỉ xem: Bật Xem, tắt Sửa & Xóa">
-                                                                    <Button 
-                                                                        size="small" 
-                                                                        type="dashed" 
-                                                                        className="text-[10px] h-5 px-1 text-blue-600"
-                                                                        onClick={() => applySinglePermission(menu.value, 'VIEW_ONLY')}
-                                                                    >
-                                                                        Chỉ xem
-                                                                    </Button>
-                                                                </Tooltip>
-                                                                <Tooltip title="Xem & Sửa: Cho phép sửa nhưng không cho xóa">
-                                                                    <Button 
-                                                                        size="small" 
-                                                                        type="dashed" 
-                                                                        className="text-[10px] h-5 px-1 text-amber-600"
-                                                                        onClick={() => applySinglePermission(menu.value, 'EDIT_NO_DELETE')}
-                                                                    >
-                                                                        Sửa (ko xóa)
-                                                                    </Button>
-                                                                </Tooltip>
-                                                                <Tooltip title="Toàn quyền: Đầy đủ Xem, Sửa, Xóa">
-                                                                    <Button 
-                                                                        size="small" 
-                                                                        type="dashed" 
-                                                                        className="text-[10px] h-5 px-1 text-emerald-600"
-                                                                        onClick={() => applySinglePermission(menu.value, 'FULL')}
-                                                                    >
-                                                                        Full
-                                                                    </Button>
-                                                                </Tooltip>
-                                                                <Tooltip title="Bỏ chọn chức năng này">
-                                                                    <Button 
-                                                                        size="small" 
-                                                                        type="text" 
-                                                                        className="text-[10px] h-5 px-1 text-slate-400 hover:text-red-500"
-                                                                        onClick={() => applySinglePermission(menu.value, 'CLEAR')}
-                                                                    >
-                                                                        X
-                                                                    </Button>
-                                                                </Tooltip>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         ))
@@ -635,4 +768,3 @@ export default function RolesPage() {
         </div>
     );
 }
-

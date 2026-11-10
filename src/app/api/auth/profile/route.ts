@@ -15,6 +15,7 @@ export async function GET(request: Request) {
                 name: true,
                 role: true,
                 telegram_id: true,
+                userHIS: true,
                 isAvailable: true,
                 autoAssignDisabled: true,
                 focusReason: true,
@@ -63,7 +64,7 @@ export async function PUT(request: Request) {
 
         const body = await request.json();
         const { 
-            name, telegram_id, isAvailable, autoAssignDisabled, focusReason, avatar,
+            name, telegram_id, userHIS, isAvailable, autoAssignDisabled, focusReason, avatar,
             ho_ten, so_dien_thoai, dia_chi,
             ma_nv, ngay_sinh, gioi_tinh_id, ma_khoa,
             loai_hop_dong_id, chuc_vu_id, vi_tri_viec_lam_id, chuc_danh_id, trinh_do_id
@@ -75,6 +76,9 @@ export async function PUT(request: Request) {
         });
 
         const updateData: any = { name, telegram_id };
+        if (userHIS !== undefined) {
+            updateData.userHIS = userHIS?.trim() ? userHIS.trim() : null;
+        }
         if (isAvailable !== undefined) {
             updateData.isAvailable = isAvailable;
         }
@@ -127,6 +131,7 @@ export async function PUT(request: Request) {
                     name: true,
                     role: true,
                     telegram_id: true,
+                    userHIS: true,
                     isAvailable: true,
                     staff: {
                         select: {
@@ -142,6 +147,12 @@ export async function PUT(request: Request) {
         return NextResponse.json({ message: 'Cập nhật thông tin thành công', user: { ...updatedUser, avatar } });
     } catch (error: any) {
         console.error('Update profile error:', error);
+        if (error.code === 'P2002') {
+            const target = error.meta?.target as string[];
+            if (target && target.includes('userHIS')) {
+                return NextResponse.json({ error: 'Tên đăng nhập HIS này đã được liên kết với tài khoản khác' }, { status: 400 });
+            }
+        }
         return NextResponse.json({ error: 'Lỗi cập nhật hồ sơ' }, { status: 500 });
     }
 }

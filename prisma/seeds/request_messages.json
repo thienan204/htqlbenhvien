@@ -2228,5 +2228,93 @@
     "vendorName": null,
     "createdAt": "2026-10-28T06:56:35.973Z",
     "updatedAt": "2026-10-28T06:56:35.973Z"
+  },
+  {
+    "id": "cmvtovz440003zyufbj3hyoqv",
+    "itRequestId": "cmvkdpnvo0002xpk5v3rzhyy8",
+    "senderId": "cmr5tcqqb009n3l00o4p17w4q",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "⏸️ [TẠM DỪNG XỬ LÝ]: Lý do: sf",
+    "imageUrl": null,
+    "isSystem": true,
+    "readBy": [],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-29T15:19:44.259Z",
+    "updatedAt": "2026-10-29T15:19:44.259Z"
+  },
+  {
+    "id": "cmvtow7za0005zyuf2wxw26pe",
+    "itRequestId": "cmvkdpxkf0006xpk5imzkruzb",
+    "senderId": "cmr5tcqqb009n3l00o4p17w4q",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "▶️ [TIẾP TỤC XỬ LÝ]: Kỹ thuật viên tiếp tục thực hiện yêu cầu này.",
+    "imageUrl": null,
+    "isSystem": true,
+    "readBy": [],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-29T15:19:55.751Z",
+    "updatedAt": "2026-10-29T15:19:55.751Z"
+  },
+  {
+    "id": "cmvtow99l0007zyufcig6hi65",
+    "itRequestId": "cmvkdpxkf0006xpk5imzkruzb",
+    "senderId": "cmr5tcqqb009n3l00o4p17w4q",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "🚶 [ĐI KHOA PHÒNG / KÉO DÀI]: Đã bật chế độ xử lý tại hiện trường. Tạm ngưng nhận chia việc tự động cho kỹ thuật viên này.",
+    "imageUrl": null,
+    "isSystem": true,
+    "readBy": [],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-29T15:19:57.417Z",
+    "updatedAt": "2026-10-29T15:19:57.417Z"
+  },
+  {
+    "id": "cmvud22lz0004lp4lifigs8qj",
+    "itRequestId": "cmvud22lz0003lp4lsm9edmvj",
+    "senderId": "cmqwaw3sp01874z6hpsrczd3u",
+    "senderName": "Trần Thị Hòa",
+    "content": "Huỷ ký số giấy ra viện",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmr5tcuq401c73l00l0i7vjgm"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-30T02:36:19.510Z",
+    "updatedAt": "2026-10-30T02:36:19.510Z"
+  },
+  {
+    "id": "cmvug4d5i0006lp4l09m6hxyz",
+    "itRequestId": "cmvkdpxkf0006xpk5imzkruzb",
+    "senderId": "cmr5tcqqb009n3l00o4p17w4q",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "⏸️ [TỰ ĐỘNG TẠM DỪNG]: Tạm dừng xử lý do bắt đầu tạo và xử lý việc mới: Huỷ ký số lãnh đạo BA",
+    "imageUrl": null,
+    "isSystem": true,
+    "readBy": [],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-30T04:02:05.332Z",
+    "updatedAt": "2026-10-30T04:02:05.332Z"
+  },
+  {
+    "id": "cmvug4d6s0008lp4lfuddxan9",
+    "itRequestId": "cmvug4d6s0007lp4lupwbqlun",
+    "senderId": "cmqwaq3lr00etm8g8b3vkcrhs",
+    "senderName": "Hoàng Thế Lâm",
+    "content": "Huỷ ký số lãnh đạo BA",
+    "imageUrl": null,
+    "isSystem": false,
+    "readBy": [
+      "cmr5tcqqb009n3l00o4p17w4q"
+    ],
+    "channel": "INTERNAL",
+    "vendorName": null,
+    "createdAt": "2026-10-30T04:02:05.380Z",
+    "updatedAt": "2026-10-30T04:02:05.380Z"
   }
 ]

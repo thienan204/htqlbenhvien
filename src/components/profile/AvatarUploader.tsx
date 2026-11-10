@@ -24,6 +24,7 @@ interface AvatarUploaderProps {
     deptName?: string;
     staffMaNv?: string;
     staffCccd?: string;
+    userHIS?: string;
 }
 
 export default function AvatarUploader({
@@ -37,6 +38,7 @@ export default function AvatarUploader({
     deptName,
     staffMaNv,
     staffCccd,
+    userHIS,
 }: AvatarUploaderProps) {
     const [uploading, setUploading] = useState(false);
     const [imgError, setImgError] = useState(false);
@@ -214,8 +216,13 @@ export default function AvatarUploader({
                     </div>
                 )}
 
-                {(staffMaNv || staffCccd) && (
+                {(staffMaNv || staffCccd || userHIS) && (
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-slate-500 pt-0.5">
+                        {userHIS && (
+                            <span className="inline-flex items-center gap-1 bg-purple-50 border border-purple-200/90 px-2 py-0.5 rounded text-[11px] font-medium text-purple-700 shadow-xs">
+                                HIS: <strong className="text-purple-700 font-mono">{userHIS}</strong>
+                            </span>
+                        )}
                         {staffMaNv && (
                             <span className="inline-flex items-center gap-1 bg-white/90 border border-slate-200/90 px-2 py-0.5 rounded text-[11px] font-medium text-slate-700 shadow-xs">
                                 <IdcardOutlined className="text-slate-400" />
