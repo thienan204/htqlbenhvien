@@ -7,7 +7,8 @@ import {
     ThunderboltOutlined, SettingOutlined, PlusOutlined, EditOutlined, 
     DeleteOutlined, ReloadOutlined, CloudUploadOutlined, CloudDownloadOutlined,
     PictureOutlined, CameraOutlined, CheckCircleOutlined, SyncOutlined, 
-    ClockCircleOutlined, MedicineBoxOutlined, FileTextOutlined, LoadingOutlined
+    ClockCircleOutlined, MedicineBoxOutlined, FileTextOutlined, LoadingOutlined,
+    RollbackOutlined, ArrowDownOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Ticket } from '../types';
@@ -33,6 +34,9 @@ interface ChatMessage {
     vendorName?: string | null;
     senderDepartment?: string | null;
     senderRole?: string | null;
+    readBy?: string[];
+    isRecalled?: boolean;
+    recalledAt?: string | null;
     createdAt: string;
 }
 
@@ -70,6 +74,15 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
     const [vendorName, setVendorName] = useState<string>('');
     const [vendorContact, setVendorContact] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isAtBottomRef = useRef<boolean>(true);
+    const [showScrollBottomBtn, setShowScrollBottomBtn] = useState<boolean>(false);
+    const [newMessagesCount, setNewMessagesCount] = useState<number>(0);
+    const [recallConfig, setRecallConfig] = useState<{ allowRecall: boolean; timeLimitMinutes: number }>({
+        allowRecall: true,
+        timeLimitMinutes: 15
+    });
+    const [recallingMsgId, setRecallingMsgId] = useState<string | null>(null);
     const inputRef = useRef<any>(null);
 
     // Mẫu câu trả lời nhanh (Quick Replies)
@@ -211,19 +224,114 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
         }, 50);
     };
 
-    const fetchMessages = async () => {
+    const fetchRecallConfig = async () => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/error-management/it-request-config`);
+            if (res.ok) {
+                const data = await res.json();
+                setRecallConfig({
+                    allowRecall: data.allowMessageRecall !== undefined ? Boolean(data.allowMessageRecall) : true,
+                    timeLimitMinutes: data.messageRecallTimeLimitMinutes !== undefined ? Number(data.messageRecallTimeLimitMinutes) : 15
+                });
+            }
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    const handleScroll = () => {
+        const el = messagesContainerRef.current;
+        if (!el) return;
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        const atBottom = distanceFromBottom < 80;
+        isAtBottomRef.current = atBottom;
+        setShowScrollBottomBtn(!atBottom);
+        if (atBottom) {
+            setNewMessagesCount(0);
+        }
+    };
+
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior });
+        } else if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+        isAtBottomRef.current = true;
+        setShowScrollBottomBtn(false);
+        setNewMessagesCount(0);
+    };
+
+    const fetchMessages = async (isFirst = false) => {
         if (!ticket) return;
         try {
             const res = await fetch(`${getBasePath()}/api/error-management/it-requests/${ticket.id}/messages`);
             if (res.ok) {
-                const data = await res.json();
-                setMessages(data);
-                setTimeout(scrollToBottom, 100);
+                const data: ChatMessage[] = await res.json();
+                setMessages(prev => {
+                    const prevCount = prev.length;
+                    const newCount = data.length;
+                    if (newCount > prevCount && !isFirst && !isAtBottomRef.current) {
+                        setNewMessagesCount(c => c + (newCount - prevCount));
+                    }
+                    return data;
+                });
+                // Chỉ tự động cuộn xuống nếu là lần đầu mở chat HOẶC người dùng đang ở đáy
+                if (isFirst || isAtBottomRef.current) {
+                    setTimeout(() => scrollToBottom(isFirst ? 'auto' : 'smooth'), 60);
+                }
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const canRecallMessage = (msg: ChatMessage) => {
+        if (!recallConfig.allowRecall) return false;
+        if (msg.senderId !== user?.id) return false;
+        if (msg.isSystem) return false;
+        if (msg.isRecalled) return false;
+
+        // Kiểm tra xem đã có người khác đọc chưa
+        const otherReaders = (msg.readBy || []).filter(uid => uid !== user?.id);
+        if (otherReaders.length > 0) return false;
+
+        // Kiểm tra thời hạn
+        if (recallConfig.timeLimitMinutes > 0) {
+            const elapsedMs = Date.now() - new Date(msg.createdAt).getTime();
+            if (elapsedMs > recallConfig.timeLimitMinutes * 60 * 1000) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    const handleRecallMessage = async (messageId: string) => {
+        if (!ticket) return;
+        try {
+            setRecallingMsgId(messageId);
+            const res = await fetch(`${getBasePath()}/api/error-management/it-requests/${ticket.id}/messages/${messageId}/recall`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                message.success('Đã thu hồi tin nhắn thành công');
+                setMessages(prev => prev.map(m => m.id === messageId ? {
+                    ...m,
+                    isRecalled: true,
+                    content: 'Tin nhắn đã được thu hồi',
+                    imageUrl: null
+                } : m));
+            } else {
+                message.error(data.error || 'Không thể thu hồi tin nhắn');
+            }
+        } catch (e) {
+            message.error('Lỗi kết nối khi thu hồi tin nhắn');
+        } finally {
+            setRecallingMsgId(null);
         }
     };
 
@@ -241,21 +349,21 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
             } else if (isDepartment) {
                 setActiveChannel('INTERNAL');
             }
-            fetchMessages();
-            // Polling tin nhắn 2 giây khi đang mở khung chat
-            const interval = setInterval(fetchMessages, 2000); 
+            fetchRecallConfig();
+            fetchMessages(true);
+            // Polling tin nhắn 2 giây khi đang mở khung chat (chỉ cuộn nếu người dùng đang ở đáy)
+            const interval = setInterval(() => fetchMessages(false), 2000); 
             return () => clearInterval(interval);
         } else {
             setMessages([]);
             setText('');
+            setShowScrollBottomBtn(false);
+            setNewMessagesCount(0);
+            isAtBottomRef.current = true;
             if (isVendor) setActiveChannel('VENDOR');
             else setActiveChannel('INTERNAL');
         }
     }, [visible, ticket, isVendor, isDepartment]);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
 
     const handleSend = async () => {
         if (!text.trim() || !ticket) return;
@@ -708,7 +816,11 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
             )}
 
             {/* Message Area */}
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-3.5">
+            <div 
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-3.5 relative"
+            >
                 {loading && currentMessages.length === 0 ? (
                     <div className="flex justify-center items-center h-full"><Spin /></div>
                 ) : (
@@ -763,33 +875,71 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                                         <span className="text-slate-400">• {dayjs(msg.createdAt).format('HH:mm DD/MM')}</span>
                                     </div>
 
-                                    <div className={`px-3.5 py-2.5 rounded-2xl shadow-xs text-sm leading-relaxed ${
-                                        isMe 
-                                            ? activeChannel === 'VENDOR'
-                                                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-tr-xs'
-                                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-xs'
-                                            : 'bg-white text-slate-800 rounded-tl-xs border border-slate-200/90'
-                                    }`}>
-                                        {msg.content && (
-                                            <div className="whitespace-pre-wrap">
-                                                {renderTextWithLinks(
-                                                    msg.content,
-                                                    isMe 
-                                                        ? "text-white underline font-semibold hover:text-blue-100 inline-flex items-center gap-0.5 break-all" 
-                                                        : undefined
-                                                )}
-                                            </div>
-                                        )}
-                                        {msg.imageUrl && (
-                                            <div className="mt-2 rounded-xl overflow-hidden border border-white/20">
-                                                <AntImage 
-                                                    src={msg.imageUrl.startsWith('http') || msg.imageUrl.startsWith('blob:') ? msg.imageUrl : `${getBasePath()}${msg.imageUrl}`} 
-                                                    alt="Ảnh chụp đính kèm" 
-                                                    className="max-h-60 rounded-xl object-contain bg-black/5"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
+                                    {/* Nút Thu hồi tin nhắn dành cho người gửi (khi chưa có ai đọc & còn hạn) */}
+                                    {isMe && !msg.isRecalled && canRecallMessage(msg) && (
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 self-end mb-1">
+                                            <Popconfirm
+                                                title="Thu hồi tin nhắn"
+                                                description="Bạn có chắc chắn muốn thu hồi tin nhắn này không? Nội dung và ảnh sẽ bị xóa."
+                                                onConfirm={() => handleRecallMessage(msg.id)}
+                                                okText="Thu hồi"
+                                                cancelText="Hủy"
+                                                okButtonProps={{ danger: true, size: 'small', loading: recallingMsgId === msg.id }}
+                                                cancelButtonProps={{ size: 'small' }}
+                                            >
+                                                <Button
+                                                    type="text"
+                                                    size="small"
+                                                    icon={<RollbackOutlined />}
+                                                    className="text-[11px] h-5 px-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center gap-1 rounded"
+                                                    title="Thu hồi tin nhắn khi người nhận chưa đọc"
+                                                >
+                                                    Thu hồi
+                                                </Button>
+                                            </Popconfirm>
+                                        </div>
+                                    )}
+
+                                    {msg.isRecalled ? (
+                                        <div className={`px-3 py-2 rounded-2xl shadow-xs text-xs italic ${
+                                            isMe 
+                                                ? 'bg-slate-200/70 text-slate-500 rounded-tr-xs border border-slate-300' 
+                                                : 'bg-slate-100 text-slate-500 rounded-tl-xs border border-slate-200'
+                                        }`}>
+                                            <span className="flex items-center gap-1.5 text-slate-500">
+                                                <span>🚫</span>
+                                                <span>Tin nhắn đã được thu hồi</span>
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className={`px-3.5 py-2.5 rounded-2xl shadow-xs text-sm leading-relaxed ${
+                                            isMe 
+                                                ? activeChannel === 'VENDOR'
+                                                    ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-tr-xs'
+                                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-xs'
+                                                : 'bg-white text-slate-800 rounded-tl-xs border border-slate-200/90'
+                                        }`}>
+                                            {msg.content && (
+                                                <div className="whitespace-pre-wrap">
+                                                    {renderTextWithLinks(
+                                                        msg.content,
+                                                        isMe 
+                                                            ? "text-white underline font-semibold hover:text-blue-100 inline-flex items-center gap-0.5 break-all" 
+                                                            : undefined
+                                                    )}
+                                                </div>
+                                            )}
+                                            {msg.imageUrl && (
+                                                <div className="mt-2 rounded-xl overflow-hidden border border-white/20">
+                                                    <AntImage 
+                                                        src={msg.imageUrl.startsWith('http') || msg.imageUrl.startsWith('blob:') ? msg.imageUrl : `${getBasePath()}${msg.imageUrl}`} 
+                                                        alt="Ảnh chụp đính kèm" 
+                                                        className="max-h-60 rounded-xl object-contain bg-black/5"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isMe && (
@@ -818,6 +968,27 @@ export const TicketChatModal: React.FC<TicketChatModalProps> = ({ visible, ticke
                 )}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Nút nổi cuộn xuống tin mới nhất */}
+            {showScrollBottomBtn && (
+                <div className="absolute right-6 bottom-20 z-20 animate-in fade-in">
+                    <Button
+                        type="primary"
+                        shape="round"
+                        size="small"
+                        icon={<ArrowDownOutlined />}
+                        onClick={() => scrollToBottom('smooth')}
+                        className="shadow-md bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 font-medium text-xs flex items-center gap-1.5 h-7 px-3"
+                    >
+                        <span>Tin mới nhất</span>
+                        {newMessagesCount > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
+                                {newMessagesCount}
+                            </span>
+                        )}
+                    </Button>
+                </div>
+            )}
 
             {/* Input Bar */}
             <div className="p-3 bg-white border-t flex flex-col gap-2 shadow-sm">

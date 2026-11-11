@@ -621,6 +621,8 @@ model RequestMessage {
   readBy      String[]  @default([])
   channel     String    @default("INTERNAL")
   vendorName  String?
+  isRecalled  Boolean   @default(false)
+  recalledAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   itRequest   ITRequest @relation(fields: [itRequestId], references: [id], onDelete: Cascade)

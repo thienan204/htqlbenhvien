@@ -213,6 +213,7 @@ export async function POST(request: Request) {
         let targetNoStaffWarningMessage = 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!';
         let targetNoStaffPhone = '';
         let targetSaveAssignReason = true;
+        let targetIncludeAllUnfinishedTasks = false;
 
         if (configRule && configRule.logicConfig) {
             const config: any = configRule.logicConfig;
@@ -223,6 +224,7 @@ export async function POST(request: Request) {
                 if (config.zaloEnabled !== undefined) targetZaloEnabled = Boolean(config.zaloEnabled);
                 if (config.zaloWebhookUrl) targetZaloWebhookUrl = config.zaloWebhookUrl;
                 if (config.maxConcurrentTasks !== undefined) targetMaxConcurrentTasks = Number(config.maxConcurrentTasks);
+                if (config.includeAllUnfinishedTasks !== undefined) targetIncludeAllUnfinishedTasks = Boolean(config.includeAllUnfinishedTasks);
                 if (config.morningStartTime) targetMorningStartTime = config.morningStartTime;
                 if (config.morningEndTime) targetMorningEndTime = config.morningEndTime;
                 if (config.afternoonStartTime) targetAfternoonStartTime = config.afternoonStartTime;
@@ -584,41 +586,48 @@ export async function POST(request: Request) {
                     // Mốc bắt đầu của ca trực / khung hành chính hiện tại
                     const shiftStart = currentShift.startTime;
 
-                    // Tính tải chi tiết và lấy công việc hiện tại của từng nhân viên
+                    // Tính tải chi tiết và lấy công việc hiện tại của từng nhân viên TRONG CA HIỆN TẠI (createdAt >= shiftStart)
                     const candidatesRaw = await Promise.all(poolUsers.map(async (u) => {
                         const staffName = u.name || u.username;
 
-                        // 0. Lấy chi tiết công việc đang xử lý trực tiếp (IN_PROGRESS) nếu có
-                        const currentActiveTask = await prisma.iTRequest.findFirst({
+                        // Lấy tất cả các việc chưa hoàn thành (Mặc định trong ca hiện tại; nếu bật cấu hình thì tính tổng toàn bộ lịch sử)
+                        const activeDateFilter = targetIncludeAllUnfinishedTasks ? {} : { createdAt: { gte: shiftStart } };
+                        const activeTicketsInShift = await prisma.iTRequest.findMany({
                             where: {
                                 assigneeId: u.id,
-                                status: 'IN_PROGRESS'
+                                ...activeDateFilter,
+                                status: { in: ['PENDING', 'IN_PROGRESS', 'PAUSED'] },
+                                AND: [
+                                    { OR: [{ vendorId: null }, { vendorId: '' }] },
+                                    { OR: [{ vendorName: null }, { vendorName: '' }] }
+                                ]
                             },
                             select: {
+                                id: true,
+                                status: true,
                                 ten_loi: true,
                                 ma_khoa: true,
                                 isFocusTask: true
                             }
                         });
 
-                        const isBusyOnSite = Boolean(currentActiveTask?.isFocusTask);
+                        const inProgressTickets = activeTicketsInShift.filter(t => t.status === 'IN_PROGRESS' && !t.isFocusTask);
+                        const onSiteTickets = activeTicketsInShift.filter(t => t.isFocusTask === true);
+                        const pausedTickets = activeTicketsInShift.filter(t => t.status === 'PAUSED');
+                        const pendingTickets = activeTicketsInShift.filter(t => t.status === 'PENDING');
 
-                        // 1. Số việc đang xử lý trực tiếp (IN_PROGRESS)
-                        const inProgressTasks = currentActiveTask ? 1 : 0;
+                        const inProgressCount = inProgressTickets.length;
+                        const onSiteCount = onSiteTickets.length;
+                        const pausedCount = pausedTickets.length;
+                        const pendingCount = pendingTickets.length;
+                        const activeTasks = activeTicketsInShift.length;
 
-                        // 2. Số việc dở dang hiện tại (PENDING, IN_PROGRESS, PAUSED)
-                        const activeTasks = await prisma.iTRequest.count({
-                            where: {
-                                assigneeId: u.id,
-                                status: { in: ['PENDING', 'IN_PROGRESS', 'PAUSED'] },
-                                AND: [
-                                    { OR: [{ vendorId: null }, { vendorId: '' }] },
-                                    { OR: [{ vendorName: null }, { vendorName: '' }] }
-                                ]
-                            }
-                        });
+                        // Công việc đang xử lý trực tiếp
+                        const currentActiveTask = inProgressTickets[0] || onSiteTickets[0] || null;
+                        const isBusyOnSite = onSiteCount > 0;
+                        const inProgressTasks = inProgressCount;
 
-                        // 3. Tổng số việc đã nhận trong khung giờ/ca trực hiện tại (Khung hành chính cộng dồn cả sáng + chiều)
+                        // Tổng số việc đã nhận trong khung giờ/ca trực hiện tại (Khung hành chính cộng dồn cả sáng + chiều)
                         const totalInShift = await prisma.iTRequest.count({
                             where: {
                                 assigneeId: u.id,
@@ -631,9 +640,12 @@ export async function POST(request: Request) {
                             }
                         });
 
-                        // 4. Thời điểm gần nhất được giao việc (Round-Robin)
+                        // Thời điểm gần nhất được giao việc (Round-Robin) trong ca hiện tại
                         const lastTicket = await prisma.iTRequest.findFirst({
-                            where: { assigneeId: u.id },
+                            where: { 
+                                assigneeId: u.id,
+                                createdAt: { gte: shiftStart }
+                            },
                             orderBy: { createdAt: 'desc' },
                             select: { createdAt: true }
                         });
@@ -645,6 +657,10 @@ export async function POST(request: Request) {
                             currentActiveTask,
                             dutyOrder: u.dutyOrder ?? 999,
                             inProgressTasks,
+                            inProgressCount,
+                            onSiteCount,
+                            pausedCount,
+                            pendingCount,
                             activeTasks,
                             totalInShift,
                             lastAssignedTime: lastTicket ? lastTicket.createdAt.getTime() : 0
@@ -697,25 +713,47 @@ export async function POST(request: Request) {
                             const winner = pool[0];
                             const modeTitle = assignmentMode === 'D' ? 'Cân bằng công bằng (2 tầng)' : 'Phản ứng nhanh (Tốc độ)';
                             
+                            const formatActiveBreakdown = (item: {
+                                activeTasks: number;
+                                inProgressCount: number;
+                                onSiteCount: number;
+                                pausedCount: number;
+                                pendingCount: number;
+                            }) => {
+                                if (item.activeTasks === 0) return '0 việc dở dang (Sẵn sàng)';
+                                const parts: string[] = [];
+                                if (item.inProgressCount > 0) parts.push(`${item.inProgressCount} việc đang xử lý`);
+                                if (item.onSiteCount > 0) parts.push(`${item.onSiteCount} đi khoa`);
+                                if (item.pausedCount > 0) parts.push(`${item.pausedCount} tạm dừng`);
+                                if (item.pendingCount > 0) parts.push(`${item.pendingCount} chờ xử lý`);
+                                if (item.activeTasks === 1) {
+                                    return parts.join(', ');
+                                }
+                                return `Tổng ${item.activeTasks} việc: ${parts.join(', ')}`;
+                            };
+
                             const otherStatusLines = candidatesRaw
                                 .filter(c => c.id !== winner.id)
                                 .map(c => {
                                     if (c.isBusyOnSite && c.currentActiveTask) {
                                         return ` • ${c.name}: Đang đi khoa phòng xử lý "${c.currentActiveTask.ten_loi}" (${c.currentActiveTask.ma_khoa || 'Khoa'}), tổng ca: ${c.totalInShift} việc`;
                                     }
-                                    if (c.currentActiveTask) {
+                                    if (c.currentActiveTask && c.activeTasks === 1) {
                                         return ` • ${c.name}: Đang xử lý "${c.currentActiveTask.ten_loi}" (${c.currentActiveTask.ma_khoa || 'Khoa'}), tổng ca: ${c.totalInShift} việc`;
                                     }
-                                    return ` • ${c.name}: Dở dang ${c.activeTasks} việc, tổng ca: ${c.totalInShift} việc`;
+                                    if (c.activeTasks === 0) {
+                                        return ` • ${c.name}: Chờ nhận việc, tổng ca: ${c.totalInShift} việc`;
+                                    }
+                                    return ` • ${c.name}: ${formatActiveBreakdown(c)}, tổng ca: ${c.totalInShift} việc`;
                                 });
 
                             const reasonLines = [
                                 `🤖 CĂN CỨ TỰ ĐỘNG PHÂN VIỆC [${modeTitle.toUpperCase()}]`,
                                 `─────────────────────────────────────`,
                                 `✅ ĐƯỢC CHỌN: ${winner.name}`,
-                                ` • Trạng thái: ${winner.inProgressTasks === 0 ? 'Đang rảnh tay (0 việc đang xử lý)' : `${winner.inProgressTasks} việc đang xử lý`}`,
+                                ` • Trạng thái: ${winner.inProgressTasks === 0 ? 'Chờ nhận việc (0 việc đang xử lý)' : `${winner.inProgressTasks} việc đang xử lý`}`,
                                 ` • Tải trong ca: Đã nhận ${winner.totalInShift} việc (${assignmentMode === 'D' ? 'thấp nhất ca' : 'tổng ca'})`,
-                                ` • Tồn đọng: ${winner.activeTasks} việc dở dang`,
+                                ` • Tồn đọng: ${winner.activeTasks === 0 ? '0 việc dở dang' : formatActiveBreakdown(winner)}`,
                                 ` • Trực ban: Đến lượt xoay vòng Round-Robin`,
                                 ...(otherStatusLines.length > 0 ? [
                                     `\n📊 TÌNH TRẠNG CÁC NHÂN VIÊN KHÁC LÚC PHÂN VIỆC:`,

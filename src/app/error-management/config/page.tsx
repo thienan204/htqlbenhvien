@@ -28,6 +28,7 @@ export default function ITConfigPage() {
     // We also need to preserve the assignmentMode
     const [assignmentMode, setAssignmentMode] = useState<string>('A');
     const [maxConcurrentTasks, setMaxConcurrentTasks] = useState<number>(2);
+    const [includeAllUnfinishedTasks, setIncludeAllUnfinishedTasks] = useState<boolean>(false);
     const [saveAssignReason, setSaveAssignReason] = useState<boolean>(true);
     const [clearingReasons, setClearingReasons] = useState<boolean>(false);
     const [morningStartTime, setMorningStartTime] = useState<string>('07:00');
@@ -46,6 +47,8 @@ export default function ITConfigPage() {
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(15);
     const [allowedFileExtensions, setAllowedFileExtensions] = useState<string>('.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
     const [maBaLength, setMaBaLength] = useState<number>(11);
+    const [allowMessageRecall, setAllowMessageRecall] = useState<boolean>(true);
+    const [messageRecallTimeLimitMinutes, setMessageRecallTimeLimitMinutes] = useState<number>(15);
     const [telegramBotToken, setTelegramBotToken] = useState<string>('');
     const [telegramChatId, setTelegramChatId] = useState<string>('');
     const [testingTelegram, setTestingTelegram] = useState(false);
@@ -121,6 +124,9 @@ export default function ITConfigPage() {
                 setHardwareErrors(mappedHardwareErrors);
                 setAssignmentMode(data.assignmentMode || 'A');
                 setMaxConcurrentTasks(data.maxConcurrentTasks !== undefined ? Number(data.maxConcurrentTasks) : 2);
+                setIncludeAllUnfinishedTasks(data.includeAllUnfinishedTasks !== undefined ? Boolean(data.includeAllUnfinishedTasks) : false);
+                setAllowMessageRecall(data.allowMessageRecall !== undefined ? Boolean(data.allowMessageRecall) : true);
+                setMessageRecallTimeLimitMinutes(data.messageRecallTimeLimitMinutes !== undefined ? Number(data.messageRecallTimeLimitMinutes) : 15);
                 setSaveAssignReason(data.saveAssignReason !== undefined ? Boolean(data.saveAssignReason) : true);
                 setMorningStartTime(data.morningStartTime || '07:00');
                 setMorningEndTime(data.morningEndTime || '11:30');
@@ -297,6 +303,9 @@ export default function ITConfigPage() {
                 hardwareErrors: hardwareErrors.filter(e => e.isVisible !== false).map((e: any) => e.name),
                 assignmentMode,
                 maxConcurrentTasks,
+                includeAllUnfinishedTasks,
+                allowMessageRecall,
+                messageRecallTimeLimitMinutes,
                 saveAssignReason,
                 morningStartTime: morningStartTime.trim() || '07:00',
                 morningEndTime: morningEndTime.trim() || '11:30',
@@ -954,25 +963,51 @@ export default function ITConfigPage() {
 
                             {/* Cấu hình Giới hạn việc dở dang tối đa (khi chọn chế độ tự động C hoặc D) */}
                             {(assignmentMode === 'C' || assignmentMode === 'D') && (
-                                <div className="mt-2 p-3 bg-amber-50/70 rounded-lg border border-amber-200">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
-                                            🛑 Giới hạn việc dở dang tối đa mỗi người:
-                                            <Tooltip title="Nếu một nhân viên đang có số việc chưa xong chạm mức này, hệ thống sẽ KHÔNG chia thêm việc cho họ nữa để tránh quá tải">
-                                                <QuestionCircleOutlined className="text-amber-600 cursor-pointer text-xs" />
-                                            </Tooltip>
-                                        </span>
+                                <div className="mt-2 p-3 bg-amber-50/70 rounded-lg border border-amber-200 space-y-3">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+                                                🛑 Giới hạn việc dở dang tối đa mỗi người:
+                                                <Tooltip title="Nếu một nhân viên đang có số việc chưa xong chạm mức này, hệ thống sẽ KHÔNG chia thêm việc cho họ nữa để tránh quá tải">
+                                                    <QuestionCircleOutlined className="text-amber-600 cursor-pointer text-xs" />
+                                                </Tooltip>
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <InputNumber 
+                                                min={1} 
+                                                max={10} 
+                                                value={maxConcurrentTasks} 
+                                                onChange={val => setMaxConcurrentTasks(val || 2)}
+                                                disabled={!isAdmin}
+                                                className="w-24"
+                                            />
+                                            <span className="text-xs text-slate-600">việc dở dang / người (Khuyến nghị: 2 hoặc 3)</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <InputNumber 
-                                            min={1} 
-                                            max={10} 
-                                            value={maxConcurrentTasks} 
-                                            onChange={val => setMaxConcurrentTasks(val || 2)}
+
+                                    {/* Cấu hình Phạm vi tính việc dở dang: Mặc định thời gian hiện tại / Check vào thì tính tổng */}
+                                    <div className="pt-2.5 border-t border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-xs font-semibold text-amber-950 flex items-center gap-1.5">
+                                                <span>📊 Phạm vi tính việc dở dang: Cộng dồn cả việc cũ từ các ngày trước</span>
+                                            </div>
+                                            <div className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                                                {includeAllUnfinishedTasks ? (
+                                                    <span>Đang <b>Tính tổng toàn bộ lịch sử</b>: Hệ thống sẽ quét và tính tất cả các phiếu chưa hoàn thành từ trước đến nay vào tải dở dang.</span>
+                                                ) : (
+                                                    <span>Đang <b>Chỉ tính ca hiện tại (Mặc định)</b>: Hệ thống chỉ tính các việc chưa xong phát sinh trong ca trực / ngày làm việc hiện tại, bỏ qua các việc tồn từ những ngày cũ để tránh dồn việc.</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Switch 
+                                            checked={includeAllUnfinishedTasks} 
+                                            onChange={val => setIncludeAllUnfinishedTasks(val)}
                                             disabled={!isAdmin}
-                                            className="w-24"
+                                            checkedChildren="Tính tổng"
+                                            unCheckedChildren="Ca hiện tại"
+                                            className="shrink-0 self-start sm:self-center"
                                         />
-                                        <span className="text-xs text-slate-600">việc dở dang / người (Khuyến nghị: 2 hoặc 3)</span>
                                     </div>
                                 </div>
                             )}
@@ -1406,6 +1441,60 @@ export default function ITConfigPage() {
                             )}
                         </div>
                         <div className="text-xs text-slate-500 mt-2">Độ dài chuẩn của mã bệnh án (Ví dụ: <code>BA001028282</code> là 11 ký tự). Sau này khi bệnh viện tăng độ dài mã BA (12, 13 ký tự...), bạn có thể điều chỉnh tại đây để hệ thống tự động nhận diện và kiểm soát độ dài phù hợp.</div>
+                    </Card>
+
+                    {/* Card: Cấu hình Thu hồi Tin nhắn Trao đổi */}
+                    <Card size="small" title="Cấu hình Trao đổi & Thu hồi Tin nhắn" className="border border-slate-200">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="font-semibold text-slate-800 text-sm">Cho phép thu hồi tin nhắn khi chưa đọc</div>
+                                    <div className="text-xs text-slate-500 mt-0.5">
+                                        Khi bật, người gửi có thể thu hồi tin nhắn đã gửi nếu đối phương chưa mở xem tin nhắn đó.
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={allowMessageRecall} 
+                                    onChange={val => setAllowMessageRecall(val)} 
+                                    disabled={!isAdmin}
+                                    checkedChildren="Bật"
+                                    unCheckedChildren="Tắt"
+                                />
+                            </div>
+
+                            {allowMessageRecall && (
+                                <div className="p-3 bg-blue-50/60 rounded-lg border border-blue-200 space-y-2">
+                                    <div className="text-xs font-semibold text-blue-900 flex items-center gap-1.5">
+                                        ⏱️ Thời hạn cho phép thu hồi (khi chưa đọc):
+                                        <Tooltip title="Khoảng thời gian tối đa tính từ lúc gửi mà người dùng được phép thu hồi tin nhắn. Nếu đặt 0: không giới hạn thời gian (miễn là đối phương chưa đọc).">
+                                            <QuestionCircleOutlined className="text-blue-600 cursor-pointer text-xs" />
+                                        </Tooltip>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <InputNumber 
+                                            min={0} 
+                                            max={1440} 
+                                            value={messageRecallTimeLimitMinutes} 
+                                            onChange={val => setMessageRecallTimeLimitMinutes(val !== null ? val : 15)}
+                                            disabled={!isAdmin}
+                                            className="w-28"
+                                        />
+                                        <span className="text-xs text-slate-600 font-medium">phút (Nhập 0 = Không giới hạn thời gian nếu chưa đọc)</span>
+                                    </div>
+                                    <div className="text-[11px] text-blue-700 italic">
+                                        {messageRecallTimeLimitMinutes === 0 
+                                            ? '👉 Đang thiết lập: Người gửi có thể thu hồi bất cứ lúc nào miễn là người nhận chưa đọc tin nhắn.'
+                                            : `👉 Đang thiết lập: Chỉ cho phép thu hồi trong vòng ${messageRecallTimeLimitMinutes} phút kể từ lúc gửi (với điều kiện người nhận chưa đọc).`}
+                                    </div>
+                                </div>
+                            )}
+
+                            {isAdmin && (
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="bg-blue-600 hover:bg-blue-500">
+                                    Lưu cấu hình thu hồi tin nhắn
+                                </Button>
+                            )}
+                        </div>
                     </Card>
 
                     <Card 

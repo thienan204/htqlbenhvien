@@ -55,10 +55,13 @@ export const TicketImage: React.FC<TicketImageProps> = ({ url }) => {
         return <FileTextOutlined className="text-base text-slate-400 shrink-0" />;
     };
 
+    const downloadUrl = fullUrl.includes('?') ? `${fullUrl}&download=1` : `${fullUrl}?download=1`;
+
     return (
-        <Tooltip title={`Bấm để mở / tải về: ${cleanFileName}`}>
+        <Tooltip title={`Bấm để tải về máy: ${cleanFileName}`}>
             <a 
-                href={fullUrl} 
+                href={downloadUrl} 
+                download={cleanFileName}
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="inline-flex items-center gap-1.5 px-2 py-1 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-md text-xs text-blue-700 font-medium shadow-2xs transition-colors shrink-0 max-w-[190px] h-[34px]"

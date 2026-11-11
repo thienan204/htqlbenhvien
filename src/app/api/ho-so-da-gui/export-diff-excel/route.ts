@@ -81,8 +81,20 @@ export async function POST(request: Request) {
             };
         });
 
-        // Hàm helper bôi đỏ ô lệch
-        const applyDiffStyle = (cell: exceljs.Cell, val: any, diffAmount?: any) => {
+        // Tập hợp các key cột hợp lệ đã khai báo trong sheet.columns
+        const validColumnKeys = new Set((sheet.columns || []).map(c => c.key).filter(Boolean));
+        const safeGetCell = (row: exceljs.Row, key: string): exceljs.Cell | null => {
+            if (!validColumnKeys.has(key)) return null;
+            try {
+                return row.getCell(key);
+            } catch {
+                return null;
+            }
+        };
+
+        // Hàm helper bôi đỏ ô lệch (an toàn, không crash nếu ô/cột không tồn tại)
+        const applyDiffStyle = (cell: exceljs.Cell | null, val: any, diffAmount?: any) => {
+            if (!cell) return;
             // Đối với text
             if (typeof diffAmount === 'boolean' && diffAmount) {
                 cell.font = { color: { argb: 'FFEF4444' }, bold: true };
@@ -212,35 +224,35 @@ export async function POST(request: Request) {
 
             // Kiểm tra và bôi đỏ các ô sai lệch trên dòng DB và dòng Excel (nếu là text/date)
             const diff = m.diff || {};
-            applyDiffStyle(r1.getCell('maBN'), m.excel.maBN, diff.maBNDiff);
-            applyDiffStyle(r2.getCell('maBN'), m.db.maBN, diff.maBNDiff);
+            applyDiffStyle(safeGetCell(r1, 'maBN'), m.excel.maBN, diff.maBNDiff);
+            applyDiffStyle(safeGetCell(r2, 'maBN'), m.db.maBN, diff.maBNDiff);
             
-            applyDiffStyle(r1.getCell('hoTen'), m.excel.hoTen, diff.hoTenDiff);
-            applyDiffStyle(r2.getCell('hoTen'), m.db.hoTen, diff.hoTenDiff);
+            applyDiffStyle(safeGetCell(r1, 'hoTen'), m.excel.hoTen, diff.hoTenDiff);
+            applyDiffStyle(safeGetCell(r2, 'hoTen'), m.db.hoTen, diff.hoTenDiff);
             
-            applyDiffStyle(r1.getCell('ngaySinh'), m.excel.ngaySinh, diff.ngaySinhDiff);
-            applyDiffStyle(r2.getCell('ngaySinh'), m.db.ngaySinh, diff.ngaySinhDiff);
+            applyDiffStyle(safeGetCell(r1, 'ngaySinh'), m.excel.ngaySinh, diff.ngaySinhDiff);
+            applyDiffStyle(safeGetCell(r2, 'ngaySinh'), m.db.ngaySinh, diff.ngaySinhDiff);
             
-            applyDiffStyle(r1.getCell('gioiTinh'), m.excel.gioiTinh, diff.gioiTinhDiff);
-            applyDiffStyle(r2.getCell('gioiTinh'), m.db.gioiTinh, diff.gioiTinhDiff);
+            applyDiffStyle(safeGetCell(r1, 'gioiTinh'), m.excel.gioiTinh, diff.gioiTinhDiff);
+            applyDiffStyle(safeGetCell(r2, 'gioiTinh'), m.db.gioiTinh, diff.gioiTinhDiff);
             
-            applyDiffStyle(r1.getCell('maBenh'), m.excel.chanDoan, diff.chanDoanDiff);
-            applyDiffStyle(r2.getCell('maBenh'), m.db.chanDoan, diff.chanDoanDiff);
+            applyDiffStyle(safeGetCell(r1, 'maBenh'), m.excel.chanDoan, diff.chanDoanDiff);
+            applyDiffStyle(safeGetCell(r2, 'maBenh'), m.db.chanDoan, diff.chanDoanDiff);
             
-            applyDiffStyle(r1.getCell('ngayVao'), m.excel.ngayVao, diff.ngayVaoDiff);
-            applyDiffStyle(r2.getCell('ngayVao'), m.db.ngayVao, diff.ngayVaoDiff);
+            applyDiffStyle(safeGetCell(r1, 'ngayVao'), m.excel.ngayVao, diff.ngayVaoDiff);
+            applyDiffStyle(safeGetCell(r2, 'ngayVao'), m.db.ngayVao, diff.ngayVaoDiff);
             
-            applyDiffStyle(r1.getCell('ngayRa'), m.excel.ngayRa, diff.ngayRaDiff);
-            applyDiffStyle(r2.getCell('ngayRa'), m.db.ngayRa, diff.ngayRaDiff);
+            applyDiffStyle(safeGetCell(r1, 'ngayRa'), m.excel.ngayRa, diff.ngayRaDiff);
+            applyDiffStyle(safeGetCell(r2, 'ngayRa'), m.db.ngayRa, diff.ngayRaDiff);
             
             // Số tiền chỉ bôi đỏ ở dòng DB (kèm theo mức chênh lệch)
-            applyDiffStyle(r2.getCell('tongChi'), m.db.tongChi, diff.tongChi);
-            applyDiffStyle(r2.getCell('tongChiBH'), m.db.tongChiBH, diff.tongChiBH);
-            applyDiffStyle(r2.getCell('baoHiemTT'), m.db.baoHiemTT, diff.baoHiemTT);
-            applyDiffStyle(r2.getCell('benhNhanCCT'), m.db.benhNhanCCT, diff.benhNhanCCT);
-            applyDiffStyle(r2.getCell('benhNhanTT'), m.db.benhNhanTT, diff.benhNhanTT);
-            if (r2.getCell('nguonKhac')) {
-                applyDiffStyle(r2.getCell('nguonKhac'), m.db.nguonKhac, diff.nguonKhac);
+            applyDiffStyle(safeGetCell(r2, 'tongChi'), m.db.tongChi, diff.tongChi);
+            applyDiffStyle(safeGetCell(r2, 'tongChiBH'), m.db.tongChiBH, diff.tongChiBH);
+            applyDiffStyle(safeGetCell(r2, 'baoHiemTT'), m.db.baoHiemTT, diff.baoHiemTT);
+            applyDiffStyle(safeGetCell(r2, 'benhNhanCCT'), m.db.benhNhanCCT, diff.benhNhanCCT);
+            applyDiffStyle(safeGetCell(r2, 'benhNhanTT'), m.db.benhNhanTT, diff.benhNhanTT);
+            if (safeGetCell(r2, 'nguonKhac')) {
+                applyDiffStyle(safeGetCell(r2, 'nguonKhac'), m.db.nguonKhac, diff.nguonKhac);
             }
 
             currentRowIndex += 2;
