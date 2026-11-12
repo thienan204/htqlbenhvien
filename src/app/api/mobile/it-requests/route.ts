@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUserFromRequest } from '@/actions/auth';
 import { sendPushNotification } from '@/lib/firebase-admin';
+import { prepareStaffForSave } from '@/lib/staffCrypto';
 
 const prisma = new PrismaClient();
 
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
             try {
                 await prisma.staff.update({
                     where: { id: nguoi_bao_id },
-                    data: { so_dien_thoai: sdt }
+                    data: prepareStaffForSave({ so_dien_thoai: sdt }, ['so_dien_thoai'])
                 });
                 if (dynamicFields) dynamicFields['SĐT'] = sdt;
             } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
+import { generateBlindIndex } from '@/lib/staffCrypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
@@ -43,12 +44,14 @@ export async function POST(request: Request) {
             finalUserName = 'Quản trị viên';
             finalRole = 'ADMIN';
         } else {
+            const cccdHash = generateBlindIndex(username);
             const user = await prisma.user.findFirst({
                 where: {
                     OR: [
                         { username },
-                        { staff: { cccd: username } },
-                        { staff: { ma_nv: username } }
+                        { staff: { ma_nv: username } },
+                        ...(cccdHash ? [{ staff: { cccd_hash: cccdHash } }] : []),
+                        { staff: { cccd: username } }
                     ]
                 },
             });

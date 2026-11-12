@@ -153,6 +153,7 @@ model Staff {
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   so_dien_thoai          String?
+  so_dien_thoai_hash     String?
   chuc_danh_id           String?
   chuc_vu_id             String?
   gioi_tinh_id           String?
@@ -164,6 +165,7 @@ model Staff {
   dia_chi                String?
   ma_nv                  String                  @unique
   cccd                   String?
+  cccd_hash              String?
   ma_bhxh                String?
   ma_chuc_danh_bhyt      String?
   ma_vi_tri_bhyt         String?
@@ -232,6 +234,9 @@ model Staff {
   attendanceCheckLogs StaffAttendanceCheckLog[]
   leaveBalances       StaffLeaveBalance[]
   leaveRequests       StaffLeaveRequest[]
+
+  @@index([cccd_hash])
+  @@index([so_dien_thoai_hash])
 }
 
 model StaffTraining {

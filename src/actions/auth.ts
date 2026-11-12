@@ -7,6 +7,7 @@ import prisma from '@/lib/prisma';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 
 import { calculateUserHierarchy } from '@/utils/userHierarchy';
+import { decryptField, generateBlindIndex } from '@/lib/staffCrypto';
 
 export type UserPayload = {
     id: string;
@@ -98,7 +99,7 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
                 if (userRecord) {
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
                     ma_nv = userRecord.staff?.ma_nv || undefined;
-                    cccd = userRecord.staff?.cccd || undefined;
+                    cccd = userRecord.staff?.cccd ? (decryptField(userRecord.staff.cccd) || userRecord.staff.cccd) : undefined;
                     isAvailable = userRecord.isAvailable ?? false;
                     finalAvatar = (userRecord as any).avatar || null;
                 }
@@ -242,7 +243,7 @@ export async function getCurrentUserFromRequest(request: Request): Promise<UserP
                 if (userRecord) {
                     finalName = userRecord.name || userRecord.staff?.ho_ten || (payload.username as string);
                     ma_nv = userRecord.staff?.ma_nv || undefined;
-                    cccd = userRecord.staff?.cccd || undefined;
+                    cccd = userRecord.staff?.cccd ? (decryptField(userRecord.staff.cccd) || userRecord.staff.cccd) : undefined;
                     isAvailable = userRecord.isAvailable ?? false;
                     finalAvatar = (userRecord as any).avatar || null;
                 }
@@ -387,13 +388,15 @@ export async function loginAction(username: string, password: string): Promise<{
         }
 
         // 2. Tìm người dùng trong cơ sở dữ liệu (hỗ trợ username, userHIS, CCCD, Mã NV)
+        const cccdHash = generateBlindIndex(trimmedUser);
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
                     { username: { equals: trimmedUser, mode: 'insensitive' } },
                     { userHIS: { equals: trimmedUser, mode: 'insensitive' } },
-                    { staff: { cccd: { equals: trimmedUser, mode: 'insensitive' } } },
-                    { staff: { ma_nv: { equals: trimmedUser, mode: 'insensitive' } } }
+                    { staff: { ma_nv: { equals: trimmedUser, mode: 'insensitive' } } },
+                    ...(cccdHash ? [{ staff: { cccd_hash: cccdHash } }] : []),
+                    { staff: { cccd: { equals: trimmedUser, mode: 'insensitive' } } } // Dự phòng dữ liệu cũ
                 ]
             },
         });

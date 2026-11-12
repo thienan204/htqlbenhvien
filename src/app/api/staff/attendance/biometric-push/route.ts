@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { generateBlindIndex } from '@/lib/staffCrypto';
 
 const CONFIG_SLUG = 'hospital-attendance-config';
 
@@ -186,12 +187,14 @@ export async function POST(request: Request) {
                 const pinWithBV = pin.toUpperCase().startsWith('BV') ? pin : `BV${pin}`;
 
                 // Tìm nhân viên theo: ma_nv, cccd, hoặc số PIN
+                const cccdHash = generateBlindIndex(pin);
                 const staff = await prisma.staff.findFirst({
                     where: {
                         OR: [
                             { ma_nv: { equals: pin, mode: 'insensitive' } },
                             { ma_nv: { equals: pinWithBV, mode: 'insensitive' } },
                             { ma_nv: { equals: pinWithoutBV, mode: 'insensitive' } },
+                            ...(cccdHash ? [{ cccd_hash: cccdHash }] : []),
                             { cccd: pin },
                             { user: { username: pin } }
                         ]

@@ -1,5 +1,6 @@
 import * as xlsx from 'xlsx';
 import { PrismaClient } from '@prisma/client';
+import { prepareStaffForSave } from '@/lib/staffCrypto';
 
 const prisma = new PrismaClient();
 
@@ -288,12 +289,14 @@ export async function processExcelImport(buffer: Buffer) {
             if (que_quan_ward_id) staffData.que_quan_ward_id = que_quan_ward_id;
             if (noi_o_ward_id) staffData.noi_o_ward_id = noi_o_ward_id;
 
+            const finalStaffData = prepareStaffForSave(staffData);
+
             const staff = await prisma.staff.upsert({
                 where: { ma_nv },
-                update: staffData,
+                update: finalStaffData,
                 create: {
                     ma_nv,
-                    ...staffData
+                    ...finalStaffData
                 }
             });
 

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 import { getCurrentHospitalShift, getVietnamTimeParts, HospitalShiftConfig, getActiveDutyDate, isHalfDayWorkingNow, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
+import { generateBlindIndex } from '@/lib/staffCrypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-me-in-prod';
 // Trigger nextjs hot reload
@@ -40,13 +41,15 @@ export async function POST(request: Request) {
             }, { status: 429 });
         }
 
+        const cccdHash = generateBlindIndex(trimmedUser);
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
                     { username: { equals: trimmedUser, mode: 'insensitive' } },
                     { userHIS: { equals: trimmedUser, mode: 'insensitive' } },
-                    { staff: { cccd: { equals: trimmedUser, mode: 'insensitive' } } },
-                    { staff: { ma_nv: { equals: trimmedUser, mode: 'insensitive' } } }
+                    { staff: { ma_nv: { equals: trimmedUser, mode: 'insensitive' } } },
+                    ...(cccdHash ? [{ staff: { cccd_hash: cccdHash } }] : []),
+                    { staff: { cccd: { equals: trimmedUser, mode: 'insensitive' } } }
                 ]
             },
         });

@@ -329,21 +329,26 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         }
     };
 
-    const handleToggleFocusMode = async (disabled: boolean, reason?: string) => {
+    const handleToggleFocusMode = async (disabled: boolean, reason?: string, targetUserId?: string) => {
         if (!user) return;
+        const targetId = targetUserId || user.id;
+        const isSelf = targetId === user.id;
+        const targetStaff = itUsers.find((u: any) => u.id === targetId);
+        const staffName = targetStaff?.name || targetStaff?.username || 'nhân viên';
+
         setTogglingFocusMode(true);
         try {
             const taskReason = reason?.trim() || 'Nhiệm vụ tập trung';
 
-            // 1. Cập nhật trạng thái miễn chia việc tự động trong duty-roster (bật luôn có mặt nếu đang tắt)
+            // 1. Cập nhật trạng thái miễn chia việc tự động trong duty-roster
             const res = await fetch(`${getBasePath()}/api/error-management/duty-roster`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     targetDepartment,
                     users: [{ 
-                        id: user.id, 
-                        isAvailable: disabled ? true : isAvailable,
+                        id: targetId, 
+                        isAvailable: isSelf ? (disabled ? true : isAvailable) : undefined,
                         autoAssignDisabled: disabled,
                         focusReason: disabled ? taskReason : null
                     }]
@@ -352,11 +357,13 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
             const data = await res.json();
 
             if (res.ok) {
-                if (disabled && !isAvailable) {
-                    setIsAvailable(true);
+                if (isSelf) {
+                    if (disabled && !isAvailable) {
+                        setIsAvailable(true);
+                    }
+                    setAutoAssignDisabled(disabled);
+                    setFocusReason(disabled ? taskReason : '');
                 }
-                setAutoAssignDisabled(disabled);
-                setFocusReason(disabled ? taskReason : '');
 
                 // 2. NẾU BẬT TẬP TRUNG (disabled === true): Tự động tạo luôn một Phiếu Yêu cầu
                 if (disabled) {
@@ -368,8 +375,8 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 ten_loi: taskReason,
                                 category: 'SOFTWARE',
                                 targetDepartment: targetDepartment || 'CNTT',
-                                assigneeId: user.id,
-                                selfAssign: true,
+                                assigneeId: targetId,
+                                selfAssign: isSelf,
                                 isFocusTask: true,
                                 focusReason: taskReason,
                                 status: 'IN_PROGRESS',
@@ -377,21 +384,28 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                                 nguoi_bao_id: (user as any).staff?.id || user.id,
                                 sdt: (user as any).staff?.so_dien_thoai || (user as any).phone || '',
                                 dynamicFields: {
-                                    'Loại yêu cầu': 'Nhiệm vụ tập trung',
-                                    'Người báo': user.name || user.username
+                                    'Loại yêu cầu': isSelf ? 'Nhiệm vụ tập trung (Cá nhân tự tạo)' : 'Nhiệm vụ tập trung (Lãnh đạo giao việc)',
+                                    'Người giao việc': isSelf ? undefined : (user.name || user.username),
+                                    'Người báo': user.name || user.username,
+                                    'Lý do tập trung': taskReason,
+                                    'Tự động tạo': true
                                 }
                             })
                         });
 
                         if (createRes.ok) {
-                            message.success(`Đã bật Chế độ tập trung và tự động tạo Yêu cầu: "${taskReason}"!`);
+                            if (isSelf) {
+                                message.success(`Đã bật Chế độ tập trung và tự động tạo Yêu cầu: "${taskReason}"!`);
+                            } else {
+                                message.success(`Đã giao việc tập trung cho ${staffName} và tạo Yêu cầu: "${taskReason}"!`);
+                            }
                             fetchTickets();
                         } else {
-                            message.success('Đã bật Chế độ tập trung!');
+                            message.success(isSelf ? 'Đã bật Chế độ tập trung!' : `Đã chuyển ${staffName} sang Chế độ tập trung!`);
                         }
                     } catch (createErr) {
                         console.error('Lỗi tự động tạo yêu cầu tập trung:', createErr);
-                        message.success('Đã bật Chế độ tập trung!');
+                        message.success(isSelf ? 'Đã bật Chế độ tập trung!' : `Đã chuyển ${staffName} sang Chế độ tập trung!`);
                     }
 
                     // Cảnh báo nếu cả phòng không còn ai nhận việc tự động
@@ -400,7 +414,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                             title: <span className="text-amber-600 font-bold text-base">⚠️ CẢNH BÁO: PHÒNG {targetDepartment} KHÔNG CÒN AI NHẬN VIỆC TỰ ĐỘNG!</span>,
                             content: (
                                 <div className="space-y-2 text-slate-700 py-1 text-sm">
-                                    <p>Bạn vừa bật <strong>Chế độ tập trung</strong> (miễn chia việc tự động).</p>
+                                    <p>Nhân viên <strong>{staffName}</strong> vừa được chuyển sang <strong>Chế độ tập trung</strong> (miễn chia việc tự động).</p>
                                     <p className="text-amber-800 font-medium bg-amber-50 p-2.5 rounded-lg border border-amber-200">
                                         🚨 Hiện tại phòng <strong>{targetDepartment}</strong> KHÔNG CÒN nhân viên nào khác sẵn sàng nhận việc tự động!
                                     </p>
@@ -414,11 +428,15 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                         });
                     }
                 } else {
-                    message.success('Đã tắt chế độ tập trung, bạn sẽ tiếp tục nhận việc tự động từ khoa phòng!');
+                    if (isSelf) {
+                        message.success('Đã tắt chế độ tập trung, bạn sẽ tiếp tục nhận việc tự động từ khoa phòng!');
+                    } else {
+                        message.success(`Đã tắt chế độ tập trung cho ${staffName}. Nhân viên sẽ tiếp tục nhận việc tự động!`);
+                    }
                     fetchTickets();
                 }
 
-                fetchITUsers();
+                await fetchITUsers();
             } else {
                 message.error(data?.error || 'Lỗi khi cập nhật trạng thái');
             }
@@ -462,6 +480,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 onOpenSettings={() => setIsSettingsVisible(true)}
                 onDeleteAll={isAdmin ? handleDeleteAllTickets : undefined}
                 targetDepartment={targetDepartment}
+                staffList={itUsers}
             />
 
             {/* Trạng thái nhân viên hiện tại của phòng CNTT (trừ lãnh đạo phòng) */}

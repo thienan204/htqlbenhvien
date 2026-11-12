@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { generateBlindIndex } from '@/lib/staffCrypto';
 
 const CONFIG_SLUG = 'hospital-attendance-config';
 
@@ -42,10 +43,12 @@ export async function GET(request: Request) {
         // Tìm Staff record
         let targetStaffId = user.staffId;
         if (!targetStaffId) {
+            const userCccdHash = generateBlindIndex(user.username);
             const foundStaff = await prisma.staff.findFirst({
                 where: {
                     OR: [
                         { ma_nv: user.username },
+                        ...(userCccdHash ? [{ cccd_hash: userCccdHash }] : []),
                         { cccd: user.username },
                         { user: { id: user.id } }
                     ]
@@ -182,10 +185,12 @@ export async function POST(request: Request) {
         // Tìm Staff record
         let targetStaffId = user.staffId;
         if (!targetStaffId) {
+            const userCccdHash = generateBlindIndex(user.username);
             const foundStaff = await prisma.staff.findFirst({
                 where: {
                     OR: [
                         { ma_nv: user.username },
+                        ...(userCccdHash ? [{ cccd_hash: userCccdHash }] : []),
                         { cccd: user.username },
                         { user: { id: user.id } }
                     ]

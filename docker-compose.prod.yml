@@ -7,6 +7,8 @@ services:
     restart: always
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - STAFF_ENCRYPTION_KEY=${STAFF_ENCRYPTION_KEY:-}
+      - STAFF_BLIND_SALT=${STAFF_BLIND_SALT:-}
     depends_on:
       - db-htql
     ports:

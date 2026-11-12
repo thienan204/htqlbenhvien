@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { decryptField } from '@/lib/staffCrypto';
 
 const prisma = new PrismaClient();
 
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
 
         // Process in a transaction for better performance if possible, or sequential to handle errors
         for (const staff of staffWithoutUsers) {
-            let proposedUsername = staff.cccd || staff.ma_nv;
+            const cleanCccd = staff.cccd ? (decryptField(staff.cccd) || staff.cccd) : null;
+            let proposedUsername = cleanCccd || staff.ma_nv;
             
             // Ensure unique username
             let finalUsername = proposedUsername;

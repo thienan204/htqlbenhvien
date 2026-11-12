@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import ExcelJS from 'exceljs';
 import path from 'path';
 import fs from 'fs';
+import { decryptField } from '@/lib/staffCrypto';
 
 const prisma = new PrismaClient();
 
@@ -186,9 +187,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 ngay_sinh: ngaySinhDayDu,
                 nam_sinh: namSinh,
                 gioi_tinh: staff.gioi_tinh_ref?.name || '',
-                cccd: staff.cccd || '',
+                cccd: (decryptField(staff.cccd) || staff.cccd) || '',
                 dan_toc: staff.dan_toc_ref?.name || '',
-                dien_thoai: staff.so_dien_thoai || '',
+                dien_thoai: (decryptField(staff.so_dien_thoai) || staff.so_dien_thoai) || '',
                 email: '',
                 que_quan: queQuanArr.join(', '),
                 noi_o: noiOArr.join(', '),

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import * as xlsx from 'xlsx';
 import dayjs from 'dayjs';
+import { prepareStaffForSave } from '@/lib/staffCrypto';
 
 const CATEGORY_MAP: Record<string, { type: string, idField: string }> = {
     'chuc_danh': { type: 'CHUC_DANH', idField: 'chuc_danh_id' },
@@ -154,9 +155,10 @@ export async function POST(request: Request) {
                 }
 
                 if (Object.keys(validUpdateData).length > 0) {
+                    const preparedUpdate = prepareStaffForSave(validUpdateData);
                     await prisma.staff.update({
                         where: { id: existingStaff.id },
-                        data: validUpdateData
+                        data: preparedUpdate
                     });
                     successCount++;
                     resultRows.push([...paddedRow, 'Thành công', '']);

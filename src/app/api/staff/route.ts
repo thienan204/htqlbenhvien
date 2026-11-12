@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { decryptStaffList, decryptStaff, prepareStaffForSave, DEFAULT_ENCRYPTED_FIELDS } from '@/lib/staffCrypto';
+import { getSystemConfig } from '@/lib/systemConfig';
 
 export async function GET(request: Request) {
     try {
@@ -36,7 +38,8 @@ export async function GET(request: Request) {
                 ma_nv: 'asc'
             }
         });
-        return NextResponse.json(staff);
+        const decryptedStaff = decryptStaffList(staff);
+        return NextResponse.json(decryptedStaff);
     } catch (error) {
         console.error('Error fetching staff:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -46,6 +49,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        const activeFieldsStr = await getSystemConfig('STAFF_PII_ENCRYPTED_FIELDS', DEFAULT_ENCRYPTED_FIELDS.join(','));
+        const activeFields = activeFieldsStr.split(',').map(s => s.trim()).filter(Boolean);
 
         // Handle Array of Staff (For Excel Import)
         if (Array.isArray(body)) {
@@ -53,19 +58,17 @@ export async function POST(request: Request) {
             for (const item of body) {
                 if (!item.ho_ten || !item.ma_nv || !item.ma_khoa) continue;
 
+                const prepared = prepareStaffForSave({
+                    ma_nv: item.ma_nv,
+                    ho_ten: item.ho_ten,
+                    so_dien_thoai: item.so_dien_thoai || null,
+                    ma_khoa: item.ma_khoa
+                }, activeFields);
+
                 await prisma.staff.upsert({
                     where: { ma_nv: item.ma_nv },
-                    update: {
-                        ho_ten: item.ho_ten,
-                        so_dien_thoai: item.so_dien_thoai || null,
-                        ma_khoa: item.ma_khoa
-                    },
-                    create: {
-                        ma_nv: item.ma_nv,
-                        ho_ten: item.ho_ten,
-                        so_dien_thoai: item.so_dien_thoai || null,
-                        ma_khoa: item.ma_khoa
-                    }
+                    update: prepared,
+                    create: prepared
                 });
                 successCount++;
             }
@@ -110,35 +113,37 @@ export async function POST(request: Request) {
             }
 
             // Update existing
+            const updatePayload = prepareStaffForSave({ 
+                ho_ten: finalHoTen,
+                ma_nv: finalMaNv,
+                so_dien_thoai: so_dien_thoai !== undefined ? (so_dien_thoai || null) : undefined,
+                dia_chi: dia_chi !== undefined ? (dia_chi || null) : undefined,
+                ma_khoa: finalMaKhoa, 
+                trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+                vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
+                ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
+                ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
+                noi_sinh_ward_id, noi_sinh_thon,
+                que_quan_ward_id, que_quan_thon,
+                noi_o_ward_id, noi_o_thon,
+                so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
+                ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+                ngay_nghi_viec: ngay_nghi_viec ? new Date(ngay_nghi_viec) : null,
+                so_qd_nghi_viec: so_qd_nghi_viec || null,
+                ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
+                don_vi_chuyen_den: don_vi_chuyen_den || null,
+                ly_do_nghi_viec: ly_do_nghi_viec || null,
+                ...(Array.isArray(trainings) ? {
+                    trainings: {
+                        deleteMany: {},
+                        create: trainings
+                    }
+                } : {})
+            }, activeFields);
+
             const updated = await prisma.staff.update({
                 where: { id },
-                data: { 
-                    ho_ten: finalHoTen,
-                    ma_nv: finalMaNv,
-                    so_dien_thoai: so_dien_thoai !== undefined ? (so_dien_thoai || null) : undefined,
-                    dia_chi: dia_chi !== undefined ? (dia_chi || null) : undefined,
-                    ma_khoa: finalMaKhoa, 
-                    trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
-                    vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
-                    ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
-                    noi_sinh_ward_id, noi_sinh_thon,
-                    que_quan_ward_id, que_quan_thon,
-                    noi_o_ward_id, noi_o_thon,
-                    so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
-                    ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
-                    ngay_nghi_viec: ngay_nghi_viec ? new Date(ngay_nghi_viec) : null,
-                    so_qd_nghi_viec: so_qd_nghi_viec || null,
-                    ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
-                    don_vi_chuyen_den: don_vi_chuyen_den || null,
-                    ly_do_nghi_viec: ly_do_nghi_viec || null,
-                    ...(Array.isArray(trainings) ? {
-                        trainings: {
-                            deleteMany: {},
-                            create: trainings
-                        }
-                    } : {})
-                }
+                data: updatePayload
             });
 
             // Nếu mã khoa thay đổi, tự động ghi nhận lịch sử công tác và sync User
@@ -172,34 +177,36 @@ export async function POST(request: Request) {
                 }
             }
 
-            return NextResponse.json(updated);
+            return NextResponse.json(decryptStaff(updated));
         } else {
             if (!finalHoTen || !finalMaNv || !finalMaKhoa) {
                 return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
             }
 
             // Create new
-            const created = await prisma.staff.create({
-                data: { 
-                    ho_ten: finalHoTen, ma_nv: finalMaNv, so_dien_thoai, dia_chi, ma_khoa: finalMaKhoa, 
-                    trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
-                    vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
-                    ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
-                    ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
-                    noi_sinh_ward_id, noi_sinh_thon,
-                    que_quan_ward_id, que_quan_thon,
-                    noi_o_ward_id, noi_o_thon,
-                    so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
-                    ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
-                    ngay_nghi_viec: ngay_nghi_viec ? new Date(ngay_nghi_viec) : null,
-                    so_qd_nghi_viec: so_qd_nghi_viec || null,
-                    ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
-                    don_vi_chuyen_den: don_vi_chuyen_den || null,
-                    ly_do_nghi_viec: ly_do_nghi_viec || null,
-                    trainings: {
-                        create: trainings || []
-                    }
+            const createPayload = prepareStaffForSave({ 
+                ho_ten: finalHoTen, ma_nv: finalMaNv, so_dien_thoai, dia_chi, ma_khoa: finalMaKhoa, 
+                trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+                vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
+                ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
+                ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
+                noi_sinh_ward_id, noi_sinh_thon,
+                que_quan_ward_id, que_quan_thon,
+                noi_o_ward_id, noi_o_thon,
+                so_qd_tuyen_dung, ngay_tuyen_dung, thoi_diem_nang_luong,
+                ma_ngach_id, he_so_luong_id, bac_luong_id, phu_cap_tnvk_id,
+                ngay_nghi_viec: ngay_nghi_viec ? new Date(ngay_nghi_viec) : null,
+                so_qd_nghi_viec: so_qd_nghi_viec || null,
+                ngay_qd_nghi_viec: ngay_qd_nghi_viec ? new Date(ngay_qd_nghi_viec) : null,
+                don_vi_chuyen_den: don_vi_chuyen_den || null,
+                ly_do_nghi_viec: ly_do_nghi_viec || null,
+                trainings: {
+                    create: trainings || []
                 }
+            }, activeFields);
+
+            const created = await prisma.staff.create({
+                data: createPayload
             });
 
             // Tự động tạo mốc lịch sử ban đầu cho nhân sự mới
@@ -218,7 +225,7 @@ export async function POST(request: Request) {
                 console.error('Lỗi tạo lịch sử cho nhân sự mới:', errNewHist);
             }
 
-            return NextResponse.json(created);
+            return NextResponse.json(decryptStaff(created));
         }
 
     } catch (error: any) {

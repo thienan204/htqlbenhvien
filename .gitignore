@@ -49,6 +49,7 @@ api-*.txt
 !scripts/sync-menu-only.js
 !scripts/seed-attendance-statuses.js
 !scripts/system_health_check.js
+!scripts/migrate-encrypt-staff.js
 *debug*.js
 *test*.js
 !scripts/system_health_check.js

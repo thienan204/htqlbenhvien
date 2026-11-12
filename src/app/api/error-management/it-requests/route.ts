@@ -7,6 +7,7 @@ import { sendPushNotification } from '@/lib/firebase-admin';
 import { emitEvent } from '@/lib/notificationService';
 import { sendZaloGroupNotification } from '@/lib/zalo';
 import { getCurrentHospitalShift } from '@/lib/shiftUtils';
+import { decryptField, prepareStaffForSave } from '@/lib/staffCrypto';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
         const assigneeMap = assignees.reduce((acc: any, curr) => {
             acc[curr.id] = {
                 name: curr.name || curr.username,
-                phone: curr.staff?.so_dien_thoai || null
+                phone: (decryptField(curr.staff?.so_dien_thoai) || curr.staff?.so_dien_thoai) || null
             };
             return acc;
         }, {});
@@ -119,7 +120,10 @@ export async function GET(request: Request) {
                 where: { id: { in: staffIds } },
                 select: { id: true, ho_ten: true, so_dien_thoai: true }
             });
-            staffMap = new Map(staffs.map(s => [s.id, { ho_ten: s.ho_ten, so_dien_thoai: s.so_dien_thoai }]));
+            staffMap = new Map(staffs.map(s => [s.id, { 
+                ho_ten: s.ho_ten, 
+                so_dien_thoai: (decryptField(s.so_dien_thoai) || s.so_dien_thoai) || null 
+            }]));
         }
 
         const maBaList = requests.map(req => req.ma_ba).filter(Boolean) as string[];
@@ -492,14 +496,15 @@ export async function POST(request: Request) {
         if (nguoi_bao_id) {
             try {
                 const staffInDb = await prisma.staff.findUnique({ where: { id: nguoi_bao_id } });
-                if (sdt && sdt !== staffInDb?.so_dien_thoai) {
+                const currentPlain = staffInDb?.so_dien_thoai ? (decryptField(staffInDb.so_dien_thoai) || staffInDb.so_dien_thoai) : '';
+                if (sdt && sdt !== currentPlain) {
                     await prisma.staff.update({
                         where: { id: nguoi_bao_id },
-                        data: { so_dien_thoai: sdt }
+                        data: prepareStaffForSave({ so_dien_thoai: sdt }, ['so_dien_thoai'])
                     });
                     finalSdt = sdt;
-                } else if (!sdt && staffInDb?.so_dien_thoai) {
-                    finalSdt = staffInDb.so_dien_thoai;
+                } else if (!sdt && currentPlain) {
+                    finalSdt = currentPlain;
                 }
 
                 // Đảm bảo dynamicFields luôn có SĐT mới nhất

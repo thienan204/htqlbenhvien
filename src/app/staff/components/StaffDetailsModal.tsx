@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Descriptions, Tag, Button, Tabs, Table } from 'antd';
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { Modal, Descriptions, Tag, Button, Tabs, Table, Tooltip } from 'antd';
+import { CheckCircleOutlined, EyeOutlined, EyeInvisibleOutlined, LockOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { maskSensitiveData } from '@/lib/staffCrypto';
 
 interface StaffDetailsModalProps {
     open: boolean;
@@ -12,6 +13,11 @@ interface StaffDetailsModalProps {
 export default function StaffDetailsModal({ open, onClose, staff }: StaffDetailsModalProps) {
     const [histories, setHistories] = useState<any[]>([]);
     const [loadingHistories, setLoadingHistories] = useState(false);
+    const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+
+    const toggleReveal = (field: string) => {
+        setRevealed(prev => ({ ...prev, [field]: !prev[field] }));
+    };
 
     useEffect(() => {
         if (open && staff?.id) {
@@ -105,13 +111,58 @@ export default function StaffDetailsModal({ open, onClose, staff }: StaffDetails
                         {staff.dan_toc_ref?.name || '-'}
                     </Descriptions.Item>
                     <Descriptions.Item label="Số điện thoại">
-                        {staff.so_dien_thoai || '-'}
+                        <div className="flex items-center justify-between">
+                            <span className="font-mono text-slate-700">
+                                {revealed['so_dien_thoai'] ? staff.so_dien_thoai : maskSensitiveData(staff.so_dien_thoai, 'PHONE')}
+                            </span>
+                            {staff.so_dien_thoai && (
+                                <Tooltip title={revealed['so_dien_thoai'] ? 'Ẩn số điện thoại' : 'Xem số điện thoại đầy đủ'}>
+                                    <Button
+                                        type="text"
+                                        size="small"
+                                        icon={revealed['so_dien_thoai'] ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                                        onClick={() => toggleReveal('so_dien_thoai')}
+                                        className="text-slate-400 hover:text-blue-600"
+                                    />
+                                </Tooltip>
+                            )}
+                        </div>
                     </Descriptions.Item>
                     <Descriptions.Item label="Căn cước công dân (CCCD)">
-                        {staff.cccd || '-'}
+                        <div className="flex items-center justify-between">
+                            <span className="font-mono text-slate-700">
+                                {revealed['cccd'] ? staff.cccd : maskSensitiveData(staff.cccd, 'CCCD')}
+                            </span>
+                            {staff.cccd && (
+                                <Tooltip title={revealed['cccd'] ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ'}>
+                                    <Button
+                                        type="text"
+                                        size="small"
+                                        icon={revealed['cccd'] ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                                        onClick={() => toggleReveal('cccd')}
+                                        className="text-slate-400 hover:text-blue-600"
+                                    />
+                                </Tooltip>
+                            )}
+                        </div>
                     </Descriptions.Item>
                     <Descriptions.Item label="Mã số BHXH">
-                        {staff.ma_bhxh || '-'}
+                        <div className="flex items-center justify-between">
+                            <span className="font-mono text-slate-700">
+                                {revealed['ma_bhxh'] ? staff.ma_bhxh : maskSensitiveData(staff.ma_bhxh, 'BHXH')}
+                            </span>
+                            {staff.ma_bhxh && (
+                                <Tooltip title={revealed['ma_bhxh'] ? 'Ẩn mã BHXH' : 'Xem mã BHXH đầy đủ'}>
+                                    <Button
+                                        type="text"
+                                        size="small"
+                                        icon={revealed['ma_bhxh'] ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                                        onClick={() => toggleReveal('ma_bhxh')}
+                                        className="text-slate-400 hover:text-blue-600"
+                                    />
+                                </Tooltip>
+                            )}
+                        </div>
                     </Descriptions.Item>
                     <Descriptions.Item label="Địa chỉ">
                         {staff.dia_chi || '-'}

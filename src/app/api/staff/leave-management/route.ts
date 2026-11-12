@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { decryptField } from '@/lib/staffCrypto';
 
 /**
  * API: Danh Sách & Tạo Mới Đơn Xin Nghỉ Phép
@@ -167,7 +168,7 @@ export async function POST(request: Request) {
                 session,
                 reason,
                 destination: destination || null,
-                contactPhone: contactPhone || staff.so_dien_thoai || null,
+                contactPhone: contactPhone || (staff.so_dien_thoai ? (decryptField(staff.so_dien_thoai) || staff.so_dien_thoai) : null),
                 handoverStaffId: handoverStaffId || null,
                 actingHeadStaffId: actingHeadStaffId || null,
                 status: initialStatus

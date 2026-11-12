@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { decryptField } from '@/lib/staffCrypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
                         TEN_KHOA: staff.department?.ten_khoa || '',
                         HO_TEN: staff.ho_ten,
                         GIOI_TINH: gioi_tinh,
-                        SO_DINH_DANH: staff.cccd || staff.ma_nv || '',
+                        SO_DINH_DANH: (decryptField(staff.cccd) || staff.cccd) || staff.ma_nv || '',
                         CHUCDANH_NN: staff.ma_chuc_danh_bhyt || staff.chuc_danh_ref?.bhyt_code || mapToBhytCode(staff.chuc_danh_ref?.code),
                         VI_TRI: staff.ma_vi_tri_bhyt || staff.vi_tri_bhyt_ref?.code || staff.chuc_vu_ref?.bhyt_code || '',
                         MACCHN: cert.so_cchn,

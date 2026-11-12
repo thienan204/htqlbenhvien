@@ -27,9 +27,11 @@ import {
     AppstoreOutlined,
     ThunderboltOutlined,
     UserOutlined,
-    SaveOutlined
+    SaveOutlined,
+    SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
+import DataEncryptionMonitor from './components/DataEncryptionMonitor';
 
 interface ConfigItem {
     id: string;
@@ -55,7 +57,7 @@ export default function SystemConfigPage() {
     const { user } = useAuth();
     const [configs, setConfigs] = useState<ConfigItem[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'SYSTEM' | 'MODULE'>('MODULE');
+    const [activeTab, setActiveTab] = useState<'SYSTEM' | 'MODULE' | 'ENCRYPTION'>('MODULE');
     const [searchText, setSearchText] = useState('');
     const [selectedModule, setSelectedModule] = useState<string | null>(null);
     const [savingKeys, setSavingKeys] = useState<Record<string, boolean>>({});
@@ -402,6 +404,20 @@ export default function SystemConfigPage() {
                     />
                 </span>
             )
+        },
+        {
+            key: 'ENCRYPTION',
+            label: (
+                <span className="flex items-center gap-2 font-semibold px-2">
+                    <SafetyCertificateOutlined />
+                    <span>🛡️ Giám Sát & Mã Hóa Dữ Liệu (PII)</span>
+                    <Badge
+                        count="AES"
+                        style={{ backgroundColor: '#10b981' }}
+                        className="ml-1"
+                    />
+                </span>
+            )
         }
     ];
 
@@ -448,52 +464,58 @@ export default function SystemConfigPage() {
                     type="card"
                     activeKey={activeTab}
                     onChange={(k) => {
-                        setActiveTab(k as 'SYSTEM' | 'MODULE');
+                        setActiveTab(k as 'SYSTEM' | 'MODULE' | 'ENCRYPTION');
                         setSelectedModule(null);
                     }}
                     items={tabItems}
                     className="mb-4"
                 />
 
-                {/* Thanh tìm kiếm & Bộ lọc */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-slate-50/70 p-3 rounded-xl border border-slate-200/70">
-                    <div className="flex items-center gap-2.5 w-full sm:w-auto flex-1">
-                        <Input
-                            placeholder="🔍 Tìm kiếm theo tên chức năng, route (/staff/...) hoặc mã cấu hình..."
-                            value={searchText}
-                            onChange={e => setSearchText(e.target.value)}
-                            allowClear
-                            className="max-w-md rounded-xl text-xs h-9"
+                {activeTab === 'ENCRYPTION' ? (
+                    <DataEncryptionMonitor />
+                ) : (
+                    <>
+                        {/* Thanh tìm kiếm & Bộ lọc */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-slate-50/70 p-3 rounded-xl border border-slate-200/70">
+                            <div className="flex items-center gap-2.5 w-full sm:w-auto flex-1">
+                                <Input
+                                    placeholder="🔍 Tìm kiếm theo tên chức năng, route (/staff/...) hoặc mã cấu hình..."
+                                    value={searchText}
+                                    onChange={e => setSearchText(e.target.value)}
+                                    allowClear
+                                    className="max-w-md rounded-xl text-xs h-9"
+                                />
+
+                                {activeTab === 'MODULE' && availableModules.length > 0 && (
+                                    <Select
+                                        placeholder="[ Lọc theo Phân hệ ]"
+                                        value={selectedModule}
+                                        onChange={setSelectedModule}
+                                        allowClear
+                                        className="w-48 text-xs"
+                                        options={availableModules.map(m => ({ label: `Phân hệ: ${m}`, value: m }))}
+                                    />
+                                )}
+                            </div>
+
+                            <div className="text-xs text-slate-400">
+                                Hiển thị <b>{filteredConfigs.length}</b> cấu hình
+                            </div>
+                        </div>
+
+                        {/* Bảng danh sách Cấu hình */}
+                        <Table
+                            columns={columns}
+                            dataSource={filteredConfigs}
+                            rowKey="id"
+                            loading={loading}
+                            pagination={false}
+                            bordered
+                            size="middle"
+                            className="rounded-xl overflow-hidden border border-slate-200"
                         />
-
-                        {activeTab === 'MODULE' && availableModules.length > 0 && (
-                            <Select
-                                placeholder="[ Lọc theo Phân hệ ]"
-                                value={selectedModule}
-                                onChange={setSelectedModule}
-                                allowClear
-                                className="w-48 text-xs"
-                                options={availableModules.map(m => ({ label: `Phân hệ: ${m}`, value: m }))}
-                            />
-                        )}
-                    </div>
-
-                    <div className="text-xs text-slate-400">
-                        Hiển thị <b>{filteredConfigs.length}</b> cấu hình
-                    </div>
-                </div>
-
-                {/* Bảng danh sách Cấu hình */}
-                <Table
-                    columns={columns}
-                    dataSource={filteredConfigs}
-                    rowKey="id"
-                    loading={loading}
-                    pagination={false}
-                    bordered
-                    size="middle"
-                    className="rounded-xl overflow-hidden border border-slate-200"
-                />
+                    </>
+                )}
             </Card>
         </div>
     );

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/auth';
+import { decryptStaff, prepareStaffForSave } from '@/lib/staffCrypto';
 
 export async function GET(request: Request) {
     try {
@@ -51,7 +52,8 @@ export async function GET(request: Request) {
             console.warn('Lỗi đọc avatar:', e);
         }
 
-        return NextResponse.json({ ...userData, avatar });
+        const decryptedStaff = userData.staff ? decryptStaff(userData.staff) : null;
+        return NextResponse.json({ ...userData, staff: decryptedStaff, avatar });
     } catch (error: any) {
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
@@ -104,22 +106,23 @@ export async function PUT(request: Request) {
             });
 
             if (currentUser?.staffId) {
+                const staffPayload = prepareStaffForSave({
+                    ho_ten: ho_ten !== undefined ? ho_ten : undefined,
+                    so_dien_thoai: so_dien_thoai !== undefined ? so_dien_thoai : undefined,
+                    dia_chi: dia_chi !== undefined ? dia_chi : undefined,
+                    ma_nv: ma_nv !== undefined ? ma_nv : undefined,
+                    ngay_sinh: ngay_sinh !== undefined && ngay_sinh !== null ? new Date(ngay_sinh) : (ngay_sinh === null ? null : undefined),
+                    gioi_tinh_id: gioi_tinh_id !== undefined ? gioi_tinh_id : undefined,
+                    ma_khoa: ma_khoa !== undefined ? ma_khoa : undefined,
+                    loai_hop_dong_id: loai_hop_dong_id !== undefined ? loai_hop_dong_id : undefined,
+                    chuc_vu_id: chuc_vu_id !== undefined ? chuc_vu_id : undefined,
+                    vi_tri_viec_lam_id: vi_tri_viec_lam_id !== undefined ? vi_tri_viec_lam_id : undefined,
+                    chuc_danh_id: chuc_danh_id !== undefined ? chuc_danh_id : undefined,
+                    trinh_do_id: trinh_do_id !== undefined ? trinh_do_id : undefined,
+                });
                 await tx.staff.update({
                     where: { id: currentUser.staffId },
-                    data: {
-                        ho_ten: ho_ten !== undefined ? ho_ten : undefined,
-                        so_dien_thoai: so_dien_thoai !== undefined ? so_dien_thoai : undefined,
-                        dia_chi: dia_chi !== undefined ? dia_chi : undefined,
-                        ma_nv: ma_nv !== undefined ? ma_nv : undefined,
-                        ngay_sinh: ngay_sinh !== undefined && ngay_sinh !== null ? new Date(ngay_sinh) : (ngay_sinh === null ? null : undefined),
-                        gioi_tinh_id: gioi_tinh_id !== undefined ? gioi_tinh_id : undefined,
-                        ma_khoa: ma_khoa !== undefined ? ma_khoa : undefined,
-                        loai_hop_dong_id: loai_hop_dong_id !== undefined ? loai_hop_dong_id : undefined,
-                        chuc_vu_id: chuc_vu_id !== undefined ? chuc_vu_id : undefined,
-                        vi_tri_viec_lam_id: vi_tri_viec_lam_id !== undefined ? vi_tri_viec_lam_id : undefined,
-                        chuc_danh_id: chuc_danh_id !== undefined ? chuc_danh_id : undefined,
-                        trinh_do_id: trinh_do_id !== undefined ? trinh_do_id : undefined,
-                    }
+                    data: staffPayload
                 });
             }
 
@@ -144,7 +147,8 @@ export async function PUT(request: Request) {
             });
         });
 
-        return NextResponse.json({ message: 'Cập nhật thông tin thành công', user: { ...updatedUser, avatar } });
+        const decryptedStaff = updatedUser?.staff ? decryptStaff(updatedUser.staff) : null;
+        return NextResponse.json({ message: 'Cập nhật thông tin thành công', user: { ...updatedUser, staff: decryptedStaff, avatar } });
     } catch (error: any) {
         console.error('Update profile error:', error);
         if (error.code === 'P2002') {

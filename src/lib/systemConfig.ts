@@ -67,6 +67,61 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         tooltipOff: '⚪ Đang TẮT (Gọn gàng sạch sẽ): Bảng danh bạ nhân sự mặc định chỉ hiển thị các cán bộ nhân viên đang công tác tại bệnh viện, ẩn hoàn toàn nhân sự đã thôi việc.',
         tooltipOn: '🟢 Đang BẬT (Hiển thị đầy đủ): Bảng danh bạ nhân sự hiển thị cả các nhân sự đã thôi việc / chấm dứt hợp đồng (có kèm Tag đỏ cảnh báo "Đã nghỉ việc").'
     },
+    {
+        key: 'STAFF_PII_ENCRYPTION_ENABLED',
+        value: 'true',
+        title: 'Bật mã hóa lưu trữ CSDL cho thông tin nhân sự (AES-256-GCM)',
+        description: 'Khi BẬT: Các trường thông tin nhạy cảm (CCCD, SĐT, BHXH...) sẽ được mã hóa chuẩn an ninh mạng AES-256 trước khi lưu xuống CSDL.',
+        category: 'MODULE',
+        module: 'NHAN_SU',
+        route: '/staff',
+        dataType: 'BOOLEAN',
+        defaultValue: 'true',
+        order: 11,
+        tooltipOff: '⚪ Đang TẮT: Dữ liệu nhân sự lưu ở dạng chữ thường (Plaintext) trong CSDL.',
+        tooltipOn: '🟢 Đang BẬT: Dữ liệu nhân sự được mã hóa an toàn bằng AES-256-GCM, bảo vệ toàn diện chống trộm cắp CSDL.'
+    },
+    {
+        key: 'STAFF_PII_MASKING_ENABLED',
+        value: 'true',
+        title: 'Bật che mặt nạ dữ liệu nhạy cảm trên giao diện danh bạ (Data Masking)',
+        description: 'Khi BẬT: Số CCCD, SĐT, Mã BHXH được tự động che mờ ký tự giữa (ví dụ: 020089******). Khi TẮT: Hiển thị đầy đủ số rõ ràng.',
+        category: 'MODULE',
+        module: 'NHAN_SU',
+        route: '/staff',
+        dataType: 'BOOLEAN',
+        defaultValue: 'true',
+        order: 12,
+        tooltipOff: '⚪ Đang TẮT: Hiển thị số CCCD và SĐT rõ ràng cho mọi người xem.',
+        tooltipOn: '🟢 Đang BẬT: Tự động che mờ số CCCD và SĐT, chỉ người có thẩm quyền mới được xem bản rõ.'
+    },
+    {
+        key: 'STAFF_PII_ALLOW_UNMASK_BUTTON',
+        value: 'true',
+        title: 'Cho phép hiển thị icon con mắt 👁️ "Xem đầy đủ"',
+        description: 'Khi BẬT: Người có thẩm quyền thấy icon con mắt để bấm xem bản rõ CCCD/SĐT. Khi TẮT: Khóa hoàn toàn, không hiển thị nút xem bản rõ.',
+        category: 'MODULE',
+        module: 'NHAN_SU',
+        route: '/staff',
+        dataType: 'BOOLEAN',
+        defaultValue: 'true',
+        order: 13,
+        tooltipOff: '⚪ Đang TẮT: Ẩn hoàn toàn nút xem bản rõ, chống nhìn lén tại máy bàn làm việc.',
+        tooltipOn: '🟢 Đang BẬT: Hiển thị icon con mắt để người có quyền bấm xem số đầy đủ khi cần tra cứu.'
+    },
+    {
+        key: 'STAFF_PII_ENCRYPTED_FIELDS',
+        value: 'cccd,so_dien_thoai,ma_bhxh',
+        title: 'Danh sách các trường áp dụng mã hóa tự động',
+        description: 'Danh sách các cột trong bảng Staff được áp dụng mã hóa (phân cách bởi dấu phẩy).',
+        category: 'MODULE',
+        module: 'NHAN_SU',
+        route: '/staff',
+        dataType: 'STRING',
+        defaultValue: 'cccd,so_dien_thoai,ma_bhxh',
+        order: 14,
+        helpText: '💡 Danh sách các trường dữ liệu đang được áp dụng mã hóa tự động vào CSDL (Mặc định: cccd,so_dien_thoai,ma_bhxh).'
+    },
 
     // --- CẤU HÌNH HỆ THỐNG / QUY TRÌNH TOÀN VIỆN ---
     {
