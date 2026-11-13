@@ -162,14 +162,14 @@ export function DepartmentStaffStatusStrip({
 
     // Danh sách nhân sự hiển thị thông minh:
     // 1. Kỹ thuật viên (!s.isLeader): Luôn hiển thị
-    // 2. Lãnh đạo phòng (s.isLeader): TỰ ĐỘNG HIỂN THỊ KHI BẬT NHẬN VIỆC (isAvailable === true) hoặc đang có ticket phụ trách
+    // 2. Lãnh đạo phòng (s.isLeader): Hiển thị khi BẬT nhận việc, BẬT tập trung hoặc đang có ticket phụ trách
     const displayStaff = useMemo(() => {
         return staffList
             .filter(s => {
                 if (!s.isLeader) return true;
                 const activeCount = staffTicketStats.get(s.id)?.active || 0;
-                // Lãnh đạo chỉ hiển thị nếu đang BẬT nhận việc hoặc đang có ticket đang xử lý
-                return s.isAvailable || activeCount > 0;
+                // Lãnh đạo hiển thị nếu: Bật nhận việc HOẶC Đang ở chế độ Tập trung HOẶC đang có ticket đang xử lý
+                return s.isAvailable || s.autoAssignDisabled || Boolean(s.focusReason) || activeCount > 0;
             })
             .sort((a, b) => {
                 // Kỹ thuật viên sắp xếp theo dutyOrder, lãnh đạo trực xếp kế tiếp
@@ -180,12 +180,12 @@ export function DepartmentStaffStatusStrip({
             });
     }, [staffList, staffTicketStats]);
 
-    // Thống kê số lượng theo trạng thái
+    // Thống kê số lượng theo trạng thái (Ưu tiên: 1. Tập trung -> 2. Sẵn sàng -> 3. Tắt nhận việc)
     const stats = useMemo(() => {
         const total = displayStaff.length;
-        const ready = displayStaff.filter(s => s.isAvailable && !s.autoAssignDisabled).length;
-        const focus = displayStaff.filter(s => s.isAvailable && s.autoAssignDisabled).length;
-        const off = displayStaff.filter(s => !s.isAvailable).length;
+        const focus = displayStaff.filter(s => s.autoAssignDisabled || Boolean(s.focusReason)).length;
+        const ready = displayStaff.filter(s => s.isAvailable && !s.autoAssignDisabled && !s.focusReason).length;
+        const off = displayStaff.filter(s => !s.isAvailable && !s.autoAssignDisabled && !s.focusReason).length;
         const leadersActive = displayStaff.filter(s => s.isLeader && !s.isTeamLeader).length;
         return { total, ready, focus, off, leadersActive };
     }, [displayStaff]);
@@ -284,9 +284,9 @@ export function DepartmentStaffStatusStrip({
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 pt-2">
                                         {displayStaff.map(staff => {
                                             const ticketStat = staffTicketStats.get(staff.id) || { active: 0, done: 0, totalPending: 0 };
-                                            const isFocus = staff.isAvailable && staff.autoAssignDisabled;
-                                            const isReady = staff.isAvailable && !staff.autoAssignDisabled;
-                                            const isOff = !staff.isAvailable;
+                                            const isFocus = Boolean(staff.autoAssignDisabled || staff.focusReason);
+                                            const isReady = staff.isAvailable && !isFocus;
+                                            const isOff = !staff.isAvailable && !isFocus;
                                             const isSelected = selectedStaffId === staff.id;
 
                                             // Xác định trạng thái hiển thị

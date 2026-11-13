@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import dayjs from 'dayjs';
+import { isSystemConfigEnabled } from '@/lib/systemConfig';
 
 const prisma = new PrismaClient();
 
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
             afternoonServices = [],
             serviceStaffMappings = {}, 
             staffShifts = {}, 
+            staffShiftMode = 'STRICT',
             savedSchedules = [], 
             patientTimeConstraints = [] 
         } = body;
@@ -185,10 +188,14 @@ export async function POST(request: Request) {
                 chuc_danh_ref: true,
                 trinh_do_ref: true,
                 attendances: {
-                    where: { workDate: { lte: date } },
-                    orderBy: { workDate: 'desc' },
-                    take: 1,
+                    where: { workDate: date },
                     include: { status_ref: true }
+                },
+                attendanceRecords: {
+                    where: { workDate: date }
+                },
+                dutyRecords: {
+                    where: { dutyDate: date }
                 },
                 certificates: {
                     where: { isActive: true },
@@ -197,25 +204,72 @@ export async function POST(request: Request) {
             }
         });
 
-        // Lọc ra nhân viên đi làm (Không có bản ghi điểm danh, hoặc trạng thái không chứa chữ "nghỉ", và is_thuc_hien_dvkt = true)
+        // Kiểm tra cấu hình Bắt buộc chấm công từ SystemConfig
+        const requireAttendance = await isSystemConfigEnabled('CLINICAL_SCHEDULING_REQUIRE_ATTENDANCE', false);
+
+        const hasAttendanceDataInDept = rawStaff.some(s => 
+            (s.attendances && s.attendances.length > 0) ||
+            (s.attendanceRecords && s.attendanceRecords.length > 0) ||
+            (s.dutyRecords && s.dutyRecords.length > 0)
+        );
+
+        if (requireAttendance && !hasAttendanceDataInDept) {
+            return NextResponse.json({ 
+                success: false, 
+                requireAttendanceError: true,
+                message: `Quy định Bệnh viện yêu cầu Khoa phải hoàn thành chấm công/điểm danh ngày ${dayjs(date).format('DD/MM/YYYY')} trước khi chia lịch PTTT. Vui lòng điểm danh tại tab "Điểm danh" trước!` 
+            }, { status: 400 });
+        }
+
+        // Lọc ra nhân viên đi làm và đủ điều kiện thực hiện DVKT
         const availableStaff = rawStaff.filter(staff => {
-            if (staff.attendances.length === 0) return true; // Chưa điểm danh bao giờ = Mặc định đi làm & có làm DVKT
-            
-            const attendance = staff.attendances[0];
-            const isToday = attendance.workDate === date;
-            
-            if (isToday) {
-                const statusName = (attendance.status_ref?.name || '').toLowerCase();
-                if (statusName.includes('nghỉ')) return false; // Lọc bỏ nghỉ phép, nghỉ ốm nếu điểm danh hnay
+            // 1. KIỂM TRA CHỨNG CHỈ HÀNH NGHỀ & CHỨC DANH:
+            // Bắt buộc phải có CCHN còn hoạt động và không phải là Hộ lý
+            const trinhDoName = (staff.trinh_do_ref?.name || '').toLowerCase();
+            const chucDanhName = (staff.chuc_danh_ref?.name || '').toLowerCase();
+            const isHoLy = trinhDoName.includes('hộ lý') || chucDanhName.includes('hộ lý');
+            if (isHoLy) return false;
+
+            const hasActiveCert = staff.certificates && staff.certificates.length > 0;
+            if (!hasActiveCert) return false;
+
+            // 2. KIỂM TRA ĐIỀU KIỆN ĐI LÀM TRONG NGÀY
+            const todayAttendance = staff.attendances?.[0];
+            const attRec = staff.attendanceRecords?.[0];
+            const dutyRec = staff.dutyRecords?.[0];
+
+            if (todayAttendance) {
+                const statusName = (todayAttendance.status_ref?.name || '').toLowerCase();
+                if (statusName.includes('nghỉ') || statusName.includes('học')) return false;
+                if (todayAttendance.is_thuc_hien_dvkt === false) return false;
+                return true;
             }
-            
-            if (attendance.is_thuc_hien_dvkt === false) return false; // Bỏ qua nếu đánh dấu không làm DVKT (bảo lưu trạng thái các ngày trước)
-            
+
+            if (dutyRec?.dutyCode) {
+                return true;
+            }
+
+            if (attRec?.code) {
+                const c = attRec.code.trim().toUpperCase();
+                if (['X', '+', 'NB/2', 'P/2'].includes(c)) {
+                    return true;
+                }
+                if (['P', 'Ô', 'O', 'TS', 'H', 'NB', 'KL', 'L'].includes(c)) {
+                    return false;
+                }
+            }
+
+            // Nếu ngày hôm nay chưa có bản ghi chấm công nào:
+            if (requireAttendance) {
+                return false;
+            }
+
+            // Mặc định nhân sự có CCHN đi làm bình thường
             return true;
         });
 
         if (availableStaff.length === 0) {
-            return NextResponse.json({ success: false, message: 'Không có nhân viên nào đang làm việc tại Khoa này trong ngày đã chọn.' }, { status: 400 });
+            return NextResponse.json({ success: false, message: 'Không có nhân viên nào có CCHN đang làm việc tại Khoa này trong ngày đã chọn.' }, { status: 400 });
         }
 
         // 4. Khởi tạo thuật toán xếp lịch
@@ -350,16 +404,20 @@ export async function POST(request: Request) {
                 return false;
             });
 
-            // Xử lý tùy chọn gán đích danh Bác sĩ (key là Tên Dịch Vụ)
-            const assignedStaffIds = serviceStaffMappings[task.ten_dich_vu];
-            if (assignedStaffIds && Array.isArray(assignedStaffIds) && assignedStaffIds.length > 0) {
-                capableStaff = availableStaff.filter(s => assignedStaffIds.includes(s.id)); // Bỏ qua kiểm tra chứng chỉ, ép buộc xếp lịch cho những người này
-            } else if (assignedStaffIds && typeof assignedStaffIds === 'string') {
-                const assignedStaff = availableStaff.find(s => s.id === assignedStaffIds);
-                if (assignedStaff) {
-                    capableStaff = [assignedStaff];
-                } else {
-                    capableStaff = [];
+            // Xử lý tùy chọn gán đích danh Bác sĩ / Điều dưỡng (key là Tên Dịch Vụ hoặc Mã Dịch Vụ)
+            // CƠ CHẾ ƯU TIÊN (SOFT PRIORITY): Đưa người được gán lên đầu danh sách để ưu tiên xếp trước,
+            // khi người được gán hết giờ rảnh thì tự động chuyển tiếp cho các nhân sự khác có CCHN phù hợp!
+            const assignedStaffConfig = serviceStaffMappings[task.ten_dich_vu] || serviceStaffMappings[ma_dich_vu];
+            if (assignedStaffConfig) {
+                const targetIds: string[] = Array.isArray(assignedStaffConfig)
+                    ? assignedStaffConfig
+                    : (typeof assignedStaffConfig === 'string' ? [assignedStaffConfig] : []);
+                
+                if (targetIds.length > 0) {
+                    const assignedStaff = availableStaff.filter(s => targetIds.includes(s.id));
+                    const fallbackStaff = capableStaff.filter(s => !targetIds.includes(s.id));
+                    // Ưu tiên nhân viên được gán đích danh trước, fallback cho nhân sự có CCHN
+                    capableStaff = [...assignedStaff, ...fallbackStaff];
                 }
             }
 
@@ -446,8 +504,14 @@ export async function POST(request: Request) {
                     
                     if (hm) {
                         const prescriptionMinutes = parseTime(hm.substring(0, 5));
-                        if (prescriptionMinutes > minStartMinutes) {
-                            minStartMinutes = prescriptionMinutes;
+                        if (prescriptionMinutes > minStartMinutes && prescriptionMinutes < aEnd) {
+                            const sPref = resolvedServiceShifts[task.ten_dich_vu] || resolvedServiceShifts[task.ma_dich_vu];
+                            const pPref = patientShifts[ma_ba];
+                            if ((sPref === 'MORNING' || pPref === 'MORNING') && prescriptionMinutes >= mEnd) {
+                                // Không để giờ y lệnh chiều đẩy ca ưu tiên sáng ra khỏi buổi sáng
+                            } else {
+                                minStartMinutes = prescriptionMinutes;
+                            }
                         }
                     }
                 }
@@ -504,14 +568,18 @@ export async function POST(request: Request) {
                         continue;
                     }
 
-                    // Ưu tiên Sáng/Chiều theo cấu hình Nhân viên
+                    // Ưu tiên Sáng/Chiều theo cấu hình Nhân viên & Chế độ staffShiftMode (STRICT vs FLEXIBLE)
                     const staffShiftPref = staffShifts[staff.id];
-                    if (staffShiftPref === 'MORNING' && currentTime >= mEnd) {
-                        break; // Nhân viên này chỉ làm buổi sáng
+                    if (staffShiftPref === 'MORNING') {
+                        if (staffShiftMode === 'STRICT' && currentTime >= mEnd) {
+                            break; // Cố định ca: Hết giờ sáng thì dừng tìm cho nhân viên này
+                        }
                     }
-                    if (staffShiftPref === 'AFTERNOON' && currentTime < aStart) {
-                        currentTime = aStart; // Nhảy đến buổi chiều cho nhân viên này
-                        continue;
+                    if (staffShiftPref === 'AFTERNOON') {
+                        if (staffShiftMode === 'STRICT' && currentTime < aStart) {
+                            currentTime = aStart; // Cố định ca: Nhảy đến buổi chiều cho nhân viên này
+                            continue;
+                        }
                     }
 
                     // Tính tổng thời gian chiếm dụng (bao gồm cả buffer time) để check khoảng trống thực sự

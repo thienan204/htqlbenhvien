@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Table, Select, Button, message, DatePicker, TimePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip } from 'antd';
+import { Card, Table, Select, Button, message, DatePicker, TimePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip, Radio } from 'antd';
 import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined, TableOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
@@ -173,6 +173,7 @@ export default function ClinicalSchedulingPage() {
     
     const [morningStaffs, setMorningStaffs] = useState<string[]>([]);
     const [afternoonStaffs, setAfternoonStaffs] = useState<string[]>([]);
+    const [staffShiftMode, setStaffShiftMode] = useState<'STRICT' | 'FLEXIBLE'>('STRICT');
     const [morningServices, setMorningServices] = useState<string[]>([]);
     const [afternoonServices, setAfternoonServices] = useState<string[]>([]);
     const [dateSourceColumn, setDateSourceColumn] = useState<string>('');
@@ -1057,6 +1058,7 @@ export default function ClinicalSchedulingPage() {
                     afternoonServices,
                     patientTimeConstraints: validConstraints,
                     staffShifts,
+                    staffShiftMode,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {}
                 })
@@ -1120,6 +1122,7 @@ export default function ClinicalSchedulingPage() {
                     afternoonServices,
                     patientTimeConstraints: validConstraints,
                     staffShifts,
+                    staffShiftMode,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
                     heuristic
@@ -2250,8 +2253,24 @@ export default function ClinicalSchedulingPage() {
                                                     />
                                                 </Col>
                                             </Row>
-                                            <div style={{ marginTop: 12, fontSize: 12, color: '#8c8c8c' }}>
-                                                * Lưu ý: Khi chọn một Người thực hiện vào một buổi, thuật toán sẽ CHỈ xếp lịch cho người đó trong buổi đã chọn.
+
+                                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed #e8e8e8', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                                                <span style={{ fontWeight: 600, fontSize: 13, color: '#262626' }}>Cơ chế phân bổ buổi:</span>
+                                                <Radio.Group 
+                                                    value={staffShiftMode} 
+                                                    onChange={e => setStaffShiftMode(e.target.value)}
+                                                    size="middle"
+                                                >
+                                                    <Radio value="STRICT">
+                                                        <span style={{ fontSize: 13 }}><strong>Cố định ca:</strong> Chỉ xếp lịch đúng buổi đã chọn (buổi kia không làm)</span>
+                                                    </Radio>
+                                                    <Radio value="FLEXIBLE">
+                                                        <span style={{ fontSize: 13 }}><strong>Ưu tiên ca:</strong> Ưu tiên xếp buổi đã chọn trước, nếu hết ca/còn việc thì xếp tiếp buổi còn lại</span>
+                                                    </Radio>
+                                                </Radio.Group>
+                                            </div>
+                                            <div style={{ marginTop: 8, fontSize: 12, color: '#8c8c8c' }}>
+                                                * Mẹo: Để trống cả 2 ô = Tất cả nhân sự có CCHN trong khoa tự động được phân bổ làm việc cả ngày (Sáng và Chiều).
                                             </div>
                                         </div>
 

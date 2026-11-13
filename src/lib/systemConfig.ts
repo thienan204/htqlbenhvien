@@ -205,6 +205,22 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         order: 25,
         tooltipOff: '⚪ Đang TẮT (Hướng 1 - Chuẩn hóa theo Role): Lọc chuẩn 100% theo Role chuyên trách. Chỉ nhân sự có đúng Role (ví dụ CNTT) mới ở trong lịch trực. Nhân sự khoa phòng có Role khác (như bạn Trang - KHOA_PHONG) dứt khoát không bao giờ xuất hiện.',
         tooltipOn: '🟢 Đang BẬT (Hướng 2 - Tự động bổ sung): Tự động nhận diện và đưa Lãnh đạo Khoa/Phòng (Trưởng/Phó phòng) vào danh sách trực để nhân viên tiện chuyển việc, ngay cả khi tài khoản Lãnh đạo chưa đổi sang Role kỹ thuật.'
+    },
+
+    // --- CẤU HÌNH PHÂN HỆ: CHIA LỊCH LÂM SÀNG / PTTT (/clinical-scheduling/schedule) ---
+    {
+        key: 'CLINICAL_SCHEDULING_REQUIRE_ATTENDANCE',
+        value: 'false',
+        title: 'Bắt buộc có dữ liệu chấm công mới được chia lịch PTTT/DVKT',
+        description: 'Khi BẬT: Khoa bắt buộc phải chấm công/điểm danh ngày đó trước khi chia lịch. Khi TẮT: Nếu chưa chấm công thì hệ thống mặc định nhân sự có CCHN đi làm bình thường.',
+        category: 'MODULE',
+        module: 'CHIA_LICH_PTTT',
+        route: '/clinical-scheduling/schedule',
+        dataType: 'BOOLEAN',
+        defaultValue: 'false',
+        order: 30,
+        tooltipOff: '⚪ Đang TẮT (Linh hoạt): Nếu ngày đó chưa chấm công, hệ thống mặc định toàn bộ Bác sĩ, Điều dưỡng có CCHN trong khoa đều đi làm bình thường để khoa có thể chia lịch nhanh. Nhân sự không có CCHN (như Hộ lý) luôn bị loại trừ.',
+        tooltipOn: '🟢 Đang BẬT (Kỷ luật nghiêm ngặt): Ngày chọn xếp lịch bắt buộc phải có dữ liệu chấm công/điểm danh. Nếu chưa chấm công, hệ thống sẽ chặn và yêu cầu điểm danh trước khi chia lịch.'
     }
 ];
 
