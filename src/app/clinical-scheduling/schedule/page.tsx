@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, Table, Select, Button, message, DatePicker, TimePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip, Radio } from 'antd';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Card, Table, Select, Button, message, DatePicker, TimePicker, Row, Col, Upload, Spin, Alert, Checkbox, Tag, Tabs, Typography, Modal, Space, Popconfirm, Input, AutoComplete, App, Tooltip, Radio, Badge } from 'antd';
 import { UploadOutlined, DownloadOutlined, PlayCircleOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, SaveOutlined, DeleteOutlined, TableOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx-js-style';
@@ -177,6 +177,10 @@ export default function ClinicalSchedulingPage() {
     const [morningServices, setMorningServices] = useState<string[]>([]);
     const [afternoonServices, setAfternoonServices] = useState<string[]>([]);
     const [dateSourceColumn, setDateSourceColumn] = useState<string>('');
+    const [activeMainTab, setActiveMainTab] = useState<string>('1');
+    const [requireAttendanceConfig, setRequireAttendanceConfig] = useState<boolean>(false);
+    const [hasConfirmedAttendance, setHasConfirmedAttendance] = useState<boolean>(false);
+    const [attendanceStats, setAttendanceStats] = useState<{ working: number; off: number }>({ working: 0, off: 0 });
 
     // Khôi phục tùy chọn ca dịch vụ theo Khoa/Phòng từ localStorage
     useEffect(() => {
@@ -786,16 +790,28 @@ export default function ClinicalSchedulingPage() {
             .catch(console.error);
     };
 
-    useEffect(() => {
+    const fetchAttendanceStatus = useCallback(() => {
         if (selectedDate && selectedDept) {
             fetch(`/api/clinical-scheduling/attendance?date=${selectedDate}&maKhoa=${selectedDept}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.staffList) {
                         setStaffList(data.staffList);
+                        setRequireAttendanceConfig(!!data.requireAttendance);
+                        setHasConfirmedAttendance(!!data.hasConfirmedAttendance);
+                        setAttendanceStats({
+                            working: data.workingStaffCount !== undefined ? data.workingStaffCount : data.staffList.filter((s: any) => s.is_thuc_hien_dvkt !== false).length,
+                            off: data.offStaffCount !== undefined ? data.offStaffCount : data.staffList.filter((s: any) => s.is_thuc_hien_dvkt === false).length
+                        });
                     }
                 })
                 .catch(console.error);
+        }
+    }, [selectedDate, selectedDept]);
+
+    useEffect(() => {
+        if (selectedDate && selectedDept) {
+            fetchAttendanceStatus();
 
             // Fetch saved schedules
             setLoadingSaved(true);
@@ -807,7 +823,7 @@ export default function ClinicalSchedulingPage() {
                 .catch(console.error)
                 .finally(() => setLoadingSaved(false));
         }
-    }, [selectedDate, selectedDept]);
+    }, [selectedDate, selectedDept, fetchAttendanceStatus]);
 
     useEffect(() => {
         if (user === undefined) return;
@@ -1022,6 +1038,12 @@ export default function ClinicalSchedulingPage() {
             return;
         }
 
+        if (requireAttendanceConfig && !hasConfirmedAttendance) {
+            message.error(`Khoa chưa hoàn thành điểm danh ngày ${dayjs(selectedDate).format('DD/MM/YYYY')}. Vui lòng chuyển sang tab "Người thực hiện" để xác nhận điểm danh trước khi chia lịch!`);
+            setActiveMainTab('4');
+            return;
+        }
+
         const filteredData = currentDayData.filter(d => selectedServices.includes(d.ten_dich_vu));
         
         if (filteredData.length === 0) {
@@ -1083,6 +1105,12 @@ export default function ClinicalSchedulingPage() {
     const handleGenerateScheduleOptimized = async () => {
         if (!selectedDate || !selectedDept) {
             message.error("Vui lòng chọn ngày và Khoa/Phòng");
+            return;
+        }
+
+        if (requireAttendanceConfig && !hasConfirmedAttendance) {
+            message.error(`Khoa chưa hoàn thành điểm danh ngày ${dayjs(selectedDate).format('DD/MM/YYYY')}. Vui lòng chuyển sang tab "Người thực hiện" để xác nhận điểm danh trước khi chia lịch!`);
+            setActiveMainTab('4');
             return;
         }
 
@@ -1796,7 +1824,7 @@ export default function ClinicalSchedulingPage() {
     return (
         <div style={{ padding: 24, width: '100%', maxWidth: 1800, margin: '0 auto' }}>
             <h1 style={{ fontSize: 24, marginBottom: 24, fontWeight: 'bold' }}>Hệ thống tự động chia thời gian thực hiện DVKT</h1>
-            <Tabs type="card" defaultActiveKey="1" onChange={(key) => { if (key === '1') { fetchTemplatesAndMapping(); } }} items={[
+            <Tabs type="card" activeKey={activeMainTab} onChange={(key) => { setActiveMainTab(key); if (key === '1') { fetchTemplatesAndMapping(); fetchAttendanceStatus(); } }} items={[
                 {
                     key: '1',
                     label: <strong style={{fontSize: 16}}>Công cụ xếp thời gian</strong>,
@@ -1963,6 +1991,49 @@ export default function ClinicalSchedulingPage() {
                                                 />
                                             )}
 
+                                            {requireAttendanceConfig && !hasConfirmedAttendance && (
+                                                <Alert 
+                                                    type="error"
+                                                    showIcon
+                                                    style={{ marginBottom: 16, textAlign: 'left', borderRadius: 8, border: '1px solid #ffccc7' }}
+                                                    title={
+                                                        <span style={{ fontWeight: 700, fontSize: 14, color: '#cf1322' }}>
+                                                            ⚠️ Bắt buộc hoàn thành điểm danh trước khi chia lịch
+                                                        </span>
+                                                    }
+                                                    description={
+                                                        <div style={{ marginTop: 4 }}>
+                                                            <span>
+                                                                Hệ thống đang bật cấu hình bắt buộc chấm công. Khoa <strong>{departments.find(d => d.ma_khoa === selectedDept)?.ten_khoa || selectedDept}</strong> chưa thực hiện xác nhận điểm danh cho ngày <strong>{dayjs(selectedDate).format('DD/MM/YYYY')}</strong>.
+                                                            </span>
+                                                            <div style={{ marginTop: 8 }}>
+                                                                <Button 
+                                                                    type="primary" 
+                                                                    danger 
+                                                                    size="middle"
+                                                                    onClick={() => setActiveMainTab('4')}
+                                                                >
+                                                                    👉 Chuyển sang tab "Người thực hiện" để điểm danh ngay
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                />
+                                            )}
+
+                                            {requireAttendanceConfig && hasConfirmedAttendance && (
+                                                <Alert 
+                                                    type="success"
+                                                    showIcon
+                                                    style={{ marginBottom: 16, textAlign: 'left', borderRadius: 8 }}
+                                                    title={
+                                                        <span>
+                                                            ✓ <strong>Đã hoàn thành điểm danh ngày {dayjs(selectedDate).format('DD/MM/YYYY')}:</strong> Có <strong>{attendanceStats.working}</strong> nhân sự đủ điều kiện làm DVKT (đã loại trừ <strong>{attendanceStats.off}</strong> nhân sự nghỉ/không làm DVKT).
+                                                        </span>
+                                                    }
+                                                />
+                                            )}
+
                                             <p style={{ color: '#595959', marginBottom: 16 }}>Hệ thống đã sẵn sàng tính toán lịch cho <strong>{selectedServices.length}</strong> loại dịch vụ đã chọn.</p>
                                             <Space style={{ marginTop: 8 }}>
                                                 <Tooltip title="Nếu check, hệ thống sẽ đối chiếu với lịch đã lưu trong Cơ sở dữ liệu để tránh xếp đè vào các khung giờ bác sĩ đã có lịch (Phù hợp để xếp lịch nối tiếp Sáng - Chiều). Nếu bỏ check, hệ thống sẽ tính toán lại từ đầu như một ngày trống.">
@@ -1974,20 +2045,28 @@ export default function ClinicalSchedulingPage() {
                                                         Kế thừa lịch đã lưu
                                                     </Checkbox>
                                                 </Tooltip>
-                                                <Tooltip title="Thuật toán CŨ: Bốc từng bệnh nhân và xếp lịch liền mạch cho họ từ sáng tới chiều. Ưu tiên: Bệnh nhân không phải chờ đợi. Nhược điểm: Bác sĩ có thể bị thủng lỗ rỗng.">
+                                                <Tooltip title={
+                                                    requireAttendanceConfig && !hasConfirmedAttendance
+                                                        ? "⚠️ Khoa chưa hoàn thành điểm danh ngày này. Vui lòng chuyển sang tab 'Người thực hiện' để xác nhận trước khi chia lịch."
+                                                        : "Thuật toán CŨ: Bốc từng bệnh nhân và xếp lịch liền mạch cho họ từ sáng tới chiều. Ưu tiên: Bệnh nhân không phải chờ đợi. Nhược điểm: Bác sĩ có thể bị thủng lỗ rỗng."
+                                                }>
                                                     <Button 
                                                         type="primary" 
                                                         size="large" 
                                                         icon={<PlayCircleOutlined />} 
                                                         onClick={handleGenerateSchedule}
                                                         loading={loading}
-                                                        disabled={generatingOptimized || currentDayData.length === 0}
+                                                        disabled={generatingOptimized || currentDayData.length === 0 || (requireAttendanceConfig && !hasConfirmedAttendance)}
                                                     >
                                                         Xếp lịch thời gian thực hiện 1
                                                     </Button>
                                                 </Tooltip>
                                                 
-                                                <Tooltip title="Thuật toán MỚI: Bốc từng Bác sĩ và lấp đầy lịch làm việc của họ. Ưu tiên: Tối đa hóa công suất Bác sĩ. Nhược điểm: Bệnh nhân có thể phải ngồi chờ giữa 2 dịch vụ.">
+                                                <Tooltip title={
+                                                    requireAttendanceConfig && !hasConfirmedAttendance
+                                                        ? "⚠️ Khoa chưa hoàn thành điểm danh ngày này. Vui lòng chuyển sang tab 'Người thực hiện' để xác nhận trước khi chia lịch."
+                                                        : "Thuật toán MỚI: Bốc từng Bác sĩ và lấp đầy lịch làm việc của họ. Ưu tiên: Tối đa hóa công suất Bác sĩ. Nhược điểm: Bệnh nhân có thể phải ngồi chờ giữa 2 dịch vụ."
+                                                }>
                                                     <Button 
                                                         type="primary" 
                                                         size="large" 
@@ -1995,7 +2074,7 @@ export default function ClinicalSchedulingPage() {
                                                         style={{ background: '#722ed1', borderColor: '#722ed1' }}
                                                         onClick={handleGenerateScheduleOptimized}
                                                         loading={generatingOptimized}
-                                                        disabled={loading || currentDayData.length === 0}
+                                                        disabled={loading || currentDayData.length === 0 || (requireAttendanceConfig && !hasConfirmedAttendance)}
                                                     >
                                                         Xếp lịch thời gian thực hiện 2
                                                     </Button>
@@ -2564,8 +2643,26 @@ export default function ClinicalSchedulingPage() {
                 },
                 {
                     key: '4',
-                    label: <strong style={{fontSize: 16}}>Người thực hiện</strong>,
-                    children: <ClinicalSchedulingAttendancePage />
+                    label: (
+                        <span style={{ fontSize: 16, fontWeight: 'bold' }}>
+                            Người thực hiện
+                            {requireAttendanceConfig && !hasConfirmedAttendance && (
+                                <Badge status="error" style={{ marginLeft: 6 }} />
+                            )}
+                            {hasConfirmedAttendance && (
+                                <Badge status="success" style={{ marginLeft: 6 }} />
+                            )}
+                        </span>
+                    ),
+                    children: (
+                        <ClinicalSchedulingAttendancePage 
+                            initialDate={selectedDate}
+                            initialDept={selectedDept}
+                            onAttendanceUpdated={() => {
+                                fetchAttendanceStatus();
+                            }}
+                        />
+                    )
                 },
                 {
                     key: '5',

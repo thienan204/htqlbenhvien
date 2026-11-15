@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Table, Tag, Dropdown, Tooltip, Button } from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAttendance, StaffMatrixData } from '../AttendanceContext';
 import { DutyPlanModal } from '../_components/DutyPlanModal';
@@ -253,17 +254,29 @@ export default function DutySheetPage() {
                     )} | Tổng phiên trực toàn khoa: <b className="text-blue-700">{matrixData?.totalDeptDuty?.tongSo || 0} phiên</b>{' '}
                     (Thường: <b>{matrixData?.totalDeptDuty?.ngayThuong || 0}</b>, T7/CN: <b>{matrixData?.totalDeptDuty?.t7cn || 0}</b>, Lễ Tết: <b>{matrixData?.totalDeptDuty?.leTet || 0}</b>, Trực kèm: <b className="text-teal-700">{matrixData?.totalDeptDuty?.trucKem || 0}</b>, Thường trú: <b className="text-indigo-700">{matrixData?.totalDeptDuty?.thuongTru || 0}</b>)
                 </div>
-                {canEditCurrentDept && (
-                    <Button
-                        type="primary"
-                        size="small"
-                        icon={<ClockCircleOutlined />}
-                        onClick={() => setDutyPlanModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-500 font-medium text-xs shadow-xs shrink-0 ml-2"
-                    >
-                        📋 Lập Kế Hoạch Phân Trực
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    <Link href="/staff/attendance/duty/schedule">
+                        <Button
+                            type="default"
+                            size="small"
+                            icon={<CalendarOutlined className="text-blue-600" />}
+                            className="font-semibold text-xs text-blue-700 border-blue-300 hover:border-blue-500 hover:text-blue-600 shadow-xs shrink-0"
+                        >
+                            📅 Xem Danh Sách Lịch Trực Tuần
+                        </Button>
+                    </Link>
+                    {canEditCurrentDept && (
+                        <Button
+                            type="primary"
+                            size="small"
+                            icon={<ClockCircleOutlined />}
+                            onClick={() => setDutyPlanModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-500 font-medium text-xs shadow-xs shrink-0"
+                        >
+                            📋 Lập Kế Hoạch Phân Trực
+                        </Button>
+                    )}
+                </div>
             </div>
             <Table
                 columns={columns}

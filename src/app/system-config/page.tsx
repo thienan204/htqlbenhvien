@@ -179,7 +179,7 @@ export default function SystemConfigPage() {
                     : (item.tooltipOff || `⚪ Đang TẮT: Tính năng "${item.title || item.key}" đang tắt, hệ thống áp dụng chế độ mặc định ban đầu.`);
 
                 return (
-                    <Tooltip title={currentTooltip} placement="left" overlayClassName="max-w-xs">
+                    <Tooltip title={currentTooltip} placement="left" classNames={{ root: 'max-w-xs' }}>
                         <div className="flex items-center gap-2 cursor-pointer group py-1">
                             <Switch
                                 checked={isChecked}

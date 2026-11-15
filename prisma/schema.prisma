@@ -234,6 +234,7 @@ model Staff {
   attendanceCheckLogs StaffAttendanceCheckLog[]
   leaveBalances       StaffLeaveBalance[]
   leaveRequests       StaffLeaveRequest[]
+  hazardRecords       StaffHazardRecord[]
 
   @@index([cccd_hash])
   @@index([so_dien_thoai_hash])
@@ -2061,6 +2062,27 @@ model StaffOvertimeRecord {
   updatedAt   DateTime @updatedAt
 
   staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, workDate])
+  @@index([ma_khoa, workDate])
+}
+
+model StaffHazardRecord {
+  id            String   @id @default(cuid())
+  staffId       String
+  ma_khoa       String   @default("KP046")
+  workDate      String   // Định dạng YYYY-MM-DD
+  code          String   // 'X' (làm từ 4h trở lên/ngày -> 1.0 ngày) | 'I' (làm dưới 4h/ngày -> 0.5 ngày)
+  value         Float    @default(1.0) // 1.0 cho X, 0.5 cho I
+  hazardLevel   Int      @default(2) // 1: 13k, 2: 20k, 3: 26k, 4: 32k
+  allowanceRate Float    @default(20000) // Đơn giá bồi dưỡng hiện vật (13000 | 20000 | 26000 | 32000)
+  note          String?
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  staff         Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@unique([staffId, workDate])
   @@index([ma_khoa, workDate])

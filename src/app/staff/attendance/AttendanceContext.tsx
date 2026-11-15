@@ -225,8 +225,15 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
                 }
                 return;
             }
-            const data = await res.json();
-            if (reqId === fetchRequestIdRef.current) {
+            const text = await res.text();
+            let data: any = null;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                message.error('Máy chủ phản hồi không đúng định dạng JSON');
+                return;
+            }
+            if (reqId === fetchRequestIdRef.current && data) {
                 setMatrixData(data);
                 if (data.ma_khoa && data.ma_khoa !== selectedDept && user?.role !== 'ADMIN') {
                     setSelectedDept(data.ma_khoa);

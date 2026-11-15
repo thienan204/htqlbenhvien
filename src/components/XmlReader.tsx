@@ -22,8 +22,10 @@ import {
 import {
     InboxOutlined, UploadOutlined, FileExcelOutlined, SearchOutlined,
     CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, DeleteOutlined,
-    CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined, ToolOutlined, ExperimentOutlined
+    CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined, ToolOutlined, ExperimentOutlined,
+    MedicineBoxOutlined
 } from '@ant-design/icons';
+import BedDaysAuditModal from '@/app/(modules)/xml-checker/_components/BedDaysAuditModal';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -376,6 +378,18 @@ export default function XmlReader() {
     const [specialCharFilterField, setSpecialCharFilterField] = useState<string | null>(null);
 
     const { rules, saveRules, isLoaded: isRulesLoaded, reloadRules } = useRules();
+    
+    // Modal đối soát tiền ngày giường & Khoa phòng
+    const [isBedAuditModalOpen, setIsBedAuditModalOpen] = useState(false);
+    const bedErrorCount = React.useMemo(() => {
+        return records.filter(r => r.validationResults?.some(v => v.ruleId === 'rule_bed_days_audit' || v.message?.includes('ngày giường') || v.message?.includes('THỪA') || v.message?.includes('THIẾU'))).length;
+    }, [records]);
+    const bedDaysRule = rules.find(r => r.id === 'rule_bed_days_audit');
+    const allowedMaNhomForBed = (bedDaysRule?.conditionField === 'MA_NHOM' && bedDaysRule?.conditionValue)
+        ? bedDaysRule.conditionValue
+        : '14,15';
+    const excludedMaBenhForBed = bedDaysRule?.excludeConditionValue;
+
     const [mainFilter, setMainFilter] = useState<string>('ERROR');
     const [searchText, setSearchText] = useState('');
     const [showDetailErrorsOnly, setShowDetailErrorsOnly] = useState(false);
@@ -2083,6 +2097,20 @@ export default function XmlReader() {
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <Tag className="m-0 bg-white border-0 font-mono text-xs font-semibold text-slate-500">[{err.xmlType}]</Tag>
                                                         <span className="text-xs text-slate-400 font-mono">Field: {err.field} {err.index !== undefined ? `@ Row ${err.index + 1}` : ''}</span>
+                                                        {(err.ruleId === 'rule_bed_days_audit' || err.message?.includes('ngày giường') || err.message?.includes('THỪA') || err.message?.includes('THIẾU')) && (
+                                                            <Button
+                                                                size="small"
+                                                                type="link"
+                                                                icon={<MedicineBoxOutlined />}
+                                                                className="text-xs text-blue-600 font-semibold p-0 h-auto"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setIsBedAuditModalOpen(true);
+                                                                }}
+                                                            >
+                                                                Mở bảng đối soát ngày giường
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2295,6 +2323,17 @@ export default function XmlReader() {
                                             <Button icon={<ToolOutlined />} onClick={() => setIsSpecialCharModalVisible(true)} style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none' }}>
                                                 Quét ký tự đặc biệt
                                             </Button>
+                                            <Badge count={bedErrorCount} overflowCount={999} offset={[-4, 4]}>
+                                                <Button
+                                                    icon={<MedicineBoxOutlined />}
+                                                    onClick={() => setIsBedAuditModalOpen(true)}
+                                                    style={{ backgroundColor: '#0284c7', color: 'white', border: 'none' }}
+                                                    className="font-semibold hover:opacity-90 shadow-sm"
+                                                    title="Bảng đối chiếu kiểm soát Tiền ngày giường theo Khoa/Phòng (XML1 vs XML3)"
+                                                >
+                                                    Kiểm soát Ngày giường
+                                                </Button>
+                                            </Badge>
                                             <Button
                                                 icon={<FileExcelOutlined />}
                                                 onClick={() => router.push(`/report?filter=${mainFilter}`)}
@@ -2616,6 +2655,20 @@ export default function XmlReader() {
                     )}
                 </div>
             </Modal>
+
+            {/* Modal Đối soát Tiền ngày giường & Khoa/Phòng */}
+            <BedDaysAuditModal
+                isOpen={isBedAuditModalOpen}
+                onClose={() => setIsBedAuditModalOpen(false)}
+                records={records}
+                allowedMaNhom={allowedMaNhomForBed}
+                excludedMaBenh={excludedMaBenhForBed}
+                departments={departments}
+                onSelectRecord={(rec) => {
+                    setSelectedRecord(rec as ExtendedHosoRecord);
+                    setActiveTab('XML1');
+                }}
+            />
         </div>
     );
 }

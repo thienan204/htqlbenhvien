@@ -739,39 +739,45 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
                         {/* Hàng 2 (Mobile) / Liền kề (Desktop): Các nút chọn nhanh */}
                         <div className="flex items-center gap-1 sm:gap-1.5 w-full sm:w-auto">
-                            <Button 
-                                size="small"
-                                type={isOfficeHoursSelected ? 'primary' : 'default'}
-                                onClick={() => {
-                                    hasUserCustomizedDateRef.current = false;
-                                    setDateRange(getOfficeHoursRange(shiftHours));
-                                }}
-                                className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${isOfficeHoursSelected ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:text-blue-600'}`}
-                            >
-                                Ngày hiện tại
-                            </Button>
-                            <Button 
-                                size="small"
-                                type={isDutyShiftSelected ? 'primary' : 'default'}
-                                onClick={() => {
-                                    hasUserCustomizedDateRef.current = true;
-                                    setDateRange(getHospitalDutyRange(shiftHours));
-                                }}
-                                className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${isDutyShiftSelected ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:text-indigo-600'}`}
-                            >
-                                Ca trực 24h
-                            </Button>
-                            <Button 
-                                size="small"
-                                type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
-                                onClick={() => {
-                                    hasUserCustomizedDateRef.current = true;
-                                    setDateRange(null);
-                                }}
-                                className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:text-blue-600'}`}
-                            >
-                                Tất cả
-                            </Button>
+                            <Tooltip title="Lọc theo giờ hành chính ngày hôm nay (07:00 - 17:00)">
+                                <Button 
+                                    size="small"
+                                    type={isOfficeHoursSelected ? 'primary' : 'default'}
+                                    onClick={() => {
+                                        hasUserCustomizedDateRef.current = false;
+                                        setDateRange(getOfficeHoursRange(shiftHours));
+                                    }}
+                                    className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${isOfficeHoursSelected ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                                >
+                                    Ngày hiện tại
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Lọc theo ca trực 24h bệnh viện (0h-7h: từ 7h hôm qua đến 7h hôm nay; từ 7h trở đi: từ 7h hôm nay đến 7h sáng mai)">
+                                <Button 
+                                    size="small"
+                                    type={isDutyShiftSelected ? 'primary' : 'default'}
+                                    onClick={() => {
+                                        hasUserCustomizedDateRef.current = true;
+                                        setDateRange(getHospitalDutyRange(shiftHours));
+                                    }}
+                                    className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${isDutyShiftSelected ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:text-indigo-600'}`}
+                                >
+                                    Ca trực 24h
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Xem toàn bộ danh sách yêu cầu (không lọc thời gian)">
+                                <Button 
+                                    size="small"
+                                    type={!dateRange || (!dateRange[0] && !dateRange[1]) ? 'primary' : 'default'}
+                                    onClick={() => {
+                                        hasUserCustomizedDateRef.current = true;
+                                        setDateRange(null);
+                                    }}
+                                    className={`text-xs rounded-lg px-1.5 sm:px-2 flex-1 sm:flex-initial text-center ${!dateRange || (!dateRange[0] && !dateRange[1]) ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                                >
+                                    Tất cả
+                                </Button>
+                            </Tooltip>
                         </div>
                     </div>
 

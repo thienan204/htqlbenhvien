@@ -11,11 +11,56 @@ export async function GET() {
         // keys might be hidden, try accessing directly or non-enumerable
         console.log('validationRule in prisma:', 'validationRule' in prisma);
 
-        const rules = await prisma.validationRule.findMany({
+        let rules = await prisma.validationRule.findMany({
             orderBy: {
                 createdAt: 'asc'
             }
         });
+
+        // Tự động bổ sung hoặc cập nhật rule_bed_days_audit vào DB nếu chưa có/chưa có loại trừ
+        const existingBedRule = rules.find(r => r.id === 'rule_bed_days_audit');
+        if (existingBedRule) {
+            if (!existingBedRule.excludeConditionField || !existingBedRule.excludeConditionValue) {
+                try {
+                    await prisma.validationRule.update({
+                        where: { id: 'rule_bed_days_audit' },
+                        data: {
+                            excludeConditionField: 'MA_BENH_CHINH',
+                            excludeConditionValue: 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8'
+                        }
+                    });
+                    existingBedRule.excludeConditionField = 'MA_BENH_CHINH';
+                    existingBedRule.excludeConditionValue = 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8';
+                } catch (updateErr) {
+                    console.warn('Could not update excludeCondition for rule_bed_days_audit:', updateErr);
+                }
+            }
+        } else if (rules.length > 0) {
+            try {
+                const created = await prisma.validationRule.create({
+                    data: {
+                        id: 'rule_bed_days_audit',
+                        active: true,
+                        type: 'Xuất toán',
+                        xmlType: 'XML1',
+                        field: 'SO_NGAY_DTRI',
+                        name: 'Kiểm soát Tiền ngày giường (XML1 vs XML3)',
+                        description: 'Đối chiếu số ngày giường chuẩn theo 4 nhóm ca (T <= 4h, cùng ngày > 4h, khác ngày ra viện thường, khác ngày tử vong/chuyển viện) với tổng số lượng giường XML3 (nhóm 14, 15) và mã KCB 03, 09.',
+                        code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
+                        conditionField: 'MA_NHOM',
+                        conditionValue: '14,15',
+                        excludeConditionField: 'MA_BENH_CHINH',
+                        excludeConditionValue: 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8',
+                        errorMessage: 'Lệch số lượng ngày giường chuẩn so với thực tế kê khai trong XML3',
+                        checkNotNull: false
+                    }
+                });
+                rules = [created, ...rules];
+            } catch (seedErr) {
+                console.warn('Could not auto-seed rule_bed_days_audit:', seedErr);
+            }
+        }
+
         return NextResponse.json(rules);
     } catch (error) {
         console.error('Error fetching rules:', error);

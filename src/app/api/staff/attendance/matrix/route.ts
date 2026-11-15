@@ -301,13 +301,34 @@ export async function GET(request: Request) {
         const dutyByStaffAndDay: Record<string, Record<number, any>> = {};
         const overtimeByStaffAndDay: Record<string, Record<number, any>> = {};
 
+        const dayInfoMap = new Map(daysInfo.map(di => [di.day, di]));
+        const spuriousDayOffAttIds: string[] = [];
+
         attendanceRecords.forEach((att: any) => {
             const dayNum = parseInt(att.workDate.split('-')[2], 10);
+            const dInfo = dayInfoMap.get(dayNum);
+            const isDayOff = Boolean((dInfo?.isWeekend && !dInfo?.isMakeupWorkday) || dInfo?.isHoliday);
+            const codeUpper = (att.code || '').trim().toUpperCase();
+
+            // QUY TẮC PHƯƠNG ÁN 1: Ngày nghỉ (Thứ 7, CN không làm bù hoặc Ngày Lễ) KHÔNG tính công hành chính ('+', 'x')
+            // Nếu có bản ghi '+' hoặc 'x' trên ngày nghỉ mà không phải nghỉ bù/chế độ liên kết ca trực -> loại trừ & dọn dẹp
+            if (isDayOff && ['+', 'X', '+/2', 'X/2'].includes(codeUpper) && !att.dutyRecordId) {
+                if (att.id) spuriousDayOffAttIds.push(att.id);
+                return;
+            }
+
             if (!attendanceByStaffAndDay[att.staffId]) {
                 attendanceByStaffAndDay[att.staffId] = {};
             }
             attendanceByStaffAndDay[att.staffId][dayNum] = att;
         });
+
+        // Dọn dẹp ngầm các bản ghi '+' trên ngày nghỉ trong DB
+        if (spuriousDayOffAttIds.length > 0) {
+            prisma.staffAttendanceRecord.deleteMany({
+                where: { id: { in: spuriousDayOffAttIds } }
+            }).catch(err => console.error('Lỗi dọn dẹp bản ghi công ngày nghỉ cũ:', err));
+        }
 
         dutyRecords.forEach((d: any) => {
             const dayNum = parseInt(d.dutyDate.split('-')[2], 10);
@@ -353,6 +374,12 @@ export async function GET(request: Request) {
                 if (att) {
                     const c = (att.code || '').trim().toUpperCase();
                     const sec = (att.secondaryCode || '').trim().toUpperCase();
+
+                    const dInfo = dayInfoMap.get(d);
+                    const isDayOff = Boolean((dInfo?.isWeekend && !dInfo?.isMakeupWorkday) || dInfo?.isHoliday);
+                    if (isDayOff && ['X', '+', 'X/2', '+/2'].includes(c) && !att.dutyRecordId) {
+                        continue;
+                    }
 
                     if (['X', '+', 'P', 'L', 'H'].includes(c)) {
                         luongThoiGian += (att.value ?? 1.0);

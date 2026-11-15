@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { getHospitalHolidayConfig, checkIsDayOff } from '../attendanceHelper';
 
 export async function GET(request: Request) {
     try {
@@ -136,9 +137,16 @@ export async function GET(request: Request) {
         let huongBHXH = 0;
         let soNgayNghiBu = 0;
 
+        const { holidays, makeupWorkdays } = await getHospitalHolidayConfig();
+
         attendanceRecords.forEach(att => {
             const c = (att.code || '').trim().toUpperCase();
             const sec = (att.secondaryCode || '').trim().toUpperCase();
+
+            const { isDayOff } = checkIsDayOff(att.workDate, holidays, makeupWorkdays);
+            if (isDayOff && ['+', 'X', '+/2', 'X/2'].includes(c) && !att.dutyRecordId) {
+                return;
+            }
 
             if (['X', '+', 'P', 'L', 'H'].includes(c)) {
                 luongThoiGian += (att.value ?? 1.0);

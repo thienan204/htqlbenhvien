@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { getHospitalHolidayConfig, checkIsDayOff, cleanSpuriousDayOffAttendance } from '../attendanceHelper';
 
 export async function POST(request: Request) {
     try {
@@ -93,6 +94,8 @@ export async function POST(request: Request) {
         let skippedCount = 0;
         let skippedCompensatedDuties = 0;
 
+        const { holidays, makeupWorkdays } = await getHospitalHolidayConfig();
+
         for (const staffId of staffIds) {
             for (const dateStr of dates) {
                 const existingDuty = await prisma.staffDutyRecord.findUnique({
@@ -112,6 +115,10 @@ export async function POST(request: Request) {
                         await prisma.staffDutyRecord.delete({
                             where: { id: existingDuty.id }
                         });
+                        const { isDayOff } = checkIsDayOff(dateStr, holidays, makeupWorkdays);
+                        if (isDayOff) {
+                            await cleanSpuriousDayOffAttendance(staffId, dateStr);
+                        }
                         appliedCount++;
                     }
                     continue;
@@ -159,8 +166,12 @@ export async function POST(request: Request) {
 
                 appliedCount++;
 
-                // TỰ ĐỘNG ĐỒNG BỘ: Đi trực thì vẫn tính công đi làm!
-                if (autoCreateAttendance) {
+                // TỰ ĐỘNG ĐỒNG BỘ: Chỉ tạo công đi làm vào ngày hành chính, ngày nghỉ (T7, CN, Lễ, Tết) KHÔNG tính công!
+                const { isDayOff } = checkIsDayOff(dateStr, holidays, makeupWorkdays);
+                if (isDayOff) {
+                    // Dọn dẹp bản ghi công '+' trên ngày nghỉ nếu có
+                    await cleanSpuriousDayOffAttendance(staffId, dateStr);
+                } else if (autoCreateAttendance) {
                     try {
                         const existingAtt = await prisma.staffAttendanceRecord.findFirst({
                             where: { staffId, workDate: dateStr }

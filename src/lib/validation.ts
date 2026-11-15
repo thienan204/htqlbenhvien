@@ -1,4 +1,5 @@
 import { HosoRecord, XMLGroup, getXmlDataList } from './xml';
+import { calculateBedDaysForRecord, parseAllowedMaNhom, parseExcludedMaBenh } from '@/app/(modules)/xml-checker/_components/bedDaysCalculator';
 
 export type RuleType = 'Xuất toán' | 'Cảnh báo';
 
@@ -64,6 +65,8 @@ export class ValidationEngine {
     private _priceMismatchMaps: Record<string, Map<string, Set<string>>> = {};
     private externalContext: Record<string, any> = {};
     private dynamicMessage: string | null = null;
+    private currentRecord: HosoRecord | null = null;
+    private currentRule: ValidationRule | null = null;
 
     constructor(rules: ValidationRule[] = [], masterData: Record<string, Set<string>> = {}) {
         this.rules = rules;
@@ -100,6 +103,7 @@ export class ValidationEngine {
     }
 
     validate(record: HosoRecord): ValidationResult[] {
+        this.currentRecord = record;
         const results: ValidationResult[] = [];
         const activeRules = this.rules.filter(r => r.active);
 
@@ -119,6 +123,7 @@ export class ValidationEngine {
         // Add shortcuts for strict XML structure if needed, or helper to get list
 
         activeRules.forEach(rule => {
+            this.currentRule = rule;
             try {
                 // Determine if this rule targets a list type and needs iteration
                 const listPath = XML_LIST_PATHS[rule.xmlType];
@@ -974,6 +979,19 @@ export class ValidationEngine {
                         total += Math.round((Number(arg) || 0) * 10000);
                     }
                     return total / 10000;
+                },
+                CHECK_BED_DAYS: () => {
+                    if (!this.currentRecord) return false;
+                    const conditionValue = (this.currentRule?.conditionField === 'MA_NHOM' && this.currentRule?.conditionValue)
+                        ? this.currentRule.conditionValue
+                        : (this.currentRule?.conditionValue || '14,15');
+                    const allowedMaNhom = parseAllowedMaNhom(conditionValue);
+                    const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom);
+                    if (audit.status !== 'CORRECT') {
+                        this.dynamicMessage = audit.statusDesc;
+                        return true;
+                    }
+                    return false;
                 }
             };
 
@@ -1211,6 +1229,27 @@ export class ValidationEngine {
                 const matchingCodes = codes.filter(c => c.startsWith(prefix));
                 if (matchingCodes.length > maxCount) {
                     this.dynamicMessage = `Chỉ được phép tối đa ${maxCount} mã bắt đầu bằng ${prefix}, hiện có: ${matchingCodes.length} (${matchingCodes.join(', ')})`;
+                    return "true";
+                }
+                return "false";
+            });
+
+            // 0.6.6.9. Handle CHECK_BED_DAYS
+            cleanCode = cleanCode.replace(/CHECK_BED_DAYS\([^)]*\)/g, () => {
+                if (!this.currentRecord) return "false";
+                const conditionValue = (this.currentRule?.conditionField === 'MA_NHOM' && this.currentRule?.conditionValue)
+                    ? this.currentRule.conditionValue
+                    : (this.currentRule?.conditionValue || '14,15');
+                const allowedMaNhom = parseAllowedMaNhom(conditionValue);
+
+                const excludeVal = this.currentRule?.excludeConditionValue;
+                const excludedMaBenh = parseExcludedMaBenh(excludeVal);
+
+                const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom, {}, excludedMaBenh);
+                if (audit.status !== 'CORRECT') {
+                    this.dynamicMessage = audit.detailedReason
+                        ? `${audit.statusDesc}. ${audit.detailedReason}`
+                        : audit.statusDesc;
                     return "true";
                 }
                 return "false";
@@ -1487,6 +1526,22 @@ export class ValidationEngine {
 
 // Initial Default Rules (from screenshot)
 export const DEFAULT_RULES: ValidationRule[] = [
+    {
+        id: 'rule_bed_days_audit',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'SO_NGAY_DTRI',
+        name: 'Kiểm soát Tiền ngày giường (XML1 vs XML3)',
+        code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
+        conditionField: 'MA_NHOM',
+        conditionValue: '14,15',
+        excludeConditionField: 'MA_BENH_CHINH',
+        excludeConditionValue: 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8',
+        description: 'Đối chiếu số ngày giường chuẩn theo 4 nhóm ca (T <= 4h, cùng ngày > 4h, khác ngày ra viện thường, khác ngày tử vong/chuyển viện) với tổng số lượng giường XML3 (nhóm 14, 15) và mã KCB 03, 09.',
+        errorMessage: 'Lệch số lượng ngày giường chuẩn so với thực tế kê khai trong XML3'
+    },
     {
         id: 'overlap_bhyt_1',
         active: true,

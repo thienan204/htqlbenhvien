@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
 import { getVietnamTimeParts, getCurrentHospitalShift, getActiveDutyDate, isHalfDayWorkingNow, HospitalShiftConfig, computeStaffAvailabilityStatus } from '@/lib/shiftUtils';
+import { getHospitalHolidayConfig, checkIsDayOff, cleanSpuriousDayOffAttendance } from '../attendanceHelper';
 
 async function syncStaffAvailability(staffId: string) {
     try {
@@ -160,6 +161,9 @@ export async function POST(request: Request) {
 
         // 1. XỬ LÝ CHẤM TRỰC (DUTY)
         if (type === 'DUTY') {
+            const { holidays, makeupWorkdays } = await getHospitalHolidayConfig();
+            const { isDayOff } = checkIsDayOff(date, holidays, makeupWorkdays);
+
             if (!dutyCode || dutyCode === '') {
                 // Xóa ca trực
                 const existingDuty = await prisma.staffDutyRecord.findUnique({
@@ -179,6 +183,11 @@ export async function POST(request: Request) {
                     await prisma.staffDutyRecord.delete({
                         where: { id: existingDuty.id }
                     });
+                }
+
+                // Nếu ca trực rơi vào ngày nghỉ (Thứ 7, CN hoặc Lễ/Tết): Dọn dẹp bản ghi công '+' tự sinh (nếu có)
+                if (isDayOff) {
+                    await cleanSpuriousDayOffAttendance(staffId, date);
                 }
 
                 await syncStaffAvailability(staffId);
@@ -222,29 +231,36 @@ export async function POST(request: Request) {
                 }
             });
 
-            // TỰ ĐỘNG ĐỒNG BỘ: Đi trực thì vẫn tính công đi làm!
-            // Nếu ngày hôm đó chưa có bản ghi chấm công (StaffAttendanceRecord), tự động điền công đi làm
-            try {
-                const existingAtt = await prisma.staffAttendanceRecord.findFirst({
-                    where: { staffId, workDate: date }
-                });
-
-                if (!existingAtt) {
-                    const defaultWorkCode = '+';
-                    await prisma.staffAttendanceRecord.create({
-                        data: {
-                            staffId,
-                            ma_khoa: ma_khoa || 'KP046',
-                            workDate: date,
-                            code: defaultWorkCode,
-                            session: 'FULL_DAY',
-                            value: 1.0,
-                            updatedBy: user.id
-                        }
+            // TỰ ĐỘNG ĐỒNG BỘ CÔNG:
+            // NGUYÊN TẮC: Ngày nghỉ (Thứ 7, CN không làm bù hoặc Ngày Lễ/Tết) KHÔNG tính công hành chính.
+            // Cán bộ trực chỉ hưởng chế độ trực và quỹ nghỉ bù (Nb).
+            if (isDayOff) {
+                // Tự động dọn dẹp bản ghi công '+' trên ngày nghỉ nếu có
+                await cleanSpuriousDayOffAttendance(staffId, date);
+            } else {
+                // Chỉ tự động tạo công '+' vào ngày làm việc hành chính (Thứ 2 - Thứ 6 hoặc ngày làm bù)
+                try {
+                    const existingAtt = await prisma.staffAttendanceRecord.findFirst({
+                        where: { staffId, workDate: date }
                     });
+
+                    if (!existingAtt) {
+                        const defaultWorkCode = '+';
+                        await prisma.staffAttendanceRecord.create({
+                            data: {
+                                staffId,
+                                ma_khoa: ma_khoa || 'KP046',
+                                workDate: date,
+                                code: defaultWorkCode,
+                                session: 'FULL_DAY',
+                                value: 1.0,
+                                updatedBy: user.id
+                            }
+                        });
+                    }
+                } catch (errAtt) {
+                    console.error('Lỗi tự động tạo công đi làm khi chấm trực:', errAtt);
                 }
-            } catch (errAtt) {
-                console.error('Lỗi tự động tạo công đi làm khi chấm trực:', errAtt);
             }
 
             // Đồng bộ sang phân hệ Lâm sàng (StaffAttendance: Bật quyền thực hiện DVKT)

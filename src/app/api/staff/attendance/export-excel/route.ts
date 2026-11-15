@@ -3,6 +3,10 @@ import ExcelJS from 'exceljs';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
 import { checkStaffAttendanceEligibility } from '@/lib/attendanceStaffFilter';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+
+dayjs.extend(isoWeek);
 
 export async function GET(request: Request) {
     try {
@@ -294,6 +298,12 @@ export async function GET(request: Request) {
                         if (att) {
                             const c = (att.code || '').trim();
                             const sec = (att.secondaryCode || '').trim();
+
+                            // QUY TẮC PHƯƠNG ÁN 1: Ngày nghỉ không tính công hành chính ('+', 'x')
+                            if (isWeekend && ['X', '+', 'X/2', '+/2'].includes(c.toUpperCase()) && !att.dutyRecordId) {
+                                cell.value = '-';
+                                continue;
+                            }
 
                             if (c.toUpperCase() === 'NB/2' || (c.toUpperCase() === 'NB' && sec)) {
                                 cell.value = 'Nb/2';
@@ -1133,12 +1143,536 @@ export async function GET(request: Request) {
             sheet.getColumn(37).width = 8.5; // Tổng cộng
         }
 
+        // =========================================================================
+        // TRƯỜNG HỢP 5: XUẤT BẢNG CHẤM CÔNG BỒI DƯỠNG BẰNG HIỆN VẬT (ĐỘC HẠI)
+        // Chuẩn theo sheet "ĐỘC HẠI" trong file Copy of THÁNG 9.xls
+        // =========================================================================
+        if (type === 'CHAM_DOC_HAI') {
+            const sheet = workbook.addWorksheet('ĐỘC HẠI');
+            sheet.views = [{ showGridLines: true }];
+
+            // Lấy dữ liệu chấm độc hại
+            const hazardRecords = await prisma.staffHazardRecord.findMany({
+                where: {
+                    staffId: { in: staffIds },
+                    workDate: { gte: startDateStr, lte: endDateStr }
+                }
+            });
+
+            const hMap: Record<string, Record<number, any>> = {};
+            hazardRecords.forEach(h => {
+                const day = parseInt(h.workDate.split('-')[2], 10);
+                if (!hMap[h.staffId]) hMap[h.staffId] = {};
+                hMap[h.staffId][day] = h;
+            });
+
+            // Dòng 1: Tên đơn vị
+            sheet.getCell('A1').value = 'BVĐK TỈNH LẠNG SƠN';
+            sheet.getCell('A1').font = { name: 'Times New Roman', size: 10, bold: true };
+
+            // Dòng 2: Khoa phòng
+            sheet.getCell('A2').value = `KHOA : ${deptName.toUpperCase()}`;
+            sheet.getCell('A2').font = { name: 'Times New Roman', size: 10, bold: true };
+
+            // Dòng 3: Tiêu đề bảng (Merge A3:AL3)
+            sheet.mergeCells('A3:AL3');
+            sheet.getCell('A3').value = 'BẢNG CHẤM CÔNG HƯỞNG CHẾ ĐỘ BỒI DƯỠNG BẰNG HIỆN VẬT';
+            sheet.getCell('A3').font = { name: 'Times New Roman', size: 12, bold: true };
+            sheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Dòng 4: Tháng năm (Merge A4:AL4)
+            sheet.mergeCells('A4:AL4');
+            sheet.getCell('A4').value = `Tháng ${month} năm ${year}`;
+            sheet.getCell('A4').font = { name: 'Times New Roman', size: 11, bold: true };
+            sheet.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Dòng 5 & 6: Header
+            // Stt (Merge A5:A6)
+            sheet.mergeCells('A5:A6');
+            sheet.getCell('A5').value = 'Stt';
+            sheet.getCell('A5').font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell('A5').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('A5').border = thinBorder;
+            sheet.getCell('A6').border = thinBorder;
+
+            // Họ và tên (Merge B5:B6)
+            sheet.mergeCells('B5:B6');
+            sheet.getCell('B5').value = 'Họ và tên';
+            sheet.getCell('B5').font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell('B5').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('B5').border = thinBorder;
+            sheet.getCell('B6').border = thinBorder;
+
+            // Chức vụ / VTVL (Merge C5:C6)
+            sheet.mergeCells('C5:C6');
+            sheet.getCell('C5').value = 'Chức vụ\n/VTVL';
+            sheet.getCell('C5').font = { name: 'Times New Roman', size: 9, bold: true };
+            sheet.getCell('C5').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            sheet.getCell('C5').border = thinBorder;
+            sheet.getCell('C6').border = thinBorder;
+
+            // Ngày trong tháng (Merge D5:AH5)
+            sheet.mergeCells('D5:AH5');
+            sheet.getCell('D5').value = 'Ngày trong tháng';
+            sheet.getCell('D5').font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell('D5').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('D5').border = thinBorder;
+
+            // Ngày 1..31 (Dòng 6, cột D..AH)
+            const weekendFill: ExcelJS.Fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFF2CC' } // Vàng nhạt giống mẫu Excel gốc
+            };
+
+            for (let d = 1; d <= 31; d++) {
+                const colIdx = d + 3; // D là col 4
+                const cell = sheet.getRow(6).getCell(colIdx);
+                cell.value = d;
+                cell.font = { name: 'Times New Roman', size: 9, bold: true };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = thinBorder;
+
+                if (d <= daysInMonth) {
+                    const dateObj = new Date(year, month - 1, d);
+                    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                    if (isWeekend) {
+                        cell.fill = weekendFill;
+                    }
+                }
+            }
+
+            // Tổng số ngày được hưởng (Merge AI5:AL5)
+            sheet.mergeCells('AI5:AL5');
+            sheet.getCell('AI5').value = 'Tổng số ngày được hưởng';
+            sheet.getCell('AI5').font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell('AI5').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('AI5').border = thinBorder;
+
+            // 4 mức đơn giá tại dòng 6: 13.000, 20.000, 26.000, 32.000
+            const rates = [13000, 20000, 26000, 32000];
+            const rateCols = ['AI', 'AJ', 'AK', 'AL'];
+            rateCols.forEach((col, idx) => {
+                const c = sheet.getCell(`${col}6`);
+                c.value = rates[idx];
+                c.font = { name: 'Times New Roman', size: 9, bold: true };
+                c.alignment = { horizontal: 'center', vertical: 'middle' };
+                c.numFmt = '#,##0';
+                c.border = thinBorder;
+            });
+
+            // Tổng tiền (Merge AM5:AM6)
+            sheet.mergeCells('AM5:AM6');
+            sheet.getCell('AM5').value = 'Tổng tiền';
+            sheet.getCell('AM5').font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell('AM5').alignment = { horizontal: 'center', vertical: 'middle' };
+            sheet.getCell('AM5').border = thinBorder;
+            sheet.getCell('AM6').border = thinBorder;
+
+            // Ký nhận (Merge AN5:AN6)
+            sheet.mergeCells('AN5:AN6');
+            sheet.getCell('AN5').value = 'Ký\n nhận';
+            sheet.getCell('AN5').font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell('AN5').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            sheet.getCell('AN5').border = thinBorder;
+            sheet.getCell('AN6').border = thinBorder;
+
+            // Điền dữ liệu từng cán bộ
+            let rowIdx = 7;
+            const startStaffRow = 7;
+
+            staffList.forEach((st, idx) => {
+                const row = sheet.getRow(rowIdx);
+                row.height = 20;
+
+                row.getCell(1).value = idx + 1; // STT
+                row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+                row.getCell(1).border = thinBorder;
+                row.getCell(1).font = { name: 'Times New Roman', size: 10 };
+
+                row.getCell(2).value = st.ho_ten; // Họ tên
+                row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+                row.getCell(2).border = thinBorder;
+                row.getCell(2).font = { name: 'Times New Roman', size: 10, bold: idx === 0 };
+
+                row.getCell(3).value = st.chuc_vu_ref?.name || ''; // Chức vụ
+                row.getCell(3).alignment = { horizontal: 'left', vertical: 'middle' };
+                row.getCell(3).border = thinBorder;
+                row.getCell(3).font = { name: 'Times New Roman', size: 9 };
+
+                const staffHazards = hMap[st.id] || {};
+                let countX = 0;
+                let countI = 0;
+                let appliedRate = 20000;
+
+                for (let d = 1; d <= 31; d++) {
+                    const cell = row.getCell(d + 3);
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    cell.border = thinBorder;
+                    cell.font = { name: 'Times New Roman', size: 10, bold: true };
+
+                    if (d <= daysInMonth) {
+                        const dateObj = new Date(year, month - 1, d);
+                        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                        if (isWeekend) {
+                            cell.fill = weekendFill;
+                        }
+
+                        const rec = staffHazards[d];
+                        if (rec && rec.code) {
+                            cell.value = rec.code;
+                            if (rec.code === 'X') countX++;
+                            else if (rec.code === 'I') countI++;
+                            if (rec.allowanceRate) appliedRate = rec.allowanceRate;
+                        }
+                    }
+                }
+
+                const totalStaffDays = countX * 1.0 + countI * 0.5;
+
+                // Cột ngày hưởng (AI = M1, AJ = M2, AK = M3, AL = M4)
+                rateCols.forEach((col, cIdx) => {
+                    const cell = sheet.getCell(`${col}${rowIdx}`);
+                    cell.border = thinBorder;
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    cell.font = { name: 'Times New Roman', size: 10 };
+                    cell.numFmt = '0.0';
+
+                    if (rates[cIdx] === appliedRate && totalStaffDays > 0) {
+                        cell.value = totalStaffDays;
+                    }
+                });
+
+                // Cột Tổng tiền (AM)
+                const moneyCell = sheet.getCell(`AM${rowIdx}`);
+                moneyCell.border = thinBorder;
+                moneyCell.alignment = { horizontal: 'right', vertical: 'middle' };
+                moneyCell.font = { name: 'Times New Roman', size: 10, bold: true };
+                moneyCell.numFmt = '#,##0';
+                moneyCell.value = totalStaffDays * appliedRate;
+
+                // Cột Ký nhận (AN)
+                const signCell = sheet.getCell(`AN${rowIdx}`);
+                signCell.border = thinBorder;
+
+                rowIdx++;
+            });
+
+            const endStaffRow = rowIdx - 1;
+
+            // Dòng Tổng cộng
+            const totalRow = sheet.getRow(rowIdx);
+            totalRow.height = 22;
+            sheet.mergeCells(`A${rowIdx}:C${rowIdx}`);
+            const totalLabelCell = totalRow.getCell(1);
+            totalLabelCell.value = ' Tổng cộng:';
+            totalLabelCell.font = { name: 'Times New Roman', size: 10, bold: true };
+            totalLabelCell.alignment = { horizontal: 'left', vertical: 'middle' };
+            totalLabelCell.border = thinBorder;
+            totalRow.getCell(2).border = thinBorder;
+            totalRow.getCell(3).border = thinBorder;
+
+            for (let d = 1; d <= 31; d++) {
+                const c = totalRow.getCell(d + 3);
+                c.border = thinBorder;
+            }
+
+            rateCols.forEach((col) => {
+                const c = sheet.getCell(`${col}${rowIdx}`);
+                c.border = thinBorder;
+                c.alignment = { horizontal: 'center', vertical: 'middle' };
+                c.font = { name: 'Times New Roman', size: 10, bold: true };
+                c.numFmt = '0.0';
+                c.value = {
+                    formula: `SUM(${col}${startStaffRow}:${col}${endStaffRow})`
+                };
+            });
+
+            const grandMoneyCell = sheet.getCell(`AM${rowIdx}`);
+            grandMoneyCell.border = thinBorder;
+            grandMoneyCell.alignment = { horizontal: 'right', vertical: 'middle' };
+            grandMoneyCell.font = { name: 'Times New Roman', size: 10, bold: true };
+            grandMoneyCell.numFmt = '#,##0';
+            grandMoneyCell.value = {
+                formula: `SUM(AM${startStaffRow}:AM${endStaffRow})`
+            };
+
+            const grandSignCell = sheet.getCell(`AN${rowIdx}`);
+            grandSignCell.border = thinBorder;
+
+            rowIdx += 2;
+
+            // Chú thích ký hiệu chấm
+            sheet.getCell(`A${rowIdx}`).value = 'Ký hiệu chấm :';
+            sheet.getCell(`A${rowIdx}`).font = { name: 'Times New Roman', size: 10, italic: true };
+            sheet.getCell(`C${rowIdx}`).value = 'Làm từ 4h trở lên/ngày         X';
+            sheet.getCell(`C${rowIdx}`).font = { name: 'Times New Roman', size: 10 };
+            rowIdx++;
+
+            sheet.getCell(`C${rowIdx}`).value = 'Làm dưới 4/ngày                   I';
+            sheet.getCell(`C${rowIdx}`).font = { name: 'Times New Roman', size: 10 };
+            rowIdx++;
+
+            sheet.getCell(`C${rowIdx}`).value = 'Ngày nào không có thì bỏ trống';
+            sheet.getCell(`C${rowIdx}`).font = { name: 'Times New Roman', size: 10, italic: true };
+            rowIdx += 2;
+
+            // 3 chữ ký chân trang: NGƯỜI CHẤM, PHỤ TRÁCH KHOA PHÒNG, THỦ TRƯỞNG ĐƠN VỊ
+            sheet.mergeCells(`A${rowIdx}:F${rowIdx}`);
+            sheet.getCell(`A${rowIdx}`).value = 'NGƯỜI CHẤM';
+            sheet.getCell(`A${rowIdx}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`A${rowIdx}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sheet.mergeCells(`N${rowIdx}:V${rowIdx}`);
+            sheet.getCell(`N${rowIdx}`).value = 'PHỤ TRÁCH KHOA PHÒNG';
+            sheet.getCell(`N${rowIdx}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`N${rowIdx}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sheet.mergeCells(`AC${rowIdx}:AL${rowIdx}`);
+            sheet.getCell(`AC${rowIdx}`).value = 'THỦ TRƯỞNG ĐƠN VỊ';
+            sheet.getCell(`AC${rowIdx}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`AC${rowIdx}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            rowIdx += 5;
+
+            // Tên người ký
+            sheet.mergeCells(`A${rowIdx}:F${rowIdx}`);
+            sheet.getCell(`A${rowIdx}`).value = creatorName.toUpperCase();
+            sheet.getCell(`A${rowIdx}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`A${rowIdx}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sheet.mergeCells(`N${rowIdx}:V${rowIdx}`);
+            sheet.getCell(`N${rowIdx}`).value = leaderName.toUpperCase();
+            sheet.getCell(`N${rowIdx}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`N${rowIdx}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Cột rộng chuẩn theo mẫu
+            sheet.getColumn(1).width = 4.5; // STT
+            sheet.getColumn(2).width = 22;  // Họ và tên
+            sheet.getColumn(3).width = 12;  // Chức vụ / VTVL
+            for (let c = 4; c <= 34; c++) {
+                sheet.getColumn(c).width = 3.6; // Ngày 1..31
+            }
+            sheet.getColumn(35).width = 7.5; // M1
+            sheet.getColumn(36).width = 7.5; // M2
+            sheet.getColumn(37).width = 7.5; // M3
+            sheet.getColumn(38).width = 7.5; // M4
+            sheet.getColumn(39).width = 13;  // Tổng tiền
+            sheet.getColumn(40).width = 8;   // Ký nhận
+        }
+
+        // =========================================================================
+        // TRƯỜNG HỢP 6: XUẤT DANH SÁCH LỊCH TRỰC TUẦN (KẾ HOẠCH BỆNH VIỆN)
+        // =========================================================================
+        if (type === 'LICH_TRUC_TUAN') {
+            let start = searchParams.get('startDate');
+            let end = searchParams.get('endDate');
+            if (!start || !end) {
+                start = dayjs().startOf('isoWeek').format('YYYY-MM-DD');
+                end = dayjs().endOf('isoWeek').format('YYYY-MM-DD');
+            }
+
+            const sheet = workbook.addWorksheet('LỊCH TRỰC TUẦN');
+            sheet.views = [{ showGridLines: true }];
+
+            const filterDept = searchParams.get('ma_khoa');
+            const whereDept: any = {};
+            if (filterDept && filterDept !== 'ALL') {
+                whereDept.ma_khoa = filterDept;
+            }
+
+            const allDepts = await prisma.department.findMany({
+                where: whereDept,
+                select: { ma_khoa: true, ten_khoa: true },
+                orderBy: { ma_khoa: 'asc' }
+            });
+
+            // Lấy danh sách ca trực trong tuần
+            const whereDuties: any = {
+                dutyDate: { gte: start, lte: end }
+            };
+            if (filterDept && filterDept !== 'ALL') {
+                whereDuties.ma_khoa = filterDept;
+            }
+
+            const duties = await prisma.staffDutyRecord.findMany({
+                where: whereDuties,
+                include: {
+                    staff: {
+                        select: {
+                            ho_ten: true,
+                            so_dien_thoai: true,
+                            chuc_vu_ref: { select: { name: true } }
+                        }
+                    }
+                },
+                orderBy: [{ dutyDate: 'asc' }, { createdAt: 'asc' }]
+            });
+
+            // Gom nhóm ca trực theo khoa và ngày
+            const deptDutyCount: Record<string, number> = {};
+            const dutyMap: Record<string, Record<string, { trucChinh: string[]; trucKem: string[]; thuongTru: string[] }>> = {};
+
+            duties.forEach(d => {
+                if (!dutyMap[d.ma_khoa]) dutyMap[d.ma_khoa] = {};
+                if (!dutyMap[d.ma_khoa][d.dutyDate]) {
+                    dutyMap[d.ma_khoa][d.dutyDate] = { trucChinh: [], trucKem: [], thuongTru: [] };
+                }
+
+                deptDutyCount[d.ma_khoa] = (deptDutyCount[d.ma_khoa] || 0) + 1;
+
+                const name = d.staff?.ho_ten || 'Cán bộ';
+                const phone = d.staff?.so_dien_thoai ? ` (${d.staff.so_dien_thoai})` : '';
+                const entry = `${name}${phone}`;
+
+                const codeUpper = (d.dutyCode || '').trim().toUpperCase();
+                const typeUpper = (d.dutyType || '').trim().toUpperCase();
+
+                if (typeUpper === 'TRUC_KEM' || codeUpper === 'TK') {
+                    dutyMap[d.ma_khoa][d.dutyDate].trucKem.push(entry);
+                } else if (typeUpper === 'TRUC_THUONG_TRU' || codeUpper === 'TT') {
+                    dutyMap[d.ma_khoa][d.dutyDate].thuongTru.push(entry);
+                } else {
+                    dutyMap[d.ma_khoa][d.dutyDate].trucChinh.push(entry);
+                }
+            });
+
+            // YÊU CẦU: Chỉ hiển thị các khoa có lịch trực
+            const activeDepts = allDepts.filter(dept => (deptDutyCount[dept.ma_khoa] || 0) > 0);
+
+            // Tạo danh sách 7 ngày
+            const startD = dayjs(start);
+            const weekDates: string[] = [];
+            const dayHeaders: string[] = [];
+            const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+            for (let i = 0; i < 7; i++) {
+                const curr = startD.add(i, 'day');
+                const dStr = curr.format('YYYY-MM-DD');
+                weekDates.push(dStr);
+                const dw = curr.day();
+                dayHeaders.push(`${dayNames[dw]}\n(${curr.format('DD/MM')})`);
+            }
+
+            // Dòng 1: Tên đơn vị
+            sheet.getCell('A1').value = 'BỆNH VIỆN ĐA KHOA TỈNH LẠNG SƠN';
+            sheet.getCell('A1').font = { name: 'Times New Roman', size: 10, bold: true };
+
+            // Dòng 2: Tiêu đề bảng (Merge A2:I2)
+            sheet.mergeCells('A2:I2');
+            sheet.getCell('A2').value = `DANH SÁCH LỊCH TRỰC TUẦN (Từ ngày ${startD.format('DD/MM/YYYY')} đến ngày ${dayjs(end).format('DD/MM/YYYY')})`;
+            sheet.getCell('A2').font = { name: 'Times New Roman', size: 12, bold: true };
+            sheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Header hàng 4: STT, Tên khoa/phòng, Thứ 2 -> Chủ nhật
+            const headerRow = sheet.getRow(4);
+            headerRow.height = 28;
+
+            headerRow.getCell(1).value = 'STT';
+            headerRow.getCell(1).font = { name: 'Times New Roman', size: 10, bold: true };
+            headerRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+            headerRow.getCell(1).border = thinBorder;
+
+            headerRow.getCell(2).value = 'Tên khoa/phòng';
+            headerRow.getCell(2).font = { name: 'Times New Roman', size: 10, bold: true };
+            headerRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+            headerRow.getCell(2).border = thinBorder;
+
+            for (let i = 0; i < 7; i++) {
+                const cell = headerRow.getCell(i + 3);
+                cell.value = dayHeaders[i];
+                cell.font = { name: 'Times New Roman', size: 10, bold: true };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = thinBorder;
+                if (i >= 5) {
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFFF2CC' }
+                    };
+                }
+            }
+
+            let currentRowIdx = 5;
+            activeDepts.forEach((dept, index) => {
+                const row = sheet.getRow(currentRowIdx);
+                row.getCell(1).value = index + 1;
+                row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+                row.getCell(1).border = thinBorder;
+                row.getCell(1).font = { name: 'Times New Roman', size: 10 };
+
+                row.getCell(2).value = dept.ten_khoa;
+                row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                row.getCell(2).border = thinBorder;
+                row.getCell(2).font = { name: 'Times New Roman', size: 10, bold: true };
+
+                let maxLinesInRow = 1;
+
+                weekDates.forEach((dStr, dIdx) => {
+                    const cell = row.getCell(dIdx + 3);
+                    cell.border = thinBorder;
+                    cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                    cell.font = { name: 'Times New Roman', size: 9 };
+
+                    const dayDuty = dutyMap[dept.ma_khoa]?.[dStr];
+                    if (!dayDuty || (dayDuty.trucChinh.length === 0 && dayDuty.trucKem.length === 0 && dayDuty.thuongTru.length === 0)) {
+                        cell.value = '-';
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    } else {
+                        const lines: string[] = [];
+                        if (dayDuty.trucChinh.length > 0 && dayDuty.trucKem.length === 0 && dayDuty.thuongTru.length === 0) {
+                            // Chỉ có trực chính: 1 dòng duy nhất
+                            lines.push(dayDuty.trucChinh.join(', '));
+                        } else {
+                            if (dayDuty.trucChinh.length > 0) lines.push(`Chính: ${dayDuty.trucChinh.join(', ')}`);
+                            if (dayDuty.trucKem.length > 0) lines.push(`Kèm: ${dayDuty.trucKem.join(', ')}`);
+                            if (dayDuty.thuongTru.length > 0) lines.push(`T.Trú: ${dayDuty.thuongTru.join(', ')}`);
+                        }
+                        cell.value = lines.join('\n');
+                        maxLinesInRow = Math.max(maxLinesInRow, lines.length);
+                    }
+                });
+
+                row.height = Math.max(22, maxLinesInRow * 16 + 6);
+                currentRowIdx++;
+            });
+
+            // Chân trang ký duyệt
+            currentRowIdx += 2;
+            const signHeaderRow = currentRowIdx;
+            sheet.mergeCells(`A${signHeaderRow}:C${signHeaderRow}`);
+            sheet.getCell(`A${signHeaderRow}`).value = 'NGƯỜI LẬP LỊCH';
+            sheet.getCell(`A${signHeaderRow}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`A${signHeaderRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sheet.mergeCells(`D${signHeaderRow}:F${signHeaderRow}`);
+            sheet.getCell(`D${signHeaderRow}`).value = 'TRƯỞNG PHÒNG KHTH';
+            sheet.getCell(`D${signHeaderRow}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`D${signHeaderRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sheet.mergeCells(`G${signHeaderRow}:I${signHeaderRow}`);
+            sheet.getCell(`G${signHeaderRow}`).value = 'GIÁM ĐỐC BỆNH VIỆN';
+            sheet.getCell(`G${signHeaderRow}`).font = { name: 'Times New Roman', size: 10, bold: true };
+            sheet.getCell(`G${signHeaderRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Column widths
+            sheet.getColumn(1).width = 5;
+            sheet.getColumn(2).width = 24;
+            for (let c = 3; c <= 9; c++) {
+                sheet.getColumn(c).width = 18;
+            }
+        }
+
         const buffer = await workbook.xlsx.writeBuffer();
         const safeDeptCode = ma_khoa.replace(/[^a-zA-Z0-9]/g, '');
         const filename = type === 'CHAM_CONG'
             ? `Bang_cham_cong_T${month}_${year}_${safeDeptCode}.xlsx`
             : type === 'CHAM_THEM_GIO'
             ? `Bang_cham_them_gio_T${month}_${year}_${safeDeptCode}.xlsx`
+            : type === 'CHAM_DOC_HAI'
+            ? `Bang_cham_doc_hai_T${month}_${year}_${safeDeptCode}.xlsx`
+            : type === 'LICH_TRUC_TUAN'
+            ? `Lich_truc_tuan_${searchParams.get('startDate') || 'current'}_${searchParams.get('endDate') || 'current'}.xlsx`
             : type === 'TRUC_KEM'
             ? `Bang_cham_truc_kem_T${month}_${year}_${safeDeptCode}.xlsx`
             : type === 'TRUC_THUONG_TRU'

@@ -18,7 +18,8 @@ import {
     InfoCircleOutlined,
     FileExcelOutlined,
     FileTextOutlined,
-    SettingOutlined
+    SettingOutlined,
+    ExperimentOutlined
 } from '@ant-design/icons';
 import { AttendanceProvider, useAttendance } from './AttendanceContext';
 import { NoteEditModal } from './_components/NoteEditModal';
@@ -51,6 +52,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
         if (pathname.includes('/duty')) return 'CHAM_TRUC';
         if (pathname.includes('/compensatory')) return 'SO_NGHI_BU';
         if (pathname.includes('/overtime')) return 'CHAM_THEM_GIO';
+        if (pathname.includes('/hazard')) return 'CHAM_DOC_HAI';
         return 'CHAM_CONG';
     }, [pathname]);
 
@@ -62,6 +64,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
         else if (key === 'CHAM_TRUC') router.push('/staff/attendance/duty');
         else if (key === 'SO_NGHI_BU') router.push('/staff/attendance/compensatory');
         else if (key === 'CHAM_THEM_GIO') router.push('/staff/attendance/overtime');
+        else if (key === 'CHAM_DOC_HAI') router.push('/staff/attendance/hazard');
     };
 
     const getBasePath = () => {
@@ -73,7 +76,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     // Xuất Excel
-    const handleExportExcel = (type: 'CHAM_CONG' | 'CHAM_TRUC' | 'TRUC_KEM' | 'TRUC_THUONG_TRU' | 'CHAM_THEM_GIO') => {
+    const handleExportExcel = (type: 'CHAM_CONG' | 'CHAM_TRUC' | 'TRUC_KEM' | 'TRUC_THUONG_TRU' | 'CHAM_THEM_GIO' | 'CHAM_DOC_HAI') => {
         const basePath = getBasePath();
         const monthYear = selectedDate.format('YYYY-MM');
         window.open(`${basePath}/api/staff/attendance/export-excel?monthYear=${monthYear}&ma_khoa=${selectedDept}&type=${type}`, '_blank');
@@ -109,6 +112,12 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
             label: '5. Xuất Bảng Chấm Thêm Giờ',
             icon: <FileExcelOutlined className="text-amber-600" />,
             onClick: () => handleExportExcel('CHAM_THEM_GIO')
+        },
+        {
+            key: 'export_doc_hai',
+            label: '6. Xuất Bảng Chấm Công Bồi Dưỡng Hiện Vật (Độc Hại)',
+            icon: <FileExcelOutlined className="text-rose-600" />,
+            onClick: () => handleExportExcel('CHAM_DOC_HAI')
         }
     ];
 
@@ -159,19 +168,25 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     React.useEffect(() => {
         const fetchAttendanceConfigs = async () => {
             try {
-                const res = await fetch('/api/system-config?module=CHAM_CONG');
+                const basePath = getBasePath();
+                const res = await fetch(`${basePath}/api/system-config?module=CHAM_CONG`);
                 if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data.configs)) {
-                        const chooseConf = data.configs.find((c: any) => c.key === 'ATTENDANCE_ALLOW_CHOOSE_SYMBOL_ON_INIT');
-                        if (chooseConf) {
-                            setAllowChooseSymbol(chooseConf.value === 'true' || chooseConf.value === '1');
+                    const text = await res.text();
+                    try {
+                        const data = JSON.parse(text);
+                        if (Array.isArray(data.configs)) {
+                            const chooseConf = data.configs.find((c: any) => c.key === 'ATTENDANCE_ALLOW_CHOOSE_SYMBOL_ON_INIT');
+                            if (chooseConf) {
+                                setAllowChooseSymbol(chooseConf.value === 'true' || chooseConf.value === '1');
+                            }
+                            const defaultSymbolConf = data.configs.find((c: any) => c.key === 'ATTENDANCE_DEFAULT_INIT_SYMBOL');
+                            if (defaultSymbolConf?.value === 'x' || defaultSymbolConf?.value === '+') {
+                                setDefaultInitSymbol(defaultSymbolConf.value);
+                                setInitCode(defaultSymbolConf.value);
+                            }
                         }
-                        const defaultSymbolConf = data.configs.find((c: any) => c.key === 'ATTENDANCE_DEFAULT_INIT_SYMBOL');
-                        if (defaultSymbolConf?.value === 'x' || defaultSymbolConf?.value === '+') {
-                            setDefaultInitSymbol(defaultSymbolConf.value);
-                            setInitCode(defaultSymbolConf.value);
-                        }
+                    } catch {
+                        // Bỏ qua nếu phản hồi không phải JSON
                     }
                 }
             } catch (e) {}
@@ -542,6 +557,15 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                                 </span>
                             ),
                             children: null
+                        },
+                        {
+                            key: 'CHAM_DOC_HAI',
+                            label: (
+                                <span className="font-semibold px-2">
+                                    <ExperimentOutlined /> 5. Bảng Chấm Độc Hại (Bồi Dưỡng Hiện Vật)
+                                </span>
+                            ),
+                            children: null
                         }
                     ]}
                 />
@@ -552,8 +576,42 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                 </div>
             </Card>
 
-            {/* Scoped CSS cho các cột cố định (Freeze Panes) của Bảng Chấm Công */}
+            {/* Scoped CSS cho các cột cố định (Freeze Panes) và Đường Viền Rõ Nét của các Bảng Ma Trận */}
             <style dangerouslySetInnerHTML={{ __html: `
+                /* 0. Triệt tiêu hoàn toàn dòng ẩn đo đạc của Ant Design, không cho chiếm chiều cao hay có viền */
+                .attendance-matrix-table tr.ant-table-measure-row,
+                .attendance-matrix-table tr.ant-table-measure-row td,
+                .attendance-matrix-table tr.ant-table-measure-row th {
+                    padding: 0 !important;
+                    border: none !important;
+                    height: 0 !important;
+                    font-size: 0 !important;
+                    line-height: 0 !important;
+                    visibility: hidden !important;
+                }
+
+                /* Đường viền lưới rõ nét (#94a3b8 / #64748b) cho các dòng và ô dữ liệu thực tế */
+                .attendance-matrix-table.ant-table-wrapper .ant-table-container {
+                    border-top: 1px solid #64748b !important;
+                    border-left: 1px solid #64748b !important;
+                }
+                .attendance-matrix-table tr:not(.ant-table-measure-row) > .ant-table-cell {
+                    border-color: #94a3b8 !important;
+                }
+                .attendance-matrix-table.ant-table-wrapper .ant-table.ant-table-bordered > .ant-table-container > .ant-table-header > table > thead > tr > th,
+                .attendance-matrix-table.ant-table-wrapper .ant-table.ant-table-bordered > .ant-table-container > .ant-table-body > table > tbody > tr:not(.ant-table-measure-row) > td,
+                .attendance-matrix-table.ant-table-wrapper .ant-table.ant-table-bordered > .ant-table-container > .ant-table-content > table > thead > tr > th,
+                .attendance-matrix-table.ant-table-wrapper .ant-table.ant-table-bordered > .ant-table-container > .ant-table-content > table > tbody > tr:not(.ant-table-measure-row) > td,
+                .attendance-matrix-table.ant-table-wrapper .ant-table.ant-table-bordered > .ant-table-container > .ant-table-summary > table > tfoot > tr > td,
+                .attendance-matrix-table .ant-table-thead > tr > th,
+                .attendance-matrix-table .ant-table-tbody > tr:not(.ant-table-measure-row) > td {
+                    border-right: 1px solid #94a3b8 !important;
+                    border-bottom: 1px solid #94a3b8 !important;
+                }
+                .attendance-matrix-table .ant-table-thead > tr > th {
+                    border-bottom: 1px solid #94a3b8 !important;
+                }
+
                 /* 1. Vùng cố định TRÁI: STT và Họ & Tên */
                 .attendance-matrix-table .ant-table-cell-fix-left {
                     background-color: #f8fafc !important;
@@ -567,8 +625,8 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                     font-weight: 700 !important;
                 }
                 .attendance-matrix-table .ant-table-cell-fix-left-last {
-                    border-right: 2px solid #cbd5e1 !important;
-                    box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.12) !important;
+                    border-right: 2px solid #64748b !important;
+                    box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.16) !important;
                 }
 
                 /* 2. Vùng cố định PHẢI: Lương TG, Không lương, Hưởng BHXH, Ghi Chú */
@@ -576,8 +634,8 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                     background-color: #f8fafc !important;
                 }
                 .attendance-matrix-table .ant-table-cell-fix-right-first {
-                    border-left: 2px solid #cbd5e1 !important;
-                    box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.12) !important;
+                    border-left: 2px solid #64748b !important;
+                    box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.16) !important;
                 }
                 .attendance-matrix-table .ant-table-thead > tr > th.ant-table-cell-fix-right {
                     background-color: #f1f5f9 !important;
@@ -641,6 +699,14 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 export default function AttendanceLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+
+    // Trang Lịch trực kế hoạch (/staff/attendance/duty/schedule) dành cho toàn viện xem
+    // Không bọc các Tab và thanh công cụ quản trị chấm công hành chính
+    if (pathname.includes('/duty/schedule')) {
+        return <>{children}</>;
+    }
+
     return (
         <AttendanceProvider>
             <AttendanceLayoutInner>

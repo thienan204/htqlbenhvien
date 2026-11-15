@@ -207,17 +207,16 @@ export async function POST(request: Request) {
         // Kiểm tra cấu hình Bắt buộc chấm công từ SystemConfig
         const requireAttendance = await isSystemConfigEnabled('CLINICAL_SCHEDULING_REQUIRE_ATTENDANCE', false);
 
+        // Khi BẬT cấu hình, ngày đó bắt buộc phải có dữ liệu điểm danh thực tế trong StaffAttendance của khoa
         const hasAttendanceDataInDept = rawStaff.some(s => 
-            (s.attendances && s.attendances.length > 0) ||
-            (s.attendanceRecords && s.attendanceRecords.length > 0) ||
-            (s.dutyRecords && s.dutyRecords.length > 0)
+            s.attendances && s.attendances.length > 0
         );
 
         if (requireAttendance && !hasAttendanceDataInDept) {
             return NextResponse.json({ 
                 success: false, 
                 requireAttendanceError: true,
-                message: `Quy định Bệnh viện yêu cầu Khoa phải hoàn thành chấm công/điểm danh ngày ${dayjs(date).format('DD/MM/YYYY')} trước khi chia lịch PTTT. Vui lòng điểm danh tại tab "Điểm danh" trước!` 
+                message: `Quy định Bệnh viện yêu cầu Khoa phải hoàn thành chấm công/điểm danh ngày ${dayjs(date).format('DD/MM/YYYY')} trước khi chia lịch PTTT. Vui lòng điểm danh tại tab "Người thực hiện" trước!` 
             }, { status: 400 });
         }
 
@@ -240,11 +239,22 @@ export async function POST(request: Request) {
 
             if (todayAttendance) {
                 const statusName = (todayAttendance.status_ref?.name || '').toLowerCase();
-                if (statusName.includes('nghỉ') || statusName.includes('học')) return false;
+                const statusCode = (todayAttendance.status_ref?.code || '').toUpperCase();
+                if (statusName.includes('nghỉ') || statusName.includes('học') || statusCode.includes('NGHI_') || statusCode === 'DI_HOC') {
+                    if (!['NGHI_BU_NUA_NGAY', 'NGHI_PHEP_NUA_NGAY'].includes(statusCode)) {
+                        return false;
+                    }
+                }
                 if (todayAttendance.is_thuc_hien_dvkt === false) return false;
                 return true;
             }
 
+            // Nếu ngày hôm nay chưa có bản ghi điểm danh và cấu hình requireAttendance đang BẬT:
+            if (requireAttendance) {
+                return false;
+            }
+
+            // Fallback khi TẮT cấu hình: Kiểm tra bảng trực hoặc bảng chấm công thường
             if (dutyRec?.dutyCode) {
                 return true;
             }
@@ -259,12 +269,7 @@ export async function POST(request: Request) {
                 }
             }
 
-            // Nếu ngày hôm nay chưa có bản ghi chấm công nào:
-            if (requireAttendance) {
-                return false;
-            }
-
-            // Mặc định nhân sự có CCHN đi làm bình thường
+            // Mặc định nhân sự có CCHN đi làm bình thường khi tắt cấu hình
             return true;
         });
 
