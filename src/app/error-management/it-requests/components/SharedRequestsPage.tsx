@@ -278,7 +278,17 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         if (onlyUnread) {
             result = result.filter(t => (t.unreadMessageCount || 0) > 0);
         }
-        return result;
+
+        // Sắp xếp: Các yêu cầu chưa hoàn thành lên đầu tiên, Hoàn thành (RESOLVED) ở cuối cùng
+        return [...result].sort((a, b) => {
+            const isResolvedA = a.status === 'RESOLVED';
+            const isResolvedB = b.status === 'RESOLVED';
+            if (isResolvedA !== isResolvedB) {
+                return isResolvedA ? 1 : -1;
+            }
+            // Trong cùng nhóm: Sắp xếp theo thời gian tạo mới nhất lên trước
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
     }, [baseTickets, statusFilter, onlyUnread]);
 
     const handleToggleAvailability = async (checked: boolean) => {
