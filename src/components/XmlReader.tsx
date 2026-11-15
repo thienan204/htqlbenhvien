@@ -23,9 +23,10 @@ import {
     InboxOutlined, UploadOutlined, FileExcelOutlined, SearchOutlined,
     CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, DeleteOutlined,
     CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined, ToolOutlined, ExperimentOutlined,
-    MedicineBoxOutlined
+    MedicineBoxOutlined, CheckOutlined, EditOutlined
 } from '@ant-design/icons';
 import BedDaysAuditModal from '@/app/(modules)/xml-checker/_components/BedDaysAuditModal';
+import { calculateBedDaysForRecord, parseAllowedMaNhom, parseExcludedMaBenh } from '@/app/(modules)/xml-checker/_components/bedDaysCalculator';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -381,14 +382,35 @@ export default function XmlReader() {
     
     // Modal đối soát tiền ngày giường & Khoa phòng
     const [isBedAuditModalOpen, setIsBedAuditModalOpen] = useState(false);
-    const bedErrorCount = React.useMemo(() => {
-        return records.filter(r => r.validationResults?.some(v => v.ruleId === 'rule_bed_days_audit' || v.message?.includes('ngày giường') || v.message?.includes('THỪA') || v.message?.includes('THIẾU'))).length;
-    }, [records]);
-    const bedDaysRule = rules.find(r => r.id === 'rule_bed_days_audit');
+    const bedDaysRule = rules.find(r => r.id === 'rule_bed_days_audit' || r.code?.includes('CHECK_BED_DAYS') || r.name?.includes('ngày giường'));
+    const isBedDaysRuleActive = bedDaysRule ? Boolean(bedDaysRule.active) : false;
     const allowedMaNhomForBed = (bedDaysRule?.conditionField === 'MA_NHOM' && bedDaysRule?.conditionValue)
         ? bedDaysRule.conditionValue
-        : '14,15';
+        : (bedDaysRule?.conditionValue || '14,15');
     const excludedMaBenhForBed = bedDaysRule?.excludeConditionValue;
+
+    const bedErrorCount = React.useMemo(() => {
+        // Nếu quy tắc bị TẮT (disable) -> Tuyệt đối không hiển thị huy hiệu báo lỗi (trả về 0)
+        if (!isBedDaysRuleActive) return 0;
+
+        // 1. Nếu hồ sơ đã có kết quả validation từ rule_bed_days_audit hoặc quy tắc ngày giường
+        const fromValidation = records.filter(r => r.validationResults?.some(v => 
+            v.ruleId === 'rule_bed_days_audit' || 
+            v.ruleName?.includes('Kiểm soát Tiền ngày giường') || 
+            (v.message?.includes('ngày giường') && (v.message?.includes('THỪA') || v.message?.includes('THIẾU') || v.message?.includes('Xuất toán')))
+        )).length;
+
+        if (fromValidation > 0) return fromValidation;
+
+        // 2. Fallback tính trực tiếp trên records nếu chưa chạy lại kiểm tra (để badge luôn khớp số ca thừa trong Modal)
+        if (records.length === 0) return 0;
+        const allowedNhom = parseAllowedMaNhom(allowedMaNhomForBed);
+        const excludedMaBenh = parseExcludedMaBenh(excludedMaBenhForBed);
+        return records.filter(r => {
+            const audit = calculateBedDaysForRecord(r, allowedNhom, departments, excludedMaBenh);
+            return audit.status === 'OVER_BED' || audit.status === 'INVALID_KCB';
+        }).length;
+    }, [records, isBedDaysRuleActive, allowedMaNhomForBed, excludedMaBenhForBed, departments]);
 
     const [mainFilter, setMainFilter] = useState<string>('ERROR');
     const [searchText, setSearchText] = useState('');
@@ -407,6 +429,79 @@ export default function XmlReader() {
     const [sentRecordsDetails, setSentRecordsDetails] = useState<Record<string, any>>({});
     const [editDeadlineDays, setEditDeadlineDays] = useState<number>(3);
     const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
+
+    // Trạng thái hồ sơ đã sửa (Lưu bền vững trên Local máy tính của người dùng)
+    const [localEditedRecords, setLocalEditedRecords] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('xml_checker_local_edited_records');
+            if (saved) {
+                const list = JSON.parse(saved);
+                if (Array.isArray(list)) {
+                    setLocalEditedRecords(new Set(list));
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load local edited records from localStorage:', e);
+        }
+    }, []);
+
+    const toggleLocalEditedRecord = (maLk: string) => {
+        if (!maLk) return;
+        setLocalEditedRecords(prev => {
+            const next = new Set(prev);
+            if (next.has(maLk)) {
+                next.delete(maLk);
+            } else {
+                next.add(maLk);
+            }
+            try {
+                localStorage.setItem('xml_checker_local_edited_records', JSON.stringify(Array.from(next)));
+            } catch (e) {
+                console.warn('Could not save local edited records to localStorage:', e);
+            }
+            return next;
+        });
+    };
+
+    // Quét động danh sách thời gian còn lại thực tế có trong dữ liệu records
+    const remainingTimeOptions = React.useMemo(() => {
+        const set = new Set<string>();
+        records.forEach(r => {
+            const ngayRaStr = String(r.summary?.NGAY_RA || '');
+            if (ngayRaStr && ngayRaStr.length >= 8) {
+                const year = parseInt(ngayRaStr.substring(0, 4));
+                const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                const day = parseInt(ngayRaStr.substring(6, 8));
+                let hour = 0; let min = 0;
+                if (ngayRaStr.length >= 12) {
+                    hour = parseInt(ngayRaStr.substring(8, 10));
+                    min = parseInt(ngayRaStr.substring(10, 12));
+                }
+                const dateNgayRa = new Date(year, month, day, hour, min);
+                const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                const timeInfo = calculateRemainingTime(deadline);
+                if (timeInfo?.text) {
+                    set.add(timeInfo.text);
+                }
+            }
+        });
+
+        // Sắp xếp tự nhiên: "Còn 1 ngày", "Còn 2 ngày"..., "Đã quá hạn"
+        const list = Array.from(set).sort((a, b) => {
+            if (a.includes('Còn') && b.includes('Còn')) {
+                const numA = parseInt(a.replace(/\D/g, '') || '0', 10);
+                const numB = parseInt(b.replace(/\D/g, '') || '0', 10);
+                return numA - numB;
+            }
+            if (a.includes('Còn')) return -1;
+            if (b.includes('Còn')) return 1;
+            return a.localeCompare(b);
+        });
+
+        return list.map(val => ({ value: val, label: val }));
+    }, [records, editDeadlineDays]);
     
     // DB Fetching State
     const [dbDateRange, setDbDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
@@ -1238,6 +1333,52 @@ export default function XmlReader() {
             render: (_, __, i) => i + 1
         },
         {
+            title: (
+                <div className="flex flex-col gap-1 items-center">
+                    <span className="whitespace-nowrap font-medium text-xs">Đã sửa</span>
+                    <Select
+                        size="small"
+                        placeholder="Lọc..."
+                        allowClear
+                        style={{ width: 85 }}
+                        value={colFilters.IS_EDITED || undefined}
+                        onChange={(val) => setColFilters(prev => ({ ...prev, IS_EDITED: val || '' }))}
+                        onClick={(e) => e.stopPropagation()}
+                        options={[
+                            { value: 'EDITED', label: 'Đã sửa' },
+                            { value: 'NOT_EDITED', label: 'Chưa' }
+                        ]}
+                    />
+                </div>
+            ),
+            key: 'is_local_edited',
+            width: 95,
+            align: 'center',
+            render: (_, record) => {
+                const maLk = String(record.summary?.MA_LK || record.id || '');
+                const isEdited = localEditedRecords.has(maLk);
+                return (
+                    <Tooltip title={isEdited ? 'Nhấp để HỦY đánh dấu đã sửa (Lưu trên máy này)' : 'Nhấp để ĐÁNH DẤU đã sửa xong (Lưu trên máy này)'}>
+                        <Button
+                            size="small"
+                            type={isEdited ? 'primary' : 'default'}
+                            className={`text-xs px-2 h-6 flex items-center justify-center gap-1 rounded-md transition-all ${
+                                isEdited
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 border-none text-white shadow-xs font-semibold'
+                                    : 'text-slate-400 border-dashed border-slate-300 hover:border-emerald-500 hover:text-emerald-600 bg-white'
+                            }`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleLocalEditedRecord(maLk);
+                            }}
+                        >
+                            {isEdited ? <><CheckOutlined style={{ fontSize: 10 }} /> Đã sửa</> : 'Chưa'}
+                        </Button>
+                    </Tooltip>
+                );
+            }
+        },
+        {
             title: 'Trạng thái',
             key: 'status',
             width: 100,
@@ -1392,7 +1533,7 @@ export default function XmlReader() {
         {
             title: (
                 <div className="flex flex-col gap-1 items-center">
-                    <span className="flex items-center justify-center gap-2">
+                    <span className="flex items-center justify-center gap-1.5 whitespace-nowrap font-medium text-xs">
                         Thời gian còn lại
                         {user?.role === 'ADMIN' && (
                             <Tooltip title={`Cấu hình hạn sửa (đang là ${editDeadlineDays} ngày)`}>
@@ -1403,10 +1544,20 @@ export default function XmlReader() {
                             </Tooltip>
                         )}
                     </span>
+                    <Select
+                        size="small"
+                        placeholder="Lọc hạn..."
+                        allowClear
+                        style={{ width: 105 }}
+                        value={colFilters.REMAINING_TIME || undefined}
+                        onChange={(val) => setColFilters(prev => ({ ...prev, REMAINING_TIME: val || '' }))}
+                        onClick={(e) => e.stopPropagation()}
+                        options={remainingTimeOptions}
+                    />
                 </div>
             ),
             key: 'remaining_time',
-            width: 100,
+            width: 115,
             align: 'center',
             render: (_, record) => {
                 const ngayRaStr = String(record.summary?.NGAY_RA || '');
@@ -1636,6 +1787,35 @@ export default function XmlReader() {
                 const formatted = formatDateTime(r.summary?.NGAY_RA) || '';
                 const raw = String(r.summary?.NGAY_RA || '');
                 return formatted.toLowerCase().includes(k) || raw.toLowerCase().includes(k);
+            });
+        }
+
+        if (colFilters.REMAINING_TIME) {
+            result = result.filter(r => {
+                const ngayRaStr = String(r.summary?.NGAY_RA || '');
+                if (!ngayRaStr || ngayRaStr.length < 8) return false;
+                const year = parseInt(ngayRaStr.substring(0, 4));
+                const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+                const day = parseInt(ngayRaStr.substring(6, 8));
+                let hour = 0; let min = 0;
+                if (ngayRaStr.length >= 12) {
+                    hour = parseInt(ngayRaStr.substring(8, 10));
+                    min = parseInt(ngayRaStr.substring(10, 12));
+                }
+                const dateNgayRa = new Date(year, month, day, hour, min);
+                const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+                const timeInfo = calculateRemainingTime(deadline);
+                return timeInfo?.text === colFilters.REMAINING_TIME;
+            });
+        }
+
+        if (colFilters.IS_EDITED) {
+            result = result.filter(r => {
+                const maLk = String(r.summary?.MA_LK || r.id || '');
+                const isEdited = localEditedRecords.has(maLk);
+                if (colFilters.IS_EDITED === 'EDITED') return isEdited;
+                if (colFilters.IS_EDITED === 'NOT_EDITED') return !isEdited;
+                return true;
             });
         }
 
@@ -2444,6 +2624,10 @@ export default function XmlReader() {
                                         columns={mainColumns}
                                         dataSource={displayedRecords}
                                         rowKey={(r) => r.uuid || r.id}
+                                        rowClassName={(record) => {
+                                            const maLk = String(record.summary?.MA_LK || record.id || '');
+                                            return localEditedRecords.has(maLk) ? 'bg-emerald-50/40 hover:bg-emerald-100/50 transition-colors' : '';
+                                        }}
                                         pagination={{
                                             current: tablePagination.current,
                                             pageSize: tablePagination.pageSize,
@@ -2664,6 +2848,7 @@ export default function XmlReader() {
                 allowedMaNhom={allowedMaNhomForBed}
                 excludedMaBenh={excludedMaBenhForBed}
                 departments={departments}
+                isRuleActive={isBedDaysRuleActive}
                 onSelectRecord={(rec) => {
                     setSelectedRecord(rec as ExtendedHosoRecord);
                     setActiveTab('XML1');

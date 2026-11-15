@@ -37,6 +37,7 @@ interface BedDaysAuditModalProps {
     allowedMaNhom?: string; // Lấy động từ conditionValue của rule trong /rules
     excludedMaBenh?: string; // Lấy động từ excludeConditionValue của rule trong /rules (Z38.0)
     departments?: Record<string, string>;
+    isRuleActive?: boolean; // Trạng thái BẬT/TẮT của quy tắc trong /rules
     onSelectRecord?: (record: any) => void;
 }
 
@@ -47,6 +48,7 @@ export default function BedDaysAuditModal({
     allowedMaNhom = '14,15',
     excludedMaBenh = 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8',
     departments = {},
+    isRuleActive = true,
     onSelectRecord
 }: BedDaysAuditModalProps) {
     const [activeTab, setActiveTab] = useState<string>('dept');
@@ -206,7 +208,8 @@ export default function BedDaysAuditModal({
             { header: 'Mã bệnh chính', key: 'maBenhChinh', width: 20 },
             { header: 'Trẻ sơ sinh ghép mẹ', key: 'isExemptNewborn', width: 20 },
             { header: 'Loại KCB', key: 'tenLoaiKcb', width: 22 },
-            { header: 'Ngày vào', key: 'ngayVao', width: 18 },
+            { header: 'Ngày vào viện', key: 'ngayVao', width: 18 },
+            { header: 'Ngày vào nội trú', key: 'ngayVaoNoiTru', width: 18 },
             { header: 'Ngày ra', key: 'ngayRa', width: 18 },
             { header: 'Số giờ nằm', key: 'durationHours', width: 14 },
             { header: 'Nhóm ca', key: 'caseGroupDesc', width: 35 },
@@ -234,6 +237,7 @@ export default function BedDaysAuditModal({
                 isExemptNewborn: audit.isExemptNewborn ? 'Có (Miễn ngày giường)' : 'Không',
                 tenLoaiKcb: `${audit.maLoaiKcb} - ${audit.tenLoaiKcb}`,
                 ngayVao: formatXmlDateDisplay(audit.ngayVaoStr),
+                ngayVaoNoiTru: formatXmlDateDisplay(audit.ngayVaoNoiTruStr),
                 ngayRa: formatXmlDateDisplay(audit.ngayRaStr),
                 durationHours: audit.durationHours,
                 caseGroupDesc: audit.caseGroupDesc,
@@ -400,16 +404,37 @@ export default function BedDaysAuditModal({
         {
             title: 'Thời gian nằm viện',
             key: 'time',
-            width: 190,
-            render: (_, r) => (
-                <div className="text-xs space-y-0.5">
-                    <div>Vào: <span className="font-mono">{formatXmlDateDisplay(r.ngayVaoStr)}</span></div>
-                    <div>Ra: <span className="font-mono">{formatXmlDateDisplay(r.ngayRaStr)}</span></div>
-                    <div className="text-slate-500 font-semibold">
-                        Thời gian: <span className="text-blue-600">{r.durationHours}h</span> ({r.durationMinutes} phút)
+            width: 210,
+            render: (_, r) => {
+                const hasVaoNt = Boolean(r.ngayVaoNoiTruStr);
+                const isDifferent = hasVaoNt && r.ngayVaoStr && r.ngayVaoStr !== r.ngayVaoNoiTruStr;
+
+                return (
+                    <div className="text-xs space-y-0.5">
+                        {hasVaoNt ? (
+                            <div>
+                                <span className="font-semibold text-blue-800">Vào NT:</span>{' '}
+                                <span className="font-mono font-medium text-slate-800">{formatXmlDateDisplay(r.ngayVaoNoiTruStr)}</span>
+                            </div>
+                        ) : (
+                            <div>
+                                Vào: <span className="font-mono">{formatXmlDateDisplay(r.ngayVaoStr)}</span>
+                            </div>
+                        )}
+                        {isDifferent && (
+                            <div className="text-[11px] text-slate-500">
+                                <span>(Khám: {formatXmlDateDisplay(r.ngayVaoStr)})</span>
+                            </div>
+                        )}
+                        <div>
+                            Ra: <span className="font-mono">{formatXmlDateDisplay(r.ngayRaStr)}</span>
+                        </div>
+                        <div className="text-slate-500 font-semibold pt-0.5">
+                            Thời gian NT: <span className="text-blue-600 font-bold">{r.durationHours}h</span> ({r.durationMinutes} phút)
+                        </div>
                     </div>
-                </div>
-            )
+                );
+            }
         },
         {
             title: 'Phân loại nhóm ca',
@@ -627,6 +652,15 @@ export default function BedDaysAuditModal({
                         </div>
                     </div>
                     <Space>
+                        {!isRuleActive ? (
+                            <Tag color="default" className="px-3 py-1 font-semibold rounded-full border-dashed text-slate-500">
+                                Rule: Đang TẮT (Disabled)
+                            </Tag>
+                        ) : (
+                            <Tag color="success" className="px-3 py-1 font-semibold rounded-full">
+                                Rule: Đang BẬT
+                            </Tag>
+                        )}
                         <Tag color="purple" className="px-3 py-1 font-mono font-semibold rounded-full">
                             MA_NHOM: [{targetMaNhomList.join(', ')}]
                         </Tag>
@@ -649,6 +683,18 @@ export default function BedDaysAuditModal({
             footer={null}
         >
             <div className="space-y-4 pt-2">
+                {!isRuleActive && (
+                    <Alert
+                        type="warning"
+                        showIcon
+                        message={
+                            <div className="text-xs text-amber-800">
+                                <strong>Lưu ý:</strong> Quy tắc <strong>Kiểm soát Tiền ngày giường (XML1 vs XML3)</strong> hiện đang <strong>TẮT</strong> trong phần Cấu hình Quy tắc. Khi quét hồ sơ, hệ thống sẽ bỏ qua quy tắc này và không xuất lỗi ra bảng danh sách chính hoặc báo cáo.
+                            </div>
+                        }
+                        className="rounded-xl border-amber-200 bg-amber-50"
+                    />
+                )}
                 {/* 1. Hàng KPI Cards (Hỗ trợ click nhanh để lọc danh sách) */}
                 <Row gutter={[16, 16]}>
                     <Col span={4}>

@@ -46,7 +46,7 @@ export async function GET() {
                         field: 'SO_NGAY_DTRI',
                         name: 'Kiểm soát Tiền ngày giường (XML1 vs XML3)',
                         description: 'Đối chiếu số ngày giường chuẩn theo 4 nhóm ca (T <= 4h, cùng ngày > 4h, khác ngày ra viện thường, khác ngày tử vong/chuyển viện) với tổng số lượng giường XML3 (nhóm 14, 15) và mã KCB 03, 09.',
-                        code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
+                        code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO_NOI_TRU, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
                         conditionField: 'MA_NHOM',
                         conditionValue: '14,15',
                         excludeConditionField: 'MA_BENH_CHINH',

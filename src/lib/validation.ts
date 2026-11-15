@@ -126,12 +126,13 @@ export class ValidationEngine {
             this.currentRule = rule;
             try {
                 // Determine if this rule targets a list type and needs iteration
-                const listPath = XML_LIST_PATHS[rule.xmlType];
+                const targetXmlType = rule.xmlType?.startsWith('XML') ? (rule.xmlType.split('_')[0] || rule.xmlType) : (rule.xmlType || 'XML1');
+                const listPath = XML_LIST_PATHS[targetXmlType] || XML_LIST_PATHS[rule.xmlType];
 
-                if (rule.xmlType === 'XML1' || !listPath) {
+                if (targetXmlType === 'XML1' || !listPath) {
                     // Nếu không phải XML1 và dữ liệu của XML này hoàn toàn trống -> Bỏ qua không kiểm tra
-                    if (rule.xmlType !== 'XML1') {
-                        const xmlData = rootContext[rule.xmlType];
+                    if (targetXmlType !== 'XML1') {
+                        const xmlData = rootContext[targetXmlType] || rootContext[rule.xmlType];
                         if (!xmlData || (typeof xmlData === 'object' && Object.keys(xmlData).length === 0) || (typeof xmlData === 'string' && xmlData.trim() === '')) {
                             return; // Skip rule
                         }
@@ -139,7 +140,7 @@ export class ValidationEngine {
 
                     // Single object validation (XML1 or others)
                     // Merge fields from the specific XML type into top level
-                    let xmlDataForContext = rootContext[rule.xmlType] || {};
+                    let xmlDataForContext = rootContext[targetXmlType] || rootContext[rule.xmlType] || {};
                     if (xmlDataForContext && typeof xmlDataForContext === 'object') {
                         const keys = Object.keys(xmlDataForContext);
                         // Unwrap if it has exactly one child object (e.g. CHI_TIEU_DU_LIEU_TOM_TAT_HO_SO_BENH_AN)
@@ -153,7 +154,9 @@ export class ValidationEngine {
                         ...xmlDataForContext
                     };
 
-                    if (rule.conditionField && rule.conditionValue) {
+                    const isBedDaysRule = rule.code?.includes('CHECK_BED_DAYS') || rule.id === 'rule_bed_days_audit';
+
+                    if (!isBedDaysRule && rule.conditionField && rule.conditionValue) {
                         const parts = rule.conditionField.split('.');
                         let conditionVal: any = context;
                         for(const part of parts) {
@@ -178,7 +181,7 @@ export class ValidationEngine {
                         }
                     }
 
-                    if (rule.excludeConditionField && rule.excludeConditionValue) {
+                    if (!isBedDaysRule && rule.excludeConditionField && rule.excludeConditionValue) {
                         let excludeVal = context[rule.excludeConditionField];
                         if (excludeVal === undefined) {
                             const actualKey = Object.keys(context).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
@@ -215,7 +218,7 @@ export class ValidationEngine {
                 } else {
                     // List validation (XML2, 3, 4, 5)
                     // Find the group
-                    const group = record.groups.find(g => g.type === rule.xmlType);
+                    const group = record.groups.find(g => g.type === targetXmlType || g.type === rule.xmlType);
                     const list = getXmlDataList(group);
 
                     // const rawData = rootContext[rule.xmlType];
@@ -986,9 +989,13 @@ export class ValidationEngine {
                         ? this.currentRule.conditionValue
                         : (this.currentRule?.conditionValue || '14,15');
                     const allowedMaNhom = parseAllowedMaNhom(conditionValue);
-                    const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom);
+                    const excludeVal = this.currentRule?.excludeConditionValue;
+                    const excludedMaBenh = parseExcludedMaBenh(excludeVal);
+                    const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom, {}, excludedMaBenh);
                     if (audit.status !== 'CORRECT') {
-                        this.dynamicMessage = audit.statusDesc;
+                        this.dynamicMessage = audit.detailedReason
+                            ? `${audit.statusDesc}. ${audit.detailedReason}`
+                            : audit.statusDesc;
                         return true;
                     }
                     return false;
@@ -1534,7 +1541,7 @@ export const DEFAULT_RULES: ValidationRule[] = [
         xmlType: 'XML1',
         field: 'SO_NGAY_DTRI',
         name: 'Kiểm soát Tiền ngày giường (XML1 vs XML3)',
-        code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
+        code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO_NOI_TRU, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
         conditionField: 'MA_NHOM',
         conditionValue: '14,15',
         excludeConditionField: 'MA_BENH_CHINH',

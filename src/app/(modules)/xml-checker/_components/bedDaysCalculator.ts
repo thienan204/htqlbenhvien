@@ -18,6 +18,7 @@ export interface BedDaysRecordAudit {
     maLoaiKcb: string;
     tenLoaiKcb: string;
     ngayVaoStr: string;
+    ngayVaoNoiTruStr: string; // Ngày vào nội trú XML1
     ngayRaStr: string;
     ketQuaDtri: string;
     tenKetQuaDtri: string;
@@ -195,10 +196,16 @@ export function calculateBedDaysForRecord(
     const maLoaiKcb = String(summary.MA_LOAI_KCB || '').trim();
     const tenLoaiKcb = MA_LOAI_KCB_MAP[maLoaiKcb] || (maLoaiKcb ? `Loại ${maLoaiKcb}` : 'Chưa có');
 
-    const ngayVaoRaw = summary.NGAY_VAO_NOI_TRU || summary.NGAY_VAO;
+    const ngayVaoKcbRaw = summary.NGAY_VAO;
+    const ngayVaoNoiTruRaw = summary.NGAY_VAO_NOI_TRU;
+    const ngayVaoStr = String(ngayVaoKcbRaw || '').trim();
+    const ngayVaoNoiTruStr = String(ngayVaoNoiTruRaw || '').trim();
     const ngayRaRaw = summary.NGAY_RA;
-    const ngayVaoStr = String(ngayVaoRaw || '').trim();
     const ngayRaStr = String(ngayRaRaw || '').trim();
+
+    // Mốc thời gian bắt đầu tính tiền ngày giường: Ưu tiên NGAY_VAO_NOI_TRU, nếu không có fallback về NGAY_VAO
+    const effectiveNgayVaoStr = ngayVaoNoiTruStr || ngayVaoStr;
+    const isUsingNgayVaoNoiTru = !!ngayVaoNoiTruStr;
 
     const ketQuaDtri = String(summary.KET_QUA_DTRI || '').trim();
     const tenKetQuaDtri = KET_QUA_DTRI_MAP[ketQuaDtri] || (ketQuaDtri ? `Mã ${ketQuaDtri}` : '');
@@ -207,7 +214,7 @@ export function calculateBedDaysForRecord(
     const tenLoaiRv = MA_LOAI_RV_MAP[maLoaiRv] || (maLoaiRv ? `Mã ${maLoaiRv}` : '');
 
     // 1. Tính mốc thời gian và số ngày
-    const dateVao = parseXmlDateTime(ngayVaoStr);
+    const dateVao = parseXmlDateTime(effectiveNgayVaoStr);
     const dateRa = parseXmlDateTime(ngayRaStr);
 
     let durationMinutes = 0;
@@ -357,7 +364,9 @@ export function calculateBedDaysForRecord(
 
     // 5. Tạo dòng Lý do & Căn cứ chi tiết
     let detailedReason = '';
-    const ngayVaoNgay = ngayVaoStr ? formatXmlDateDisplay(ngayVaoStr).split(' ')[0] : '';
+    const ngayVaoTieuDe = isUsingNgayVaoNoiTru ? 'vào nội trú' : 'vào viện';
+    const ngayVaoFieldLabel = isUsingNgayVaoNoiTru ? 'NGAY_VAO_NOI_TRU' : 'NGAY_VAO';
+    const ngayVaoNgay = effectiveNgayVaoStr ? formatXmlDateDisplay(effectiveNgayVaoStr).split(' ')[0] : '';
     const ngayRaNgay = ngayRaStr ? formatXmlDateDisplay(ngayRaStr).split(' ')[0] : '';
 
     if (warnNgoaiTruGiuong) {
@@ -365,19 +374,19 @@ export function calculateBedDaysForRecord(
     } else if (isExemptNewborn) {
         detailedReason = `Căn cứ: MA_BENH_CHINH = ${maBenhChinh} (${tenBenhChinh || 'Trẻ sinh ra sống'}) là trẻ sơ sinh sinh tại viện nằm ghép cùng mẹ -> Không kê tiền giường riêng ở XML3 theo quy định BHYT (Hồ sơ hợp lệ được loại trừ theo Rules).`;
     } else if (maLoaiKcb === '09') {
-        detailedReason = `Căn cứ: MA_LOAI_KCB = 09 (${tenLoaiKcb}), thời gian nằm ${durationHours}h (${durationMinutes} phút ≤ 240 phút) -> Thuộc Nhóm 1, Giường chuẩn = 0 ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán 100%)` : 'Đúng chuẩn không thu tiền giường'}.`;
+        detailedReason = `Căn cứ: MA_LOAI_KCB = 09 (${tenLoaiKcb}), thời gian nằm ${durationHours}h (${durationMinutes} phút ≤ 240 phút tính từ ${ngayVaoTieuDe}) -> Thuộc Nhóm 1, Giường chuẩn = 0 ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán 100%)` : 'Đúng chuẩn không thu tiền giường'}.`;
     } else if (caseGroup === 1) {
-        detailedReason = `Căn cứ: Tổng thời gian nằm T = ${durationHours}h (${durationMinutes} phút ≤ 240 phút = 4h) -> Thuộc Nhóm 1, theo quy định BHYT không được thu tiền giường (Giường chuẩn = 0 ngày). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT 100%).` : 'Đúng chuẩn không thu tiền giường.'}${warn09 ? ' (Lưu ý: Ca điều trị nội trú dưới 4h nên đổi MA_LOAI_KCB sang mã 09).' : ''}`;
+        detailedReason = `Căn cứ: Tổng thời gian nằm T = ${durationHours}h (${durationMinutes} phút ≤ 240 phút = 4h tính từ ${ngayVaoTieuDe}) -> Thuộc Nhóm 1, theo quy định BHYT không được thu tiền giường (Giường chuẩn = 0 ngày). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT 100%).` : 'Đúng chuẩn không thu tiền giường.'}${warn09 ? ' (Lưu ý: Ca điều trị nội trú dưới 4h nên đổi MA_LOAI_KCB sang mã 09).' : ''}`;
     } else if (caseGroup === 2) {
-        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, vào và ra trong cùng ngày (${ngayVaoNgay}), thời gian nằm ${durationHours}h (> 4h) -> Thuộc Nhóm 2, theo quy định chỉ tính tròn 1 ngày giường (Giường chuẩn = 1). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn 1 ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán do cộng dồn sai).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
+        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, ${ngayVaoFieldLabel} và ngày ra trong cùng ngày (${ngayVaoNgay}), thời gian nằm ${durationHours}h (> 4h) -> Thuộc Nhóm 2, theo quy định chỉ tính tròn 1 ngày giường (Giường chuẩn = 1). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn 1 ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán do cộng dồn sai).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
     } else if (caseGroup === 4) {
         const lyDoNhom4 = ['5', '6', '8'].includes(ketQuaDtri)
             ? `KET_QUA_DTRI = ${ketQuaDtri} (${tenKetQuaDtri})`
             : `MA_LOAI_RV = ${maLoaiRv} (${tenLoaiRv})`;
-        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, thời gian nằm ${durationHours}h (> 4h, lệch ${diffCalendarDays} ngày lịch), ${lyDoNhom4} -> Thuộc Nhóm 4 (${tenKetQuaDtri || tenLoaiRv || 'Tử vong/Chuyển tuyến'}), được tính thêm ngày ra viện: Giường chuẩn = (Ngày ra - Ngày vào) + 1 = ${diffCalendarDays} + 1 = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn được cộng ngày ra viện.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Khoa chưa cộng thêm ngày ra viện theo chế độ).`}`;
+        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, thời gian nằm ${durationHours}h (> 4h, lệch ${diffCalendarDays} ngày lịch tính từ ${ngayVaoFieldLabel}: ${ngayVaoNgay} -> ${ngayRaNgay}), ${lyDoNhom4} -> Thuộc Nhóm 4 (${tenKetQuaDtri || tenLoaiRv || 'Tử vong/Chuyển tuyến'}), được tính thêm ngày ra viện: Giường chuẩn = (Ngày ra - Ngày ${ngayVaoTieuDe}) + 1 = ${diffCalendarDays} + 1 = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn được cộng ngày ra viện.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Khoa chưa cộng thêm ngày ra viện theo chế độ).`}`;
     } else {
         // Nhóm 3: Ra viện thông thường
-        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, thời gian nằm ${durationHours}h (> 4h, lệch ${diffCalendarDays} ngày lịch: ${ngayVaoNgay} -> ${ngayRaNgay}), KET_QUA_DTRI = ${ketQuaDtri || 'chưa ghi'} (${tenKetQuaDtri || 'thông thường'}), MA_LOAI_RV = ${maLoaiRv || '1'} (${tenLoaiRv || 'Ra viện'}) -> Thuộc Nhóm 3 (Ra viện thông thường), công thức Giường chuẩn = Ngày ra - Ngày vào = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn số ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
+        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, thời gian nằm ${durationHours}h (> 4h, lệch ${diffCalendarDays} ngày lịch tính từ ${ngayVaoFieldLabel}: ${ngayVaoNgay} -> ${ngayRaNgay}), KET_QUA_DTRI = ${ketQuaDtri || 'chưa ghi'} (${tenKetQuaDtri || 'thông thường'}), MA_LOAI_RV = ${maLoaiRv || '1'} (${tenLoaiRv || 'Ra viện'}) -> Thuộc Nhóm 3 (Ra viện thông thường), công thức Giường chuẩn = Ngày ra - Ngày ${ngayVaoTieuDe} = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn số ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
     }
 
     return {
@@ -394,6 +403,7 @@ export function calculateBedDaysForRecord(
         maLoaiKcb,
         tenLoaiKcb,
         ngayVaoStr,
+        ngayVaoNoiTruStr,
         ngayRaStr,
         ketQuaDtri,
         tenKetQuaDtri,

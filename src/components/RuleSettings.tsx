@@ -628,6 +628,14 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                             <li>Kiểm tra số lượng mã vượt quá giới hạn (ngăn cách bởi dấu ;) : <code className="bg-white px-1 border rounded text-red-600">CHECK_MAX_CODES(MA_BENH_KT, 12)</code> (Ví dụ: Báo lỗi nếu có hơn 12 mã bệnh)</li>
                         </ul>
                     </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">10. Kiểm soát tiền ngày giường điều trị (XML1 vs XML3)</div>
+                        <div className="text-gray-600 mb-1">Kiểm toán tự động số ngày giường kê khai (nhóm 14, 15) so với thời gian điều trị thực tế (4 nhóm ca theo QĐ 3618/QĐ-BHXH & QĐ 130/QĐ-BYT).</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Cú pháp chuẩn: <code className="bg-white px-1 border rounded text-red-600">CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO_NOI_TRU, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)</code></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Hệ thống tự động căn cứ theo NGAY_VAO_NOI_TRU (thời điểm vào khoa nội trú phát sinh giường) để tính giường chuẩn, tự động loại trừ trẻ sơ sinh Z38 theo cấu hình loại trừ.</span></li>
+                        </ul>
+                    </div>
                 </div>
             )
         }
