@@ -1,5 +1,6 @@
 import { HosoRecord, XMLGroup, getXmlDataList } from './xml';
 import { calculateBedDaysForRecord, parseAllowedMaNhom, parseExcludedMaBenh } from '@/app/(modules)/xml-checker/_components/bedDaysCalculator';
+import { auditBhytRatesForRecord } from '@/app/(modules)/xml-checker/_components/bhytRateCalculator';
 
 export type RuleType = 'Xuất toán' | 'Cảnh báo';
 
@@ -154,9 +155,10 @@ export class ValidationEngine {
                         ...xmlDataForContext
                     };
 
-                    const isBedDaysRule = rule.code?.includes('CHECK_BED_DAYS') || rule.id === 'rule_bed_days_audit';
+                    const isBedDaysRule = rule.code?.includes('CHECK_BED_DAYS') || rule.code?.includes('CHECK_BED_DAYS_DAYCARE') || rule.id === 'rule_bed_days_audit' || rule.id === 'rule_bed_days_daycare_audit';
+                    const isBhytRateRule = rule.code?.includes('CHECK_TYLE_TT_BHYT') || rule.id === 'rule_bhyt_rate_audit';
 
-                    if (!isBedDaysRule && rule.conditionField && rule.conditionValue) {
+                    if (!isBedDaysRule && !isBhytRateRule && rule.conditionField && rule.conditionValue) {
                         const parts = rule.conditionField.split('.');
                         let conditionVal: any = context;
                         for(const part of parts) {
@@ -181,7 +183,7 @@ export class ValidationEngine {
                         }
                     }
 
-                    if (!isBedDaysRule && rule.excludeConditionField && rule.excludeConditionValue) {
+                    if (!isBedDaysRule && !isBhytRateRule && rule.excludeConditionField && rule.excludeConditionValue) {
                         let excludeVal = context[rule.excludeConditionField];
                         if (excludeVal === undefined) {
                             const actualKey = Object.keys(context).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
@@ -190,6 +192,44 @@ export class ValidationEngine {
                         const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map((s: string) => s.trim());
                         const valStr = this.getDataValue(excludeVal);
                         if (valStr && excludedValues.includes(valStr)) return;
+                    }
+
+                    // Xử lý chuyên biệt cho Rule Kiểm soát Tỷ lệ thanh toán BHYT
+                    // Phân bổ lỗi về cả XML1 (tổng quan) và từng dòng cụ thể của XML2 / XML3
+                    if (isBhytRateRule) {
+                        const audit = auditBhytRatesForRecord(record);
+                        if (audit.isError) {
+                            // 1. Kết quả tổng quan trên XML1 (hiển thị trên danh sách hồ sơ & báo cáo xuất toán)
+                            const summaryMsg = audit.detailedReason
+                                ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                                : audit.summaryMessage;
+                            results.push({
+                                ruleId: rule.id,
+                                ruleName: rule.name,
+                                type: rule.type,
+                                xmlType: 'XML1',
+                                field: 'MA_THE_BHYT',
+                                message: summaryMsg,
+                                isError: rule.type === 'Xuất toán'
+                            });
+
+                            // 2. Kết quả chi tiết cho TỪNG DÒNG lỗi ở XML2 (Thuốc) và XML3 (DVKT & Vật tư)
+                            audit.errors.forEach(err => {
+                                if (err.xmlType === 'XML2' || err.xmlType === 'XML3') {
+                                    results.push({
+                                        ruleId: rule.id,
+                                        ruleName: rule.name,
+                                        type: rule.type,
+                                        xmlType: err.xmlType,
+                                        field: err.field || 'TYLE_TT_BH',
+                                        message: err.message,
+                                        isError: rule.type === 'Xuất toán',
+                                        index: err.index
+                                    });
+                                }
+                            });
+                        }
+                        return;
                     }
 
                     let isError = false;
@@ -514,6 +554,8 @@ export class ValidationEngine {
 
     public evaluateRule(rule: ValidationRule, record: HosoRecord): { isMatch: boolean, error?: string, evaluatedMessage?: string } {
         try {
+            this.currentRecord = record;
+            this.currentRule = rule;
             const rootContext: Record<string, any> = {};
             // ... (keep context setup)
             record.groups.forEach(g => {
@@ -992,10 +1034,40 @@ export class ValidationEngine {
                     const excludeVal = this.currentRule?.excludeConditionValue;
                     const excludedMaBenh = parseExcludedMaBenh(excludeVal);
                     const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom, {}, excludedMaBenh);
+                    if (audit.maLoaiKcb === '04') return false; // Để Rule Điều trị ban ngày xử lý
                     if (audit.status !== 'CORRECT') {
                         this.dynamicMessage = audit.detailedReason
                             ? `${audit.statusDesc}. ${audit.detailedReason}`
                             : audit.statusDesc;
+                        return true;
+                    }
+                    return false;
+                },
+                CHECK_BED_DAYS_DAYCARE: () => {
+                    if (!this.currentRecord) return false;
+                    const conditionValue = (this.currentRule?.conditionField === 'MA_NHOM' && this.currentRule?.conditionValue)
+                        ? this.currentRule.conditionValue
+                        : (this.currentRule?.conditionValue || '14,15');
+                    const allowedMaNhom = parseAllowedMaNhom(conditionValue);
+                    const excludeVal = this.currentRule?.excludeConditionValue;
+                    const excludedMaBenh = parseExcludedMaBenh(excludeVal);
+                    const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom, {}, excludedMaBenh);
+                    if (audit.maLoaiKcb !== '04') return false; // Chỉ áp dụng cho điều trị ban ngày
+                    if (audit.status !== 'CORRECT') {
+                        this.dynamicMessage = audit.detailedReason
+                            ? `${audit.statusDesc}. ${audit.detailedReason}`
+                            : audit.statusDesc;
+                        return true;
+                    }
+                    return false;
+                },
+                CHECK_TYLE_TT_BHYT: () => {
+                    if (!this.currentRecord) return false;
+                    const audit = auditBhytRatesForRecord(this.currentRecord);
+                    if (audit.isError) {
+                        this.dynamicMessage = audit.detailedReason
+                            ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                            : audit.summaryMessage;
                         return true;
                     }
                     return false;
@@ -1253,10 +1325,46 @@ export class ValidationEngine {
                 const excludedMaBenh = parseExcludedMaBenh(excludeVal);
 
                 const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom, {}, excludedMaBenh);
+                if (audit.maLoaiKcb === '04') return "false"; // Bỏ qua nếu là điều trị ban ngày
                 if (audit.status !== 'CORRECT') {
                     this.dynamicMessage = audit.detailedReason
                         ? `${audit.statusDesc}. ${audit.detailedReason}`
                         : audit.statusDesc;
+                    return "true";
+                }
+                return "false";
+            });
+
+            // 0.6.6.9.b Handle CHECK_BED_DAYS_DAYCARE
+            cleanCode = cleanCode.replace(/CHECK_BED_DAYS_DAYCARE\([^)]*\)/g, () => {
+                if (!this.currentRecord) return "false";
+                const conditionValue = (this.currentRule?.conditionField === 'MA_NHOM' && this.currentRule?.conditionValue)
+                    ? this.currentRule.conditionValue
+                    : (this.currentRule?.conditionValue || '14,15');
+                const allowedMaNhom = parseAllowedMaNhom(conditionValue);
+
+                const excludeVal = this.currentRule?.excludeConditionValue;
+                const excludedMaBenh = parseExcludedMaBenh(excludeVal);
+
+                const audit = calculateBedDaysForRecord(this.currentRecord, allowedMaNhom, {}, excludedMaBenh);
+                if (audit.maLoaiKcb !== '04') return "false"; // Chỉ áp dụng điều trị ban ngày
+                if (audit.status !== 'CORRECT') {
+                    this.dynamicMessage = audit.detailedReason
+                        ? `${audit.statusDesc}. ${audit.detailedReason}`
+                        : audit.statusDesc;
+                    return "true";
+                }
+                return "false";
+            });
+
+            // 0.6.6.10. Handle CHECK_TYLE_TT_BHYT
+            cleanCode = cleanCode.replace(/CHECK_TYLE_TT_BHYT\([^)]*\)/g, () => {
+                if (!this.currentRecord) return "false";
+                const audit = auditBhytRatesForRecord(this.currentRecord);
+                if (audit.isError) {
+                    this.dynamicMessage = audit.detailedReason
+                        ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                        : audit.summaryMessage;
                     return "true";
                 }
                 return "false";
@@ -1540,14 +1648,40 @@ export const DEFAULT_RULES: ValidationRule[] = [
         type: 'Xuất toán',
         xmlType: 'XML1',
         field: 'SO_NGAY_DTRI',
-        name: 'Kiểm soát Tiền ngày giường (XML1 vs XML3)',
+        name: 'Kiểm soát Tiền ngày giường Nội trú (24/24h) (XML1 vs XML3)',
         code: 'CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO_NOI_TRU, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)',
         conditionField: 'MA_NHOM',
         conditionValue: '14,15',
         excludeConditionField: 'MA_BENH_CHINH',
         excludeConditionValue: 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8',
-        description: 'Đối chiếu số ngày giường chuẩn theo 4 nhóm ca (T <= 4h, cùng ngày > 4h, khác ngày ra viện thường, khác ngày tử vong/chuyển viện) với tổng số lượng giường XML3 (nhóm 14, 15) và mã KCB 03, 09.',
-        errorMessage: 'Lệch số lượng ngày giường chuẩn so với thực tế kê khai trong XML3'
+        description: 'Đối chiếu số ngày giường nội trú chuẩn (mã KCB 03, 09) theo 4 nhóm ca (T <= 4h, cùng ngày > 4h, khác ngày ra viện thường, khác ngày tử vong/chuyển viện) với tổng số lượng giường XML3 (nhóm 14, 15).',
+        errorMessage: 'Lệch số lượng ngày giường nội trú chuẩn so với thực tế kê khai trong XML3'
+    },
+    {
+        id: 'rule_bed_days_daycare_audit',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'SO_NGAY_DTRI',
+        name: 'Kiểm soát Tiền ngày giường Điều trị ban ngày (07h - 17h) (XML1 vs XML3)',
+        code: 'CHECK_BED_DAYS_DAYCARE(MA_LOAI_KCB, NGAY_VAO, NGAY_RA)',
+        conditionField: 'MA_NHOM',
+        conditionValue: '14,15',
+        description: 'Đối chiếu số ngày giường điều trị ban ngày (mã KCB 04) trong khung giờ hành chính (07:00 - 17:00). Mốc tính 1 ngày giường là ≥ 4 giờ trong giờ hành chính.',
+        errorMessage: 'Lệch số lượng ngày giường điều trị ban ngày chuẩn (khung giờ HC 07h-17h) so với thực tế kê khai trong XML3'
+    },
+    {
+        id: 'rule_bhyt_rate_audit',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'MA_THE_BHYT',
+        name: 'Kiểm soát Tỷ lệ thanh toán BHYT (XML1 vs XML2, XML3)',
+        code: 'CHECK_TYLE_TT_BHYT(MA_THE_BHYT, GT_THE_TU, GT_THE_DEN, NGAY_MIEN_CCT)',
+        description: 'Đối chiếu tỷ lệ thanh toán BHYT (TYLE_TT_BH) trên XML2 và XML3 theo ký tự thứ 3 của thẻ BHYT (1,2,5=100%, 3=95%, 4=80%), thời hạn thẻ và mốc miễn cùng chi trả (NGAY_MIEN_CCT).',
+        errorMessage: 'Sai lệch tỷ lệ thanh toán BHYT giữa thẻ và chi tiết dịch vụ/thuốc (XML2, XML3)'
     },
     {
         id: 'overlap_bhyt_1',
@@ -1558,6 +1692,18 @@ export const DEFAULT_RULES: ValidationRule[] = [
         name: 'Trùng BHYT (Đè thời gian)',
         code: 'CHECK_OVERLAP_BHYT(MA_THE, NGAY_VAO, NGAY_RA, MA_LK)',
         errorMessage: 'Phát hiện đè thời gian điều trị với một hồ sơ khác cùng phiên tải lên.'
+    },
+    {
+        id: '1768445961548',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML3',
+        field: 'MA_MAY',
+        name: 'DVKT bắt buộc có mã máy nhưng MA_MAY để trống',
+        description: 'Đối chiếu danh mục DVKT bắt buộc có mã máy từ Cổng BHYT (3,471 dịch vụ) với trường MA_MAY trong XML3.',
+        code: "EXISTS_IN('Mau05_REQUIRE_MACHINE', MA_DICH_VU) && MA_MAY == null",
+        errorMessage: 'Dịch vụ kỹ thuật [TEN_DICH_VU] (Mã: [MA_DICH_VU]) bắt buộc phải có Mã máy thực hiện (MA_MAY) theo quy định BHXH nhưng trong XML3 đang để trống'
     },
     {
         id: '1',

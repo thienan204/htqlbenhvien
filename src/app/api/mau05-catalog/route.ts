@@ -3,14 +3,14 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
-        const records = await prisma.mau05Catalog.findMany({
-            orderBy: [
-                { MA_DICH_VU: 'asc' },
-                { createdAt: 'desc' }
-            ]
-        });
+        const records: any[] = await prisma.$queryRaw`
+            SELECT * FROM "Mau05Catalog" 
+            ORDER BY "MA_DICH_VU" ASC, "createdAt" DESC
+        `;
         return NextResponse.json(records);
     } catch (error) {
         console.error('Error fetching mau05 catalog:', error);
@@ -46,13 +46,17 @@ export async function POST(request: Request) {
             let skipCount = 0;
 
             for (const row of body) {
-                const key = row.MA_DICH_VU || row.MA_THUOC || row.TEN_DICH_VU || row.TEN_THUOC || '';
+                const maDichVu = row.MA_DICH_VU || row['Mã'] || row['Ma'] || '';
+                const tenDichVu = row.TEN_DICH_VU || row['Tên DVKT'] || row['Ten DVKT'] || '';
+                const isBhytFile = Boolean(row['Mã'] || row['Tên DVKT'] || row['Hiệu lực']);
+
+                const key = maDichVu || row.MA_THUOC || tenDichVu || row.TEN_THUOC || '';
                 const newData: any = {
                     STT: row.STT ? Number(row.STT) : null,
-                    MA_DICH_VU: row.MA_DICH_VU ? String(row.MA_DICH_VU).substring(0, 20) : null,
-                    TEN_DICH_VU: row.TEN_DICH_VU ? String(row.TEN_DICH_VU) : null,
-                    TEN_DVKT_GIA: row.TEN_DVKT_GIA ? String(row.TEN_DVKT_GIA) : null,
-                    DON_GIA: row.DON_GIA ? Number(row.DON_GIA) : null,
+                    MA_DICH_VU: maDichVu ? String(maDichVu).substring(0, 20) : null,
+                    TEN_DICH_VU: tenDichVu ? String(tenDichVu) : null,
+                    TEN_DVKT_GIA: row.TEN_DVKT_GIA ? String(row.TEN_DVKT_GIA) : (tenDichVu ? String(tenDichVu) : null),
+                    DON_GIA: row.DON_GIA !== undefined && row.DON_GIA !== null && row.DON_GIA !== '' ? Number(row.DON_GIA) : null,
                     QUY_TRINH: row.QUY_TRINH ? String(row.QUY_TRINH).substring(0, 50) : null,
                     SO_LUONG_CGKT: row.SO_LUONG_CGKT ? Number(row.SO_LUONG_CGKT) : null,
                     CSKCB_CGKT: row.CSKCB_CGKT ? String(row.CSKCB_CGKT).substring(0, 5) : null,
@@ -75,6 +79,10 @@ export async function POST(request: Request) {
                     TU_NGAY: row.TU_NGAY ? String(row.TU_NGAY).substring(0, 8) : null,
                     DEN_NGAY: row.DEN_NGAY ? String(row.DEN_NGAY).substring(0, 8) : null,
                     MA_CSKCB: row.MA_CSKCB ? String(row.MA_CSKCB).substring(0, 5) : null,
+                    bat_buoc_co_ma_may: isBhytFile ? true : (row.bat_buoc_co_ma_may !== undefined ? Boolean(row.bat_buoc_co_ma_may) : undefined),
+                    nguon_du_lieu: isBhytFile ? 'BHYT_PORTAL' : (row.nguon_du_lieu || 'BENH_VIEN'),
+                    ngay_hieu_luc_bhyt: row['Ngày hiệu lực'] ? String(row['Ngày hiệu lực']).trim() : undefined,
+                    isActive: true
                 };
 
                 if (!key) {
@@ -87,13 +95,31 @@ export async function POST(request: Request) {
                     toInsert.push(newData);
                 } else {
                     let changed = false;
-                    for (const [k, v] of Object.entries(newData)) {
-                        const existingVal = existing[k];
-                        if (existingVal !== v && !(existingVal === null && v === null)) {
-                            // Handle primitive comparisons properly
-                            if (String(existingVal || '') !== String(v || '')) {
-                                changed = true;
-                                break;
+
+                    if (isBhytFile) {
+                        // File từ Cổng BHYT: Giữ lại toàn bộ thông tin giá/quy trình của Viện
+                        newData.DON_GIA = existing.DON_GIA;
+                        newData.TEN_DVKT_GIA = existing.TEN_DVKT_GIA || newData.TEN_DVKT_GIA;
+                        newData.QUY_TRINH = existing.QUY_TRINH;
+                        newData.QD_DVKT = existing.QD_DVKT;
+                        newData.QD_PD_GIA = existing.QD_PD_GIA;
+                        newData.STT = existing.STT;
+                        newData.nguon_du_lieu = existing.nguon_du_lieu || 'BENH_VIEN';
+
+                        if (existing.isActive && existing.bat_buoc_co_ma_may === true) {
+                            changed = false;
+                        } else {
+                            changed = true;
+                        }
+                    } else {
+                        // File Mau05 thông thường: So sánh tất cả các trường
+                        for (const [k, v] of Object.entries(newData)) {
+                            const existingVal = existing[k];
+                            if (v !== undefined && v !== null && existingVal !== v) {
+                                if (String(existingVal || '') !== String(v || '')) {
+                                    changed = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -157,6 +183,10 @@ export async function POST(request: Request) {
                 TU_NGAY: body.TU_NGAY ? String(body.TU_NGAY).substring(0, 8) : null,
                 DEN_NGAY: body.DEN_NGAY ? String(body.DEN_NGAY).substring(0, 8) : null,
                 MA_CSKCB: body.MA_CSKCB ? String(body.MA_CSKCB).substring(0, 5) : null,
+                bat_buoc_co_ma_may: body.bat_buoc_co_ma_may !== undefined ? Boolean(body.bat_buoc_co_ma_may) : false,
+                nguon_du_lieu: body.nguon_du_lieu || 'BENH_VIEN',
+                ngay_hieu_luc_bhyt: body.ngay_hieu_luc_bhyt ? String(body.ngay_hieu_luc_bhyt) : null,
+                isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
             }
         });
 

@@ -78,11 +78,45 @@ export async function POST(request: Request) {
             morningServices = [],
             afternoonServices = [],
             serviceStaffMappings = {}, 
+            isStrictServiceStaffMapping = true,
             staffShifts = {}, 
             staffShiftMode = 'STRICT',
+            doctorTimeRanges = [],
             savedSchedules = [], 
             patientTimeConstraints = [] 
         } = body;
+
+        // Xử lý bản đồ nhân sự được gán cứng vào các dịch vụ cụ thể
+        const allAssignedStaffIds = new Set<string>();
+        if (serviceStaffMappings && typeof serviceStaffMappings === 'object') {
+            Object.values(serviceStaffMappings).forEach((staffIds: any) => {
+                const list = Array.isArray(staffIds) ? staffIds : (staffIds ? [staffIds] : []);
+                list.forEach((sid: string) => {
+                    if (sid) allAssignedStaffIds.add(sid);
+                });
+            });
+        }
+
+        // Xử lý khung giờ làm việc theo giờ của Bác sĩ / Nhân viên (doctorTimeRanges)
+        const staffTimeWindowMap: Record<string, { startMinutes: number; endMinutes: number }[]> = {};
+        if (Array.isArray(doctorTimeRanges)) {
+            doctorTimeRanges.forEach((r: any) => {
+                if (r.staffId && r.startTime && r.endTime) {
+                    const startM = parseTime(r.startTime);
+                    const endM = parseTime(r.endTime);
+                    if (endM > startM) {
+                        if (!staffTimeWindowMap[r.staffId]) {
+                            staffTimeWindowMap[r.staffId] = [];
+                        }
+                        staffTimeWindowMap[r.staffId].push({ startMinutes: startM, endMinutes: endM });
+                    }
+                }
+            });
+            // Sắp xếp các khung giờ tăng dần cho từng nhân viên
+            Object.keys(staffTimeWindowMap).forEach(sid => {
+                staffTimeWindowMap[sid].sort((a, b) => a.startMinutes - b.startMinutes);
+            });
+        }
 
         const resolvedServiceShifts: Record<string, string> = { ...serviceShifts };
         if (Array.isArray(morningServices)) {
@@ -410,14 +444,25 @@ export async function POST(request: Request) {
             });
 
             // Xử lý tùy chọn gán đích danh Bác sĩ / Điều dưỡng (key là Tên Dịch Vụ hoặc Mã Dịch Vụ)
-            // CƠ CHẾ ƯU TIÊN (SOFT PRIORITY): Đưa người được gán lên đầu danh sách để ưu tiên xếp trước,
-            // khi người được gán hết giờ rảnh thì tự động chuyển tiếp cho các nhân sự khác có CCHN phù hợp!
             const assignedStaffConfig = serviceStaffMappings[task.ten_dich_vu] || serviceStaffMappings[ma_dich_vu];
-            if (assignedStaffConfig) {
-                const targetIds: string[] = Array.isArray(assignedStaffConfig)
-                    ? assignedStaffConfig
-                    : (typeof assignedStaffConfig === 'string' ? [assignedStaffConfig] : []);
-                
+            const targetIds: string[] = assignedStaffConfig
+                ? (Array.isArray(assignedStaffConfig) ? assignedStaffConfig : [assignedStaffConfig])
+                : [];
+
+            if (isStrictServiceStaffMapping) {
+                // CHẾ ĐỘ CHIA CỨNG DỊCH VỤ (STRICT):
+                if (targetIds.length > 0) {
+                    // 1. Dịch vụ này CÓ gán đích danh: CHỈ cho phép những người được gán làm!
+                    // Tuyệt đối không fallback cho người khác ngoài danh sách.
+                    capableStaff = capableStaff.filter(s => targetIds.includes(s.id));
+                } else {
+                    // 2. Dịch vụ này KHÔNG gán đích danh:
+                    // Loại bỏ tất cả những nhân sự đã bị gán cứng vào các dịch vụ khác!
+                    // (Họ chỉ được làm các dịch vụ được gán cho họ, thừa thời gian KHÔNG gán sang dịch vụ này!)
+                    capableStaff = capableStaff.filter(s => !allAssignedStaffIds.has(s.id));
+                }
+            } else {
+                // CHẾ ĐỘ ƯU TIÊN MỀM (SOFT PRIORITY - CŨ):
                 if (targetIds.length > 0) {
                     const assignedStaff = availableStaff.filter(s => targetIds.includes(s.id));
                     const fallbackStaff = capableStaff.filter(s => !targetIds.includes(s.id));
@@ -584,6 +629,23 @@ export async function POST(request: Request) {
                         if (staffShiftMode === 'STRICT' && currentTime < aStart) {
                             currentTime = aStart; // Cố định ca: Nhảy đến buổi chiều cho nhân viên này
                             continue;
+                        }
+                    }
+
+                    // Ràng buộc khung giờ làm việc theo giờ của Bác sĩ / Nhân viên (doctorTimeRanges)
+                    const staffWindows = staffTimeWindowMap[staff.id];
+                    if (staffWindows && staffWindows.length > 0) {
+                        const fitsInWindow = staffWindows.some(w => currentTime >= w.startMinutes && (currentTime + requiredTime) <= w.endMinutes);
+                        if (!fitsInWindow) {
+                            // Tìm khung giờ tiếp theo của nhân viên này bắt đầu sau currentTime
+                            const nextWin = staffWindows.find(w => w.startMinutes > currentTime);
+                            if (nextWin) {
+                                currentTime = nextWin.startMinutes;
+                                continue;
+                            } else {
+                                // Đã hết khung giờ làm việc của nhân viên này trong ngày
+                                break;
+                            }
                         }
                     }
 

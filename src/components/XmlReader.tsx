@@ -2849,6 +2849,8 @@ export default function XmlReader() {
                 excludedMaBenh={excludedMaBenhForBed}
                 departments={departments}
                 isRuleActive={isBedDaysRuleActive}
+                sentRecordsSet={sentRecordsSet}
+                sentMaBnSet={sentMaBnSet}
                 onSelectRecord={(rec) => {
                     setSelectedRecord(rec as ExtendedHosoRecord);
                     setActiveTab('XML1');

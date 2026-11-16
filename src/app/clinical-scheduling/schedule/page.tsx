@@ -160,7 +160,9 @@ export default function ClinicalSchedulingPage() {
     const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
     const [staffList, setStaffList] = useState<any[]>([]);
     const [enableStaffMapping, setEnableStaffMapping] = useState(false);
+    const [isStrictServiceStaffMapping, setIsStrictServiceStaffMapping] = useState<boolean>(true);
     const [serviceStaffMappings, setServiceStaffMappings] = useState<{ [key: string]: string[] }>({});
+    const [doctorTimeRanges, setDoctorTimeRanges] = useState<{ id: string; staffId: string; startTime: string; endTime: string; note?: string }[]>([]);
 
     const [morningPatients, setMorningPatients] = useState<string[]>([]);
     const [afternoonPatients, setAfternoonPatients] = useState<string[]>([]);
@@ -195,10 +197,94 @@ export default function ClinicalSchedulingPage() {
                 setMorningServices([]);
                 setAfternoonServices([]);
             }
+
+            const savedStrict = localStorage.getItem(`clinical_scheduling_strict_mapping_${selectedDept}`);
+            if (savedStrict !== null) {
+                setIsStrictServiceStaffMapping(JSON.parse(savedStrict));
+            } else {
+                setIsStrictServiceStaffMapping(true); // Mặc định chia cứng dịch vụ
+            }
+
+            const savedDoctorHours = localStorage.getItem(`clinical_scheduling_doctor_hours_${selectedDept}`);
+            if (savedDoctorHours) {
+                const parsedHours = JSON.parse(savedDoctorHours);
+                if (Array.isArray(parsedHours)) setDoctorTimeRanges(parsedHours);
+            } else {
+                setDoctorTimeRanges([]);
+            }
         } catch (e) {
-            console.error('Error loading service shifts from localStorage', e);
+            console.error('Error loading service shifts / doctor hours from localStorage', e);
         }
     }, [selectedDept]);
+
+    const handleAddDoctorTimeRange = () => {
+        const newId = `doc_range_${Date.now()}`;
+        const updated = [
+            ...doctorTimeRanges,
+            {
+                id: newId,
+                staffId: '',
+                startTime: '08:00',
+                endTime: '11:00',
+                note: ''
+            }
+        ];
+        setDoctorTimeRanges(updated);
+        if (selectedDept) {
+            try {
+                localStorage.setItem(`clinical_scheduling_doctor_hours_${selectedDept}`, JSON.stringify(updated));
+            } catch (e) {}
+        }
+    };
+
+    const handleUpdateDoctorTimeRange = (index: number, field: string, value: any) => {
+        const updated = [...doctorTimeRanges];
+        if (updated[index]) {
+            updated[index] = { ...updated[index], [field]: value };
+            setDoctorTimeRanges(updated);
+            if (selectedDept) {
+                try {
+                    localStorage.setItem(`clinical_scheduling_doctor_hours_${selectedDept}`, JSON.stringify(updated));
+                } catch (e) {}
+            }
+        }
+    };
+
+    const handleDeleteDoctorTimeRange = (index: number) => {
+        const updated = doctorTimeRanges.filter((_, i) => i !== index);
+        setDoctorTimeRanges(updated);
+        if (selectedDept) {
+            try {
+                localStorage.setItem(`clinical_scheduling_doctor_hours_${selectedDept}`, JSON.stringify(updated));
+            } catch (e) {}
+        }
+    };
+
+    // Danh sách nhân sự lọc ưu tiên Bác sĩ để hiển thị trong Dropdown
+    const doctorStaffOptions = React.useMemo(() => {
+        const activeStaff = staffList.filter(s => s.is_thuc_hien_dvkt !== false);
+        const isDoc = (s: any) => {
+            const cd = (s.chuc_danh || '').toLowerCase();
+            const td = (s.trinh_do || '').toLowerCase();
+            return cd.includes('bác sĩ') || cd.includes('bac_si') || cd.includes('bac si') || cd.includes('bs') ||
+                   td.includes('bác sĩ') || td.includes('bac_si') || td.includes('bác sỹ') || td.includes('thạc sĩ') || td.includes('tiến sĩ') ||
+                   cd.includes('cki') || cd.includes('ckii') || cd.includes('bacs') || td.includes('bacs');
+        };
+
+        const docs = activeStaff.filter(isDoc);
+        const nonDocs = activeStaff.filter(s => !isDoc(s));
+
+        return [
+            ...docs.map(s => ({
+                label: `BS. ${s.ho_ten} (${s.chuc_danh || s.trinh_do || 'Bác sĩ'})`,
+                value: s.id
+            })),
+            ...nonDocs.map(s => ({
+                label: `${s.ho_ten} (${s.chuc_danh || s.trinh_do || 'Nhân sự'})`,
+                value: s.id
+            }))
+        ];
+    }, [staffList]);
 
     const handleUpdateMorningServices = (vals: string[]) => {
         setMorningServices(vals);
@@ -392,31 +478,51 @@ export default function ClinicalSchedulingPage() {
             const morningIntervals = merged.map(i => [Math.max(i[0], mStart), Math.min(i[1], mEnd)]).filter(i => i[0] < i[1]) as [number, number][];
             const afternoonIntervals = merged.map(i => [Math.max(i[0], aStart), Math.min(i[1], aEnd)]).filter(i => i[0] < i[1]) as [number, number][];
 
-            if (isMorning) {
-                const mFree = findFreeSlots(morningIntervals, mStart, mEnd);
-                mFree.forEach(slot => {
-                    result.push({
-                        key: `slot_${keyIndex++}`,
-                        nguoi_thuc_hien: staffName,
-                        ca: 'Sáng',
-                        thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
-                        do_dai: slot.end - slot.start,
-                        _startMin: slot.start
+            const docRanges = staffInfo ? doctorTimeRanges.filter(r => r.staffId === staffInfo.id && r.startTime && r.endTime) : [];
+            if (docRanges.length > 0) {
+                docRanges.forEach(range => {
+                    const rStart = timeToMinutes(range.startTime);
+                    const rEnd = timeToMinutes(range.endTime);
+                    const rangeIntervals = merged.map(i => [Math.max(i[0], rStart), Math.min(i[1], rEnd)]).filter(i => i[0] < i[1]) as [number, number][];
+                    const rFree = findFreeSlots(rangeIntervals, rStart, rEnd);
+                    rFree.forEach(slot => {
+                        result.push({
+                            key: `slot_${keyIndex++}`,
+                            nguoi_thuc_hien: staffName,
+                            ca: `Theo giờ (${range.startTime}-${range.endTime})`,
+                            thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
+                            do_dai: slot.end - slot.start,
+                            _startMin: slot.start
+                        });
                     });
                 });
-            }
-            if (isAfternoon) {
-                const aFree = findFreeSlots(afternoonIntervals, aStart, aEnd);
-                aFree.forEach(slot => {
-                    result.push({
-                        key: `slot_${keyIndex++}`,
-                        nguoi_thuc_hien: staffName,
-                        ca: 'Chiều',
-                        thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
-                        do_dai: slot.end - slot.start,
-                        _startMin: slot.start
+            } else {
+                if (isMorning) {
+                    const mFree = findFreeSlots(morningIntervals, mStart, mEnd);
+                    mFree.forEach(slot => {
+                        result.push({
+                            key: `slot_${keyIndex++}`,
+                            nguoi_thuc_hien: staffName,
+                            ca: 'Sáng',
+                            thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
+                            do_dai: slot.end - slot.start,
+                            _startMin: slot.start
+                        });
                     });
-                });
+                }
+                if (isAfternoon) {
+                    const aFree = findFreeSlots(afternoonIntervals, aStart, aEnd);
+                    aFree.forEach(slot => {
+                        result.push({
+                            key: `slot_${keyIndex++}`,
+                            nguoi_thuc_hien: staffName,
+                            ca: 'Chiều',
+                            thoi_gian: `${formatMinutes(slot.start)} - ${formatMinutes(slot.end)}`,
+                            do_dai: slot.end - slot.start,
+                            _startMin: slot.start
+                        });
+                    });
+                }
             }
         });
 
@@ -426,7 +532,7 @@ export default function ClinicalSchedulingPage() {
         });
 
         return result;
-    }, [scheduledData, staffList, selectedDept, deptHours, morningStaffs, afternoonStaffs]);
+    }, [scheduledData, staffList, selectedDept, deptHours, morningStaffs, afternoonStaffs, doctorTimeRanges]);
 
     const handleExportAvailableSlots = () => {
         if (!availableSlotsData.length) return message.warning("Không có dữ liệu thời gian rảnh");
@@ -1082,7 +1188,9 @@ export default function ClinicalSchedulingPage() {
                     staffShifts,
                     staffShiftMode,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
-                    serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {}
+                    serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
+                    isStrictServiceStaffMapping: enableStaffMapping ? isStrictServiceStaffMapping : false,
+                    doctorTimeRanges: doctorTimeRanges.filter(r => r.staffId && r.startTime && r.endTime)
                 })
             });
             
@@ -1153,6 +1261,8 @@ export default function ClinicalSchedulingPage() {
                     staffShiftMode,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
+                    isStrictServiceStaffMapping: enableStaffMapping ? isStrictServiceStaffMapping : false,
+                    doctorTimeRanges: doctorTimeRanges.filter(r => r.staffId && r.startTime && r.endTime),
                     heuristic
                 })
             });
@@ -2353,14 +2463,117 @@ export default function ClinicalSchedulingPage() {
                                             </div>
                                         </div>
 
+                                        <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff', marginBottom: 24 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                                                <div>
+                                                    <h3 style={{ margin: 0, color: '#08979c', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <span>⏰ Tùy chọn Bác sĩ làm việc theo giờ (Giờ bắt đầu - Giờ kết thúc):</span>
+                                                    </h3>
+                                                    <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                                                        * Chọn Bác sĩ và chỉ định khung giờ làm việc cụ thể trong ngày (ngoài khung giờ này Bác sĩ sẽ không bị xếp lịch DVKT).
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    type="dashed"
+                                                    icon={<PlusOutlined />}
+                                                    onClick={handleAddDoctorTimeRange}
+                                                    style={{ color: '#08979c', borderColor: '#08979c', fontWeight: 500 }}
+                                                >
+                                                    Thêm khung giờ cho Bác sĩ
+                                                </Button>
+                                            </div>
+
+                                            {doctorTimeRanges.length === 0 ? (
+                                                <div style={{ padding: '16px 0', textAlign: 'center', color: '#8c8c8c', border: '1px dashed #e8e8e8', borderRadius: 6, background: '#fafafa', fontSize: 13 }}>
+                                                    Chưa cấu hình giờ riêng cho Bác sĩ nào. Mặc định tất cả Bác sĩ làm việc theo ca/buổi hoặc cả ngày như bình thường.
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                    {doctorTimeRanges.map((range, idx) => (
+                                                        <Row gutter={12} align="middle" key={range.id || idx}>
+                                                            <Col span={8}>
+                                                                <Select
+                                                                    showSearch
+                                                                    allowClear
+                                                                    placeholder="--- Chọn Bác sĩ ---"
+                                                                    style={{ width: '100%' }}
+                                                                    value={range.staffId || undefined}
+                                                                    onChange={val => handleUpdateDoctorTimeRange(idx, 'staffId', val)}
+                                                                    options={doctorStaffOptions}
+                                                                    filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                                                />
+                                                            </Col>
+                                                            <Col span={4}>
+                                                                <TimePicker
+                                                                    format="HH:mm"
+                                                                    minuteStep={5}
+                                                                    placeholder="Bắt đầu (VD: 08:00)"
+                                                                    style={{ width: '100%' }}
+                                                                    value={range.startTime ? dayjs(range.startTime, 'HH:mm') : null}
+                                                                    onChange={(_, timeStr) => handleUpdateDoctorTimeRange(idx, 'startTime', timeStr)}
+                                                                />
+                                                            </Col>
+                                                            <Col span={1} style={{ textAlign: 'center' }}>
+                                                                <span style={{ color: '#8c8c8c' }}>đến</span>
+                                                            </Col>
+                                                            <Col span={4}>
+                                                                <TimePicker
+                                                                    format="HH:mm"
+                                                                    minuteStep={5}
+                                                                    placeholder="Kết thúc (VD: 11:00)"
+                                                                    style={{ width: '100%' }}
+                                                                    value={range.endTime ? dayjs(range.endTime, 'HH:mm') : null}
+                                                                    onChange={(_, timeStr) => handleUpdateDoctorTimeRange(idx, 'endTime', timeStr)}
+                                                                />
+                                                            </Col>
+                                                            <Col span={6}>
+                                                                <Input
+                                                                    placeholder="Ghi chú (VD: Giao ban đến 8h, Khám PK chiều...)"
+                                                                    value={range.note || ''}
+                                                                    onChange={e => handleUpdateDoctorTimeRange(idx, 'note', e.target.value)}
+                                                                />
+                                                            </Col>
+                                                            <Col span={1} style={{ textAlign: 'center' }}>
+                                                                <Button
+                                                                    type="text"
+                                                                    danger
+                                                                    icon={<DeleteOutlined />}
+                                                                    onClick={() => handleDeleteDoctorTimeRange(idx)}
+                                                                    title="Xóa khung giờ này"
+                                                                />
+                                                            </Col>
+                                                        </Row>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
-                                            <div style={{ marginBottom: 12 }}>
+                                            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                                                 <Checkbox 
                                                     checked={enableStaffMapping} 
                                                     onChange={e => setEnableStaffMapping(e.target.checked)}
                                                 >
                                                     <strong style={{ color: '#0958d9' }}>Bật tuỳ chọn: Gán Dịch vụ cho đích danh người thực hiện</strong>
                                                 </Checkbox>
+
+                                                {enableStaffMapping && (
+                                                    <Checkbox
+                                                        checked={isStrictServiceStaffMapping}
+                                                        onChange={e => {
+                                                            setIsStrictServiceStaffMapping(e.target.checked);
+                                                            if (selectedDept) {
+                                                                try {
+                                                                    localStorage.setItem(`clinical_scheduling_strict_mapping_${selectedDept}`, JSON.stringify(e.target.checked));
+                                                                } catch (err) {}
+                                                            }
+                                                        }}
+                                                    >
+                                                        <span style={{ fontWeight: 600, color: '#d4380d' }}>
+                                                            Chia cứng dịch vụ: Người được gán chỉ làm dịch vụ được chỉ định, thừa thời gian không gán sang dịch vụ khác
+                                                        </span>
+                                                    </Checkbox>
+                                                )}
                                             </div>
                                             
                                             {enableStaffMapping && (

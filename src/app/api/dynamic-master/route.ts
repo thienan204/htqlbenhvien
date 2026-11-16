@@ -29,6 +29,22 @@ export async function GET(request: Request) {
                 }
                 continue;
             }
+
+            if (ref === 'Mau05_REQUIRE_MACHINE' || ref === 'Mau05Catalog.BatBuocMaMay') {
+                try {
+                    const data: any[] = await prisma.$queryRaw`
+                        SELECT "MA_DICH_VU" 
+                        FROM "Mau05Catalog" 
+                        WHERE "isActive" = true AND "bat_buoc_co_ma_may" = true
+                    `;
+                    result[ref] = data
+                        .map((d: any) => d.MA_DICH_VU ? String(d.MA_DICH_VU).trim() : '')
+                        .filter(Boolean);
+                } catch (err: any) {
+                    console.error('Error fetching Mau05_REQUIRE_MACHINE:', err.message);
+                }
+                continue;
+            }
             
             if (ref === 'BedCatalog.MaKhoa_MaGiuong') {
                 try {

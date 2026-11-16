@@ -40,6 +40,10 @@ export interface BedDaysRecordAudit {
     isExemptNewborn: boolean; // Trẻ sơ sinh nằm cùng mẹ (Z38) được miễn giường
     warn09: boolean; // Nằm <= 4h nhưng đang ghi mã 03 thay vì 09
     warnNgoaiTruGiuong: boolean; // Ngoại trú kê giường nội trú
+    isDaycare: boolean; // Ca điều trị ban ngày (khung 07:00 - 17:00)
+    daycareHours?: number; // Số giờ nằm trong khung giờ hành chính (07:00 - 17:00)
+    daycareMinutes?: number;
+    isSentPayment?: boolean; // Hồ sơ đã gửi đề nghị thanh toán (có trong /chuyen-de/ho-so-da-gui)
     estimatedOverCost: number; // Tiền chênh lệch xuất toán (nếu thừa giường)
     totalBedCost: number; // Tổng tiền giường kê khai
     bedServicesCount: number; // Số dòng giường trong XML3
@@ -159,13 +163,82 @@ export function parseExcludedMaBenh(excludeValue?: string | null): string[] {
 }
 
 /**
+ * Tính số phút và số ngày đạt mốc >= 4h (240 phút) trong khung giờ hành chính (07:00 - 17:00)
+ */
+export function calculateOfficeHoursDaycare(dateVao: Date | null, dateRa: Date | null): {
+    totalMinutes: number;
+    totalHours: number;
+    qualifyingDays: number;
+    dailyBreakdown: { dateStr: string; minutes: number; hours: number; isQualified: boolean }[];
+} {
+    if (!dateVao || !dateRa || dateRa <= dateVao) {
+        return { totalMinutes: 0, totalHours: 0, qualifyingDays: 0, dailyBreakdown: [] };
+    }
+
+    const dailyBreakdown: { dateStr: string; minutes: number; hours: number; isQualified: boolean }[] = [];
+    let qualifyingDays = 0;
+    let totalMinutes = 0;
+
+    // Duyệt qua từng ngày lịch từ ngày vào đến ngày ra
+    const cur = new Date(dateVao.getFullYear(), dateVao.getMonth(), dateVao.getDate());
+    const endDay = new Date(dateRa.getFullYear(), dateRa.getMonth(), dateRa.getDate());
+
+    while (cur.getTime() <= endDay.getTime()) {
+        const y = cur.getFullYear();
+        const m = cur.getMonth();
+        const d = cur.getDate();
+
+        // Khung giờ hành chính: 07:00 đến 17:00
+        const officeStart = new Date(y, m, d, 7, 0, 0);
+        const officeEnd = new Date(y, m, d, 17, 0, 0);
+
+        // Khoảng điều trị trong ngày hôm đó:
+        // Bắt đầu: max(dateVao, officeStart)
+        // Kết thúc: min(dateRa, officeEnd)
+        const actualStart = Math.max(dateVao.getTime(), officeStart.getTime());
+        const actualEnd = Math.min(dateRa.getTime(), officeEnd.getTime());
+
+        const dayMinutes = actualEnd > actualStart ? Math.round((actualEnd - actualStart) / (1000 * 60)) : 0;
+        const dayHours = Math.round((dayMinutes / 60) * 10) / 10;
+        const isQualified = dayMinutes >= 240; // >= 4 giờ (240 phút)
+
+        if (isQualified) {
+            qualifyingDays++;
+        }
+        totalMinutes += dayMinutes;
+
+        const dateStr = `${String(d).padStart(2, '0')}/${String(m + 1).padStart(2, '0')}/${y}`;
+        dailyBreakdown.push({
+            dateStr,
+            minutes: dayMinutes,
+            hours: dayHours,
+            isQualified
+        });
+
+        // Tăng thêm 1 ngày
+        cur.setDate(cur.getDate() + 1);
+    }
+
+    const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
+
+    return {
+        totalMinutes,
+        totalHours,
+        qualifyingDays,
+        dailyBreakdown
+    };
+}
+
+/**
  * Kiểm toán và đối chiếu số ngày giường chuẩn (XML1) so với thực tế (XML3) cho 1 hồ sơ
  */
 export function calculateBedDaysForRecord(
     record: HosoRecord,
     allowedMaNhom: string[] = ['14', '15'],
     departmentsMap: Record<string, string> = {},
-    excludedMaBenhList: string[] = ['Z38', 'Z38.0', 'Z38.1', 'Z38.2', 'Z38.3', 'Z38.4', 'Z38.5', 'Z38.6', 'Z38.7', 'Z38.8']
+    excludedMaBenhList: string[] = ['Z38', 'Z38.0', 'Z38.1', 'Z38.2', 'Z38.3', 'Z38.4', 'Z38.5', 'Z38.6', 'Z38.7', 'Z38.8'],
+    sentRecordsSet?: Set<string>,
+    sentMaBnSet?: Set<string>
 ): BedDaysRecordAudit {
     const summary = record.summary || {};
     const maLk = String(summary.MA_LK || record.id || '').trim();
@@ -277,7 +350,7 @@ export function calculateBedDaysForRecord(
     // Làm tròn 2 chữ số thập phân cho số lượng thực tế
     sThucTe = Math.round(sThucTe * 100) / 100;
 
-    // 3. Phân loại 4 Nhóm Ca và tính S_chuẩn
+    // 3. Phân loại 4 Nhóm Ca và tính S_chuẩn theo Điều 6 Thông tư 39/2018/TT-BYT
     let caseGroup: BedDaysCaseGroup = 0;
     let caseGroupDesc = 'Chưa xác định';
     let sChuan = 0;
@@ -290,42 +363,87 @@ export function calculateBedDaysForRecord(
         warnNgoaiTruGiuong = true;
     }
 
-    if (maLoaiKcb === '09') {
+    // Kiểm tra các trường hợp được hưởng chính sách tính thêm ngày ra viện: (Ngày ra - Ngày vào nội trú) + 1
+    // Căn cứ Điểm a Khoản 1 Điều 6 Thông tư 39/2018/TT-BYT:
+    // 1. Tử vong tại cơ sở KBCB (5) hoặc Tử vong ngoại viện (8)
+    const isDeath = ['5', '8'].includes(ketQuaDtri);
+
+    // 2. Tiên lượng nặng xin về (6)
+    const isMoribund = ketQuaDtri === '6';
+
+    // 3. Chuyển cơ sở KBCB theo yêu cầu chuyên môn (chuyển tuyến trên hoặc chuyển tuyến dưới) (MA_LOAI_RV = 2)
+    const isTransfer = maLoaiRv === '2';
+
+    // 4. Bệnh nhân nặng đang điều trị chưa thuyên giảm (3) hoặc diễn biến nặng lên (4) nhưng gia đình xin về (MA_LOAI_RV = 4)
+    const isWorseOrUnchangedDischarge = maLoaiRv === '4' && ['3', '4'].includes(ketQuaDtri);
+
+    const isEligiblePlusOneDay = isDeath || isMoribund || isTransfer || isWorseOrUnchangedDischarge;
+
+    const isDaycare = maLoaiKcb === '04';
+    const isSentPayment = Boolean(
+        (sentRecordsSet && sentRecordsSet.has(maLk)) ||
+        (sentMaBnSet && sentMaBnSet.has(maBn))
+    );
+
+    let daycareHours = 0;
+    let daycareMinutes = 0;
+
+    if (isDaycare) {
+        // === NHÁNH ĐIỀU TRỊ BAN NGÀY (Khung giờ hành chính 07:00 - 17:00) ===
+        const daycareRes = calculateOfficeHoursDaycare(dateVao, dateRa);
+        daycareMinutes = daycareRes.totalMinutes;
+        daycareHours = daycareRes.totalHours;
+        sChuan = daycareRes.qualifyingDays;
+        caseGroup = sChuan > 0 ? 2 : 1;
+
+        if (sChuan === 0) {
+            caseGroupDesc = `Điều trị ban ngày (Khung giờ HC 07:00 - 17:00): Thời gian trong giờ HC = ${daycareHours}h (< 4h) -> Không được tính tiền ngày giường`;
+        } else {
+            caseGroupDesc = `Điều trị ban ngày (Khung giờ HC 07:00 - 17:00): ${sChuan} ngày đạt ≥ 4 giờ trong giờ HC (Tổng ${daycareHours}h) -> Tính ${sChuan} ngày giường ban ngày`;
+        }
+    } else if (maLoaiKcb === '09') {
         // Mã 09: Điều trị nội trú dưới 04 giờ -> Bắt buộc S_chuẩn = 0
         caseGroup = 1;
-        caseGroupDesc = 'Mã 09: Nội trú < 4 giờ (Không được thu giường)';
+        caseGroupDesc = 'Điểm d Điều 6: Mã 09 - Nội trú < 4 giờ (Không được tính tiền giường)';
         sChuan = 0;
     } else if (durationMinutes <= 240) {
-        // Nhóm 1: Nằm <= 4 giờ (<= 240 phút) dù trong ngày hay qua đêm
+        // Nhóm 1: Nằm <= 4 giờ (<= 240 phút tính từ NGAY_VAO_NOI_TRU) dù trong ngày hay qua đêm
         caseGroup = 1;
-        caseGroupDesc = 'Nhóm 1: Nằm ≤ 4 giờ (Không được thu tiền giường)';
+        caseGroupDesc = 'Điểm d Điều 6: Điều trị nội trú ≤ 4 giờ (Không được tính tiền ngày giường)';
         sChuan = 0;
         if (maLoaiKcb === '03') {
             warn09 = true; // Hồ sơ điều trị nội trú dưới 4h nên đổi sang mã 09
         }
-    } else if (diffCalendarDays === 0 && durationMinutes > 240) {
-        // Nhóm 2: Vào và Ra trong cùng 1 ngày (> 4 giờ)
+    } else if (durationMinutes > 240 && durationMinutes < 1440) {
+        // Nhóm 2 (Điểm c Khoản 1 Điều 6): Thời gian điều trị trên 4 giờ đến dưới 24 giờ
+        // (Áp dụng cho cả vào ra trong cùng ngày HOẶC vào hôm trước ra hôm sau < 24h)
         caseGroup = 2;
-        caseGroupDesc = 'Nhóm 2: Vào ra trong ngày (> 4 giờ) - Tính 1 ngày giường';
+        const sameDayText = diffCalendarDays === 0 ? 'cùng ngày' : 'vào hôm trước ra hôm sau';
+        caseGroupDesc = `Điểm c Điều 6: Điều trị nội trú ${durationHours}h (> 4h đến < 24h, ${sameDayText}) - Tính 01 ngày điều trị`;
         sChuan = 1;
-    } else if (diffCalendarDays > 0 && durationMinutes > 240) {
-        // Khác ngày (> 4 giờ)
-        const isDeathOrTransfer = ['5', '6', '8'].includes(ketQuaDtri) || maLoaiRv === '2';
-        if (isDeathOrTransfer) {
-            // Nhóm 4: Tử vong, Nặng xin về, Chuyển cơ sở KBCB theo yêu cầu chuyên môn
+    } else if (durationMinutes >= 1440 || diffCalendarDays >= 1) {
+        // Nằm từ 24 giờ trở lên (hoặc lệch ngày lịch)
+        if (isEligiblePlusOneDay) {
+            // Nhóm 4 (Điểm a Khoản 1 Điều 6): Nằm khác ngày - Tử vong, Tiên lượng nặng xin về, Chuyển tuyến, Bệnh nặng lên xin về
             caseGroup = 4;
-            caseGroupDesc = `Nhóm 4: Nằm khác ngày - Tử vong/Chuyển tuyến (${tenKetQuaDtri || 'Tử vong'} / ${tenLoaiRv || 'Chuyển tuyến'}) - Tính ngày ra trừ ngày vào + 1`;
+            let lyDoPlus = '';
+            if (isDeath) lyDoPlus = `Tử vong (${tenKetQuaDtri})`;
+            else if (isMoribund) lyDoPlus = `Tiên lượng nặng xin về (${tenKetQuaDtri})`;
+            else if (isTransfer) lyDoPlus = `Chuyển cơ sở KBCB (${tenLoaiRv})`;
+            else if (isWorseOrUnchangedDischarge) lyDoPlus = `Bệnh ${tenKetQuaDtri} xin về (${tenLoaiRv})`;
+
+            caseGroupDesc = `Điểm a Điều 6: ${lyDoPlus} - Tính: (Ngày ra - Ngày vào nội trú) + 1`;
             sChuan = diffCalendarDays + 1;
         } else {
-            // Nhóm 3: Ra viện thông thường
+            // Nhóm 3 (Điểm b Khoản 1 Điều 6): Ra viện thông thường
             caseGroup = 3;
-            caseGroupDesc = 'Nhóm 3: Nằm khác ngày - Ra viện thông thường - Tính ngày ra trừ ngày vào';
+            caseGroupDesc = 'Điểm b Điều 6: Nằm khác ngày (≥ 24h) - Ra viện thông thường - Tính: Ngày ra - Ngày vào nội trú';
             sChuan = diffCalendarDays;
         }
     }
 
     // Nếu là ngoại trú thông thường và không phải ban ngày (04), chuẩn giường nội trú là 0
-    if (isNgoaiTru) {
+    if (isNgoaiTru && !isDaycare) {
         sChuan = 0;
     }
 
@@ -362,7 +480,7 @@ export function calculateBedDaysForRecord(
         statusDesc = `Kê THIẾU ${Math.abs(diffDays)} ngày giường (XML3 kê: ${sThucTe}, Chuẩn: ${sChuan}) -> Thất thu`;
     }
 
-    // 5. Tạo dòng Lý do & Căn cứ chi tiết
+    // 5. Tạo dòng Lý do & Căn cứ chi tiết theo Điều 6 Thông tư 39/2018/TT-BYT
     let detailedReason = '';
     const ngayVaoTieuDe = isUsingNgayVaoNoiTru ? 'vào nội trú' : 'vào viện';
     const ngayVaoFieldLabel = isUsingNgayVaoNoiTru ? 'NGAY_VAO_NOI_TRU' : 'NGAY_VAO';
@@ -371,22 +489,32 @@ export function calculateBedDaysForRecord(
 
     if (warnNgoaiTruGiuong) {
         detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb} (${tenLoaiKcb}) là loại hình khám/ngoại trú -> Không được phép thanh toán giường nội trú nhóm 14. Thực tế XML3 kê ${sThucTe} ngày giường -> Sai loại hình KCB (Xuất toán 100%).`;
+    } else if (isDaycare) {
+        if (sChuan === 0) {
+            detailedReason = `Căn cứ quy định Điều trị ban ngày (Khung giờ hành chính 07:00 - 17:00): MA_LOAI_KCB = 04. Thời gian điều trị trong khung giờ hành chính = ${daycareHours}h (${daycareMinutes} phút < 240 phút = 4h tính từ NGAY_VAO: ${formatXmlDateDisplay(effectiveNgayVaoStr)} -> NGAY_RA: ${formatXmlDateDisplay(ngayRaStr)}) -> Không đủ điều kiện tính ngày giường ban ngày (Giường chuẩn = 0 ngày). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường ban ngày (Xuất toán BHYT 100%).` : 'Đúng chuẩn không thu tiền giường ban ngày.'}`;
+        } else {
+            detailedReason = `Căn cứ quy định Điều trị ban ngày (Khung giờ hành chính 07:00 - 17:00): MA_LOAI_KCB = 04. Thời gian điều trị trong khung giờ hành chính = ${daycareHours}h, có ${sChuan} ngày đạt mốc ≥ 4 giờ -> Giường chuẩn = ${sChuan} ngày ban ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn số ngày giường ban ngày.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường ban ngày (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường ban ngày (Thất thu viện phí).`}`;
+        }
     } else if (isExemptNewborn) {
         detailedReason = `Căn cứ: MA_BENH_CHINH = ${maBenhChinh} (${tenBenhChinh || 'Trẻ sinh ra sống'}) là trẻ sơ sinh sinh tại viện nằm ghép cùng mẹ -> Không kê tiền giường riêng ở XML3 theo quy định BHYT (Hồ sơ hợp lệ được loại trừ theo Rules).`;
     } else if (maLoaiKcb === '09') {
-        detailedReason = `Căn cứ: MA_LOAI_KCB = 09 (${tenLoaiKcb}), thời gian nằm ${durationHours}h (${durationMinutes} phút ≤ 240 phút tính từ ${ngayVaoTieuDe}) -> Thuộc Nhóm 1, Giường chuẩn = 0 ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán 100%)` : 'Đúng chuẩn không thu tiền giường'}.`;
+        detailedReason = `Căn cứ Điểm d Khoản 1 Điều 6 Thông tư 39/2018/TT-BYT: MA_LOAI_KCB = 09 (${tenLoaiKcb}), thời gian điều trị nội trú ${durationHours}h (${durationMinutes} phút ≤ 240 phút tính từ ${ngayVaoTieuDe} ${formatXmlDateDisplay(effectiveNgayVaoStr)}) -> Thuộc Nhóm 1, Giường chuẩn = 0 ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán 100%)` : 'Đúng chuẩn không thu tiền giường'}.`;
     } else if (caseGroup === 1) {
-        detailedReason = `Căn cứ: Tổng thời gian nằm T = ${durationHours}h (${durationMinutes} phút ≤ 240 phút = 4h tính từ ${ngayVaoTieuDe}) -> Thuộc Nhóm 1, theo quy định BHYT không được thu tiền giường (Giường chuẩn = 0 ngày). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT 100%).` : 'Đúng chuẩn không thu tiền giường.'}${warn09 ? ' (Lưu ý: Ca điều trị nội trú dưới 4h nên đổi MA_LOAI_KCB sang mã 09).' : ''}`;
+        detailedReason = `Căn cứ Điểm d Khoản 1 Điều 6 Thông tư 39/2018/TT-BYT: Tổng thời gian điều trị nội trú T = ${durationHours}h (${durationMinutes} phút ≤ 240 phút = 4h tính từ ${ngayVaoTieuDe} ${formatXmlDateDisplay(effectiveNgayVaoStr)}) -> Thuộc Nhóm 1, không được tính tiền ngày giường bệnh (Giường chuẩn = 0 ngày). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT 100%).` : 'Đúng chuẩn không thu tiền giường.'}${warn09 ? ' (Lưu ý: Ca điều trị nội trú dưới 4h nên đổi MA_LOAI_KCB sang mã 09).' : ''}`;
     } else if (caseGroup === 2) {
-        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, ${ngayVaoFieldLabel} và ngày ra trong cùng ngày (${ngayVaoNgay}), thời gian nằm ${durationHours}h (> 4h) -> Thuộc Nhóm 2, theo quy định chỉ tính tròn 1 ngày giường (Giường chuẩn = 1). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn 1 ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán do cộng dồn sai).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
+        const sameDayDesc = diffCalendarDays === 0 ? `trong cùng ngày (${ngayVaoNgay})` : `vào hôm trước ra hôm sau (${ngayVaoNgay} -> ${ngayRaNgay})`;
+        detailedReason = `Căn cứ Điểm c Khoản 1 Điều 6 Thông tư 39/2018/TT-BYT: MA_LOAI_KCB = ${maLoaiKcb}, điều trị nội trú ${sameDayDesc}, thời gian T = ${durationHours}h (> 4h đến < 24h tính từ ${ngayVaoFieldLabel}: ${formatXmlDateDisplay(effectiveNgayVaoStr)}) -> Thuộc Nhóm 2, chỉ được tính tròn 01 ngày điều trị (Giường chuẩn = 1). Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn 1 ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán do cộng dồn sai).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
     } else if (caseGroup === 4) {
-        const lyDoNhom4 = ['5', '6', '8'].includes(ketQuaDtri)
-            ? `KET_QUA_DTRI = ${ketQuaDtri} (${tenKetQuaDtri})`
-            : `MA_LOAI_RV = ${maLoaiRv} (${tenLoaiRv})`;
-        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, thời gian nằm ${durationHours}h (> 4h, lệch ${diffCalendarDays} ngày lịch tính từ ${ngayVaoFieldLabel}: ${ngayVaoNgay} -> ${ngayRaNgay}), ${lyDoNhom4} -> Thuộc Nhóm 4 (${tenKetQuaDtri || tenLoaiRv || 'Tử vong/Chuyển tuyến'}), được tính thêm ngày ra viện: Giường chuẩn = (Ngày ra - Ngày ${ngayVaoTieuDe}) + 1 = ${diffCalendarDays} + 1 = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn được cộng ngày ra viện.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Khoa chưa cộng thêm ngày ra viện theo chế độ).`}`;
+        let lyDoNhom4 = '';
+        if (isDeath) lyDoNhom4 = `Tử vong (KET_QUA_DTRI = ${ketQuaDtri} - ${tenKetQuaDtri})`;
+        else if (isMoribund) lyDoNhom4 = `Tiên lượng nặng xin về (KET_QUA_DTRI = 6 - ${tenKetQuaDtri})`;
+        else if (isTransfer) lyDoNhom4 = `Chuyển cơ sở KBCB (MA_LOAI_RV = 2 - ${tenLoaiRv})`;
+        else if (isWorseOrUnchangedDischarge) lyDoNhom4 = `Bệnh ${tenKetQuaDtri} gia đình xin về (KET_QUA_DTRI = ${ketQuaDtri}, MA_LOAI_RV = 4 - ${tenLoaiRv})`;
+
+        detailedReason = `Căn cứ Điểm a Khoản 1 Điều 6 Thông tư 39/2018/TT-BYT: MA_LOAI_KCB = ${maLoaiKcb}, thời gian điều trị nội trú ${durationHours}h (lệch ${diffCalendarDays} ngày lịch tính từ ${ngayVaoFieldLabel}: ${ngayVaoNgay} -> ${ngayRaNgay}), ${lyDoNhom4} -> Thuộc Nhóm 4, được tính thêm ngày ra viện: Giường chuẩn = (Ngày ra - Ngày ${ngayVaoTieuDe}) + 1 = ${diffCalendarDays} + 1 = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn được cộng ngày ra viện.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Khoa chưa cộng thêm ngày ra viện theo chế độ).`}`;
     } else {
         // Nhóm 3: Ra viện thông thường
-        detailedReason = `Căn cứ: MA_LOAI_KCB = ${maLoaiKcb}, thời gian nằm ${durationHours}h (> 4h, lệch ${diffCalendarDays} ngày lịch tính từ ${ngayVaoFieldLabel}: ${ngayVaoNgay} -> ${ngayRaNgay}), KET_QUA_DTRI = ${ketQuaDtri || 'chưa ghi'} (${tenKetQuaDtri || 'thông thường'}), MA_LOAI_RV = ${maLoaiRv || '1'} (${tenLoaiRv || 'Ra viện'}) -> Thuộc Nhóm 3 (Ra viện thông thường), công thức Giường chuẩn = Ngày ra - Ngày ${ngayVaoTieuDe} = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn số ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
+        detailedReason = `Căn cứ Điểm b Khoản 1 Điều 6 Thông tư 39/2018/TT-BYT: MA_LOAI_KCB = ${maLoaiKcb}, thời gian điều trị nội trú ${durationHours}h (lệch ${diffCalendarDays} ngày lịch tính từ ${ngayVaoFieldLabel}: ${ngayVaoNgay} -> ${ngayRaNgay}), KET_QUA_DTRI = ${ketQuaDtri || 'chưa ghi'} (${tenKetQuaDtri || 'thông thường'}), MA_LOAI_RV = ${maLoaiRv || '1'} (${tenLoaiRv || 'Ra viện'}) -> Thuộc Nhóm 3 (Ra viện thông thường), công thức: Giường chuẩn = Ngày ra - Ngày ${ngayVaoTieuDe} = ${sChuan} ngày. Thực tế XML3 kê ${sThucTe} ngày -> ${diffDays === 0 ? 'Đúng chuẩn số ngày giường.' : diffDays > 0 ? `Kê THỪA ${diffDays} ngày giường (Xuất toán BHYT).` : `Kê THIẾU ${Math.abs(diffDays)} ngày giường (Thất thu viện phí).`}`;
     }
 
     return {
@@ -425,11 +553,27 @@ export function calculateBedDaysForRecord(
         isExemptNewborn,
         warn09,
         warnNgoaiTruGiuong,
+        isDaycare,
+        daycareHours,
+        daycareMinutes,
+        isSentPayment,
         estimatedOverCost,
         totalBedCost,
         bedServicesCount,
         rawRecord: record
     };
+}
+
+/**
+ * Kiểm toán ngày giường Điều trị ban ngày (áp dụng cho Rule CHECK_BED_DAYS_DAYCARE)
+ */
+export function calculateBedDaysDaycareForRecord(
+    record: HosoRecord,
+    allowedMaNhom: string[] = ['14', '15'],
+    departmentsMap: Record<string, string> = {},
+    excludedMaBenhList: string[] = ['Z38', 'Z38.0']
+): BedDaysRecordAudit {
+    return calculateBedDaysForRecord(record, allowedMaNhom, departmentsMap, excludedMaBenhList);
 }
 
 /**

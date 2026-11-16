@@ -29,43 +29,43 @@ interface RuleMatrixItem {
 const ruleMatrixData: RuleMatrixItem[] = [
     {
         key: '1',
-        groupName: 'Nhóm 1: Nằm ≤ 4 giờ',
+        groupName: 'Nhóm 1: Nằm ≤ 4 giờ (Điểm d)',
         tagColor: 'default',
-        timeCondition: 'T ≤ 240 phút (≤ 4 giờ) (bất kể cùng ngày hay qua đêm)',
-        rvCondition: 'Mọi kết quả điều trị / loại ra viện',
+        timeCondition: 'T ≤ 240 phút (≤ 4 giờ tính từ NGAY_VAO_NOI_TRU đến NGAY_RA)',
+        rvCondition: 'Mọi kết quả điều trị / loại ra viện (kể cả cấp cứu, tử vong, chuyển viện ≤ 4h)',
         formula: 'S_chuẩn = 0 ngày',
         formulaDesc: 'Không được thanh toán tiền ngày giường BHYT',
-        note: 'Nếu hồ sơ điều trị nội trú (MA_LOAI_KCB = 03) mà T ≤ 4h, cần chuyển sang mã 09 để tránh xuất toán'
+        note: 'Theo Điểm d và Điểm c đoạn 2 Điều 6: Không tính tiền ngày giường nội trú; nếu điều trị nội trú dưới 4h cần chuyển sang mã 09'
     },
     {
         key: '2',
-        groupName: 'Nhóm 2: Cùng ngày lịch (> 4h)',
+        groupName: 'Nhóm 2: > 4h đến < 24h (Điểm c)',
         tagColor: 'blue',
-        timeCondition: 'T > 240 phút và Ngày vào nội trú = Ngày ra (cùng ngày)',
+        timeCondition: '240 phút < T < 1440 phút (trong cùng ngày hoặc vào hôm trước ra hôm sau)',
         rvCondition: 'Mọi kết quả điều trị / loại ra viện',
         formula: 'S_chuẩn = 1 ngày',
-        formulaDesc: 'Tính tròn 1 ngày giường',
-        note: 'Chỉ được kê đúng 1 ngày giường, kê từ 2 ngày trở lên sẽ bị xuất toán phần chênh lệch'
+        formulaDesc: 'Tính tròn 01 ngày điều trị',
+        note: 'Theo Điểm c Điều 6: Vào và ra trong cùng ngày hoặc vào hôm trước ra hôm sau có thời gian điều trị trên 04h đến dưới 24h thì tính tròn 01 ngày điều trị'
     },
     {
         key: '3',
-        groupName: 'Nhóm 3: Khác ngày - Ra viện thường',
+        groupName: 'Nhóm 3: Nằm ≥ 24h - Ra viện thường (Điểm b)',
         tagColor: 'green',
-        timeCondition: 'T > 240 phút và Ngày ra > Ngày vào nội trú (lệch ≥ 1 ngày lịch)',
-        rvCondition: 'Ra viện thông thường (MA_LOAI_RV ≠ 2 và KET_QUA_DTRI không thuộc [5, 6, 8])',
+        timeCondition: 'T ≥ 1440 phút (≥ 24 giờ, lệch ≥ 1 ngày lịch tính từ NGAY_VAO_NOI_TRU)',
+        rvCondition: 'Ra viện thông thường (không thuộc các trường hợp hưởng chế độ cộng ngày tại Điểm a)',
         formula: 'S_chuẩn = Ngày ra - Ngày vào NT',
         formulaDesc: 'Không tính ngày ra viện (chỉ tính ngày lịch chênh lệch)',
-        note: 'Ví dụ: Vào nội trú 05/11, Ra 08/11 → S_chuẩn = 8 - 5 = 3 ngày. Kê 4 ngày bị xuất toán 1 ngày'
+        note: 'Theo Điểm b Điều 6: Ví dụ vào nội trú 05/11, Ra 08/11 → S_chuẩn = 8 - 5 = 3 ngày. Kê 4 ngày bị xuất toán 1 ngày'
     },
     {
         key: '4',
-        groupName: 'Nhóm 4: Khác ngày - Tử vong / Chuyển tuyến',
+        groupName: 'Nhóm 4: Nằm ≥ 24h - Tử vong / Chuyển tuyến / Nặng xin về (Điểm a)',
         tagColor: 'purple',
-        timeCondition: 'T > 240 phút và Ngày ra > Ngày vào nội trú (lệch ≥ 1 ngày lịch)',
-        rvCondition: 'Tử vong/Nặng xin về (KET_QUA_DTRI ∈ [5, 6, 8]) HOẶC Chuyển tuyến (MA_LOAI_RV = 2)',
+        timeCondition: 'T ≥ 1440 phút (≥ 24 giờ, lệch ≥ 1 ngày lịch tính từ NGAY_VAO_NOI_TRU)',
+        rvCondition: 'Tử vong (5, 8), Tiên lượng nặng xin về (6), Chuyển viện tuyến trên/dưới (2), Bệnh nặng/chưa thuyên giảm xin về (3, 4 + RV=4)',
         formula: 'S_chuẩn = (Ngày ra - Ngày vào NT) + 1',
         formulaDesc: 'Được tính thêm ngày ra viện (+1 ngày)',
-        note: 'Ví dụ: Vào nội trú 04/11, Chuyển tuyến 12/11 → S_chuẩn = (12 - 4) + 1 = 9 ngày. Nếu kê 8 ngày là thất thu viện phí'
+        note: 'Theo Điểm a Điều 6: Được hưởng thêm ngày ra viện (+1). Ví dụ vào nội trú 07/11, bệnh nặng xin về 09/11 → S_chuẩn = (9 - 7) + 1 = 3 ngày (hợp lệ 100%)'
     }
 ];
 
@@ -128,9 +128,10 @@ export default function BedDaysRulesGuide() {
                 }
                 description={
                     <div className="text-xs text-slate-600 mt-1 leading-relaxed">
-                        Quy tắc đối chiếu số ngày giường điều trị nội trú dựa trên <strong>Quyết định 3618/QĐ-BHXH</strong> của Tổng Giám đốc BHXH Việt Nam 
-                        về ban hành Quy trình giám định BHYT, kết hợp các Thông tư liên tịch Bộ Y tế - BHXH Việt Nam về hướng dẫn thanh toán chi phí KCB BHYT. 
-                        Số ngày giường thanh toán BHYT (XML3 nhóm 14, 15) phải tuyệt đối khớp với thời gian điều trị nội trú thực tế (tính từ mốc <strong>NGAY_VAO_NOI_TRU</strong> đến <strong>NGAY_RA</strong> theo QĐ 130/QĐ-BYT) và tính chất ra viện (XML7/XML1).
+                        Quy tắc đối chiếu số ngày giường điều trị nội trú dựa trên <strong>Điều 6 Thông tư 39/2018/TT-BYT</strong> (và Thông tư 22/2023/TT-BYT sửa đổi, bổ sung) của Bộ Y tế 
+                        về xác định số ngày giường, áp dụng mức giá và thanh toán tiền ngày giường BHYT, kết hợp <strong>Quyết định 3618/QĐ-BHXH</strong> của BHXH Việt Nam 
+                        và chuẩn dữ liệu XML <strong>Quyết định 130/QĐ-BYT</strong>. 
+                        Mốc thời gian bắt đầu điều trị nội trú bắt buộc tính từ <strong>NGAY_VAO_NOI_TRU</strong> đến <strong>NGAY_RA</strong>, đối chiếu với tính chất ra viện để xác định chính xác số ngày giường chuẩn.
                     </div>
                 }
                 type="info"

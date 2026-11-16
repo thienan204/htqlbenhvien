@@ -485,6 +485,51 @@
     "title": "Quản lý Nhân viên"
   },
   {
+    "value": "/staff/attendance",
+    "label": "/staff/attendance (Attendance)",
+    "title": "/staff/attendance"
+  },
+  {
+    "value": "/staff/attendance-manager",
+    "label": "/staff/attendance-manager (Attendance Manager)",
+    "title": "/staff/attendance-manager"
+  },
+  {
+    "value": "/staff/attendance/compensatory",
+    "label": "/staff/attendance/compensatory (Compensatory)",
+    "title": "/staff/attendance/compensatory"
+  },
+  {
+    "value": "/staff/attendance/duty",
+    "label": "/staff/attendance/duty (Duty)",
+    "title": "/staff/attendance/duty"
+  },
+  {
+    "value": "/staff/attendance/duty/schedule",
+    "label": "/staff/attendance/duty/schedule (Schedule)",
+    "title": "/staff/attendance/duty/schedule"
+  },
+  {
+    "value": "/staff/attendance/hazard",
+    "label": "/staff/attendance/hazard (Hazard)",
+    "title": "/staff/attendance/hazard"
+  },
+  {
+    "value": "/staff/attendance/overtime",
+    "label": "/staff/attendance/overtime (Overtime)",
+    "title": "/staff/attendance/overtime"
+  },
+  {
+    "value": "/staff/leave-management",
+    "label": "/staff/leave-management (Leave Management)",
+    "title": "/staff/leave-management"
+  },
+  {
+    "value": "/staff/my-attendance",
+    "label": "/staff/my-attendance (My Attendance)",
+    "title": "/staff/my-attendance"
+  },
+  {
     "value": "/staff/quan-ly-lich-su-dich-vu",
     "label": "/staff/quan-ly-lich-su-dich-vu (Quan Ly Lich Su Dich Vu)",
     "title": "/staff/quan-ly-lich-su-dich-vu"
@@ -503,6 +548,11 @@
     "value": "/system-categories",
     "label": "/system-categories (Danh mục hệ thống)",
     "title": "Danh mục hệ thống"
+  },
+  {
+    "value": "/system-config",
+    "label": "/system-config (System Config)",
+    "title": "/system-config"
   },
   {
     "value": "/tt32",

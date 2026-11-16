@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     Modal, Tabs, Table, Tag, Card, Row, Col, Statistic, Select, Input,
-    Button, Space, Tooltip, Badge, Alert, Typography
+    Button, Space, Tooltip, Badge, Alert, Typography, Segmented
 } from 'antd';
 import {
     FileExcelOutlined, SearchOutlined, CheckCircleOutlined,
@@ -38,6 +38,8 @@ interface BedDaysAuditModalProps {
     excludedMaBenh?: string; // Lấy động từ excludeConditionValue của rule trong /rules (Z38.0)
     departments?: Record<string, string>;
     isRuleActive?: boolean; // Trạng thái BẬT/TẮT của quy tắc trong /rules
+    sentRecordsSet?: Set<string>; // Danh sách MA_LK đã đề nghị thanh toán (có trong ho-so-da-gui)
+    sentMaBnSet?: Set<string>; // Danh sách MA_BN đã đề nghị thanh toán
     onSelectRecord?: (record: any) => void;
 }
 
@@ -49,9 +51,13 @@ export default function BedDaysAuditModal({
     excludedMaBenh = 'Z38.0,Z38,Z38.1,Z38.2,Z38.3,Z38.4,Z38.5,Z38.6,Z38.7,Z38.8',
     departments = {},
     isRuleActive = true,
+    sentRecordsSet,
+    sentMaBnSet,
     onSelectRecord
 }: BedDaysAuditModalProps) {
     const [activeTab, setActiveTab] = useState<string>('dept');
+    const [filterBedCategory, setFilterBedCategory] = useState<'ALL' | 'NOI_TRU' | 'BAN_NGAY'>('ALL');
+    const [filterPayment, setFilterPayment] = useState<'ALL' | 'SENT' | 'NOT_SENT'>('ALL');
     const [filterKcb, setFilterKcb] = useState<string>('ALL');
     const [filterDept, setFilterDept] = useState<string>('ALL');
     const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -62,10 +68,10 @@ export default function BedDaysAuditModal({
     const targetMaNhomList = useMemo(() => parseAllowedMaNhom(allowedMaNhom), [allowedMaNhom]);
     const targetExcludedMaBenhList = useMemo(() => parseExcludedMaBenh(excludedMaBenh), [excludedMaBenh]);
 
-    // 2. Chạy đối soát cho toàn bộ hồ sơ (kèm danh mục khoa phòng và danh sách loại trừ Z38)
+    // 2. Chạy đối soát cho toàn bộ hồ sơ (kèm danh mục khoa phòng, danh sách loại trừ Z38 và cờ đã gửi thanh toán)
     const allAudits = useMemo(() => {
-        return records.map(r => calculateBedDaysForRecord(r, targetMaNhomList, departments, targetExcludedMaBenhList));
-    }, [records, targetMaNhomList, departments, targetExcludedMaBenhList]);
+        return records.map(r => calculateBedDaysForRecord(r, targetMaNhomList, departments, targetExcludedMaBenhList, sentRecordsSet, sentMaBnSet));
+    }, [records, targetMaNhomList, departments, targetExcludedMaBenhList, sentRecordsSet, sentMaBnSet]);
 
     // 3. Danh sách các khoa xuất hiện trong dữ liệu (kèm tên khoa)
     const departmentOptions = useMemo(() => {
@@ -92,6 +98,22 @@ export default function BedDaysAuditModal({
     // 4. Lọc dữ liệu kiểm toán
     const filteredAudits = useMemo(() => {
         return allAudits.filter(item => {
+            // Lọc theo Chế độ giường (Nội trú 24/24h vs Ban ngày 7h-17h)
+            if (filterBedCategory === 'NOI_TRU' && item.maLoaiKcb !== '03') {
+                return false;
+            }
+            if (filterBedCategory === 'BAN_NGAY' && item.maLoaiKcb !== '04') {
+                return false;
+            }
+
+            // Lọc theo Trạng thái Đề nghị thanh toán (kết nối ho-so-da-gui)
+            if (filterPayment === 'SENT' && !item.isSentPayment) {
+                return false;
+            }
+            if (filterPayment === 'NOT_SENT' && item.isSentPayment) {
+                return false;
+            }
+
             // Lọc Loại hình KCB
             if (filterKcb !== 'ALL' && item.maLoaiKcb !== filterKcb) {
                 return false;
@@ -129,20 +151,30 @@ export default function BedDaysAuditModal({
 
             return true;
         });
-    }, [allAudits, filterKcb, filterDept, filterStatus, filterGroup, searchText]);
+    }, [allAudits, filterBedCategory, filterPayment, filterKcb, filterDept, filterStatus, filterGroup, searchText]);
 
     // 5. Thống kê theo Khoa/Phòng
     const departmentSummaries = useMemo(() => {
         return aggregateDepartmentBedAudit(filteredAudits);
     }, [filteredAudits]);
 
-    // 6. Tính toán các chỉ số KPI tổng
-    const totalCount = allAudits.length;
-    const correctCount = allAudits.filter(a => a.status === 'CORRECT').length;
-    const overCount = allAudits.filter(a => a.status === 'OVER_BED' || a.status === 'INVALID_KCB').length;
-    const underCount = allAudits.filter(a => a.status === 'UNDER_BED').length;
-    const warn09Count = allAudits.filter(a => a.warn09).length;
-    const totalEstimatedOverCost = allAudits.reduce((acc, a) => acc + (a.estimatedOverCost || 0), 0);
+    // 6. Tính toán các chỉ số KPI tổng theo danh mục giường và trạng thái gửi thanh toán đang chọn
+    const categoryAudits = useMemo(() => {
+        return allAudits.filter(a => {
+            if (filterBedCategory === 'NOI_TRU' && a.maLoaiKcb !== '03') return false;
+            if (filterBedCategory === 'BAN_NGAY' && a.maLoaiKcb !== '04') return false;
+            if (filterPayment === 'SENT' && !a.isSentPayment) return false;
+            if (filterPayment === 'NOT_SENT' && a.isSentPayment) return false;
+            return true;
+        });
+    }, [allAudits, filterBedCategory, filterPayment]);
+
+    const totalCount = categoryAudits.length;
+    const correctCount = categoryAudits.filter(a => a.status === 'CORRECT').length;
+    const overCount = categoryAudits.filter(a => a.status === 'OVER_BED' || a.status === 'INVALID_KCB').length;
+    const underCount = categoryAudits.filter(a => a.status === 'UNDER_BED').length;
+    const warn09Count = categoryAudits.filter(a => a.warn09).length;
+    const totalEstimatedOverCost = categoryAudits.reduce((acc, a) => acc + (a.estimatedOverCost || 0), 0);
 
     // 6.1 Xử lý click nhanh vào KPI Cards để lọc danh sách bên dưới
     const handleCardClick = (targetStatus: string) => {
@@ -359,7 +391,7 @@ export default function BedDaysAuditModal({
         {
             title: 'Mã LK / Bệnh nhân',
             key: 'patient',
-            width: 180,
+            width: 190,
             render: (_, r) => (
                 <div>
                     <div className="font-bold text-slate-800">{r.hoTen || 'Chưa có tên'}</div>
@@ -370,6 +402,17 @@ export default function BedDaysAuditModal({
                             ICD: <span className="font-bold text-slate-700">{r.maBenhChinh}</span>
                         </div>
                     )}
+                    <div className="mt-1">
+                        {r.isSentPayment ? (
+                            <Tag color="success" className="text-[10px] font-bold m-0 border-emerald-300 bg-emerald-50 text-emerald-700">
+                                <CheckCircleOutlined /> Đã đề nghị TT
+                            </Tag>
+                        ) : (
+                            <Tag color="default" className="text-[10px] text-slate-400 m-0">
+                                Chưa gửi TT
+                            </Tag>
+                        )}
+                    </div>
                 </div>
             )
         },
@@ -429,9 +472,15 @@ export default function BedDaysAuditModal({
                         <div>
                             Ra: <span className="font-mono">{formatXmlDateDisplay(r.ngayRaStr)}</span>
                         </div>
-                        <div className="text-slate-500 font-semibold pt-0.5">
-                            Thời gian NT: <span className="text-blue-600 font-bold">{r.durationHours}h</span> ({r.durationMinutes} phút)
-                        </div>
+                        {r.isDaycare ? (
+                            <div className="text-amber-700 font-semibold pt-0.5">
+                                Khung giờ HC (7h-17h): <span className="text-amber-800 font-bold">{r.daycareHours}h</span> ({r.daycareMinutes} phút)
+                            </div>
+                        ) : (
+                            <div className="text-slate-500 font-semibold pt-0.5">
+                                Thời gian NT: <span className="text-blue-600 font-bold">{r.durationHours}h</span> ({r.durationMinutes} phút)
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -516,6 +565,11 @@ export default function BedDaysAuditModal({
                                     )}
                                 </div>
                                 <div className="text-[11px] text-red-600 font-medium mt-1">{r.statusDesc}</div>
+                                {r.isSentPayment && (
+                                    <div className="mt-1 text-[11px] font-bold text-rose-700 bg-rose-100/80 px-2 py-1 rounded border border-rose-300">
+                                        🚨 Đã gửi Cổng BHXH (đề nghị thanh toán) - Nguy cơ xuất toán trực tiếp!
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div>
@@ -695,6 +749,58 @@ export default function BedDaysAuditModal({
                         className="rounded-xl border-amber-200 bg-amber-50"
                     />
                 )}
+
+                {/* 0. Bộ chuyển đổi Chế độ kiểm soát Giường & Trạng thái Cổng BHXH (ho-so-da-gui) */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+                    <Segmented
+                        value={filterBedCategory}
+                        onChange={(val) => setFilterBedCategory(val as any)}
+                        options={[
+                            {
+                                label: (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 font-bold text-xs">
+                                        🏥 Tất cả ca ({allAudits.length})
+                                    </span>
+                                ),
+                                value: 'ALL'
+                            },
+                            {
+                                label: (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 font-bold text-xs text-blue-700">
+                                        🛏️ Nội trú thông thường 24/24h ({allAudits.filter(a => a.maLoaiKcb === '03').length})
+                                    </span>
+                                ),
+                                value: 'NOI_TRU'
+                            },
+                            {
+                                label: (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 font-bold text-xs text-amber-700">
+                                        ☀️ Điều trị ban ngày (07h - 17h) ({allAudits.filter(a => a.maLoaiKcb === '04').length})
+                                    </span>
+                                ),
+                                value: 'BAN_NGAY'
+                            }
+                        ]}
+                        size="middle"
+                        className="bg-white p-1 shadow-sm border border-slate-200 font-semibold"
+                    />
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-600">Trạng thái Cổng BHXH (ho-so-da-gui):</span>
+                        <Select
+                            style={{ width: 250 }}
+                            value={filterPayment}
+                            onChange={setFilterPayment}
+                            size="middle"
+                            options={[
+                                { value: 'ALL', label: `Tất cả trạng thái gửi (${allAudits.length})` },
+                                { value: 'SENT', label: `✅ Đã đề nghị thanh toán (${allAudits.filter(a => a.isSentPayment).length})` },
+                                { value: 'NOT_SENT', label: `⏳ Chưa gửi thanh toán (${allAudits.filter(a => !a.isSentPayment).length})` }
+                            ]}
+                        />
+                    </div>
+                </div>
+
                 {/* 1. Hàng KPI Cards (Hỗ trợ click nhanh để lọc danh sách) */}
                 <Row gutter={[16, 16]}>
                     <Col span={4}>

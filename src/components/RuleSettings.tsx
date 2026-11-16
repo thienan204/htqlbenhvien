@@ -629,11 +629,27 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         </ul>
                     </div>
                     <div className="mt-2">
-                        <div className="font-bold text-blue-700">10. Kiểm soát tiền ngày giường điều trị (XML1 vs XML3)</div>
-                        <div className="text-gray-600 mb-1">Kiểm toán tự động số ngày giường kê khai (nhóm 14, 15) so với thời gian điều trị thực tế (4 nhóm ca theo QĐ 3618/QĐ-BHXH & QĐ 130/QĐ-BYT).</div>
+                        <div className="font-bold text-blue-700">10. Kiểm soát tiền ngày giường nội trú (24/24h) (XML1 vs XML3)</div>
+                        <div className="text-gray-600 mb-1">Kiểm toán tự động số ngày giường nội trú kê khai (nhóm 14, 15) so với thời gian điều trị thực tế (4 nhóm ca theo Điều 6 Thông tư 39/2018/TT-BYT & QĐ 130/QĐ-BYT). Áp dụng cho mã KCB 03, 09.</div>
                         <ul className="list-disc pl-4 space-y-1">
                             <li>Cú pháp chuẩn: <code className="bg-white px-1 border rounded text-red-600">CHECK_BED_DAYS(MA_LOAI_KCB, NGAY_VAO_NOI_TRU, NGAY_RA, KET_QUA_DTRI, MA_LOAI_RV)</code></li>
                             <li><span className="text-gray-500 italic">Mẹo: Hệ thống tự động căn cứ theo NGAY_VAO_NOI_TRU (thời điểm vào khoa nội trú phát sinh giường) để tính giường chuẩn, tự động loại trừ trẻ sơ sinh Z38 theo cấu hình loại trừ.</span></li>
+                        </ul>
+                    </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">11. Kiểm soát tiền ngày giường điều trị ban ngày (07h - 17h) (XML1 vs XML3)</div>
+                        <div className="text-gray-600 mb-1">Kiểm toán tự động số ngày giường điều trị ban ngày (mã KCB 04) trong khung giờ hành chính (07:00 - 17:00). Mốc tính 1 ngày giường là thời gian điều trị thực tế đạt ≥ 4 giờ (240 phút) trong giờ hành chính.</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Cú pháp chuẩn: <code className="bg-white px-1 border rounded text-red-600">CHECK_BED_DAYS_DAYCARE(MA_LOAI_KCB, NGAY_VAO, NGAY_RA)</code></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Tự động tính phần giao nhau giữa khoảng thời gian [NGAY_VAO, NGAY_RA] với khung [07:00, 17:00] mỗi ngày. Mỗi ngày đạt ≥ 4 giờ hành chính được tính 1 ngày giường.</span></li>
+                        </ul>
+                    </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">12. Kiểm soát tỷ lệ thanh toán BHYT (XML1 vs XML2, XML3)</div>
+                        <div className="text-gray-600 mb-1">Kiểm toán tự động tỷ lệ thanh toán BHYT (TYLE_TT_BH) của toàn bộ thuốc và dịch vụ kỹ thuật theo mức hưởng thẻ (1, 2, 5 = 100%; 3 = 95%; 4 = 80%), thời hạn thẻ và mốc miễn cùng chi trả (NGAY_MIEN_CCT).</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Cú pháp chuẩn: <code className="bg-white px-1 border rounded text-red-600">CHECK_TYLE_TT_BHYT(MA_THE_BHYT, GT_THE_TU, GT_THE_DEN, NGAY_MIEN_CCT)</code></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Hệ thống tự động loại trừ dòng tự túc (TYLE_TT_BH = 0) và dòng có tỷ lệ riêng (TYLE_TT_DV &lt; 100). Hỗ trợ hồ sơ nhiều thẻ (ngăn cách bằng dấu ;), kiểm tra chỉ định ngoài hạn thẻ, kiểm tra ngày gối thẻ và tự động chia đợt theo mốc miễn cùng chi trả.</span></li>
                         </ul>
                     </div>
                 </div>

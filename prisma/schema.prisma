@@ -554,6 +554,9 @@ model Mau05Catalog {
   buffer_time        Int?
   is_concurrent      Boolean  @default(false)
   yeu_cau_may_moc    String?
+  bat_buoc_co_ma_may Boolean? @default(false)
+  nguon_du_lieu      String?  @default("BENH_VIEN")
+  ngay_hieu_luc_bhyt String?
 }
 
 model Mau06Catalog {
