@@ -78,7 +78,8 @@ export async function POST(request: Request) {
             morningServices = [],
             afternoonServices = [],
             serviceStaffMappings = {}, 
-            isStrictServiceStaffMapping = true,
+            serviceMappingMode = 'FLEXIBLE',
+            isStrictServiceStaffMapping,
             staffShifts = {}, 
             staffShiftMode = 'STRICT',
             morningStaffs = [], 
@@ -88,6 +89,9 @@ export async function POST(request: Request) {
             patientTimeConstraints = [], 
             heuristic = 'LPT' 
         } = body;
+
+        // Xác định chế độ gán dịch vụ: STRICT (Cố định cứng) vs FLEXIBLE (Linh hoạt, san sẻ ca khi hết giờ)
+        const isStrict = serviceMappingMode === 'STRICT' || isStrictServiceStaffMapping === true;
 
         // Xử lý bản đồ nhân sự được gán cứng vào các dịch vụ cụ thể
         const allAssignedStaffIds = new Set<string>();
@@ -380,6 +384,7 @@ export async function POST(request: Request) {
             const task = services[i];
             const ma_dich_vu = String(task.ma_dich_vu);
             const ma_ba = String(task.ma_ba);
+            const ngay_yl = task.ngay_yl || task.thoi_gian_chi_dinh || task._originalRow?.NGAY_YL || task._originalRow?.NGAY_YLENH || task._originalRow?.THOIGIAN || task._originalRow?.THOI_GIAN || '';
             const config = catalogMap[ma_dich_vu] || { time: 10, qualification: null, bufferTime: deptBufferTime, isConcurrent: false };
             const requiredTime = config.time;
             const requiredQual = config.qualification ? config.qualification.toLowerCase() : null;
@@ -387,7 +392,7 @@ export async function POST(request: Request) {
             const staffOccupiedTime = config.isConcurrent ? Math.max(1, currentServiceBufferTime) : requiredTime;
             const requiredScopes = serviceScopes[ma_dich_vu] || [];
             
-            let capableStaff = availableStaff.filter(s => {
+            const rawCapableStaff = availableStaff.filter(s => {
                 if (!s.certificates || s.certificates.length === 0) return false;
                 for (const cert of s.certificates) {
                     if (cert.dich_vu_ky_thuat) {
@@ -413,34 +418,44 @@ export async function POST(request: Request) {
                     : (typeof assignedStaffConfig === 'string' ? [assignedStaffConfig] : []);
             }
 
-            if (isStrictServiceStaffMapping) {
+            let capableStaff: any[] = [];
+
+            if (isStrict) {
                 // CHẾ ĐỘ CHIA CỨNG DỊCH VỤ (STRICT):
                 if (assignedStaffTargetIds.length > 0) {
                     // 1. Dịch vụ này CÓ gán đích danh: CHỈ cho phép những người được gán làm!
-                    // Tuyệt đối không fallback cho người khác ngoài danh sách.
-                    capableStaff = capableStaff.filter(s => assignedStaffTargetIds.includes(s.id));
+                    capableStaff = rawCapableStaff.filter(s => assignedStaffTargetIds.includes(s.id));
                 } else {
                     // 2. Dịch vụ này KHÔNG gán đích danh:
                     // Loại bỏ tất cả những nhân sự đã bị gán cứng vào các dịch vụ khác!
-                    // (Họ chỉ được làm các dịch vụ được gán cho họ, thừa thời gian KHÔNG gán sang dịch vụ này!)
-                    capableStaff = capableStaff.filter(s => !allAssignedStaffIds.has(s.id));
+                    capableStaff = rawCapableStaff.filter(s => !allAssignedStaffIds.has(s.id));
                 }
             } else {
-                // CHẾ ĐỘ ƯU TIÊN MỀM (SOFT PRIORITY - CŨ):
+                // CHẾ ĐỘ LINH HOẠT - TỰ ĐỘNG SAN SẺ CA (FLEXIBLE - KHUYÊN DÙNG):
                 if (assignedStaffTargetIds.length > 0) {
-                    const assignedStaff = availableStaff.filter(s => assignedStaffTargetIds.includes(s.id));
-                    const fallbackStaff = capableStaff.filter(s => !assignedStaffTargetIds.includes(s.id));
-                    // Ưu tiên nhân viên được gán đích danh trước, fallback cho nhân sự có CCHN
+                    const assignedStaff = rawCapableStaff.filter(s => assignedStaffTargetIds.includes(s.id));
+                    const fallbackStaff = rawCapableStaff.filter(s => !assignedStaffTargetIds.includes(s.id));
+                    // Ưu tiên nhân viên được gán đích danh trước, fallback cho các nhân sự khác có CCHN
                     capableStaff = [...assignedStaff, ...fallbackStaff];
+                } else {
+                    capableStaff = [...rawCapableStaff];
                 }
             }
 
             if (capableStaff.length === 0) {
-                if (requiredScopes.length > 0) {
-                    failedResults.push({ ...task, error: `Không có NV nào trong Khoa đi làm có CCHN phù hợp (Yêu cầu PVHN: ${requiredScopes.join(', ')})` });
+                let errorReason = '';
+                if (rawCapableStaff.length === 0) {
+                    const staffWithCertNames = availableStaff.map(s => s.ho_ten).join(', ');
+                    errorReason = `Không có NV nào trong Khoa đi làm có CCHN phù hợp (Yêu cầu PVHN: ${requiredScopes.length > 0 ? requiredScopes.join(', ') : 'Chưa cấu hình'}). Danh sách NV đi làm có CCHN: [${staffWithCertNames}] đều không có PVHN này.`;
+                } else if (isStrict && assignedStaffTargetIds.length > 0) {
+                    const assignedStaffNames = availableStaff.filter(s => assignedStaffTargetIds.includes(s.id)).map(s => s.ho_ten).join(', ');
+                    errorReason = `[Chế độ Cố định cứng]: Dịch vụ được gán cho [${assignedStaffNames}], nhưng nhân sự này không có CCHN phù hợp với DVKT này (Yêu cầu PVHN: ${requiredScopes.join(', ')}). Chế độ cố định không cho phép san sẻ.`;
+                } else if (isStrict) {
+                    errorReason = `[Chế độ Cố định cứng]: Tất cả NV có CCHN phù hợp (${rawCapableStaff.map(s => s.ho_ten).join(', ')}) đều đã bị gán cố định cho các DVKT khác. Chế độ cố định không cho phép họ làm dịch vụ này.`;
                 } else {
-                    failedResults.push({ ...task, error: 'Dịch vụ chưa cấu hình Phạm vi hành nghề yêu cầu (Và không có NV nào được gán đích danh).' });
+                    errorReason = 'Dịch vụ chưa cấu hình Phạm vi hành nghề yêu cầu (Và không có NV nào được gán).';
                 }
+                failedResults.push({ ...task, ngay_yl, error: errorReason });
                 continue;
             }
 
@@ -450,7 +465,7 @@ export async function POST(request: Request) {
                 capableMachines = availableMachines.filter((m: any) => (m.loai_may_code || '').trim() === requiredMachineCode.trim());
             }
             if (requiredMachineCode && capableMachines.length === 0) {
-                failedResults.push({ ...task, error: 'Không có thiết bị loại ' + requiredMachineCode + ' khả dụng trong ngày' });
+                failedResults.push({ ...task, ngay_yl, error: `Khoa không có thiết bị loại "${requiredMachineCode}" khả dụng trong ngày hoặc thiết bị chưa được phân bổ về khoa.` });
                 continue;
             }
 
@@ -507,12 +522,15 @@ export async function POST(request: Request) {
                 
                 scheduledResults.push({
                     ...task,
+                    ngay_yl,
                     nguoi_thuc_hien: matchedSavedSchedule.nguoi_thuc_hien,
                     ma_nv: matchedSavedSchedule.ma_nv,
+                    cchn: matchedSavedSchedule.cchn || '',
                     ma_may: matchedSavedSchedule.ma_may,
                     ten_may: matchedSavedSchedule.ten_may,
                     bat_dau: matchedSavedSchedule.bat_dau,
                     ket_thuc: matchedSavedSchedule.ket_thuc,
+                    ly_do_chia: `Kế thừa lịch đã lưu trước đó; Khung giờ: ${matchedSavedSchedule.bat_dau} - ${matchedSavedSchedule.ket_thuc}${matchedSavedSchedule.ten_may ? `; Máy: ${matchedSavedSchedule.ten_may}` : ''}`,
                     _startMinutes: sStart,
                     is_saved: true // Cờ báo hiệu là dữ liệu bảo lưu
                 });
@@ -522,6 +540,7 @@ export async function POST(request: Request) {
 
             unscheduled.push({
                 task,
+                ngay_yl,
                 config,
                 requiredTime,
                 currentServiceBufferTime,
@@ -750,8 +769,20 @@ export async function POST(request: Request) {
                             machineUsageCount[winner.selectedMachine.MA_MAY] = (machineUsageCount[winner.selectedMachine.MA_MAY] || 0) + 1;
                         }
 
+                        let lyDoChia = '';
+                        const isTargetStaff = winner.assignedStaffIds && winner.assignedStaffIds.includes(staff.id);
+                        const machineInfo = winner.selectedMachine ? `; Máy: ${winner.selectedMachine.TEN_BV || winner.selectedMachine.TEN_TB || winner.selectedMachine.MA_MAY}` : '';
+                        if (isTargetStaff) {
+                            lyDoChia = `Chỉ định đích danh cho ${staff.ho_ten}; Khung giờ: ${formatTime(finalTime)} - ${formatTime(endTime)}${machineInfo}`;
+                        } else if (winner.assignedStaffIds && winner.assignedStaffIds.length > 0) {
+                            lyDoChia = `San sẻ ca cho ${staff.ho_ten} theo CCHN (Nhân sự gán đích danh đã kín ca/hết giờ); Khung giờ: ${formatTime(finalTime)} - ${formatTime(endTime)}${machineInfo}`;
+                        } else {
+                            lyDoChia = `Tự động xếp theo CCHN (PVHN phù hợp); Khung giờ: ${formatTime(finalTime)} - ${formatTime(endTime)}${machineInfo}`;
+                        }
+
                         scheduledResults.push({
                             ...winner.task,
+                            ngay_yl: winner.ngay_yl,
                             nguoi_thuc_hien: staff.ho_ten,
                             ma_nv: staff.ma_nv,
                             cchn: (staff.certificates && staff.certificates.length > 0) ? staff.certificates[0].so_cchn : '',
@@ -759,6 +790,7 @@ export async function POST(request: Request) {
                             ten_may: winner.selectedMachine ? (winner.selectedMachine.TEN_BV || winner.selectedMachine.TEN_TB) : '',
                             bat_dau: formatTime(finalTime),
                             ket_thuc: formatTime(endTime),
+                            ly_do_chia: lyDoChia,
                             _startMinutes: finalTime
                         });
 
@@ -785,28 +817,30 @@ export async function POST(request: Request) {
         // 7. Nhặt những ca không thể xếp được (hết giờ)
         for (const u of unscheduled) {
             const ma_ba = String(u.task.ma_ba);
+            const capableStaffNames = availableStaff.filter(s => u.capableStaffIds.has(s.id)).map(s => s.ho_ten).join(', ') || 'Không tìm thấy NV';
+            let failureReason = '';
+
             if (u.patientConstraint) {
-                failedResults.push({
-                    ...u.task,
-                    error: `Không thể hoàn thành trước ${formatTime(u.patientConstraint.endMinutes)} theo yêu cầu (${u.patientConstraint.note || 'Hẹn giờ ra viện'}) do khung giờ trước ${formatTime(u.patientConstraint.endMinutes)} đã kín lịch hoặc không có nhân viên/máy phù hợp.`
-                });
+                failureReason = `Không thể hoàn thành trước ${formatTime(u.patientConstraint.endMinutes)} theo yêu cầu hẹn giờ của BN (${u.patientConstraint.note || 'Hẹn giờ ra viện/chuyển khoa'}) do các nhân sự có CCHN (${capableStaffNames}) đã kín lịch hoặc BN trùng giờ DVKT khác.`;
+            } else if (isStrict && u.assignedStaffIds && u.assignedStaffIds.length > 0) {
+                failureReason = `[Chế độ Cố định cứng]: Chỉ định riêng cho [${capableStaffNames}], nhưng các nhân sự này đã kín toàn bộ lịch làm việc trong ngày. Hệ thống dừng không san sẻ cho người khác.`;
             } else {
                 const serviceShiftPref = resolvedServiceShifts[u.task.ten_dich_vu] || resolvedServiceShifts[u.task.ma_dich_vu];
-                if (serviceShiftPref === 'MORNING') {
-                    failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có nhân viên/máy trống trong buổi Sáng theo ưu tiên dịch vụ' });
-                } else if (serviceShiftPref === 'AFTERNOON') {
-                    failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có nhân viên/máy trống trong buổi Chiều theo ưu tiên dịch vụ' });
+                const shiftPref = patientShifts[ma_ba];
+                if (serviceShiftPref === 'MORNING' || shiftPref === 'MORNING') {
+                    failureReason = `Đã kín lịch hoặc không có máy trống trong buổi Sáng theo cấu hình ưu tiên (Nhân sự có CCHN: ${capableStaffNames}).`;
+                } else if (serviceShiftPref === 'AFTERNOON' || shiftPref === 'AFTERNOON') {
+                    failureReason = `Đã kín lịch hoặc không có máy trống trong buổi Chiều theo cấu hình ưu tiên (Nhân sự có CCHN: ${capableStaffNames}).`;
                 } else {
-                    const shiftPref = patientShifts[ma_ba];
-                    if (shiftPref === 'MORNING') {
-                        failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Sáng' });
-                    } else if (shiftPref === 'AFTERNOON') {
-                        failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong buổi Chiều' });
-                    } else {
-                        failedResults.push({ ...u.task, error: 'Đã kín lịch hoặc không có máy trống trong toàn bộ khung giờ làm việc' });
-                    }
+                    failureReason = `Đã kín lịch trong toàn bộ khung giờ làm việc của các nhân sự có CCHN (${capableStaffNames})${u.requiredMachineCode ? ` hoặc máy móc (${u.requiredMachineCode}) đã kín lịch` : ''}.`;
                 }
             }
+
+            failedResults.push({
+                ...u.task,
+                ngay_yl: u.ngay_yl,
+                error: failureReason
+            });
         }
 
         // Sắp xếp lại kết quả theo thời gian bắt đầu

@@ -233,7 +233,10 @@ export const Mau05Config = forwardRef((props: Mau05ConfigProps, ref) => {
     });
     useEffect(() => {
         if (onConfigStatus && !loading) {
-            onConfigStatus(unconfiguredServices.length);
+            const timer = setTimeout(() => {
+                onConfigStatus(unconfiguredServices.length);
+            }, 0);
+            return () => clearTimeout(timer);
         }
     }, [unconfiguredServices.length, loading, onConfigStatus]);
 

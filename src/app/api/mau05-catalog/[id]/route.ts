@@ -48,6 +48,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             data: updateData
         });
 
+        // Nếu có cập nhật trạng thái bắt buộc mã máy, đồng bộ cho tất cả bản ghi có cùng MA_DICH_VU
+        if (body.bat_buoc_co_ma_may !== undefined && updated.MA_DICH_VU) {
+            await prisma.mau05Catalog.updateMany({
+                where: { MA_DICH_VU: updated.MA_DICH_VU },
+                data: { bat_buoc_co_ma_may: Boolean(body.bat_buoc_co_ma_may) }
+            });
+        }
+
         return NextResponse.json(updated);
     } catch (error) {
         console.error('Error updating mau05 catalog record:', error);

@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -33,9 +35,9 @@ export async function GET(request: Request) {
             if (ref === 'Mau05_REQUIRE_MACHINE' || ref === 'Mau05Catalog.BatBuocMaMay') {
                 try {
                     const data: any[] = await prisma.$queryRaw`
-                        SELECT "MA_DICH_VU" 
+                        SELECT DISTINCT "MA_DICH_VU" 
                         FROM "Mau05Catalog" 
-                        WHERE "isActive" = true AND "bat_buoc_co_ma_may" = true
+                        WHERE "isActive" = true AND "bat_buoc_co_ma_may" = true AND "MA_DICH_VU" IS NOT NULL
                     `;
                     result[ref] = data
                         .map((d: any) => d.MA_DICH_VU ? String(d.MA_DICH_VU).trim() : '')
@@ -184,7 +186,11 @@ export async function GET(request: Request) {
             }
         }
 
-        return NextResponse.json(result);
+        return NextResponse.json(result, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+            }
+        });
     } catch (error: any) {
         console.error('Error in dynamic master API:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

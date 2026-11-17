@@ -114,19 +114,17 @@ export async function GET() {
             }
         }
 
-        // Đảm bảo rule kiểm tra MA_MAY (1768445961548) luôn được cập nhật logic chuẩn
+        // Đảm bảo rule kiểm tra MA_MAY (1768445961548) luôn có code chuẩn nếu chưa có, tuyệt đối không can thiệp trạng thái active
         const machineRule = rules.find(r => r.id === '1768445961548');
-        if (machineRule && (!machineRule.code || !machineRule.code.includes('Mau05_REQUIRE_MACHINE') || !machineRule.active)) {
+        if (machineRule && (!machineRule.code || !machineRule.code.includes('Mau05_REQUIRE_MACHINE'))) {
             try {
                 await prisma.validationRule.update({
                     where: { id: '1768445961548' },
                     data: {
-                        active: true,
                         code: "EXISTS_IN('Mau05_REQUIRE_MACHINE', MA_DICH_VU) && MA_MAY == null",
                         errorMessage: 'Dịch vụ kỹ thuật [TEN_DICH_VU] (Mã: [MA_DICH_VU]) bắt buộc phải có Mã máy thực hiện (MA_MAY) theo quy định BHXH nhưng trong XML3 đang để trống'
                     }
                 });
-                machineRule.active = true;
                 machineRule.code = "EXISTS_IN('Mau05_REQUIRE_MACHINE', MA_DICH_VU) && MA_MAY == null";
                 machineRule.errorMessage = 'Dịch vụ kỹ thuật [TEN_DICH_VU] (Mã: [MA_DICH_VU]) bắt buộc phải có Mã máy thực hiện (MA_MAY) theo quy định BHXH nhưng trong XML3 đang để trống';
             } catch (err) {

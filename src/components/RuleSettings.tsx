@@ -106,7 +106,9 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
             if (refs.size > 0) {
                 try {
                     const params = Array.from(refs).map(r => `refs=${encodeURIComponent(r)}`).join('&');
-                    const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}`);
+                    const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}&_t=${Date.now()}`, {
+                        cache: 'no-store'
+                    });
                     if (res.ok) {
                         const data = await res.json();
                         Object.keys(data).forEach(key => {

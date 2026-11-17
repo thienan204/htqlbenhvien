@@ -247,7 +247,12 @@ export class ValidationEngine {
                         }
                     }
 
-                    if (!isError && rule.checkNotNull && rule.field) {
+                    const hasExplicitCodeForField = Boolean(
+                        (rule.code && rule.field && rule.code.includes(rule.field)) ||
+                        (rule.mathExpression && rule.field && rule.mathExpression.includes(rule.field))
+                    );
+
+                    if (!isError && rule.checkNotNull && rule.field && !hasExplicitCodeForField) {
                         const val = context[rule.field];
                         if (val === undefined || val === null || String(val).trim() === '') isError = true;
                     }
@@ -438,7 +443,12 @@ export class ValidationEngine {
                                     }
                                 }
 
-                                if (!isError && rule.checkNotNull && rule.field) {
+                                const hasExplicitCodeForField = Boolean(
+                                    (rule.code && rule.field && rule.code.includes(rule.field)) ||
+                                    (rule.mathExpression && rule.field && rule.mathExpression.includes(rule.field))
+                                );
+
+                                if (!isError && rule.checkNotNull && rule.field && !hasExplicitCodeForField) {
                                     const val = extendedContext[rule.field];
                                     if (val === undefined || val === null || String(val).trim() === '') isError = true;
                                 }
@@ -584,8 +594,13 @@ export class ValidationEngine {
                     }
                 }
 
+                const hasExplicitCodeForField = Boolean(
+                    (rule.code && rule.field && rule.code.includes(rule.field)) ||
+                    (rule.mathExpression && rule.field && rule.mathExpression.includes(rule.field))
+                );
+
                 // 3. Check Not Null (if checked)
-                if (!isError && rule.checkNotNull && rule.field) {
+                if (!isError && rule.checkNotNull && rule.field && !hasExplicitCodeForField) {
                     const val = ctx[rule.field];
                     // USE HELPER HERE
                     const strVal = this.getDataValue(val);

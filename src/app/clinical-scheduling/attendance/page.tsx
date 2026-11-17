@@ -11,13 +11,15 @@ interface ClinicalSchedulingAttendancePageProps {
     initialDate?: string;
     initialDept?: string;
     onAttendanceUpdated?: () => void;
+    [key: string]: any;
 }
 
-export default function ClinicalSchedulingAttendancePage({
-    initialDate,
-    initialDept,
-    onAttendanceUpdated
-}: ClinicalSchedulingAttendancePageProps = {}) {
+export default function ClinicalSchedulingAttendancePage(props: any) {
+    const {
+        initialDate,
+        initialDept,
+        onAttendanceUpdated
+    }: ClinicalSchedulingAttendancePageProps = props || {};
     const { message } = App.useApp();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);

@@ -47,6 +47,14 @@ function SavedPdfReportsTab() {
     const { message } = App.useApp();
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const fetchFiles = async () => {
         setLoading(true);
@@ -54,14 +62,14 @@ function SavedPdfReportsTab() {
             const res = await fetch('/api/pdf-reports');
             if (res.ok) {
                 const response = await res.json();
-                if (response.success) {
+                if (isMountedRef.current && response.success) {
                     setData(response.data);
                 }
             }
         } catch (error) {
             console.error('Error fetching files:', error);
         } finally {
-            setLoading(false);
+            if (isMountedRef.current) setLoading(false);
         }
     };
 
@@ -160,7 +168,8 @@ export default function ClinicalSchedulingPage() {
     const [deptHours, setDeptHours] = useState<{ [key: string]: any }>({});
     const [staffList, setStaffList] = useState<any[]>([]);
     const [enableStaffMapping, setEnableStaffMapping] = useState(false);
-    const [isStrictServiceStaffMapping, setIsStrictServiceStaffMapping] = useState<boolean>(true);
+    const [serviceMappingMode, setServiceMappingMode] = useState<'FLEXIBLE' | 'STRICT'>('FLEXIBLE');
+    const [isStrictServiceStaffMapping, setIsStrictServiceStaffMapping] = useState<boolean>(false);
     const [serviceStaffMappings, setServiceStaffMappings] = useState<{ [key: string]: string[] }>({});
     const [doctorTimeRanges, setDoctorTimeRanges] = useState<{ id: string; staffId: string; startTime: string; endTime: string; note?: string }[]>([]);
 
@@ -198,11 +207,21 @@ export default function ClinicalSchedulingPage() {
                 setAfternoonServices([]);
             }
 
-            const savedStrict = localStorage.getItem(`clinical_scheduling_strict_mapping_${selectedDept}`);
-            if (savedStrict !== null) {
-                setIsStrictServiceStaffMapping(JSON.parse(savedStrict));
+            const savedMode = localStorage.getItem(`clinical_scheduling_mapping_mode_${selectedDept}`);
+            if (savedMode === 'STRICT' || savedMode === 'FLEXIBLE') {
+                setServiceMappingMode(savedMode);
+                setIsStrictServiceStaffMapping(savedMode === 'STRICT');
             } else {
-                setIsStrictServiceStaffMapping(true); // Mặc định chia cứng dịch vụ
+                const savedStrict = localStorage.getItem(`clinical_scheduling_strict_mapping_${selectedDept}`);
+                if (savedStrict !== null) {
+                    const isStr = JSON.parse(savedStrict);
+                    const mode = isStr ? 'STRICT' : 'FLEXIBLE';
+                    setServiceMappingMode(mode);
+                    setIsStrictServiceStaffMapping(isStr);
+                } else {
+                    setServiceMappingMode('FLEXIBLE'); // Mặc định là Chế độ Linh hoạt - Tự động san sẻ ca
+                    setIsStrictServiceStaffMapping(false);
+                }
             }
 
             const savedDoctorHours = localStorage.getItem(`clinical_scheduling_doctor_hours_${selectedDept}`);
@@ -622,6 +641,10 @@ export default function ClinicalSchedulingPage() {
     const [activeInnerTab, setActiveInnerTab] = useState('basic');
     const [unconfiguredCount, setUnconfiguredCount] = useState(0);
     const [rawExcelData, setRawExcelData] = useState<any[]>([]);
+
+    const handleConfigStatus = useCallback((count: number) => {
+        setUnconfiguredCount(count);
+    }, []);
     const [outputMapping, setOutputMapping] = useState<{
         [key: string]: string | undefined;
         out_ma_ba?: string;
@@ -846,6 +869,7 @@ export default function ClinicalSchedulingPage() {
     }, [scheduledData, columnMapping]);
 
     useEffect(() => {
+        let isMounted = true;
         const savedMapping = localStorage.getItem('clinical_schedule_column_mapping');
         if (savedMapping) {
             try {
@@ -863,7 +887,7 @@ export default function ClinicalSchedulingPage() {
         fetch('/api/clinical-scheduling/config')
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.deptHours) {
+                if (isMounted && data.success && data.deptHours) {
                     setDeptHours(data.deptHours);
                 }
             })
@@ -871,6 +895,10 @@ export default function ClinicalSchedulingPage() {
 
         // Fetch templates for auto-recognition
         fetchTemplatesAndMapping();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const fetchTemplatesAndMapping = () => {
@@ -916,6 +944,7 @@ export default function ClinicalSchedulingPage() {
     }, [selectedDate, selectedDept]);
 
     useEffect(() => {
+        let isMounted = true;
         if (selectedDate && selectedDept) {
             fetchAttendanceStatus();
 
@@ -924,21 +953,27 @@ export default function ClinicalSchedulingPage() {
             fetch(`/api/clinical-scheduling/get-schedule?date=${selectedDate}&maKhoa=${selectedDept}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success) setSavedSchedules(data.schedules || []);
+                    if (isMounted && data.success) setSavedSchedules(data.schedules || []);
                 })
                 .catch(console.error)
-                .finally(() => setLoadingSaved(false));
+                .finally(() => {
+                    if (isMounted) setLoadingSaved(false);
+                });
         }
+        return () => {
+            isMounted = false;
+        };
     }, [selectedDate, selectedDept, fetchAttendanceStatus]);
 
     useEffect(() => {
+        let isMounted = true;
         if (user === undefined) return;
         
         // Fetch departments for the dropdown
         fetch('/api/clinical-scheduling/attendance?date=' + selectedDate)
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.departments) {
+                if (isMounted && data.success && data.departments) {
                     let depts = data.departments;
                     if (user?.role !== 'ADMIN' && user?.ma_khoa) {
                         depts = depts.filter((d: any) => d.ma_khoa === user.ma_khoa);
@@ -946,13 +981,17 @@ export default function ClinicalSchedulingPage() {
                     setDepartments(depts);
                     
                     // Tự động chọn khoa nếu chỉ có 1 khoa (hoặc user ko phải admin)
-                    if (depts.length === 1) {
+                    if (depts.length === 1 && !selectedDept) {
                         setSelectedDept(depts[0].ma_khoa);
                     }
                 }
             })
             .catch(err => console.error(err));
-    }, [selectedDate, user]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedDate, user, selectedDept]);
 
     const handleFileUpload = (file: File) => {
         const reader = new FileReader();
@@ -1189,7 +1228,8 @@ export default function ClinicalSchedulingPage() {
                     staffShiftMode,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
-                    isStrictServiceStaffMapping: enableStaffMapping ? isStrictServiceStaffMapping : false,
+                    serviceMappingMode: enableStaffMapping ? serviceMappingMode : 'FLEXIBLE',
+                    isStrictServiceStaffMapping: enableStaffMapping ? (serviceMappingMode === 'STRICT') : false,
                     doctorTimeRanges: doctorTimeRanges.filter(r => r.staffId && r.startTime && r.endTime)
                 })
             });
@@ -1261,7 +1301,8 @@ export default function ClinicalSchedulingPage() {
                     staffShiftMode,
                     savedSchedules: useSavedSchedule ? savedSchedules : [],
                     serviceStaffMappings: enableStaffMapping ? serviceStaffMappings : {},
-                    isStrictServiceStaffMapping: enableStaffMapping ? isStrictServiceStaffMapping : false,
+                    serviceMappingMode: enableStaffMapping ? serviceMappingMode : 'FLEXIBLE',
+                    isStrictServiceStaffMapping: enableStaffMapping ? (serviceMappingMode === 'STRICT') : false,
                     doctorTimeRanges: doctorTimeRanges.filter(r => r.staffId && r.startTime && r.endTime),
                     heuristic
                 })
@@ -1794,6 +1835,9 @@ export default function ClinicalSchedulingPage() {
                 row[outputMapping.out_ket_thuc || 'Kết thúc'] = item.ket_thuc;
             }
 
+            row['Ngày Y lệnh'] = item.ngay_yl || item.thoi_gian_chi_dinh || item._originalRow?.NGAY_YL || item._originalRow?.NGAY_YLENH || '';
+            row['Căn cứ xếp lịch'] = item.ly_do_chia || '';
+
             return row;
         });
         const ws = XLSX.utils.json_to_sheet(exportJson);
@@ -1843,15 +1887,16 @@ export default function ClinicalSchedulingPage() {
             }
             const exportJson = failedData.map(item => ({
                 ...(item._originalRow || {}),
-                'Lý do lỗi': item.error || ''
+                'Ngày Y lệnh': item.ngay_yl || item.thoi_gian_chi_dinh || item._originalRow?.NGAY_YL || item._originalRow?.NGAY_YLENH || '',
+                'Lý do lỗi / Căn cứ không chia': item.error || ''
             }));
             
             let headers = [...(excelHeaders || [])];
             if (headers.length === 0 && exportJson.length > 0) {
-                headers = Object.keys(exportJson[0]).filter(k => k !== 'Lý do lỗi');
+                headers = Object.keys(exportJson[0]).filter(k => k !== 'Lý do lỗi / Căn cứ không chia' && k !== 'Ngày Y lệnh');
             }
             
-            const sheetHeaders = [...headers, 'Lý do lỗi'];
+            const sheetHeaders = [...headers, 'Ngày Y lệnh', 'Lý do lỗi / Căn cứ không chia'];
             const ws = XLSX.utils.json_to_sheet(exportJson, { header: sheetHeaders });
             ws['!pageSetup'] = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 };
             const wb = XLSX.utils.book_new();
@@ -1886,47 +1931,100 @@ export default function ClinicalSchedulingPage() {
         return outputMapping[`enable_out_${key}`] !== 'false';
     };
 
+    const renderLyDoChia = (t: string) => {
+        if (!t) return null;
+        let color = 'default';
+        let icon = '📋';
+        if (t.includes('Chỉ định đích danh')) {
+            color = 'blue';
+            icon = '🎯';
+        } else if (t.includes('San sẻ ca')) {
+            color = 'orange';
+            icon = '🤝';
+        } else if (t.includes('Tự động')) {
+            color = 'green';
+            icon = '⚡';
+        } else if (t.includes('đã lưu') || t.includes('Kế thừa')) {
+            color = 'purple';
+            icon = '💾';
+        }
+        return (
+            <div style={{ fontSize: '0.85em', lineHeight: 1.4 }} title={t}>
+                <Tag color={color} style={{ marginRight: 4, marginBottom: 2 }}>{icon}</Tag>
+                <span>{t}</span>
+            </div>
+        );
+    };
+
     const resultColumns = [
-        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#237804' : '#16a34a')}}>{t}</strong></div> : null },
-        { title: outputMapping.out_ma_ba || columnMapping.ma_ba || 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '10%' },
-        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%' },
-        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '10%' },
-        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string) => t ? <div className="print-truncate">{t}</div> : null },
-        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '13%', render: (t: string, r: any) => t ? <div className="print-truncate"><strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#237804' : '#16a34a')}}>{t}</strong></div> : null },
+        { title: outputMapping.out_ma_ba || columnMapping.ma_ba || 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: '8%' },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '15%' },
+        { title: 'Ngày Y lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: '10%', render: (t: string, r: any) => {
+            const val = t || r.thoi_gian_chi_dinh || r._originalRow?.NGAY_YL || r._originalRow?.NGAY_YLENH || '';
+            return val ? <span style={{ whiteSpace: 'nowrap', fontSize: '0.85em', color: '#595959' }}>{val}</span> : null;
+        } },
+        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '9%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.85em' }}>{t}</span> },
+        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '9%' },
+        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '18%', render: (t: string) => t ? <div className="print-truncate">{t}</div> : null },
+        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '8%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
         { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
         { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: 'Căn cứ xếp lịch', dataIndex: 'ly_do_chia', key: 'ly_do_chia', width: '16%', render: (t: string) => renderLyDoChia(t) },
     ].filter(col => isColumnEnabled(col.key as string));
 
     const serviceColumns = [
-        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#fa8c16' : '#000')}}>{t}</strong> : null },
-        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
-        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%', render: (t: string, r: any) => t || r._originalRow?.TENBENHNHAN || '' },
-        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '10%' },
-        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '20%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#fa8c16' : '#000')}}>{t}</strong> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '13%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '15%', render: (t: string, r: any) => t || r._originalRow?.TENBENHNHAN || '' },
+        { title: 'Ngày Y lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: '10%', render: (t: string, r: any) => {
+            const val = t || r.thoi_gian_chi_dinh || r._originalRow?.NGAY_YL || r._originalRow?.NGAY_YLENH || '';
+            return val ? <span style={{ whiteSpace: 'nowrap', fontSize: '0.85em', color: '#595959' }}>{val}</span> : null;
+        } },
+        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '9%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.85em' }}>{t}</span> },
+        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '9%' },
+        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '8%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
         { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
         { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: 'Căn cứ xếp lịch', dataIndex: 'ly_do_chia', key: 'ly_do_chia', width: '16%', render: (t: string) => renderLyDoChia(t) },
     ].filter(col => isColumnEnabled(col.key as string));
 
     const patientColumns = [
-        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '25%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#0958d9' : '#000')}}>{t}</strong> : null },
-        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '15%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
-        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '10%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em' }}>{t}</span> },
-        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '10%' },
-        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '25%', render: (t: string) => t ? <div className="print-truncate">{t}</div> : null },
-        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '10%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
+        { title: outputMapping.out_ten_bn || columnMapping.ten_bn || 'Tên Bệnh nhân', dataIndex: 'ten_bn', key: 'ten_bn', width: '20%', render: (t: string, r: any) => t ? <strong style={{color: r._isShiftHeader ? '#d9363e' : (r.children ? '#0958d9' : '#000')}}>{t}</strong> : null },
+        { title: outputMapping.out_nguoi_thuc_hien || 'Người thực hiện', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: '13%', render: (t: string) => t ? <div className="print-truncate"><strong style={{color: '#16a34a'}}>{t}</strong></div> : null },
+        { title: 'Ngày Y lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: '10%', render: (t: string, r: any) => {
+            const val = t || r.thoi_gian_chi_dinh || r._originalRow?.NGAY_YL || r._originalRow?.NGAY_YLENH || '';
+            return val ? <span style={{ whiteSpace: 'nowrap', fontSize: '0.85em', color: '#595959' }}>{val}</span> : null;
+        } },
+        { title: outputMapping.out_thoi_gian_chi_dinh || columnMapping.thoi_gian_chi_dinh || 'TG Chỉ định', dataIndex: 'thoi_gian_chi_dinh', key: 'thoi_gian_chi_dinh', width: '9%', render: (t: string) => <span style={{ whiteSpace: 'nowrap', fontSize: '0.85em' }}>{t}</span> },
+        { title: outputMapping.out_ma_dich_vu || columnMapping.ma_dich_vu || 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: '9%' },
+        { title: outputMapping.out_ten_dich_vu || columnMapping.ten_dich_vu || 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: '18%', render: (t: string) => t ? <div className="print-truncate">{t}</div> : null },
+        { title: outputMapping.out_ten_may || outputMapping.out_ma_may || 'Máy', key: 'may_thuc_hien', width: '8%', render: (_: any, r: any) => r.ten_may ? <div className="print-truncate"><span>{r.ten_may} <span className="text-gray-500">({r.ma_may})</span></span></div> : null },
         { title: outputMapping.out_bat_dau || 'Bắt đầu', dataIndex: 'bat_dau', key: 'bat_dau', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="blue">{t}</Tag> : null },
         { title: outputMapping.out_ket_thuc || 'Kết thúc', dataIndex: 'ket_thuc', key: 'ket_thuc', width: '5%', align: 'center' as const, render: (t: string) => t ? <Tag color="cyan">{t}</Tag> : null },
+        { title: 'Căn cứ xếp lịch', dataIndex: 'ly_do_chia', key: 'ly_do_chia', width: '16%', render: (t: string) => renderLyDoChia(t) },
     ].filter(col => isColumnEnabled(col.key as string));
 
-
     const failedColumns = [
-        { title: 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba' },
-        { title: 'Tên BN', dataIndex: 'ten_bn', key: 'ten_bn' },
-        { title: 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu' },
-        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', render: (t: string) => t ? t : null },
-        { title: 'Lý do lỗi', dataIndex: 'error', key: 'error', render: (t: string) => <strong style={{color: 'red'}}>{t}</strong> },
+        { title: 'STT', key: 'stt', width: 55, align: 'center' as const, render: (_: any, __: any, index: number) => index + 1 },
+        { title: 'Mã BA', dataIndex: 'ma_ba', key: 'ma_ba', width: 110 },
+        { title: 'Tên BN', dataIndex: 'ten_bn', key: 'ten_bn', width: 180, render: (t: string) => <strong>{t}</strong> },
+        { title: 'Ngày Y lệnh', dataIndex: 'ngay_yl', key: 'ngay_yl', width: 140, render: (t: string, r: any) => {
+            const val = t || r.thoi_gian_chi_dinh || r._originalRow?.NGAY_YL || r._originalRow?.NGAY_YLENH || '';
+            return val ? <span style={{ whiteSpace: 'nowrap', fontSize: '0.9em', color: '#595959' }}>{val}</span> : '-';
+        } },
+        { title: 'Mã Dịch vụ', dataIndex: 'ma_dich_vu', key: 'ma_dich_vu', width: 110 },
+        { title: 'Tên Dịch vụ', dataIndex: 'ten_dich_vu', key: 'ten_dich_vu', width: 220, render: (t: string) => t ? <div className="print-truncate">{t}</div> : null },
+        { 
+            title: 'Căn cứ / Lý do không thể xếp lịch', 
+            dataIndex: 'error', 
+            key: 'error', 
+            render: (t: string) => (
+                <div style={{ color: '#cf1322', background: '#fff1f0', border: '1px solid #ffa39e', padding: '6px 10px', borderRadius: 4, fontSize: '0.9em', lineHeight: 1.5 }}>
+                    ⚠️ {t}
+                </div>
+            ) 
+        },
     ];
 
     const currentDeptHours = (selectedDept && deptHours[selectedDept]) || { morningStart: '07:30', morningEnd: '11:30', afternoonStart: '13:30', afternoonEnd: '17:30' };
@@ -2549,32 +2647,53 @@ export default function ClinicalSchedulingPage() {
                                         </div>
 
                                         <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
-                                            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                                            <div style={{ marginBottom: 12 }}>
                                                 <Checkbox 
                                                     checked={enableStaffMapping} 
                                                     onChange={e => setEnableStaffMapping(e.target.checked)}
                                                 >
-                                                    <strong style={{ color: '#0958d9' }}>Bật tuỳ chọn: Gán Dịch vụ cho đích danh người thực hiện</strong>
+                                                    <strong style={{ color: '#0958d9', fontSize: 14 }}>Bật tuỳ chọn: Gán Dịch vụ cho đích danh người thực hiện</strong>
                                                 </Checkbox>
+                                            </div>
 
-                                                {enableStaffMapping && (
-                                                    <Checkbox
-                                                        checked={isStrictServiceStaffMapping}
+                                            {enableStaffMapping && (
+                                                <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                                    <div style={{ marginBottom: 8, fontWeight: 600, color: '#262626' }}>Cơ chế phân bổ ca khi gán dịch vụ:</div>
+                                                    <Radio.Group 
+                                                        value={serviceMappingMode} 
                                                         onChange={e => {
-                                                            setIsStrictServiceStaffMapping(e.target.checked);
+                                                            const mode = e.target.value;
+                                                            setServiceMappingMode(mode);
+                                                            setIsStrictServiceStaffMapping(mode === 'STRICT');
                                                             if (selectedDept) {
                                                                 try {
-                                                                    localStorage.setItem(`clinical_scheduling_strict_mapping_${selectedDept}`, JSON.stringify(e.target.checked));
+                                                                    localStorage.setItem(`clinical_scheduling_mapping_mode_${selectedDept}`, mode);
+                                                                    localStorage.setItem(`clinical_scheduling_strict_mapping_${selectedDept}`, JSON.stringify(mode === 'STRICT'));
                                                                 } catch (err) {}
                                                             }
                                                         }}
                                                     >
-                                                        <span style={{ fontWeight: 600, color: '#d4380d' }}>
-                                                            Chia cứng dịch vụ: Người được gán chỉ làm dịch vụ được chỉ định, thừa thời gian không gán sang dịch vụ khác
-                                                        </span>
-                                                    </Checkbox>
-                                                )}
-                                            </div>
+                                                        <Space direction="vertical" size="middle">
+                                                            <Radio value="FLEXIBLE">
+                                                                <div>
+                                                                    <strong style={{ color: '#16a34a' }}>Chế độ Linh hoạt - Tự động san sẻ ca (Khuyên dùng):</strong>
+                                                                    <div style={{ color: '#595959', fontSize: 12, marginTop: 2 }}>
+                                                                        Ưu tiên phân bổ dịch vụ cho nhân sự được gán đích danh trước. Khi nhân sự đó hết giờ làm việc hoặc đã kín lịch, hệ thống sẽ tự động san sẻ ca cho các nhân sự khác trong khoa có CCHN phù hợp để đảm bảo chia hết 100% dịch vụ.
+                                                                    </div>
+                                                                </div>
+                                                            </Radio>
+                                                            <Radio value="STRICT">
+                                                                <div>
+                                                                    <strong style={{ color: '#d4380d' }}>Chế độ Cố định cứng - Tuyệt đối không san sẻ:</strong>
+                                                                    <div style={{ color: '#595959', fontSize: 12, marginTop: 2 }}>
+                                                                        Chỉ duy nhất nhân sự được gán mới làm dịch vụ này (họ cũng không làm các dịch vụ khác). Hết giờ thì dừng báo tồn ca (dịch vụ không thể xếp lịch), thừa thời gian không gán sang dịch vụ khác.
+                                                                    </div>
+                                                                </div>
+                                                            </Radio>
+                                                        </Space>
+                                                    </Radio.Group>
+                                                </div>
+                                            )}
                                             
                                             {enableStaffMapping && (
                                                 <div style={{ marginTop: 16 }}>
@@ -2618,7 +2737,7 @@ export default function ClinicalSchedulingPage() {
                                     <div style={{ padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
                                         <Mau05Config 
                                             externalFilterCodes={uniqueServiceCodes} 
-                                            onConfigStatus={(count) => setUnconfiguredCount(count)}
+                                            onConfigStatus={handleConfigStatus}
                                         />
                                     </div>
                                 )
@@ -2852,7 +2971,7 @@ export default function ClinicalSchedulingPage() {
                 {
                     key: '3',
                     label: <strong style={{fontSize: 16, color: '#16a34a'}}>Lịch sử lưu báo cáo</strong>,
-                    children: <SavedPdfReportsTab />
+                    children: activeMainTab === '3' ? <SavedPdfReportsTab /> : null
                 },
                 {
                     key: '4',
@@ -2867,7 +2986,7 @@ export default function ClinicalSchedulingPage() {
                             )}
                         </span>
                     ),
-                    children: (
+                    children: activeMainTab === '4' ? (
                         <ClinicalSchedulingAttendancePage 
                             initialDate={selectedDate}
                             initialDept={selectedDept}
@@ -2875,12 +2994,12 @@ export default function ClinicalSchedulingPage() {
                                 fetchAttendanceStatus();
                             }}
                         />
-                    )
+                    ) : null
                 },
                 {
                     key: '5',
                     label: <strong style={{fontSize: 16}}>Cấu hình</strong>,
-                    children: <ClinicalSchedulingConfigPage />
+                    children: activeMainTab === '5' ? <ClinicalSchedulingConfigPage /> : null
                 },
                 {
                     key: '2',
@@ -2930,11 +3049,11 @@ export default function ClinicalSchedulingPage() {
                 {
                     key: 'INSTRUCTION',
                     label: <strong style={{fontSize: 16}}>Hướng dẫn sử dụng</strong>,
-                    children: (
+                    children: activeMainTab === 'INSTRUCTION' ? (
                         <div style={{ marginTop: 16 }}>
                             <PageInstruction pageId="clinical-scheduling-schedule" />
                         </div>
-                    )
+                    ) : null
                 }
             ]} />
 

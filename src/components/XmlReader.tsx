@@ -243,7 +243,9 @@ const fetchMasterDataForRules = async (rulesToProcess: ValidationRule[]): Promis
 
     try {
         const params = Array.from(refs).map(r => `refs=${encodeURIComponent(r)}`).join('&');
-        const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}`);
+        const res = await fetch(`${getBasePath()}/api/dynamic-master?${params}&_t=${Date.now()}`, {
+            cache: 'no-store'
+        });
         if (res.ok) {
             const data = await res.json();
             const parsedData: Record<string, Set<string>> = {};
