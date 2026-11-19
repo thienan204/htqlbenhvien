@@ -17,6 +17,19 @@ import type { ResizeCallbackData } from 'react-resizable';
 const { Dragger } = Upload;
 const { Option } = Select;
 
+const normalizeRate = (val: any): string => {
+    if (val === null || val === undefined || val === '') return '';
+    let str = String(val).replace('%', '').trim();
+    const num = Number(str);
+    if (!isNaN(num)) {
+        if (num > 0 && num <= 1) {
+            return String(Math.round(num * 100));
+        }
+        return String(Math.round(num));
+    }
+    return str;
+};
+
 // --- Interfaces & Constants ---
 
 interface DuplicateRule {
@@ -32,6 +45,8 @@ interface DuplicateRule {
     serviceValues?: string[]; // Specific values to filter
     excludedServiceValues?: string[]; // Specific values to exclude
     ignoreIfSameField?: string; // e.g. MA_BN
+    rateCol?: string;
+    ignoredRates?: string[];
     minGapMinutes?: number; // Minimum gap in minutes to NOT be considered overlapping
     departmentExclusions?: any;
 }
@@ -542,6 +557,8 @@ export default function ExcelReaderPage() {
             const endIndex = getInd(rule.endCol, hds);
             const serviceIndex = rule.serviceCol ? getInd(rule.serviceCol, hds) : -1;
             const ignoreSameColIdx = rule.ignoreIfSameField ? getInd(rule.ignoreIfSameField, hds) : -1;
+            const rateColIdx = rule.rateCol ? getInd(rule.rateCol, hds) : -1;
+            const ignoredRatesList = (rule.ignoredRates || []).map(r => normalizeRate(r)).filter(Boolean);
 
             if (machineIndices.length === 0 || startIndex === -1 || endIndex === -1) {
                 console.warn(`Bỏ qua quy tắc "${rule.name}" do không tìm thấy đủ cột trong file.`);
@@ -666,6 +683,18 @@ export default function ExcelReaderPage() {
                     }
 
                     if (comp.length > 1) {
+                        // Bỏ qua nếu là nhóm nằm ghép hợp lệ theo tỷ lệ cấu hình (VD: ghép 2 = 50%, ghép 3 = 30%)
+                        if (rateColIdx !== -1 && ignoredRatesList.length > 0) {
+                            const compItems = comp.map(idx => group[idx]);
+                            const isAllBedShare = compItems.every(it => {
+                                const r = normalizeRate(it[rateColIdx]);
+                                return r !== '' && ignoredRatesList.includes(r);
+                            });
+                            if (isAllBedShare) {
+                                return;
+                            }
+                        }
+
                         comp.forEach(idx => {
                             const origIdx = group[idx]._originalIdx;
                             const clone = {
@@ -745,8 +774,36 @@ export default function ExcelReaderPage() {
     const hidden50PercentDups = React.useMemo(() => {
         if (!hide50Percent || tableData.length === 0) return [];
         
-        const tyleDvIdx = headers.findIndex(h => h && (String(h).toUpperCase().trim() === 'TYLE_DV' || String(h).toUpperCase().trim() === 'TYLE_TT_DV'));
+        // 1. Tìm cột tỷ lệ: ưu tiên từ quy tắc đang áp dụng, nếu không tìm các tên cột phổ biến
+        let tyleDvIdx = -1;
+        const activeRuleRateCols = rules.filter(r => selectedRuleIds.includes(r.id) && r.rateCol).map(r => r.rateCol!);
+        for (const colName of activeRuleRateCols) {
+            const idx = headers.findIndex(h => h && String(h).toUpperCase().trim() === String(colName).toUpperCase().trim());
+            if (idx !== -1) {
+                tyleDvIdx = idx;
+                break;
+            }
+        }
+        if (tyleDvIdx === -1) {
+            const commonRateCols = ['TYLE_TT', 'TYLE_DV', 'TYLE_TT_DV', 'TYLE_TT_BH', 'TYLE', 'MUC_HUONG', 'TY_LE'];
+            tyleDvIdx = headers.findIndex(h => h && commonRateCols.includes(String(h).toUpperCase().trim()));
+        }
+
         if (tyleDvIdx === -1) return [];
+
+        // 2. Lấy danh sách tỷ lệ được bỏ qua: từ quy tắc nếu có, hoặc mặc định ['50', '30', '33']
+        const allowedRates = new Set<string>();
+        rules.filter(r => selectedRuleIds.includes(r.id) && r.ignoredRates && r.ignoredRates.length > 0).forEach(r => {
+            r.ignoredRates!.forEach(rate => {
+                const norm = normalizeRate(rate);
+                if (norm) allowedRates.add(norm);
+            });
+        });
+        if (allowedRates.size === 0) {
+            allowedRates.add('50');
+            allowedRates.add('30');
+            allowedRates.add('33');
+        }
 
         const groups = new Map<number, any[]>();
         tableData.forEach(item => {
@@ -759,14 +816,17 @@ export default function ExcelReaderPage() {
 
         const invalidGroups = new Set<number>();
         groups.forEach((items, gIdx) => {
-            const isAll50 = items.every(i => Number(i[tyleDvIdx]) === 50);
-            if (isAll50) {
+            const isAllBedShare = items.every(i => {
+                const r = normalizeRate(i[tyleDvIdx]);
+                return r !== '' && allowedRates.has(r);
+            });
+            if (isAllBedShare) {
                 invalidGroups.add(gIdx);
             }
         });
 
         return tableData.filter(item => item.__groupIndex !== undefined && invalidGroups.has(item.__groupIndex));
-    }, [tableData, hide50Percent, headers]);
+    }, [tableData, hide50Percent, headers, rules, selectedRuleIds]);
 
     const filteredTableData = React.useMemo(() => {
         let data = showOnlyDuplicates
@@ -949,11 +1009,11 @@ export default function ExcelReaderPage() {
                                 onChange={(e) => {
                                     setHide50Percent(e.target.checked);
                                     if (e.target.checked) {
-                                        message.info("Đã áp dụng bộ lọc nhóm 50%");
+                                        message.info("Đã áp dụng bộ lọc nhóm nằm ghép");
                                     }
                                 }}
                             >
-                                Bỏ qua nhóm trùng 50%
+                                Bỏ qua nhóm nằm ghép (50%, 30%)
                             </Checkbox>
                             {tableData.some(x => x.__groupIndex !== undefined) && (
                                 <Tag color="processing" className="ml-4 px-3 py-1 font-medium text-sm rounded-full">
@@ -979,7 +1039,7 @@ export default function ExcelReaderPage() {
                             )}
                             {hide50Percent && hidden50PercentDups.length > 0 && (
                                 <Tag color="error" className="ml-2 px-3 py-1 font-medium text-sm rounded-full">
-                                    Đã ẩn: {hidden50PercentDups.length} dòng 50%
+                                    Đã ẩn: {hidden50PercentDups.length} dòng nằm ghép
                                     <a
                                         className="ml-2 text-red-600 underline cursor-pointer hover:text-red-800"
                                         onClick={async (e) => {

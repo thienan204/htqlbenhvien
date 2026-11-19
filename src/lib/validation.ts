@@ -1,6 +1,6 @@
 import { HosoRecord, XMLGroup, getXmlDataList } from './xml';
 import { calculateBedDaysForRecord, parseAllowedMaNhom, parseExcludedMaBenh } from '@/app/(modules)/xml-checker/_components/bedDaysCalculator';
-import { auditBhytRatesForRecord } from '@/app/(modules)/xml-checker/_components/bhytRateCalculator';
+import { auditBhytRatesForRecord, auditNhanThuocTheoHenForRecord, auditDoiTuong113RateForRecord } from '@/app/(modules)/xml-checker/_components/bhytRateCalculator';
 
 export type RuleType = 'Xuất toán' | 'Cảnh báo';
 
@@ -157,8 +157,10 @@ export class ValidationEngine {
 
                     const isBedDaysRule = rule.code?.includes('CHECK_BED_DAYS') || rule.code?.includes('CHECK_BED_DAYS_DAYCARE') || rule.id === 'rule_bed_days_audit' || rule.id === 'rule_bed_days_daycare_audit';
                     const isBhytRateRule = rule.code?.includes('CHECK_TYLE_TT_BHYT') || rule.id === 'rule_bhyt_rate_audit';
+                    const isNhanThuocTheoHenRule = rule.code?.includes('CHECK_NHAN_THUOC_THEO_HEN') || rule.id === 'rule_nhan_thuoc_theo_hen_audit';
+                    const isDoiTuong113Rule = rule.code?.includes('CHECK_DOITUONG_113_RATE') || rule.id === 'rule_doituong_113_rate_audit';
 
-                    if (!isBedDaysRule && !isBhytRateRule && rule.conditionField && rule.conditionValue) {
+                    if (!isBedDaysRule && !isBhytRateRule && !isNhanThuocTheoHenRule && !isDoiTuong113Rule && rule.conditionField && rule.conditionValue) {
                         const parts = rule.conditionField.split('.');
                         let conditionVal: any = context;
                         for(const part of parts) {
@@ -183,7 +185,7 @@ export class ValidationEngine {
                         }
                     }
 
-                    if (!isBedDaysRule && !isBhytRateRule && rule.excludeConditionField && rule.excludeConditionValue) {
+                    if (!isBedDaysRule && !isBhytRateRule && !isNhanThuocTheoHenRule && !isDoiTuong113Rule && rule.excludeConditionField && rule.excludeConditionValue) {
                         let excludeVal = context[rule.excludeConditionField];
                         if (excludeVal === undefined) {
                             const actualKey = Object.keys(context).find(k => k.toLowerCase() === rule.excludeConditionField?.toLowerCase());
@@ -227,6 +229,78 @@ export class ValidationEngine {
                                         index: err.index
                                     });
                                 }
+                            });
+                        }
+                        return;
+                    }
+
+                    // Xử lý chuyên biệt cho Rule Nhận thuốc theo hẹn (MA_LOAI_KCB = 07)
+                    // Phân bổ lỗi về cả XML1 (tổng quan) và từng dòng chi tiết của XML3 (bôi đỏ DVKT vi phạm)
+                    if (isNhanThuocTheoHenRule) {
+                        const audit = auditNhanThuocTheoHenForRecord(record);
+                        if (audit.isError) {
+                            // 1. Kết quả tổng quan trên XML1
+                            const summaryMsg = audit.detailedReason
+                                ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                                : audit.summaryMessage;
+                            results.push({
+                                ruleId: rule.id,
+                                ruleName: rule.name,
+                                type: rule.type,
+                                xmlType: 'XML1',
+                                field: 'MA_LOAI_KCB',
+                                message: summaryMsg,
+                                isError: rule.type === 'Xuất toán'
+                            });
+
+                            // 2. Kết quả chi tiết cho từng dòng XML3 vi phạm
+                            audit.xml3Violations.forEach(item => {
+                                results.push({
+                                    ruleId: rule.id,
+                                    ruleName: rule.name,
+                                    type: rule.type,
+                                    xmlType: 'XML3',
+                                    field: 'MA_DICH_VU',
+                                    message: item.message,
+                                    isError: rule.type === 'Xuất toán',
+                                    index: item.index
+                                });
+                            });
+                        }
+                        return;
+                    }
+
+                    // Xử lý chuyên biệt cho Rule Đối tượng 1.13 chỉ được hưởng 50% (cấm >= 80%)
+                    // Phân bổ lỗi về cả XML1 (tổng quan) và từng dòng chi tiết của XML2 / XML3
+                    if (isDoiTuong113Rule) {
+                        const audit = auditDoiTuong113RateForRecord(record);
+                        if (audit.isError) {
+                            // 1. Kết quả tổng quan trên XML1
+                            const summaryMsg = audit.detailedReason
+                                ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                                : audit.summaryMessage;
+                            results.push({
+                                ruleId: rule.id,
+                                ruleName: rule.name,
+                                type: rule.type,
+                                xmlType: 'XML1',
+                                field: 'MA_DOITUONG_KCB',
+                                message: summaryMsg,
+                                isError: rule.type === 'Xuất toán'
+                            });
+
+                            // 2. Kết quả chi tiết cho từng dòng vi phạm ở XML2 và XML3
+                            audit.violations.forEach(v => {
+                                results.push({
+                                    ruleId: rule.id,
+                                    ruleName: rule.name,
+                                    type: rule.type,
+                                    xmlType: v.xmlType,
+                                    field: 'TYLE_TT_BH',
+                                    message: v.message,
+                                    isError: rule.type === 'Xuất toán',
+                                    index: v.index
+                                });
                             });
                         }
                         return;
@@ -1086,6 +1160,28 @@ export class ValidationEngine {
                         return true;
                     }
                     return false;
+                },
+                CHECK_NHAN_THUOC_THEO_HEN: () => {
+                    if (!this.currentRecord) return false;
+                    const audit = auditNhanThuocTheoHenForRecord(this.currentRecord);
+                    if (audit.isError) {
+                        this.dynamicMessage = audit.detailedReason
+                            ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                            : audit.summaryMessage;
+                        return true;
+                    }
+                    return false;
+                },
+                CHECK_DOITUONG_113_RATE: () => {
+                    if (!this.currentRecord) return false;
+                    const audit = auditDoiTuong113RateForRecord(this.currentRecord);
+                    if (audit.isError) {
+                        this.dynamicMessage = audit.detailedReason
+                            ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                            : audit.summaryMessage;
+                        return true;
+                    }
+                    return false;
                 }
             };
 
@@ -1376,6 +1472,32 @@ export class ValidationEngine {
             cleanCode = cleanCode.replace(/CHECK_TYLE_TT_BHYT\([^)]*\)/g, () => {
                 if (!this.currentRecord) return "false";
                 const audit = auditBhytRatesForRecord(this.currentRecord);
+                if (audit.isError) {
+                    this.dynamicMessage = audit.detailedReason
+                        ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                        : audit.summaryMessage;
+                    return "true";
+                }
+                return "false";
+            });
+
+            // 0.6.6.11. Handle CHECK_NHAN_THUOC_THEO_HEN
+            cleanCode = cleanCode.replace(/CHECK_NHAN_THUOC_THEO_HEN\([^)]*\)/g, () => {
+                if (!this.currentRecord) return "false";
+                const audit = auditNhanThuocTheoHenForRecord(this.currentRecord);
+                if (audit.isError) {
+                    this.dynamicMessage = audit.detailedReason
+                        ? `${audit.summaryMessage}. ${audit.detailedReason}`
+                        : audit.summaryMessage;
+                    return "true";
+                }
+                return "false";
+            });
+
+            // 0.6.6.12. Handle CHECK_DOITUONG_113_RATE
+            cleanCode = cleanCode.replace(/CHECK_DOITUONG_113_RATE\([^)]*\)/g, () => {
+                if (!this.currentRecord) return "false";
+                const audit = auditDoiTuong113RateForRecord(this.currentRecord);
                 if (audit.isError) {
                     this.dynamicMessage = audit.detailedReason
                         ? `${audit.summaryMessage}. ${audit.detailedReason}`
@@ -1697,6 +1819,30 @@ export const DEFAULT_RULES: ValidationRule[] = [
         code: 'CHECK_TYLE_TT_BHYT(MA_THE_BHYT, GT_THE_TU, GT_THE_DEN, NGAY_MIEN_CCT)',
         description: 'Đối chiếu tỷ lệ thanh toán BHYT (TYLE_TT_BH) trên XML2 và XML3 theo ký tự thứ 3 của thẻ BHYT (1,2,5=100%, 3=95%, 4=80%), thời hạn thẻ và mốc miễn cùng chi trả (NGAY_MIEN_CCT).',
         errorMessage: 'Sai lệch tỷ lệ thanh toán BHYT giữa thẻ và chi tiết dịch vụ/thuốc (XML2, XML3)'
+    },
+    {
+        id: 'rule_nhan_thuoc_theo_hen_audit',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'MA_LOAI_KCB',
+        name: 'Kiểm tra KCB Nhận thuốc theo hẹn (MA_LOAI_KCB = 07) không được phát sinh chi phí ngoài thuốc',
+        code: 'CHECK_NHAN_THUOC_THEO_HEN(MA_LOAI_KCB)',
+        description: 'Căn cứ Phụ lục 01 QĐ 824/QĐ-BYT & QĐ 1804/QĐ-BYT (chỉ tiêu số 7): Loại hình KCB nhận thuốc theo hẹn (07) không thuộc trường hợp đi KCB, nghiêm cấm phát sinh các chi phí ngoài chi phí thuốc (tiền khám, xét nghiệm, CĐHA, PTTT, ngày giường...).',
+        errorMessage: 'Hồ sơ Nhận thuốc theo hẹn (MA_LOAI_KCB = 07) nhưng phát sinh chi phí ngoài thuốc (xét nghiệm, CĐHA, khám, giường...)'
+    },
+    {
+        id: 'rule_doituong_113_rate_audit',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML1',
+        field: 'MA_DOITUONG_KCB',
+        name: 'Kiểm tra Tỷ lệ thanh toán BHYT của đối tượng 1.13 (Chuẩn 50%, cấm >= 80%)',
+        code: 'CHECK_DOITUONG_113_RATE(MA_DOITUONG_KCB, TYLE_TT_BH)',
+        description: 'Kiểm tra mức hưởng BHYT đối tượng 1.13: Quỹ BHYT thanh toán chuẩn 50%. Bắt lỗi xuất toán nếu có dòng thuốc (XML2) hoặc DVKT (XML3) kê khai TYLE_TT_BH >= 80% (hoặc khác 50%).',
+        errorMessage: 'Đối tượng KCB 1.13 chỉ được thanh toán BHYT 50%, nhưng có dòng kê khai tỷ lệ >= 80%'
     },
     {
         id: 'overlap_bhyt_1',

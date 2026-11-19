@@ -654,6 +654,22 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                             <li><span className="text-gray-500 italic">Mẹo: Hệ thống tự động loại trừ dòng tự túc (TYLE_TT_BH = 0) và dòng có tỷ lệ riêng (TYLE_TT_DV &lt; 100). Hỗ trợ hồ sơ nhiều thẻ (ngăn cách bằng dấu ;), kiểm tra chỉ định ngoài hạn thẻ, kiểm tra ngày gối thẻ và tự động chia đợt theo mốc miễn cùng chi trả.</span></li>
                         </ul>
                     </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">13. Nhận thuốc theo hẹn không phát sinh chi phí ngoài thuốc (QĐ 824/QĐ-BYT)</div>
+                        <div className="text-gray-600 mb-1">Kiểm toán tự động hồ sơ có MA_LOAI_KCB = 07 (Nhận thuốc theo hẹn). Theo Phụ lục 01 QĐ 824/QĐ-BYT & QĐ 1804/QĐ-BYT (chỉ tiêu 7), người bệnh nhận thuốc theo hẹn không thuộc trường hợp đi KCB, nghiêm cấm phát sinh các chi phí ngoài thuốc (tiền khám, XN, CĐHA, PTTT, giường...).</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Cú pháp chuẩn: <code className="bg-white px-1 border rounded text-red-600">CHECK_NHAN_THUOC_THEO_HEN(MA_LOAI_KCB)</code></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Hệ thống tự động báo lỗi xuất toán tổng quan trên XML1 và phân bổ bôi đỏ từng dòng dịch vụ kỹ thuật vi phạm trong XML3.</span></li>
+                        </ul>
+                    </div>
+                    <div className="mt-2">
+                        <div className="font-bold text-blue-700">14. Kiểm soát tỷ lệ thanh toán BHYT đối tượng 1.13 (Chuẩn 50%, cấm ≥ 80%)</div>
+                        <div className="text-gray-600 mb-1">Kiểm toán tự động mức hưởng của người bệnh có MA_DOITUONG_KCB = 1.13. Quỹ BHYT thanh toán tối đa 50% chi phí. Bắt lỗi xuất toán nếu có dòng thuốc (XML2) hoặc DVKT (XML3) kê khai TYLE_TT_BH ≥ 80% (hoặc khác 50%).</div>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Cú pháp chuẩn: <code className="bg-white px-1 border rounded text-red-600">CHECK_DOITUONG_113_RATE(MA_DOITUONG_KCB, TYLE_TT_BH)</code></li>
+                            <li><span className="text-gray-500 italic">Mẹo: Tự động loại trừ dòng tự túc (TYLE_TT_BH = 0) và phân bổ bôi đỏ trực tiếp từng dòng thuốc (XML2) và dịch vụ (XML3) kê khai sai tỷ lệ.</span></li>
+                        </ul>
+                    </div>
                 </div>
             )
         }

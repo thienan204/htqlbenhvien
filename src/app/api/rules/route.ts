@@ -114,6 +114,54 @@ export async function GET() {
             }
         }
 
+        // Tự động bổ sung rule_nhan_thuoc_theo_hen_audit vào DB nếu chưa có
+        const existingNhanThuocRule = rules.find(r => r.id === 'rule_nhan_thuoc_theo_hen_audit');
+        if (!existingNhanThuocRule && rules.length > 0) {
+            try {
+                const created = await prisma.validationRule.create({
+                    data: {
+                        id: 'rule_nhan_thuoc_theo_hen_audit',
+                        active: true,
+                        type: 'Xuất toán',
+                        xmlType: 'XML1',
+                        field: 'MA_LOAI_KCB',
+                        name: 'Kiểm tra KCB Nhận thuốc theo hẹn (MA_LOAI_KCB = 07) không được phát sinh chi phí ngoài thuốc',
+                        description: 'Căn cứ Phụ lục 01 QĐ 824/QĐ-BYT & QĐ 1804/QĐ-BYT (chỉ tiêu số 7): Loại hình KCB nhận thuốc theo hẹn (07) không thuộc trường hợp đi KCB, nghiêm cấm phát sinh các chi phí ngoài chi phí thuốc (tiền khám, xét nghiệm, CĐHA, PTTT, ngày giường...).',
+                        code: 'CHECK_NHAN_THUOC_THEO_HEN(MA_LOAI_KCB)',
+                        errorMessage: 'Hồ sơ Nhận thuốc theo hẹn (MA_LOAI_KCB = 07) nhưng phát sinh chi phí ngoài thuốc (xét nghiệm, CĐHA, khám, giường...)',
+                        checkNotNull: false
+                    }
+                });
+                rules = [created, ...rules];
+            } catch (seedErr) {
+                console.warn('Could not auto-seed rule_nhan_thuoc_theo_hen_audit:', seedErr);
+            }
+        }
+
+        // Tự động bổ sung rule_doituong_113_rate_audit vào DB nếu chưa có
+        const existingDoiTuong113Rule = rules.find(r => r.id === 'rule_doituong_113_rate_audit');
+        if (!existingDoiTuong113Rule && rules.length > 0) {
+            try {
+                const created = await prisma.validationRule.create({
+                    data: {
+                        id: 'rule_doituong_113_rate_audit',
+                        active: true,
+                        type: 'Xuất toán',
+                        xmlType: 'XML1',
+                        field: 'MA_DOITUONG_KCB',
+                        name: 'Kiểm tra Tỷ lệ thanh toán BHYT của đối tượng 1.13 (Chuẩn 50%, cấm >= 80%)',
+                        description: 'Kiểm tra mức hưởng BHYT đối tượng 1.13: Quỹ BHYT thanh toán chuẩn 50%. Bắt lỗi xuất toán nếu có dòng thuốc (XML2) hoặc DVKT (XML3) kê khai TYLE_TT_BH >= 80% (hoặc khác 50%).',
+                        code: 'CHECK_DOITUONG_113_RATE(MA_DOITUONG_KCB, TYLE_TT_BH)',
+                        errorMessage: 'Đối tượng KCB 1.13 chỉ được thanh toán BHYT 50%, nhưng có dòng kê khai tỷ lệ >= 80%',
+                        checkNotNull: false
+                    }
+                });
+                rules = [created, ...rules];
+            } catch (seedErr) {
+                console.warn('Could not auto-seed rule_doituong_113_rate_audit:', seedErr);
+            }
+        }
+
         // Đảm bảo rule kiểm tra MA_MAY (1768445961548) luôn có code chuẩn nếu chưa có, tuyệt đối không can thiệp trạng thái active
         const machineRule = rules.find(r => r.id === '1768445961548');
         if (machineRule && (!machineRule.code || !machineRule.code.includes('Mau05_REQUIRE_MACHINE'))) {

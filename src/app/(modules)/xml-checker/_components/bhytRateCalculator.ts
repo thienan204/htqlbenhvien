@@ -13,6 +13,7 @@ export type BhytRateErrorType =
     | 'NOT_UPGRADED_100'          // Chưa nâng lên 100% sau thời điểm miễn cùng chi trả
     | 'EARLY_100'                 // Tính sớm 100% trước thời điểm miễn cùng chi trả
     | 'WRONG_CARD_RATE'           // Áp sai mức hưởng theo ký tự thứ 3 của thẻ
+    | 'WRONG_DOITUONG_113_RATE'   // Áp sai mức hưởng đối tượng 1.13 (chuẩn 50%, kê khai >= 80%)
     | 'INCONSISTENT_CARD_RATE'     // Không đồng nhất mức hưởng trên cùng một thẻ
     | 'SPLIT_DATE_INCONSISTENT';   // Nhảy tỷ lệ trong ngày chuyển giao gối 2 thẻ
 
@@ -72,10 +73,13 @@ export function parseBhytCards(summary: any): BhytCardItem[] {
     const tuList = rawTu.split(';').map(s => s.trim()).filter(Boolean);
     const denList = rawDen.split(';').map(s => s.trim()).filter(Boolean);
 
+    const maDoiTuongKcb = String(summary?.MA_DOITUONG_KCB || summary?.MA_DOITUONG || '').trim();
+    const isDoiTuong113 = maDoiTuongKcb === '1.13';
+
     return cardList.map((cardCode, idx) => {
         const tu = tuList[idx] || tuList[0] || '';
         const den = denList[idx] || denList[0] || '';
-        const standardRate = getStandardRateFromCard(cardCode) ?? 80;
+        const standardRate = isDoiTuong113 ? 50 : (getStandardRateFromCard(cardCode) ?? 80);
         return {
             cardCode,
             standardRate,
@@ -297,6 +301,20 @@ export function auditBhytRatesForRecord(record: HosoRecord): BhytRateAuditResult
                         cardCode: card.cardCode,
                         message: `Tính sớm 100% cho [${line.xmlType}] ${line.code} (${line.name || 'Dịch vụ'}) ngày ${formatXmlDateTime(line.ngayYl)} trước thời điểm miễn CCT (Mức chuẩn thẻ ${card.cardCode}: ${card.standardRate}%).`
                     });
+                } else if (card.standardRate === 50 || String(summary?.MA_DOITUONG_KCB || '').trim() === '1.13') {
+                    errors.push({
+                        type: 'WRONG_DOITUONG_113_RATE',
+                        xmlType: line.xmlType,
+                        index: line.index,
+                        field: 'TYLE_TT_BH',
+                        code: line.code,
+                        name: line.name,
+                        ngayYl: line.ngayYl,
+                        actualRate: line.actualRate,
+                        expectedRate: 50,
+                        cardCode: card.cardCode,
+                        message: `Áp sai mức hưởng đối tượng 1.13: [${line.xmlType}] ${line.code} (${line.name || 'Dịch vụ'}) tính ${line.actualRate}% (sai quy định khi >= 80%), đối tượng 1.13 chỉ được thanh toán BHYT 50%.`
+                    });
                 } else {
                     errors.push({
                         type: 'WRONG_CARD_RATE',
@@ -414,6 +432,20 @@ export function auditBhytRatesForRecord(record: HosoRecord): BhytRateAuditResult
                             cardCode: matchingCard.cardCode,
                             message: `Tính sớm 100% cho [${line.xmlType}] ${line.code} (${line.name || 'Dịch vụ'}) ngày ${formatXmlDateTime(line.ngayYl)} trước thời điểm miễn CCT (Mức chuẩn thẻ ${matchingCard.cardCode}: ${matchingCard.standardRate}%).`
                         });
+                    } else if (matchingCard.standardRate === 50 || String(summary?.MA_DOITUONG_KCB || '').trim() === '1.13') {
+                        errors.push({
+                            type: 'WRONG_DOITUONG_113_RATE',
+                            xmlType: line.xmlType,
+                            index: line.index,
+                            field: 'TYLE_TT_BH',
+                            code: line.code,
+                            name: line.name,
+                            ngayYl: line.ngayYl,
+                            actualRate: line.actualRate,
+                            expectedRate: 50,
+                            cardCode: matchingCard.cardCode,
+                            message: `Áp sai mức hưởng đối tượng 1.13: [${line.xmlType}] ${line.code} (${line.name || 'Dịch vụ'}) tính ${line.actualRate}% (sai quy định khi >= 80%), đối tượng 1.13 chỉ được thanh toán BHYT 50%.`
+                        });
                     } else {
                         errors.push({
                             type: 'WRONG_CARD_RATE',
@@ -461,6 +493,7 @@ export function auditBhytRatesForRecord(record: HosoRecord): BhytRateAuditResult
             'NOT_UPGRADED_100': 'Chưa nâng lên 100% miễn CCT',
             'EARLY_100': 'Tính sớm 100% trước miễn CCT',
             'WRONG_CARD_RATE': 'Áp sai mức hưởng thẻ',
+            'WRONG_DOITUONG_113_RATE': 'Áp sai mức hưởng ĐT 1.13 (≥ 80%)',
             'INCONSISTENT_CARD_RATE': 'Không đồng nhất tỷ lệ',
             'SPLIT_DATE_INCONSISTENT': 'Nhảy tỷ lệ ngày gối thẻ'
         };
@@ -484,4 +517,243 @@ export function auditBhytRatesForRecord(record: HosoRecord): BhytRateAuditResult
         linesError
     };
 }
+
+export interface NhanThuocTheoHenAuditResult {
+    isError: boolean;
+    summaryMessage: string;
+    detailedReason: string;
+    nonDrugCost: number;
+    xml3Violations: Array<{
+        index: number;
+        code: string;
+        name: string;
+        maNhom: string;
+        message: string;
+    }>;
+}
+
+/**
+ * Kiểm toán hồ sơ Nhận thuốc theo hẹn (MA_LOAI_KCB = 07)
+ * Căn cứ: Phụ lục 01 QĐ 824/QĐ-BYT, QĐ 1804/QĐ-BYT (chỉ tiêu 7):
+ * Loại hình KCB nhận thuốc theo hẹn "không thuộc trường hợp người bệnh đi khám bệnh, chữa bệnh",
+ * nghiêm cấm phát sinh chi phí ngoài chi phí thuốc (tiền khám, xét nghiệm, CĐHA, PTTT, giường, v.v.).
+ */
+export function auditNhanThuocTheoHenForRecord(record: HosoRecord): NhanThuocTheoHenAuditResult {
+    const summary = record.summary || {};
+    const maLoaiKcb = String(summary.MA_LOAI_KCB || '').trim();
+    if (maLoaiKcb !== '07' && maLoaiKcb !== '7') {
+        return {
+            isError: false,
+            summaryMessage: '',
+            detailedReason: '',
+            nonDrugCost: 0,
+            xml3Violations: []
+        };
+    }
+
+    // 1. Quét XML3 (DVKT & Vật tư y tế)
+    const xml3Group = record.groups?.find(g => g.type === 'XML3');
+    const xml3Items = getXmlDataList(xml3Group);
+    const xml3Violations: Array<{
+        index: number;
+        code: string;
+        name: string;
+        maNhom: string;
+        message: string;
+    }> = [];
+
+    let totalXml3Cost = 0;
+    if (Array.isArray(xml3Items)) {
+        xml3Items.forEach((item, idx) => {
+            const maDv = String(item.MA_DICH_VU || item.MA_VAT_TU || '').trim();
+            const tenDv = String(item.TEN_DICH_VU || item.TEN_VAT_TU || 'Dịch vụ kỹ thuật').trim();
+            const maNhom = String(item.MA_NHOM || '').trim();
+            const thanhTien = Number(item.THANH_TIEN || item.T_TONGCHI || 0);
+            totalXml3Cost += isNaN(thanhTien) ? 0 : thanhTien;
+
+            xml3Violations.push({
+                index: idx,
+                code: maDv,
+                name: tenDv,
+                maNhom,
+                message: `Loại KCB 07 (Nhận thuốc theo hẹn) không được chỉ định DVKT: [${maDv}] ${tenDv}${maNhom ? ` (Nhóm ${maNhom})` : ''} theo QĐ 824/QĐ-BYT.`
+            });
+        });
+    }
+
+    // 2. Quét các trường chi phí ngoài thuốc trên XML1
+    const costFields: Array<{ field: string; label: string; value: number }> = [
+        { field: 'T_KHAM', label: 'Tiền khám', value: Number(summary.T_KHAM || 0) },
+        { field: 'T_XN', label: 'Tiền xét nghiệm', value: Number(summary.T_XN || 0) },
+        { field: 'T_CDHA', label: 'Tiền CĐHA', value: Number(summary.T_CDHA || 0) },
+        { field: 'T_PTTT', label: 'Tiền PTTT', value: Number(summary.T_PTTT || 0) },
+        { field: 'T_GIUONG', label: 'Tiền giường', value: Number(summary.T_GIUONG || 0) },
+        { field: 'T_VTYT', label: 'Tiền VTYT', value: Number(summary.T_VTYT || 0) },
+        { field: 'T_DVKT_TYLE', label: 'Tiền DVKT tỷ lệ', value: Number(summary.T_DVKT_TYLE || 0) },
+        { field: 'T_MAU', label: 'Tiền máu', value: Number(summary.T_MAU || 0) },
+        { field: 'T_VANCHUYEN', label: 'Tiền vận chuyển', value: Number(summary.T_VANCHUYEN || 0) }
+    ];
+
+    const activeNonDrugCosts = costFields.filter(c => !isNaN(c.value) && c.value > 0);
+    const nonDrugCostXml1 = activeNonDrugCosts.reduce((sum, c) => sum + c.value, 0);
+
+    const isError = xml3Violations.length > 0 || nonDrugCostXml1 > 0;
+    if (!isError) {
+        return {
+            isError: false,
+            summaryMessage: '',
+            detailedReason: '',
+            nonDrugCost: 0,
+            xml3Violations: []
+        };
+    }
+
+    const reasonParts: string[] = [];
+    if (xml3Violations.length > 0) {
+        reasonParts.push(`phát sinh ${xml3Violations.length} dịch vụ trong XML3 (tổng ${totalXml3Cost.toLocaleString('vi-VN')} đ)`);
+    }
+    if (activeNonDrugCosts.length > 0) {
+        const details = activeNonDrugCosts.map(c => `${c.label}: ${c.value.toLocaleString('vi-VN')} đ`).join(', ');
+        reasonParts.push(`chi phí ngoài thuốc kê khai trên XML1: ${details}`);
+    }
+
+    const detailedReason = `Căn cứ Phụ lục 01 QĐ 824/QĐ-BYT & QĐ 1804/QĐ-BYT (chỉ tiêu 7): Loại hình KCB nhận thuốc theo hẹn không thuộc trường hợp đi KCB, không được phát sinh chi phí ngoài thuốc. Thực tế hồ sơ ${reasonParts.join('; ')}.`;
+    const summaryMessage = `Hồ sơ có MA_LOAI_KCB = 07 (Nhận thuốc theo hẹn) nhưng phát sinh chi phí ngoài thuốc`;
+
+    return {
+        isError: true,
+        summaryMessage,
+        detailedReason,
+        nonDrugCost: nonDrugCostXml1 + totalXml3Cost,
+        xml3Violations
+    };
+}
+
+export interface DoiTuong113AuditResult {
+    isError: boolean;
+    summaryMessage: string;
+    detailedReason: string;
+    violationCount: number;
+    violations: Array<{
+        xmlType: 'XML2' | 'XML3';
+        index: number;
+        code: string;
+        name: string;
+        actualRate: number;
+        message: string;
+    }>;
+}
+
+/**
+ * Kiểm toán tỷ lệ thanh toán BHYT của đối tượng 1.13
+ * Căn cứ: Quy định phân nhóm đối tượng KCB BHYT:
+ * Đối tượng MA_DOITUONG_KCB = 1.13 chỉ được quỹ BHYT thanh toán 50% (TYLE_TT_BH = 50).
+ * Bắt lỗi xuất toán khi có dòng kê khai TYLE_TT_BH >= 80% (hoặc khác 50%).
+ */
+export function auditDoiTuong113RateForRecord(record: HosoRecord): DoiTuong113AuditResult {
+    const summary = record.summary || {};
+    const maDoiTuongKcb = String(summary.MA_DOITUONG_KCB || summary.MA_DOITUONG || '').trim();
+    const isRecordDoiTuong113 = maDoiTuongKcb === '1.13';
+
+    const violations: Array<{
+        xmlType: 'XML2' | 'XML3';
+        index: number;
+        code: string;
+        name: string;
+        actualRate: number;
+        message: string;
+    }> = [];
+
+    // 1. Quét XML2 (Thuốc)
+    const xml2Group = record.groups?.find(g => g.type === 'XML2');
+    const xml2Items = getXmlDataList(xml2Group);
+    if (Array.isArray(xml2Items)) {
+        xml2Items.forEach((item, idx) => {
+            const itemDoiTuong = String(item.MA_DOITUONG_KCB || item.MA_DOITUONG || '').trim();
+            const applies = isRecordDoiTuong113 || itemDoiTuong === '1.13';
+            if (!applies) return;
+
+            const rawTyleBh = item.TYLE_TT_BH !== undefined && item.TYLE_TT_BH !== null && String(item.TYLE_TT_BH).trim() !== ''
+                ? Number(item.TYLE_TT_BH)
+                : null;
+            const rawTyleDv = item.TYLE_TT_DV !== undefined && item.TYLE_TT_DV !== null && String(item.TYLE_TT_DV).trim() !== ''
+                ? Number(item.TYLE_TT_DV)
+                : 100;
+
+            if (rawTyleBh === null || isNaN(rawTyleBh) || rawTyleBh === 0) return;
+            if (!isNaN(rawTyleDv) && rawTyleDv < 100) return;
+
+            if (rawTyleBh >= 80 || rawTyleBh > 50) {
+                const code = String(item.MA_THUOC || '').trim();
+                const name = String(item.TEN_THUOC || 'Thuốc').trim();
+                violations.push({
+                    xmlType: 'XML2',
+                    index: idx,
+                    code,
+                    name,
+                    actualRate: rawTyleBh,
+                    message: `Đối tượng KCB 1.13 chỉ được thanh toán BHYT 50%: Thuốc [${code}] ${name} đang kê khai TYLE_TT_BH = ${rawTyleBh}% (sai quy định khi >= 80%).`
+                });
+            }
+        });
+    }
+
+    // 2. Quét XML3 (DVKT & Vật tư)
+    const xml3Group = record.groups?.find(g => g.type === 'XML3');
+    const xml3Items = getXmlDataList(xml3Group);
+    if (Array.isArray(xml3Items)) {
+        xml3Items.forEach((item, idx) => {
+            const itemDoiTuong = String(item.MA_DOITUONG_KCB || item.MA_DOITUONG || '').trim();
+            const applies = isRecordDoiTuong113 || itemDoiTuong === '1.13';
+            if (!applies) return;
+
+            const rawTyleBh = item.TYLE_TT_BH !== undefined && item.TYLE_TT_BH !== null && String(item.TYLE_TT_BH).trim() !== ''
+                ? Number(item.TYLE_TT_BH)
+                : null;
+            const rawTyleDv = item.TYLE_TT_DV !== undefined && item.TYLE_TT_DV !== null && String(item.TYLE_TT_DV).trim() !== ''
+                ? Number(item.TYLE_TT_DV)
+                : 100;
+
+            if (rawTyleBh === null || isNaN(rawTyleBh) || rawTyleBh === 0) return;
+            if (!isNaN(rawTyleDv) && rawTyleDv < 100) return;
+
+            if (rawTyleBh >= 80 || rawTyleBh > 50) {
+                const code = String(item.MA_DICH_VU || item.MA_VAT_TU || '').trim();
+                const name = String(item.TEN_DICH_VU || item.TEN_VAT_TU || 'Dịch vụ').trim();
+                violations.push({
+                    xmlType: 'XML3',
+                    index: idx,
+                    code,
+                    name,
+                    actualRate: rawTyleBh,
+                    message: `Đối tượng KCB 1.13 chỉ được thanh toán BHYT 50%: Dịch vụ [${code}] ${name} đang kê khai TYLE_TT_BH = ${rawTyleBh}% (sai quy định khi >= 80%).`
+                });
+            }
+        });
+    }
+
+    if (violations.length === 0) {
+        return {
+            isError: false,
+            summaryMessage: '',
+            detailedReason: '',
+            violationCount: 0,
+            violations: []
+        };
+    }
+
+    const rates = Array.from(new Set(violations.map(v => v.actualRate))).sort((a, b) => a - b);
+    const rateStr = rates.map(r => `${r}%`).join(', ');
+    const summaryMessage = `Đối tượng KCB 1.13 chỉ được thanh toán BHYT 50%, nhưng có ${violations.length} dòng kê khai tỷ lệ >= 80%`;
+    const detailedReason = `Căn cứ quy định mức hưởng đối tượng KCB 1.13: Quỹ BHYT thanh toán tối đa 50%. Thực tế hồ sơ kê khai ${violations.length} dòng thuốc/DVKT với tỷ lệ ${rateStr} (≥ 80%) là sai mức hưởng.`;
+
+    return {
+        isError: true,
+        summaryMessage,
+        detailedReason,
+        violationCount: violations.length,
+        violations
+    };
+}
+
 

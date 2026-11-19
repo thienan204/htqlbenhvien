@@ -32,6 +32,8 @@ export async function createDuplicateRule(data: {
     serviceValues?: string[];
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
+    rateCol?: string;
+    ignoredRates?: string[];
     minGapMinutes?: number;
     departmentExclusions?: any;
     allowedOverlapGroups?: any;
@@ -58,7 +60,15 @@ export async function createDuplicateRule(data: {
         if ('ignoreIfSameField' in data) {
             await prisma.$executeRaw`UPDATE "DuplicateRule" SET "ignoreIfSameField" = ${data.ignoreIfSameField || null} WHERE "id" = ${newRule.id}`;
         }
+        if ('rateCol' in data) {
+            await prisma.$executeRaw`UPDATE "DuplicateRule" SET "rateCol" = ${data.rateCol || null} WHERE "id" = ${newRule.id}`;
+        }
+        if ('ignoredRates' in data && Array.isArray(data.ignoredRates)) {
+            await prisma.$executeRaw`UPDATE "DuplicateRule" SET "ignoredRates" = ${data.ignoredRates} WHERE "id" = ${newRule.id}`;
+        }
         revalidatePath('/doc-file-excel');
+        revalidatePath('/excel-rules');
+        revalidatePath('/excel-check/[type]');
         return { success: true, data: newRule };
     } catch (error) {
         console.error("Error creating rule:", error);
@@ -79,6 +89,8 @@ export async function updateDuplicateRule(id: string, data: {
     serviceValues?: string[];
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
+    rateCol?: string;
+    ignoredRates?: string[];
     minGapMinutes?: number;
     departmentExclusions?: any;
     allowedOverlapGroups?: any;
@@ -106,7 +118,15 @@ export async function updateDuplicateRule(id: string, data: {
         if ('ignoreIfSameField' in data) {
             await prisma.$executeRaw`UPDATE "DuplicateRule" SET "ignoreIfSameField" = ${data.ignoreIfSameField || null} WHERE "id" = ${id}`;
         }
+        if ('rateCol' in data) {
+            await prisma.$executeRaw`UPDATE "DuplicateRule" SET "rateCol" = ${data.rateCol || null} WHERE "id" = ${id}`;
+        }
+        if ('ignoredRates' in data && Array.isArray(data.ignoredRates)) {
+            await prisma.$executeRaw`UPDATE "DuplicateRule" SET "ignoredRates" = ${data.ignoredRates} WHERE "id" = ${id}`;
+        }
         revalidatePath('/doc-file-excel');
+        revalidatePath('/excel-rules');
+        revalidatePath('/excel-check/[type]');
         return { success: true, data: updatedRule };
     } catch (error) {
         console.error("Error updating rule:", error);

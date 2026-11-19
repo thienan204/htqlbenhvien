@@ -22,6 +22,8 @@ interface DuplicateRule {
     serviceValues?: string[];
     excludedServiceValues?: string[];
     ignoreIfSameField?: string;
+    rateCol?: string;
+    ignoredRates?: string[];
     minGapMinutes?: number;
     departmentExclusions?: any[];
     allowedOverlapGroups?: string[][];
@@ -84,6 +86,8 @@ export default function ExcelRulesPage() {
             ignoreMaMayMinusOne: values.ignoreMaMayMinusOne || false,
             active: values.active !== undefined ? values.active : true,
             ignoreIfSameField: values.ignoreIfSameField || '',
+            rateCol: values.rateCol || '',
+            ignoredRates: values.ignoredRates || [],
             minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0,
             allowedOverlapGroups: values.allowedOverlapGroups || []
         });
@@ -106,6 +110,8 @@ export default function ExcelRulesPage() {
             ...values,
             ignoreMaMayMinusOne: values.ignoreMaMayMinusOne || false,
             ignoreIfSameField: values.ignoreIfSameField || '',
+            rateCol: values.rateCol || '',
+            ignoredRates: values.ignoredRates || [],
             minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0,
             allowedOverlapGroups: values.allowedOverlapGroups || []
         });
@@ -525,6 +531,38 @@ export default function ExcelRulesPage() {
                         <Col span={12}>
                             <Form.Item label="Khoảng cách tối thiểu giữa 2 DV (Phút)" name="minGapMinutes">
                                 <Input type="number" min={0} placeholder="VD: 1, 5, 10..." />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item 
+                                label="Cột Tỷ lệ (Tùy chọn - Dành cho Giường nằm ghép)" 
+                                name="rateCol"
+                                tooltip="Tên cột chứa tỷ lệ dịch vụ / tỷ lệ thanh toán trong file Excel (VD: TYLE_TT, TYLE_DV, TYLE_TT_BH)"
+                            >
+                                <AutoComplete
+                                    placeholder="VD: TYLE_TT hoặc TYLE_DV"
+                                    options={sampleHeaders.map(h => ({ value: h, label: h }))}
+                                    filterOption={(inputValue, option) =>
+                                        option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                                    }
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item 
+                                label="Tỷ lệ dịch vụ bỏ qua nếu trùng (Nằm ghép)" 
+                                name="ignoredRates"
+                                tooltip="Nhập các tỷ lệ phần trăm (VD: 50 cho ghép 2, 30 cho ghép 3) rồi ấn Enter. Nếu các dòng trùng nhau cùng giường đều có tỷ lệ này thì hệ thống sẽ bỏ qua không báo lỗi."
+                            >
+                                <Select
+                                    mode="tags"
+                                    placeholder="Nhập tỷ lệ (VD: 50, 30...) rồi ấn Enter"
+                                    options={[
+                                        { value: '50', label: '50% (Ghép 2 người)' },
+                                        { value: '30', label: '30% (Ghép 3 người trở lên)' }
+                                    ]}
+                                    style={{ width: '100%' }}
+                                />
                             </Form.Item>
                         </Col>
                     </Row>

@@ -19,6 +19,19 @@ import { Tabs } from 'antd';
 const { Dragger } = Upload;
 const { Option } = Select;
 
+const normalizeRate = (val: any): string => {
+    if (val === null || val === undefined || val === '') return '';
+    let str = String(val).replace('%', '').trim();
+    const num = Number(str);
+    if (!isNaN(num)) {
+        if (num > 0 && num <= 1) {
+            return String(Math.round(num * 100));
+        }
+        return String(Math.round(num));
+    }
+    return str;
+};
+
 // --- Interfaces & Constants ---
 
 interface DuplicateRule {
@@ -34,6 +47,8 @@ interface DuplicateRule {
     serviceValues?: string[]; // Specific values to filter
     excludedServiceValues?: string[]; // Specific values to exclude
     ignoreIfSameField?: string; // e.g. MA_BN
+    rateCol?: string;           // Header name for service rate (e.g. TYLE_TT, TYLE_DV)
+    ignoredRates?: string[];    // Rates to ignore if shared (e.g. ['50', '30'])
     minGapMinutes?: number; // Minimum gap in minutes to NOT be considered overlapping
     departmentExclusions?: any;
     allowedOverlapGroups?: string[][];
@@ -223,6 +238,8 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             serviceValues: values.serviceValues || [],
             excludedServiceValues: values.excludedServiceValues || [],
             ignoreIfSameField: values.ignoreIfSameField || '',
+            rateCol: values.rateCol || '',
+            ignoredRates: values.ignoredRates || [],
             minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
         });
 
@@ -254,6 +271,8 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             serviceValues: values.serviceValues || [],
             excludedServiceValues: values.excludedServiceValues || [],
             ignoreIfSameField: values.ignoreIfSameField || '',
+            rateCol: values.rateCol || '',
+            ignoredRates: values.ignoredRates || [],
             minGapMinutes: values.minGapMinutes ? parseInt(String(values.minGapMinutes), 10) : 0
         });
 
@@ -606,6 +625,8 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             const endIndex = getInd(rule.endCol, hds);
             const serviceIndex = rule.serviceCol ? getInd(rule.serviceCol, hds) : -1;
             const ignoreSameColIdx = rule.ignoreIfSameField ? getInd(rule.ignoreIfSameField, hds) : -1;
+            const rateColIdx = rule.rateCol ? getInd(rule.rateCol, hds) : -1;
+            const ignoredRatesList = (rule.ignoredRates || []).map(r => normalizeRate(r)).filter(Boolean);
 
             if (machineIndices.length === 0 || startIndex === -1 || endIndex === -1) {
                 console.warn(`Bỏ qua quy tắc "${rule.name}" do không tìm thấy đủ cột trong file.`);
@@ -811,6 +832,18 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                     }
 
                     if (comp.length > 1) {
+                        // Bỏ qua nếu là nhóm nằm ghép hợp lệ theo tỷ lệ cấu hình (VD: ghép 2 = 50%, ghép 3 = 30%)
+                        if (rateColIdx !== -1 && ignoredRatesList.length > 0) {
+                            const compItems = comp.map(idx => parsedGroup[idx].item);
+                            const isAllBedShare = compItems.every(it => {
+                                const r = normalizeRate(it[rateColIdx]);
+                                return r !== '' && ignoredRatesList.includes(r);
+                            });
+                            if (isAllBedShare) {
+                                return;
+                            }
+                        }
+
                         comp.forEach(idx => {
                             const origIdx = parsedGroup[idx].item._originalIdx;
                             const clone = {
@@ -932,8 +965,36 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
     const hidden50PercentDups = React.useMemo(() => {
         if (!hide50Percent || tableData.length === 0) return [];
         
-        const tyleDvIdx = headers.findIndex(h => h && (String(h).toUpperCase().trim() === 'TYLE_DV' || String(h).toUpperCase().trim() === 'TYLE_TT_DV'));
+        // 1. Tìm cột tỷ lệ: ưu tiên từ quy tắc đang áp dụng, nếu không tìm các tên cột phổ biến
+        let tyleDvIdx = -1;
+        const activeRuleRateCols = rules.filter(r => selectedRuleIds.includes(r.id) && r.rateCol).map(r => r.rateCol!);
+        for (const colName of activeRuleRateCols) {
+            const idx = headers.findIndex(h => h && String(h).toUpperCase().trim() === String(colName).toUpperCase().trim());
+            if (idx !== -1) {
+                tyleDvIdx = idx;
+                break;
+            }
+        }
+        if (tyleDvIdx === -1) {
+            const commonRateCols = ['TYLE_TT', 'TYLE_DV', 'TYLE_TT_DV', 'TYLE_TT_BH', 'TYLE', 'MUC_HUONG', 'TY_LE'];
+            tyleDvIdx = headers.findIndex(h => h && commonRateCols.includes(String(h).toUpperCase().trim()));
+        }
+
         if (tyleDvIdx === -1) return [];
+
+        // 2. Lấy danh sách tỷ lệ được bỏ qua: từ quy tắc nếu có, hoặc mặc định ['50', '30', '33']
+        const allowedRates = new Set<string>();
+        rules.filter(r => selectedRuleIds.includes(r.id) && r.ignoredRates && r.ignoredRates.length > 0).forEach(r => {
+            r.ignoredRates!.forEach(rate => {
+                const norm = normalizeRate(rate);
+                if (norm) allowedRates.add(norm);
+            });
+        });
+        if (allowedRates.size === 0) {
+            allowedRates.add('50');
+            allowedRates.add('30');
+            allowedRates.add('33');
+        }
 
         const groups = new Map<number, any[]>();
         tableData.forEach(item => {
@@ -946,14 +1007,17 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
 
         const invalidGroups = new Set<number>();
         groups.forEach((items, gIdx) => {
-            const isAll50 = items.every(i => Number(i[tyleDvIdx]) === 50);
-            if (isAll50) {
+            const isAllBedShare = items.every(i => {
+                const r = normalizeRate(i[tyleDvIdx]);
+                return r !== '' && allowedRates.has(r);
+            });
+            if (isAllBedShare) {
                 invalidGroups.add(gIdx);
             }
         });
 
         return tableData.filter(item => item.__groupIndex !== undefined && invalidGroups.has(item.__groupIndex));
-    }, [tableData, hide50Percent, headers]);
+    }, [tableData, hide50Percent, headers, rules, selectedRuleIds]);
 
     const filteredTableData = React.useMemo(() => {
         let data = showOnlyDuplicates
@@ -1153,11 +1217,11 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                 onChange={(e) => {
                                     setHide50Percent(e.target.checked);
                                     if (e.target.checked) {
-                                        message.info("Đã áp dụng bộ lọc nhóm 50%");
+                                        message.info("Đã áp dụng bộ lọc nhóm nằm ghép");
                                     }
                                 }}
                             >
-                                Bỏ qua nhóm trùng 50%
+                                Bỏ qua nhóm nằm ghép (50%, 30%)
                             </Checkbox>
                             {tableData.some(x => x.__groupIndex !== undefined) && (
                                 <Tag color="processing" className="ml-4 px-3 py-1 font-medium text-sm rounded-full">
@@ -1183,7 +1247,7 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                             )}
                             {hide50Percent && hidden50PercentDups.length > 0 && (
                                 <Tag color="error" className="ml-2 px-3 py-1 font-medium text-sm rounded-full">
-                                    Đã ẩn: {hidden50PercentDups.length} dòng 50%
+                                    Đã ẩn: {hidden50PercentDups.length} dòng nằm ghép
                                     <a
                                         className="ml-2 text-red-600 underline cursor-pointer hover:text-red-800"
                                         onClick={async (e) => {
@@ -1532,7 +1596,7 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                             <Form.Item
                                 label="Giá trị cần bỏ qua nếu trùng (Tuỳ chọn)"
                                 name="ignoreIfSameField"
-                                help="VD: MAHOSOBENHAN. Bỏ qua không báo lỗi nếu chung trường này."
+                                help="VD: MAHOSOBENHAN hoặc MA_BN. Bỏ qua không báo lỗi nếu chung trường này."
                             >
                                 <Input placeholder="VD: MAHOSOBENHAN" />
                             </Form.Item>
@@ -1544,6 +1608,32 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                 help="VD: 1. Nếu cách nhau dưới 1 phút sẽ báo trùng."
                             >
                                 <Input type="number" min={0} placeholder="VD: 1, 5, 10..." />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                label="Cột Tỷ lệ (Tùy chọn - Dành cho Nằm ghép)"
+                                name="rateCol"
+                                help="VD: TYLE_TT, TYLE_DV. Tên cột tỷ lệ thanh toán trong file Excel."
+                            >
+                                <Input placeholder="VD: TYLE_TT hoặc TYLE_DV" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                label="Tỷ lệ dịch vụ bỏ qua nếu trùng (Nằm ghép)"
+                                name="ignoredRates"
+                                help="Nhập tỷ lệ (VD: 50 cho ghép 2, 30 cho ghép 3) rồi ấn Enter."
+                            >
+                                <Select
+                                    mode="tags"
+                                    placeholder="Nhập tỷ lệ (VD: 50, 30...) rồi ấn Enter"
+                                    options={[
+                                        { value: '50', label: '50% (Ghép 2 người)' },
+                                        { value: '30', label: '30% (Ghép 3 người trở lên)' }
+                                    ]}
+                                    style={{ width: '100%' }}
+                                />
                             </Form.Item>
                         </Col>
                     </Row>

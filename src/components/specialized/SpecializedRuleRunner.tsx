@@ -762,8 +762,11 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             const validGroups = new Set<string>();
             groups.forEach((items, key) => {
                 if (key.startsWith('group_')) {
-                    const isAll50 = items.every(i => Number(i.TYLE_DV) === 50);
-                    if (!isAll50) {
+                    const isAllBedShare = items.every(i => {
+                        const r = Number(i.TYLE_DV);
+                        return r === 50 || r === 30 || r === 0.5 || r === 0.3;
+                    });
+                    if (!isAllBedShare) {
                         validGroups.add(key);
                     }
                 } else {
@@ -1721,7 +1724,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             type={hide50Percent ? "primary" : "default"}
                             danger={hide50Percent}
                         >
-                            {hide50Percent ? "Đang ẩn cặp 50%" : "Ẩn cặp 50%"}
+                            {hide50Percent ? "Đang ẩn nằm ghép (50%, 30%)" : "Ẩn nằm ghép (50%, 30%)"}
                         </Button>
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
                         {user?.role === 'ADMIN' && (
