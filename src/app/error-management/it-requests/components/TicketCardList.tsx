@@ -193,6 +193,8 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                         (isMyTask && ticket.status === 'PENDING')
                     );
                     const isTransferringToMe = ticket.status === 'TRANSFERRING' && ticket.transferToId === user?.id;
+                    // Quyền xử lý sự cố kỹ thuật (Dành cho CNTT/Admin hoặc người được giao xử lý)
+                    const canProcess = Boolean(isDeptStaff || isMyTask);
                     const canQuickResolve = ticket.status !== 'RESOLVED' && !canReceive && isMyTask;
 
                     const dyn = ticket.dynamicFields as any;
@@ -447,7 +449,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                     )}
 
                                     {/* Nút Xử lý chính */}
-                                    {Boolean(isDeptStaff && hasPermission('MENU_ERROR_REQUESTS', 'EDIT')) && (
+                                    {canProcess && (
                                         <Button
                                             size="middle"
                                             type="primary"
@@ -480,10 +482,6 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 {/* Nút phụ: Thảo luận chat, Link, XML, Sửa, Xóa */}
                                 <div className="flex items-center gap-1.5">
                                     {(() => {
-                                        const canProcess = Boolean(
-                                            isDeptStaff && hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
-                                        );
-
                                         const moreMenuItems: any[] = [];
                                         if (canEdit && onEditClick) {
                                             moreMenuItems.push({

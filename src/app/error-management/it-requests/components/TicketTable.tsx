@@ -473,6 +473,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                     (isMyTask && record.status === 'PENDING')
                 );
                 const isTransferringToMe = record.status === 'TRANSFERRING' && record.transferToId === user?.id;
+                // Quyền xử lý sự cố kỹ thuật (Dành cho nhân viên phòng kỹ thuật CNTT/Admin hoặc người được giao xử lý)
+                const canProcess = Boolean(isDeptStaff || isMyTask);
                 const canQuickResolve = record.status !== 'RESOLVED' && !canReceive && isMyTask;
 
                 const dyn = record.dynamicFields as any;
@@ -503,6 +505,19 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                 onClick={() => handleReceiveTicket(record.id)}
                             >
                                 Nhận việc
+                            </Button>
+                        )}
+
+                        {/* Nút Xử lý chính (Khi đã tiếp nhận hoặc đang xử lý/tạm dừng - Đúng vị trí chính phía trên) */}
+                        {!canReceive && canProcess && (
+                            <Button 
+                                size="small" 
+                                type="primary" 
+                                ghost 
+                                className="whitespace-nowrap font-medium text-xs px-2.5 w-full max-w-[105px] border-blue-400 text-blue-600 hover:bg-blue-50" 
+                                onClick={() => onProcessClick(record)}
+                            >
+                                {record.status === 'RESOLVED' ? 'Xem lại' : 'Xử lý'}
                             </Button>
                         )}
 
@@ -590,14 +605,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             </div>
                         )}
 
-                        {/* Hàng dưới: Xử lý, Thảo luận, XML, Sửa, Xóa */}
+                        {/* Hàng dưới: Thảo luận, XML, Sửa, Xóa */}
                         <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                             {(() => {
-                                const canProcess = Boolean(
-                                    isDeptStaff && hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
-                                );
-
-                                // Gom các thao tác phụ vào menu 3 chấm khi đã có nút Xử lý (như tài khoản Admin/CNTT)
+                                // Gom các thao tác phụ vào menu 3 chấm khi đã có quyền Xử lý (như tài khoản Admin/CNTT)
                                 const moreMenuItems: any[] = [];
                                 if (canEdit && onEditClick) {
                                     moreMenuItems.push({
@@ -653,8 +664,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                             />
                                         )}
 
-                                        {/* Nút Xử lý chính (Dành cho CNTT/Admin) */}
-                                        {canProcess && (
+                                        {/* Nút Xử lý phụ (chỉ hiển thị ở hàng dưới khi đang ở trạng thái Chờ nhận việc) */}
+                                        {canReceive && canProcess && (
                                             <Button size="small" type="primary" ghost className="whitespace-nowrap font-medium" onClick={() => onProcessClick(record)}>
                                                 Xử lý
                                             </Button>
