@@ -1205,7 +1205,7 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { 
             id, status, it_note, assigneeId, transferToId, action, ten_loi, category, dynamicFields,
-            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, it_images, isFocusTask,
+            vendorId, vendorName, vendorTicketCode, vendorExpectedReturnAt, vendorResponse, it_images, isFocusTask,
             pauseReason, keepFocusTaskRunning
         } = body;
 
@@ -1409,9 +1409,12 @@ export async function PUT(request: Request) {
             data: {
                 status: newStatus,
                 it_note: it_note !== undefined ? it_note : ticket.it_note,
-                dynamicFields: (newStatus === 'PAUSED' && pauseReason) 
-                    ? { ...(ticket.dynamicFields as any || {}), 'Lý do tạm dừng': pauseReason, pauseReason }
-                    : (dynamicFields !== undefined ? dynamicFields : ticket.dynamicFields),
+                dynamicFields: {
+                    ...(ticket.dynamicFields as any || {}),
+                    ...(dynamicFields !== undefined ? dynamicFields : {}),
+                    ...(newStatus === 'PAUSED' && pauseReason ? { 'Lý do tạm dừng': pauseReason, pauseReason } : {}),
+                    ...(vendorResponse !== undefined ? { vendorResponse, 'Phản hồi của đối tác': vendorResponse } : {}),
+                },
                 assigneeId: assigneeId !== undefined ? assigneeId : ticket.assigneeId,
                 isFocusTask: isFocusTask !== undefined ? Boolean(isFocusTask) : ticket.isFocusTask,
                 startedAt: newStartedAt,

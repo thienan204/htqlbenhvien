@@ -30,6 +30,7 @@ export interface Ticket {
     vendorTicketCode?: string | null;
     vendorSentAt?: string | null;
     vendorExpectedReturnAt?: string | null;
+    vendorResponse?: string | null;
     it_images?: string[];
 }
 

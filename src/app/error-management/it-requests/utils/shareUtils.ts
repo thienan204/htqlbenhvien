@@ -37,6 +37,7 @@ export function copyTicketZaloMessage(ticket: any, options?: { deptName?: string
         ticket.it_note ? `⚙️ Yêu cầu kỹ thuật & Kế hoạch: ${ticket.it_note}` : null,
         ticket.vendorExpectedReturnAt ? `⏰ Hạn hoàn thành: ${dayjs(ticket.vendorExpectedReturnAt).format('DD/MM/YYYY')}` : null,
         ticket.vendorTicketCode ? `🎫 Mã ticket hãng: ${ticket.vendorTicketCode}` : null,
+        ticket.vendorResponse ? `💬 Ý kiến / Phản hồi từ đối tác: ${ticket.vendorResponse}` : null,
         `🔗 Link xem chi tiết & tệp đính kèm: ${shareUrl}`,
         `----------------------------------------`
     ].filter(Boolean).join('\n');

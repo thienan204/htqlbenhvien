@@ -342,17 +342,33 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 </div>
 
                                 {/* Thông tin đối tác ngoài nếu có */}
-                                {ticket.vendorName && (
-                                    <div className="xs:col-span-2 flex items-center gap-1.5 text-amber-800 bg-amber-50/90 p-1.5 rounded-lg border border-amber-200 text-xs">
-                                        <ShopOutlined className="text-amber-600 shrink-0" />
-                                        <span>Gửi đối tác: <strong>{ticket.vendorName}</strong></span>
-                                        {ticket.vendorExpectedReturnAt && (
-                                            <span className="text-[11px] text-amber-700">
-                                                (Hạn: {dayjs(ticket.vendorExpectedReturnAt).format('DD/MM/YYYY')})
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
+                                {(ticket.vendorName || ticket.vendorResponse || (ticket.dynamicFields as any)?.vendorResponse) && (() => {
+                                    const vResp = ticket.vendorResponse || (ticket.dynamicFields as any)?.vendorResponse || (ticket.dynamicFields as any)?.['Phản hồi của đối tác'];
+                                    return (
+                                        <div className="xs:col-span-2 flex flex-col gap-1.5 text-amber-800 bg-amber-50/90 p-2 rounded-xl border border-amber-200 text-xs">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <ShopOutlined className="text-amber-600 shrink-0" />
+                                                <span>Gửi đối tác: <strong>{ticket.vendorName || 'Đối tác ngoài'}</strong></span>
+                                                {ticket.vendorExpectedReturnAt && (
+                                                    <span className="text-[11px] text-amber-700">
+                                                        (Hạn: {dayjs(ticket.vendorExpectedReturnAt).format('DD/MM/YYYY')})
+                                                    </span>
+                                                )}
+                                                {ticket.vendorTicketCode && (
+                                                    <span className="text-[11px] text-slate-500">
+                                                        - Mã: <strong>{ticket.vendorTicketCode}</strong>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {vResp && (
+                                                <div className="text-[11px] text-emerald-900 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 flex items-start gap-1">
+                                                    <span>💬</span>
+                                                    <span><strong>Đối tác trả lời:</strong> {vResp}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
 
                                 <div className="flex items-center gap-1 text-[11px] text-slate-400 xs:col-span-2 mt-0.5">
                                     <ClockCircleOutlined className="shrink-0" />

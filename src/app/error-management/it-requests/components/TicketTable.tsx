@@ -356,6 +356,18 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                     Chưa hẹn ngày
                                 </span>
                             )}
+                            {(() => {
+                                const vResponse = record.vendorResponse || (record.dynamicFields as any)?.vendorResponse || (record.dynamicFields as any)?.['Phản hồi của đối tác'];
+                                if (!vResponse) return null;
+                                return (
+                                    <Tooltip title={`Ý kiến đối tác: ${vResponse}`}>
+                                        <div className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded leading-tight max-w-[150px] truncate flex items-center gap-1 cursor-pointer">
+                                            <span>💬</span>
+                                            <span className="truncate">{vResponse}</span>
+                                        </div>
+                                    </Tooltip>
+                                );
+                            })()}
                             <div className="flex items-center gap-1 mt-0.5">
                                 <Tooltip title="Sao chép Link xem phiếu gửi đối tác">
                                     <Button
@@ -415,6 +427,15 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                 ⏸️ <b>Lý do tạm dừng:</b> {renderTextWithLinks(pauseReason)}
                             </div>
                         )}
+                        {(() => {
+                            const vResp = record.vendorResponse || (record.dynamicFields as any)?.vendorResponse || (record.dynamicFields as any)?.['Phản hồi của đối tác'];
+                            if (!vResp) return null;
+                            return (
+                                <div className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 leading-relaxed break-all">
+                                    💬 <b>Đối tác ({record.vendorName || 'Đối tác ngoài'}):</b> {renderTextWithLinks(vResp)}
+                                </div>
+                            );
+                        })()}
                         {hasImages && (
                             <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
                                 <AntImage.PreviewGroup>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Select, Input, DatePicker, Card, Tag, Button, message, Switch } from 'antd';
-import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined, ShareAltOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { ShopOutlined, CalendarOutlined, FileTextOutlined, LinkOutlined, PhoneOutlined, ShareAltOutlined, CheckCircleOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import { Ticket, ITUser, VendorItem } from '../types';
@@ -130,6 +130,10 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                 : [];
             setAttachedImages(existing);
 
+            const existingVendorResponse = ticket.vendorResponse || 
+                (ticket.dynamicFields as any)?.vendorResponse || 
+                (ticket.dynamicFields as any)?.['Phản hồi của đối tác'] || '';
+
             setTimeout(() => {
                 actionForm.setFieldsValue({
                     status: ticket.status,
@@ -139,6 +143,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     vendorId: ticket.vendorId,
                     vendorTicketCode: ticket.vendorTicketCode,
                     vendorExpectedReturnAt: ticket.vendorExpectedReturnAt ? dayjs(ticket.vendorExpectedReturnAt) : null,
+                    vendorResponse: existingVendorResponse,
                 });
             }, 0);
         }
@@ -216,6 +221,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                 vendorId: canChangeStatus ? (values.vendorId !== undefined ? values.vendorId : (ticket?.vendorId || null)) : (ticket?.vendorId || null),
                 vendorName: canChangeStatus ? (selectedVendor ? selectedVendor.name : (values.vendorName || ticket?.vendorName || null)) : (ticket?.vendorName || null),
                 vendorTicketCode: canChangeStatus ? (values.vendorTicketCode !== undefined ? values.vendorTicketCode : (ticket?.vendorTicketCode || null)) : (ticket?.vendorTicketCode || null),
+                vendorResponse: values.vendorResponse !== undefined ? values.vendorResponse : (ticket?.vendorResponse || (ticket?.dynamicFields as any)?.vendorResponse || null),
                 vendorExpectedReturnAt: canChangeStatus 
                     ? (values.vendorExpectedReturnAt 
                         ? values.vendorExpectedReturnAt.toISOString() 
@@ -364,25 +370,39 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                 </div>
 
                 {/* THÔNG TIN BẢO TOÀN ĐỐI TÁC NGOÀI NẾU PHIẾU ĐÃ TỪNG GỬI ĐỐI TÁC */}
-                {selectedStatus !== 'WAITING_VENDOR' && (ticket?.vendorName || ticket?.vendorId) && (
-                    <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 flex items-center justify-between shadow-2xs mb-3">
-                        <div className="flex items-center gap-2">
-                            <ShopOutlined className="text-amber-600 text-base" />
-                            <div>
-                                <span className="text-slate-500">Đơn vị / Đối tác phụ trách: </span>
-                                <strong className="text-amber-950 font-bold">{ticket.vendorName || 'Đơn vị ngoài'}</strong>
-                                {ticket.vendorTicketCode && (
-                                    <span className="text-slate-500 ml-1.5">
-                                        (Mã ticket: <strong className="text-slate-700">{ticket.vendorTicketCode}</strong>)
-                                    </span>
-                                )}
+                {selectedStatus !== 'WAITING_VENDOR' && (ticket?.vendorName || ticket?.vendorId) && (() => {
+                    const savedResponse = ticket.vendorResponse || (ticket.dynamicFields as any)?.vendorResponse || (ticket.dynamicFields as any)?.['Phản hồi của đối tác'];
+                    return (
+                        <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 flex flex-col gap-2 shadow-2xs mb-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <ShopOutlined className="text-amber-600 text-base" />
+                                    <div>
+                                        <span className="text-slate-500">Đơn vị / Đối tác phụ trách: </span>
+                                        <strong className="text-amber-950 font-bold">{ticket.vendorName || 'Đơn vị ngoài'}</strong>
+                                        {ticket.vendorTicketCode && (
+                                            <span className="text-slate-500 ml-1.5">
+                                                (Mã ticket: <strong className="text-slate-700">{ticket.vendorTicketCode}</strong>)
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <Tag color="cyan" className="m-0 font-medium border-none rounded-full px-2.5 py-0.5">
+                                    Lịch sử gửi hãng được bảo toàn
+                                </Tag>
                             </div>
+                            {savedResponse && (
+                                <div className="text-xs text-emerald-900 bg-emerald-50/90 p-2 rounded-xl border border-emerald-200 flex items-start gap-1.5">
+                                    <MessageOutlined className="text-emerald-600 mt-0.5" />
+                                    <div>
+                                        <strong className="text-emerald-950">Phản hồi của đối tác: </strong>
+                                        <span>{savedResponse}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <Tag color="cyan" className="m-0 font-medium border-none rounded-full px-2.5 py-0.5">
-                            Lịch sử gửi hãng được bảo toàn
-                        </Tag>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {/* TÙY CHỌN: ĐI KHOA PHÒNG / XỬ LÝ KÉO DÀI */}
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50/60 border border-purple-200/90 shadow-2xs mb-3">
@@ -477,6 +497,26 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                             >
                                 <Input disabled={!canChangeStatus} placeholder="Nhập mã phiếu nếu có..." className="!rounded-lg" />
                             </Form.Item>
+
+                            {/* Ô nhập câu trả lời / ý kiến phản hồi của đối tác */}
+                            <Form.Item 
+                                name="vendorResponse" 
+                                label={
+                                    <span className="text-xs font-semibold text-emerald-950 flex items-center gap-1.5">
+                                        <MessageOutlined className="text-emerald-600 text-sm" />
+                                        Ý kiến / Phản hồi trả lời của Đơn vị đối tác
+                                    </span>
+                                }
+                                className="mb-0 sm:col-span-2"
+                                extra={<span className="text-[11px] text-emerald-800">Ghi lại thông tin đối tác phản hồi sau khi liên hệ (báo giá, tiến độ sửa, linh kiện, hẹn ngày trả máy...)</span>}
+                            >
+                                <Input.TextArea 
+                                    rows={2} 
+                                    disabled={!canChangeStatus} 
+                                    placeholder="Ví dụ: Đối tác đã tiếp nhận linh kiện, kiểm tra cháy nguồn, báo giá thay 400.000đ, dự kiến thứ 6 gửi lại..." 
+                                    className="!rounded-lg text-xs" 
+                                />
+                            </Form.Item>
                         </div>
 
                         {ticket?.id && (
@@ -504,6 +544,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                                                 vendorName: selectedVendor ? selectedVendor.name : (ticket.vendorName || ''),
                                                 vendorExpectedReturnAt: currentValues.vendorExpectedReturnAt ? currentValues.vendorExpectedReturnAt.toISOString() : ticket.vendorExpectedReturnAt,
                                                 vendorTicketCode: currentValues.vendorTicketCode || ticket.vendorTicketCode,
+                                                vendorResponse: currentValues.vendorResponse || ticket.vendorResponse,
                                                 it_note: currentValues.it_note || ticket.it_note
                                             };
                                             copyTicketZaloMessage(mergedTicket);
