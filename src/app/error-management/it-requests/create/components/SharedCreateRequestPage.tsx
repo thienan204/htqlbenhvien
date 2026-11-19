@@ -120,6 +120,7 @@ export function SharedCreateRequestPage({ targetDepartment, backPath }: SharedCr
                     showNoStaffWarningModal({
                         warningMessage: data.warningMessage,
                         hotline: data.warningPhone,
+                        workingStaffList: data.workingStaffList,
                         onOk: () => {
                             router.push(backPath);
                         }

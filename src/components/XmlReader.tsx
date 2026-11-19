@@ -23,7 +23,7 @@ import {
     InboxOutlined, UploadOutlined, FileExcelOutlined, SearchOutlined,
     CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, DeleteOutlined,
     CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined, ToolOutlined, ExperimentOutlined,
-    MedicineBoxOutlined, CheckOutlined, EditOutlined
+    MedicineBoxOutlined, CheckOutlined, EditOutlined, ClockCircleOutlined
 } from '@ant-design/icons';
 import BedDaysAuditModal from '@/app/(modules)/xml-checker/_components/BedDaysAuditModal';
 import { calculateBedDaysForRecord, parseAllowedMaNhom, parseExcludedMaBenh } from '@/app/(modules)/xml-checker/_components/bedDaysCalculator';
@@ -2030,6 +2030,25 @@ export default function XmlReader() {
 
         const isSent = sentRecordsSet.has(String(selectedRecord.summary?.MA_LK)) || sentMaBnSet.has(String(selectedRecord.summary?.MA_BN));
         const hasError = selectedRecord.validationResults.some(v => v.isError);
+        const maLk = String(selectedRecord.summary?.MA_LK || selectedRecord.id || '');
+        const isEdited = localEditedRecords.has(maLk);
+
+        // Tính thời hạn sửa bệnh án
+        let timeInfo: { text: string; isExpired: boolean } | null = null;
+        const ngayRaStr = String(selectedRecord.summary?.NGAY_RA || '');
+        if (ngayRaStr && ngayRaStr.length >= 8) {
+            const year = parseInt(ngayRaStr.substring(0, 4));
+            const month = parseInt(ngayRaStr.substring(4, 6)) - 1;
+            const day = parseInt(ngayRaStr.substring(6, 8));
+            let hour = 0; let min = 0;
+            if (ngayRaStr.length >= 12) {
+                hour = parseInt(ngayRaStr.substring(8, 10));
+                min = parseInt(ngayRaStr.substring(10, 12));
+            }
+            const dateNgayRa = new Date(year, month, day, hour, min);
+            const deadline = addWorkingDays(dateNgayRa, editDeadlineDays);
+            timeInfo = calculateRemainingTime(deadline);
+        }
 
         const items = selectedRecord.groups.map(group => {
             const list = getXmlDataList(group);
@@ -2310,7 +2329,7 @@ export default function XmlReader() {
             <Card
                 title={
                     <div className="flex justify-between items-center py-1">
-                        <Space size="large">
+                        <Space size="large" className="flex-wrap items-center">
                             <Button
                                 type="text"
                                 icon={<UploadOutlined />}
@@ -2319,6 +2338,42 @@ export default function XmlReader() {
                             >
                                 Quay lại
                             </Button>
+                            <div className="h-8 w-px bg-slate-200"></div>
+
+                            {/* Nút check/đánh dấu Đã sửa ngay tại Header Chi tiết hồ sơ */}
+                            <Tooltip title={isEdited ? 'Nhấp để HỦY đánh dấu đã sửa (Đồng bộ với danh sách ngoài)' : 'Nhấp để ĐÁNH DẤU hồ sơ này đã sửa xong (Đồng bộ với danh sách ngoài)'}>
+                                <Button
+                                    size="middle"
+                                    type={isEdited ? 'primary' : 'default'}
+                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                        isEdited
+                                            ? 'bg-emerald-600 hover:bg-emerald-700 border-none text-white shadow-sm'
+                                            : 'text-slate-600 border-dashed border-slate-300 hover:border-emerald-500 hover:text-emerald-600 bg-white hover:bg-emerald-50/30'
+                                    }`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleLocalEditedRecord(maLk);
+                                        if (isEdited) {
+                                            message.info('Đã chuyển trạng thái: Chưa sửa');
+                                        } else {
+                                            message.success('Đã đánh dấu hồ sơ: ĐÃ SỬA XONG');
+                                        }
+                                    }}
+                                >
+                                    {isEdited ? (
+                                        <>
+                                            <CheckCircleOutlined className="text-white text-sm" />
+                                            <span>Đã sửa</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <EditOutlined className="text-slate-400 text-sm" />
+                                            <span>Chưa sửa (Bấm để đánh dấu)</span>
+                                        </>
+                                    )}
+                                </Button>
+                            </Tooltip>
+
                             <div className="h-8 w-px bg-slate-200"></div>
                             <div className="flex items-center gap-4">
                                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Chi tiết hồ sơ</div>
@@ -2352,6 +2407,26 @@ export default function XmlReader() {
                                                 {selectedRecord.summary?.MA_BN}
                                             </Tag>
                                         </Tooltip>
+                                    )}
+
+                                    {/* Tag Hạn sửa bệnh án nếu có */}
+                                    {timeInfo && (
+                                        <Tooltip title={`Hạn sửa bệnh án: ${editDeadlineDays} ngày làm việc kể từ ngày ra viện`}>
+                                            <Tag
+                                                color={timeInfo.isExpired ? 'error' : 'success'}
+                                                className="m-0 rounded-full px-2.5 py-0.5 text-xs font-medium flex items-center gap-1"
+                                            >
+                                                <ClockCircleOutlined />
+                                                <span>{timeInfo.isExpired ? 'Hết hạn' : 'Còn hạn'} ({timeInfo.text})</span>
+                                            </Tag>
+                                        </Tooltip>
+                                    )}
+
+                                    {/* Tag Đã gửi Cổng giám định BHYT */}
+                                    {isSent && (
+                                        <Tag color="cyan" className="m-0 rounded-full px-2 text-xs font-medium">
+                                            Đã gửi Cổng GD
+                                        </Tag>
                                     )}
                                 </div>
                             </div>

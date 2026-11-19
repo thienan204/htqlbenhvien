@@ -324,6 +324,7 @@ export default function XmlErrorManager() {
                     showNoStaffWarningModal({
                         warningMessage: data.warningMessage,
                         warningPhone: data.warningPhone,
+                        workingStaffList: data.workingStaffList,
                         title: 'Đã gửi yêu cầu IT - Lưu ý tiếp nhận',
                         okText: 'Đã hiểu'
                     });

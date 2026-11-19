@@ -99,6 +99,7 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         focusReason,
         setFocusReason,
         shiftHours,
+        warningConfig,
         fetchITUsers
     } = useITMasterData(user, targetDepartment);
 
@@ -311,13 +312,14 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
 
                 // Cảnh báo nếu tất cả nhân viên phòng CNTT đều OFF
                 if (data?.allStaffOff) {
+                    const isOffice = data?.isOfficeHours;
                     Modal.warning({
-                        title: <span className="text-red-600 font-bold text-base">⚠️ CẢNH BÁO: PHÒNG {targetDepartment} KHÔNG CÒN AI NHẬN VIỆC!</span>,
+                        title: <span className="text-red-600 font-bold text-base">⚠️ CẢNH BÁO {isOffice ? 'GIỜ HÀNH CHÍNH' : 'CA TRỰC'}: PHÒNG {targetDepartment} KHÔNG CÒN AI NHẬN VIỆC!</span>,
                         content: (
                             <div className="space-y-2 text-slate-700 py-1 text-sm">
                                 <p>Bạn vừa chuyển trạng thái sang <strong>Tắt nhận việc</strong>.</p>
                                 <p className="text-red-700 font-medium bg-red-50 p-2.5 rounded-lg border border-red-200">
-                                    🚨 Hiện tại phòng <strong>{targetDepartment}</strong> KHÔNG CÒN nhân viên nào đang bật nhận việc! Các yêu cầu gửi lên từ các Khoa/Phòng sẽ không có ai tiếp nhận.
+                                    🚨 Hiện tại phòng <strong>{targetDepartment}</strong> KHÔNG CÒN nhân viên nào đang bật nhận việc {isOffice ? 'trong giờ hành chính' : 'trong ca trực'}! Các yêu cầu gửi lên từ Khoa/Phòng sẽ hiển thị thông điệp cảnh báo & Hotline {isOffice ? 'hành chính' : 'trực ban'}.
                                 </p>
                                 <p className="text-xs text-slate-500">
                                     Hệ thống đã tự động gửi tin nhắn cảnh báo khẩn cấp lên nhóm Telegram của phòng {targetDepartment}.
@@ -502,6 +504,9 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 user={user}
                 allowedRoles={['ADMIN', targetDepartment]}
                 dateRange={dateRange}
+                shiftHours={shiftHours}
+                warningConfig={warningConfig}
+                onToggleMyAvailability={!isAvailable ? () => handleToggleAvailability(true) : undefined}
             />
 
             {/* Thanh bộ lọc: Tối ưu responsive đầy đủ cho cả Mobile và Desktop */}

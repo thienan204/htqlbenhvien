@@ -39,6 +39,9 @@ interface DepartmentStaffStatusStripProps {
     user?: any;
     allowedRoles?: string[];
     dateRange?: [Dayjs | null, Dayjs | null] | null;
+    shiftHours?: any;
+    warningConfig?: any;
+    onToggleMyAvailability?: () => void;
 }
 
 export function DepartmentStaffStatusStrip({
@@ -48,7 +51,10 @@ export function DepartmentStaffStatusStrip({
     onSelectStaff,
     user,
     allowedRoles = ['ADMIN', 'CNTT'],
-    dateRange
+    dateRange,
+    shiftHours,
+    warningConfig,
+    onToggleMyAvailability
 }: DepartmentStaffStatusStripProps) {
     const [staffList, setStaffList] = useState<StaffStatusItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -200,6 +206,32 @@ export function DepartmentStaffStatusStrip({
         return lastName.charAt(0).toUpperCase();
     };
 
+    // Xác định xem hiện tại có đang trong Khung Giờ Hành Chính hay không
+    const isCurrentOfficeHours = useMemo(() => {
+        const now = dayjs();
+        const dayOfWeek = now.day();
+        // Cuối tuần: Thứ 7 (6), Chủ nhật (0) -> Ca trực / ngoài giờ
+        if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+
+        const currentMinutes = now.hour() * 60 + now.minute();
+        
+        // Ca sáng
+        const [mStartH, mStartM] = (shiftHours?.morningStartTime || '07:00').split(':').map((n: string) => parseInt(n, 10));
+        const [mEndH, mEndM] = (shiftHours?.morningEndTime || '11:30').split(':').map((n: string) => parseInt(n, 10));
+        const morningStart = (mStartH || 7) * 60 + (mStartM || 0);
+        const morningEnd = (mEndH || 11) * 60 + (mEndM || 30);
+
+        // Ca chiều
+        const [aStartH, aStartM] = (shiftHours?.afternoonStartTime || '13:30').split(':').map((n: string) => parseInt(n, 10));
+        const [aEndH, aEndM] = (shiftHours?.afternoonEndTime || '17:00').split(':').map((n: string) => parseInt(n, 10));
+        const afternoonStart = (aStartH || 13) * 60 + (aStartM || 30);
+        const afternoonEnd = (aEndH || 17) * 60 + (aEndM || 0);
+
+        const isMorning = currentMinutes >= morningStart && currentMinutes < morningEnd;
+        const isAfternoon = currentMinutes >= afternoonStart && currentMinutes < afternoonEnd;
+        return isMorning || isAfternoon;
+    }, [shiftHours]);
+
     // Nếu không có quyền xem hoặc không có nhân viên: Không render
     if (!isAllowed) {
         return null;
@@ -209,8 +241,60 @@ export function DepartmentStaffStatusStrip({
         return null;
     }
 
+    const showWarningBanner = stats.ready === 0 && !loading && displayStaff.length > 0;
+
     return (
-        <div className="w-full transition-all">
+        <div className="w-full transition-all flex flex-col gap-2">
+            {/* Banner Cảnh báo nổi bật khi không có ai sẵn sàng nhận việc */}
+            {showWarningBanner && (
+                <div className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs transition-all ${
+                    isCurrentOfficeHours 
+                        ? 'bg-red-50/95 border-red-300 text-red-950 ring-1 ring-red-200' 
+                        : 'bg-amber-50/95 border-amber-300 text-amber-950 ring-1 ring-amber-200'
+                }`}>
+                    <div className="flex items-start sm:items-center gap-2.5">
+                        <span className="text-xl sm:text-2xl shrink-0 leading-none">
+                            {isCurrentOfficeHours ? '🚨' : '🌙'}
+                        </span>
+                        <div>
+                            <div className="text-xs sm:text-sm font-bold flex items-center gap-1.5 flex-wrap">
+                                <span>
+                                    {isCurrentOfficeHours 
+                                        ? `CẢNH BÁO GIỜ HÀNH CHÍNH: PHÒNG ${targetDepartment} KHÔNG CÒN AI NHẬN VIỆC (0 Sẵn sàng)!` 
+                                        : `CẢNH BÁO CA TRỰC: Chưa có nhân viên trực ban nào bật nhận việc!`}
+                                </span>
+                                <Tag color={isCurrentOfficeHours ? 'error' : 'warning'} className="m-0 text-[10px] uppercase font-bold py-0 px-1.5 rounded">
+                                    {isCurrentOfficeHours ? 'Hành chính' : 'Ca trực'}
+                                </Tag>
+                            </div>
+                            <div className="text-[11px] sm:text-xs mt-0.5 leading-relaxed opacity-90">
+                                {isCurrentOfficeHours ? (
+                                    <span>
+                                        Khoa/Phòng gửi yêu cầu sẽ thấy cảnh báo & Hotline hành chính: <strong className="font-mono text-red-700 underline">{warningConfig?.officeWarningPhone || '02053600553'}</strong>. Đề nghị kỹ thuật viên bật nhận việc ngay!
+                                    </span>
+                                ) : (
+                                    <span>
+                                        Khoa/Phòng gửi yêu cầu sẽ thấy cảnh báo & Hotline trực ban: <strong className="font-mono text-amber-800 underline">{warningConfig?.dutyWarningPhone || '02053600553'}</strong>.
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {onToggleMyAvailability && (
+                        <Button
+                            size="small"
+                            type="primary"
+                            danger={isCurrentOfficeHours}
+                            onClick={onToggleMyAvailability}
+                            className={`shrink-0 text-xs font-semibold rounded-xl shadow-xs self-start sm:self-center ${!isCurrentOfficeHours ? '!bg-amber-600 hover:!bg-amber-500' : ''}`}
+                        >
+                            ⚡ Bật nhận việc của tôi
+                        </Button>
+                    )}
+                </div>
+            )}
+
             <Collapse
                 activeKey={activeKeys}
                 onChange={handleCollapseChange}

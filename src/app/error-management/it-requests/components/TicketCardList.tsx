@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react';
 import { Button, Tag, Badge, Tooltip, Popconfirm, Modal, Input, message, Pagination, Dropdown } from 'antd';
-import { 
-    CheckCircleOutlined, 
-    LoadingOutlined, 
-    MessageOutlined, 
-    DeleteOutlined, 
-    EditOutlined, 
-    FileTextOutlined, 
-    PhoneOutlined, 
-    ClockCircleOutlined, 
-    UserOutlined, 
-    ShopOutlined, 
-    LinkOutlined, 
-    ShareAltOutlined, 
-    PauseCircleOutlined, 
+import {
+    CheckCircleOutlined,
+    LoadingOutlined,
+    MessageOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    FileTextOutlined,
+    PhoneOutlined,
+    ClockCircleOutlined,
+    UserOutlined,
+    ShopOutlined,
+    LinkOutlined,
+    ShareAltOutlined,
+    PauseCircleOutlined,
     PlayCircleOutlined,
     PaperClipOutlined,
     EllipsisOutlined
@@ -90,8 +90,8 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                 })
             });
             if (res.ok) {
-                message.success(nextState 
-                    ? 'Đã bật chế độ Đi khoa phòng (Tạm ngưng nhận việc tự động)!' 
+                message.success(nextState
+                    ? 'Đã bật chế độ Đi khoa phòng (Tạm ngưng nhận việc tự động)!'
                     : 'Đã tắt chế độ Đi khoa phòng (Sẵn sàng nhận việc tự động)!'
                 );
                 onFetchTickets();
@@ -156,7 +156,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
     const handleTransferResponse = async (id: string, action: 'ACCEPT_TRANSFER' | 'REJECT_TRANSFER') => {
         const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
-            method: 'PUT', 
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, action })
         });
@@ -186,10 +186,10 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                 {paginatedTickets.map((ticket, index) => {
                     const dept = departments.find(d => d.ma_khoa === ticket.ma_khoa);
                     const isMyTask = Boolean(ticket.assigneeId) && ticket.assigneeId === user?.id;
-                    const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && user?.role === targetDepartment));
-                    const hasEditPerm = Boolean(isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT'));
-                    const canReceive = hasEditPerm && (
-                        (assignmentMode === 'A' && !ticket.assigneeId) ||
+                    const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && (user?.role === targetDepartment || user?.ma_khoa === targetDepartment)));
+                    // Chỉ nhân viên thuộc phòng ban kỹ thuật phụ trách (hoặc Admin) mới có quyền nhận việc
+                    const canReceive = isDeptStaff && (
+                        !ticket.assigneeId ||
                         (isMyTask && ticket.status === 'PENDING')
                     );
                     const isTransferringToMe = ticket.status === 'TRANSFERRING' && ticket.transferToId === user?.id;
@@ -233,7 +233,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                     // Màu sắc viền theo trạng thái
                     let borderColor = 'border-slate-200';
                     let statusBadge = <Tag color="default">Chờ xử lý</Tag>;
-                    
+
                     if (ticket.status === 'PENDING') {
                         borderColor = 'border-amber-300 bg-amber-50/15';
                         statusBadge = <Tag color="warning" className="m-0 font-semibold">Chờ xử lý</Tag>;
@@ -255,7 +255,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                     }
 
                     return (
-                        <div 
+                        <div
                             key={ticket.id}
                             className={`p-3.5 sm:p-4 rounded-2xl bg-white border ${borderColor} shadow-xs hover:shadow-md transition-all space-y-3 relative`}
                         >
@@ -284,7 +284,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 <div className="font-semibold text-slate-900 text-sm sm:text-base leading-snug">
                                     {renderTextWithLinks(ticket.ten_loi)}
                                 </div>
-                                
+
                                 {ticket.ma_ba && (
                                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                                         <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5 inline-flex items-center gap-1">
@@ -376,9 +376,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 <div className="flex items-center gap-1.5 flex-wrap flex-1">
                                     {/* 1. Nhận việc */}
                                     {canReceive && (
-                                        <Button 
-                                            size="middle" 
-                                            type="primary" 
+                                        <Button
+                                            size="middle"
+                                            type="primary"
                                             className="bg-green-600 hover:bg-green-500 font-medium text-xs rounded-xl flex-1 xs:flex-initial"
                                             onClick={() => handleReceiveTicket(ticket.id)}
                                         >
@@ -388,9 +388,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
                                     {/* 2. Tiếp tục khi đang tạm dừng */}
                                     {ticket.status === 'PAUSED' && isMyTask && (
-                                        <Button 
-                                            size="middle" 
-                                            type="primary" 
+                                        <Button
+                                            size="middle"
+                                            type="primary"
                                             className="bg-amber-600 hover:bg-amber-500 font-medium text-xs rounded-xl flex items-center gap-1 flex-1 xs:flex-initial"
                                             onClick={() => onResumeTicket ? onResumeTicket(ticket) : handleReceiveTicket(ticket.id)}
                                         >
@@ -400,9 +400,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
                                     {/* 3. Tạm dừng khi đang xử lý */}
                                     {ticket.status === 'IN_PROGRESS' && isMyTask && onPauseTicket && (
-                                        <Button 
-                                            size="middle" 
-                                            type="default" 
+                                        <Button
+                                            size="middle"
+                                            type="default"
                                             className="text-amber-700 border-amber-300 hover:bg-amber-50 font-medium text-xs rounded-xl flex items-center gap-1"
                                             onClick={() => {
                                                 let reasonText = '';
@@ -411,9 +411,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                     content: (
                                                         <div className="py-2 space-y-2 text-xs">
                                                             <p>Nhập lý do tạm dừng:</p>
-                                                            <Input.TextArea 
-                                                                rows={3} 
-                                                                placeholder="VD: Đang chờ khoa phòng gửi thêm dữ liệu..." 
+                                                            <Input.TextArea
+                                                                rows={3}
+                                                                placeholder="VD: Đang chờ khoa phòng gửi thêm dữ liệu..."
                                                                 onChange={(e) => { reasonText = e.target.value; }}
                                                             />
                                                         </div>
@@ -432,12 +432,12 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
                                     {/* 4. Đi khoa / Về VP */}
                                     {ticket.status === 'IN_PROGRESS' && isMyTask && (
-                                        <Button 
-                                            size="middle" 
+                                        <Button
+                                            size="middle"
                                             loading={togglingOnSiteId === ticket.id}
-                                            type={ticket.isFocusTask ? "primary" : "default"} 
-                                            className={ticket.isFocusTask 
-                                                ? "!bg-purple-600 hover:!bg-purple-500 font-medium text-xs rounded-xl flex items-center gap-1" 
+                                            type={ticket.isFocusTask ? "primary" : "default"}
+                                            className={ticket.isFocusTask
+                                                ? "!bg-purple-600 hover:!bg-purple-500 font-medium text-xs rounded-xl flex items-center gap-1"
                                                 : "text-purple-700 border-purple-300 hover:bg-purple-50 font-medium text-xs rounded-xl flex items-center gap-1"
                                             }
                                             onClick={() => handleToggleOnSite(ticket)}
@@ -447,10 +447,10 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                     )}
 
                                     {/* Nút Xử lý chính */}
-                                    {Boolean(isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT')) && (
-                                        <Button 
-                                            size="middle" 
-                                            type="primary" 
+                                    {Boolean(isDeptStaff && hasPermission('MENU_ERROR_REQUESTS', 'EDIT')) && (
+                                        <Button
+                                            size="middle"
+                                            type="primary"
                                             className="bg-blue-600 hover:bg-blue-500 font-medium text-xs rounded-xl flex-1 xs:flex-initial"
                                             onClick={() => onProcessClick(ticket)}
                                         >
@@ -481,7 +481,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                 <div className="flex items-center gap-1.5">
                                     {(() => {
                                         const canProcess = Boolean(
-                                            isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
+                                            isDeptStaff && hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
                                         );
 
                                         const moreMenuItems: any[] = [];
@@ -530,13 +530,13 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                             <>
                                                 {onChatClick && (
                                                     <Badge count={ticket.unreadMessageCount || 0} size="small" offset={[-2, 2]}>
-                                                        <Button 
-                                                            size="middle" 
-                                                            type="dashed" 
-                                                            icon={<MessageOutlined />} 
-                                                            title="Thảo luận / Trao đổi" 
+                                                        <Button
+                                                            size="middle"
+                                                            type="dashed"
+                                                            icon={<MessageOutlined />}
+                                                            title="Thảo luận / Trao đổi"
                                                             className="rounded-xl"
-                                                            onClick={() => onChatClick(ticket)} 
+                                                            onClick={() => onChatClick(ticket)}
                                                         />
                                                     </Badge>
                                                 )}
@@ -545,10 +545,10 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                 {canProcess ? (
                                                     moreMenuItems.length > 0 && (
                                                         <Dropdown menu={{ items: moreMenuItems }} trigger={['click']} placement="bottomRight">
-                                                            <Button 
-                                                                size="middle" 
-                                                                type="default" 
-                                                                icon={<EllipsisOutlined className="text-slate-700 text-base" />} 
+                                                            <Button
+                                                                size="middle"
+                                                                type="default"
+                                                                icon={<EllipsisOutlined className="text-slate-700 text-base" />}
                                                                 className="rounded-xl border-slate-200"
                                                                 title="Thao tác khác"
                                                             />
@@ -558,7 +558,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                     /* Khi là tài khoản khoa phòng: Hiển thị trực tiếp các nút để thao tác 1 chạm */
                                                     <>
                                                         <Tooltip title="Sao chép Link phiếu">
-                                                            <Button 
+                                                            <Button
                                                                 size="middle"
                                                                 type="default"
                                                                 icon={<LinkOutlined />}
@@ -569,8 +569,8 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
                                                         {ticket.ma_ba && ticket.hasXml && (
                                                             <Tooltip title="Xem hồ sơ XML gốc">
-                                                                <Button 
-                                                                    size="middle" 
+                                                                <Button
+                                                                    size="middle"
                                                                     type="default"
                                                                     icon={<FileTextOutlined />}
                                                                     className="rounded-xl"
@@ -580,9 +580,9 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                         )}
 
                                                         {canEdit && onEditClick && (
-                                                            <Button 
-                                                                size="middle" 
-                                                                type="default" 
+                                                            <Button
+                                                                size="middle"
+                                                                type="default"
                                                                 icon={<EditOutlined />}
                                                                 className="rounded-xl text-blue-600 border-blue-300 bg-blue-50/70 hover:bg-blue-100 font-semibold text-xs flex items-center gap-1 shadow-2xs"
                                                                 onClick={() => onEditClick(ticket)}
@@ -591,17 +591,17 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                                             </Button>
                                                         )}
                                                         {canDelete && (
-                                                            <Popconfirm 
-                                                                title="Xóa yêu cầu?" 
+                                                            <Popconfirm
+                                                                title="Xóa yêu cầu?"
                                                                 description="Bạn có chắc chắn muốn xóa yêu cầu này?"
                                                                 onConfirm={() => onDeleteTicket(ticket.id)}
                                                                 okText="Xóa"
                                                                 cancelText="Hủy"
                                                             >
-                                                                <Button 
-                                                                    size="middle" 
-                                                                    danger 
-                                                                    icon={<DeleteOutlined />} 
+                                                                <Button
+                                                                    size="middle"
+                                                                    danger
+                                                                    icon={<DeleteOutlined />}
                                                                     className="rounded-xl bg-red-50/70 border-red-200 text-red-600 hover:bg-red-100 shadow-2xs"
                                                                     title="Xóa yêu cầu"
                                                                 />
@@ -621,7 +621,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
             {/* Phân trang danh sách thẻ */}
             <div className="flex justify-center sm:justify-end bg-white p-3 rounded-2xl border border-slate-100 shadow-xs mt-3">
-                <Pagination 
+                <Pagination
                     current={currentPage}
                     pageSize={pageSize}
                     total={tickets.length}

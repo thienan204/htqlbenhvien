@@ -384,6 +384,7 @@ export async function PUT(request: Request) {
         const isDisablingAvailability = users.some(u => u.isAvailable === false || u.autoAssignDisabled === true);
 
         let allStaffOff = false;
+        let isOffice = false;
         let warningMessage: string | null = null;
 
         if (isDisablingAvailability) {
@@ -430,13 +431,24 @@ export async function PUT(request: Request) {
                     const origin = process.env.APP_URL || request.headers.get('origin') || 'http://localhost:3000';
                     const dutyUrl = `${origin}/htqlbenhvien/error-management/it-requests`;
 
+                    const currentShift = getCurrentHospitalShift({
+                        morningStart: config.morningStartTime || '07:00',
+                        morningEnd: config.morningEndTime || '11:30',
+                        afternoonStart: config.afternoonStartTime || '13:30',
+                        afternoonEnd: config.afternoonEndTime || config.officeEndTime || '16:50',
+                        holidays: Array.isArray(config.holidays) ? config.holidays : [],
+                        makeupWorkdays: Array.isArray(config.makeupWorkdays) ? config.makeupWorkdays : []
+                    });
+                    isOffice = currentShift.isOfficeHours;
+                    const shiftLabel = isOffice ? 'GIỜ HÀNH CHÍNH' : 'CA TRỰC';
+
                     // Soạn thông điệp Telegram cảnh báo
-                    const telegramMsg = `🚨 <b>[CẢNH BÁO KHẨN: ${targetDepartment} KHÔNG CÒN AI NHẬN VIỆC]</b> 🚨\n\n` +
-                        `⚠️ <b>Tình trạng:</b> Tất cả nhân viên phòng <b>${targetDepartment}</b> hiện đều đang <b>TẮT nhận việc</b> hoặc bật Chế độ tập trung!\n` +
+                    const telegramMsg = `🚨 <b>[CẢNH BÁO ${shiftLabel}: ${targetDepartment} KHÔNG CÒN AI NHẬN VIỆC]</b> 🚨\n\n` +
+                        `⚠️ <b>Tình trạng:</b> Tất cả nhân viên phòng <b>${targetDepartment}</b> hiện đều đang <b>TẮT nhận việc</b> hoặc bật Chế độ tập trung (${currentShift.shiftName})!\n` +
                         `👤 <b>Nhân viên vừa tắt:</b> ${operatorName}${operatorTag}\n` +
                         `⏰ <b>Thời gian:</b> ${nowStr}\n\n` +
                         `👉 <b>Lưu ý khẩn:</b> Các sự cố, yêu cầu mới từ các Khoa/Phòng gửi lên sẽ <b>KHÔNG CÓ NGƯỜI TIẾP NHẬN</b>.\n` +
-                        `Đề nghị kỹ thuật viên có ca trực kiểm tra và <b>BẬT NHẬN VIỆC</b> ngay!\n\n` +
+                        `Đề nghị kỹ thuật viên ${isOffice ? 'phòng ' + targetDepartment : 'trực ban'} kiểm tra và <b>BẬT NHẬN VIỆC</b> ngay!\n\n` +
                         `🔗 <a href="${dutyUrl}">👉 Bấm vào đây để mở hệ thống & bật nhận việc</a>`;
 
                     const replyMarkup = {
@@ -473,6 +485,7 @@ export async function PUT(request: Request) {
             success: true, 
             message: 'Cập nhật ca trực thành công!',
             allStaffOff,
+            isOfficeHours: isOffice,
             warningMessage
         });
     } catch (error) {

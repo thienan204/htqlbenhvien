@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { ITUser } from '../types';
 import { getBasePath } from '@/utils/config';
 
+export interface WarningConfig {
+    officeWarningEnabled: boolean;
+    officeWarningMessage: string;
+    officeWarningPhone: string;
+    dutyShiftWarningEnabled: boolean;
+    dutyWarningMessage: string;
+    dutyWarningPhone: string;
+}
+
 export interface ShiftHoursConfig {
     morningStartTime: string;
     morningEndTime: string;
@@ -25,6 +34,14 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
         morningEndTime: '11:30',
         afternoonStartTime: '13:30',
         afternoonEndTime: '17:00'
+    });
+    const [warningConfig, setWarningConfig] = useState<WarningConfig>({
+        officeWarningEnabled: true,
+        officeWarningMessage: '',
+        officeWarningPhone: '',
+        dutyShiftWarningEnabled: true,
+        dutyWarningMessage: '',
+        dutyWarningPhone: ''
     });
 
     useEffect(() => {
@@ -94,6 +111,14 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
                 if (configData.notificationSound) {
                     localStorage.setItem(`${targetDepartment}_department_notification_sound`, JSON.stringify(configData.notificationSound));
                 }
+                setWarningConfig({
+                    officeWarningEnabled: configData.officeWarningEnabled !== undefined ? Boolean(configData.officeWarningEnabled) : true,
+                    officeWarningMessage: configData.officeWarningMessage || '',
+                    officeWarningPhone: configData.officeWarningPhone || configData.noStaffPhone || '',
+                    dutyShiftWarningEnabled: configData.dutyShiftWarningEnabled !== undefined ? Boolean(configData.dutyShiftWarningEnabled) : true,
+                    dutyWarningMessage: configData.dutyWarningMessage || configData.noStaffWarningMessage || '',
+                    dutyWarningPhone: configData.dutyWarningPhone || configData.noStaffPhone || ''
+                });
             }
         } catch (error) {
             console.warn('Fetch config warning:', error);
@@ -145,6 +170,7 @@ export const useITMasterData = (user: any, targetDepartment: string = 'CNTT') =>
         focusReason,
         setFocusReason,
         shiftHours,
+        warningConfig,
         fetchITUsers
     };
 };

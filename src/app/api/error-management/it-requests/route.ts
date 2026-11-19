@@ -216,6 +216,13 @@ export async function POST(request: Request) {
         let targetDutyShiftWarningEnabled = true;
         let targetNoStaffWarningMessage = 'Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp ảnh hưởng khám chữa bệnh, vui lòng gọi điện thoại trực ban để được hỗ trợ!';
         let targetNoStaffPhone = '';
+        let targetOfficeWarningEnabled = true;
+        let targetOfficeWarningMessage = 'Hiện tại tất cả kỹ thuật viên CNTT đang bận xử lý sự cố tại các Khoa/Phòng hoặc đang hỗ trợ chuyên môn nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống. Nếu là sự cố khẩn cấp ảnh hưởng đến công tác khám chữa bệnh, vui lòng gọi điện thoại phòng CNTT để được hỗ trợ kịp thời!';
+        let targetOfficeWarningPhone = '';
+        let targetDutyWarningMessage = '';
+        let targetDutyWarningPhone = '';
+        let targetShowStaffListOnWarning = false;
+        let targetShowLeadersOnWarning = false;
         let targetSaveAssignReason = true;
         let targetIncludeAllUnfinishedTasks = false;
 
@@ -240,6 +247,13 @@ export async function POST(request: Request) {
                 if (config.dutyShiftWarningEnabled !== undefined) targetDutyShiftWarningEnabled = Boolean(config.dutyShiftWarningEnabled);
                 if (config.noStaffWarningMessage) targetNoStaffWarningMessage = config.noStaffWarningMessage;
                 if (config.noStaffPhone) targetNoStaffPhone = config.noStaffPhone;
+                if (config.officeWarningEnabled !== undefined) targetOfficeWarningEnabled = Boolean(config.officeWarningEnabled);
+                if (config.officeWarningMessage) targetOfficeWarningMessage = config.officeWarningMessage;
+                if (config.officeWarningPhone) targetOfficeWarningPhone = config.officeWarningPhone;
+                if (config.dutyWarningMessage) targetDutyWarningMessage = config.dutyWarningMessage;
+                if (config.dutyWarningPhone) targetDutyWarningPhone = config.dutyWarningPhone;
+                if (config.showStaffListOnWarning !== undefined) targetShowStaffListOnWarning = Boolean(config.showStaffListOnWarning);
+                if (config.showLeadersOnWarning !== undefined) targetShowLeadersOnWarning = Boolean(config.showLeadersOnWarning);
                 if (config.saveAssignReason !== undefined) targetSaveAssignReason = Boolean(config.saveAssignReason);
             }
         }
@@ -891,7 +905,7 @@ export async function POST(request: Request) {
             } else {
                 assigneeInfo = 'Đã phân công';
             }
-        } else if (targetNoStaffWarningEnabled) {
+        } else if (targetNoStaffWarningEnabled || targetOfficeWarningEnabled) {
             isNoStaffAlert = true;
             assigneeInfo = '⚠️ CHƯA CÓ NGƯỜI TIẾP NHẬN';
         }
@@ -899,9 +913,10 @@ export async function POST(request: Request) {
         // Tạo thông điệp Telegram
         let telegramMsg = '';
         if (isNoStaffAlert) {
-            telegramMsg = `🚨 <b>[CẢNH BÁO: CHƯA CÓ KỸ THUẬT VIÊN NHẬN VIỆC]</b>\n\n` +
-                `⚠️ <b>Tình trạng:</b> Hiện tại KHÔNG CÓ KỸ THUẬT VIÊN nào đang nhận việc / trực ban (${currentShift.shiftName})!\n` +
-                `👉 Đề nghị kỹ thuật viên trực ban kiểm tra và bấm nút nhận việc ngay!\n\n`;
+            const isOffice = currentShift.isOfficeHours;
+            telegramMsg = `🚨 <b>[CẢNH BÁO ${isOffice ? 'GIỜ HÀNH CHÍNH' : 'CA TRỰC'}: CHƯA CÓ KỸ THUẬT VIÊN NHẬN VIỆC]</b>\n\n` +
+                `⚠️ <b>Tình trạng:</b> Hiện tại KHÔNG CÓ KỸ THUẬT VIÊN nào đang nhận việc (${currentShift.shiftName})!\n` +
+                `👉 Đề nghị kỹ thuật viên ${isOffice ? 'phòng CNTT' : 'trực ban'} kiểm tra và bấm nút nhận việc ngay!\n\n`;
         } else if (isFocusAssignment) {
             telegramMsg = `👑 <b>NHIỆM VỤ TẬP TRUNG DO LÃNH ĐẠO GIAO</b>\n\n`;
         } else {
@@ -1020,17 +1035,161 @@ export async function POST(request: Request) {
 
         const isDutyShift = !currentShift.isOfficeHours;
         const isNoStaff = !finalAssignee;
-        const shouldShowWarning = targetNoStaffWarningEnabled && (
-            isNoStaff || (targetDutyShiftWarningEnabled && isDutyShift)
-        );
-        const warningMessage = shouldShowWarning ? targetNoStaffWarningMessage : null;
-        const warningPhone = shouldShowWarning ? (targetNoStaffPhone || null) : null;
+        
+        let shouldShowWarning = false;
+        let warningMessage: string | null = null;
+        let warningPhone: string | null = null;
+
+        if (currentShift.isOfficeHours) {
+            // Trong giờ hành chính: Hiển thị cảnh báo khi không có ai nhận việc và bật tùy chọn cảnh báo hành chính
+            if (isNoStaff && targetOfficeWarningEnabled) {
+                shouldShowWarning = true;
+                warningMessage = targetOfficeWarningMessage;
+                warningPhone = targetOfficeWarningPhone || targetNoStaffPhone || null;
+            }
+        } else {
+            // Trong giờ trực / ngoài giờ: Hiển thị cảnh báo nếu không có ai nhận hoặc nếu bật cảnh báo ca trực
+            if (isNoStaff || (targetDutyShiftWarningEnabled && isDutyShift)) {
+                if (targetDutyShiftWarningEnabled || targetNoStaffWarningEnabled) {
+                    shouldShowWarning = true;
+                    warningMessage = targetDutyWarningMessage || targetNoStaffWarningMessage;
+                    warningPhone = targetDutyWarningPhone || targetNoStaffPhone || null;
+                }
+            }
+        }
+
+        // Nếu bật hiển thị danh sách nhân sự đi làm trong giờ hành chính khi tất cả bận
+        let workingStaffList: any[] = [];
+        if (shouldShowWarning && currentShift.isOfficeHours && targetShowStaffListOnWarning) {
+            try {
+                const deptStaffUsers = await prisma.user.findMany({
+                    where: {
+                        role: targetDepartment,
+                        isActive: true
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        avatar: true,
+                        isAvailable: true,
+                        autoAssignDisabled: true,
+                        focusReason: true,
+                        dutyOrder: true,
+                        staff: {
+                            select: {
+                                ho_ten: true,
+                                so_dien_thoai: true,
+                                chuc_vu_ref: {
+                                    select: {
+                                        level: true,
+                                        code: true,
+                                        name: true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    orderBy: {
+                        dutyOrder: 'asc'
+                    }
+                });
+
+                // Lấy công việc đang xử lý của từng nhân viên
+                const userIds = deptStaffUsers.map(u => u.id);
+                const activeTasks = await prisma.iTRequest.findMany({
+                    where: {
+                        assigneeId: { in: userIds },
+                        status: { in: ['IN_PROGRESS', 'PAUSED'] }
+                    },
+                    select: {
+                        assigneeId: true,
+                        ten_loi: true,
+                        ma_khoa: true,
+                        isFocusTask: true
+                    }
+                });
+                const taskMap = new Map<string, any>();
+                activeTasks.forEach(t => {
+                    if (t.assigneeId && !taskMap.has(t.assigneeId)) {
+                        taskMap.set(t.assigneeId, t);
+                    }
+                });
+
+                workingStaffList = deptStaffUsers
+                    .map(u => {
+                        const explicitLevel = u.staff?.chuc_vu_ref?.level;
+                        const cvCode = (u.staff?.chuc_vu_ref?.code || '').toUpperCase();
+                        const cvName = (u.staff?.chuc_vu_ref?.name || '').toLowerCase();
+                        const isTeamLeader = Boolean(
+                            explicitLevel === 'LEVEL_2_1_TEAM_LEADER' || 
+                            explicitLevel === 'LEVEL_2.1' || 
+                            cvCode === 'TO_TRUONG' || 
+                            cvCode.includes('TO_TRUONG') || 
+                            cvName.includes('tổ trưởng')
+                        );
+                        const isLeader = !isTeamLeader && Boolean(
+                            explicitLevel === 'LEVEL_1_BGD' || 
+                            explicitLevel === 'LEVEL_2_LEADER' || 
+                            cvCode.includes('TRUONG_PHONG') || 
+                            cvCode.includes('PHO_TRUONG_PHONG') || 
+                            cvCode.includes('TRUONG_KHOA') || 
+                            cvCode.includes('PHO_TRUONG_KHOA') ||
+                            cvName.includes('trưởng phòng') || 
+                            cvName.includes('phó trưởng phòng') || 
+                            cvName.includes('trưởng khoa') || 
+                            cvName.includes('phó trưởng khoa')
+                        );
+
+                        const activeTask = taskMap.get(u.id);
+                        let currentStatusText = 'Chờ tiếp nhận';
+                        if (u.autoAssignDisabled || u.focusReason) {
+                            currentStatusText = u.focusReason || 'Bận việc tập trung';
+                        } else if (activeTask) {
+                            currentStatusText = `Đang xử lý: ${activeTask.ten_loi}${activeTask.ma_khoa ? ` (${activeTask.ma_khoa})` : ''}`;
+                        } else if (!u.isAvailable) {
+                            currentStatusText = 'Tạm ngưng nhận việc';
+                        } else {
+                            currentStatusText = 'Sẵn sàng';
+                        }
+
+                        return {
+                            id: u.id,
+                            name: u.name || u.staff?.ho_ten || u.username,
+                            phone: u.staff?.so_dien_thoai || null,
+                            avatar: u.avatar || null,
+                            chuc_vu: isLeader 
+                                ? (u.staff?.chuc_vu_ref?.name || 'Lãnh đạo phòng') 
+                                : (isTeamLeader ? (u.staff?.chuc_vu_ref?.name || 'Tổ trưởng') : (u.staff?.chuc_vu_ref?.name || 'Kỹ thuật viên')),
+                            isLeader,
+                            isTeamLeader,
+                            currentStatusText,
+                            dutyOrder: u.dutyOrder ?? 99
+                        };
+                    })
+                    .filter(u => {
+                        // Nếu không bật hiển thị lãnh đạo, loại bỏ lãnh đạo
+                        if (!targetShowLeadersOnWarning && u.isLeader) return false;
+                        return true;
+                    })
+                    .sort((a, b) => {
+                        // Lãnh đạo lên đầu nếu có, sau đó theo dutyOrder
+                        if (a.isLeader !== b.isLeader) {
+                            return a.isLeader ? -1 : 1;
+                        }
+                        return a.dutyOrder - b.dutyOrder;
+                    });
+            } catch (errStaff) {
+                console.warn('Lỗi lấy danh sách nhân viên đi làm khi tạo ticket:', errStaff);
+            }
+        }
 
         return NextResponse.json({
             ...newRequest,
             hasAssignee: Boolean(finalAssignee),
-            warningMessage,
-            warningPhone
+            warningMessage: shouldShowWarning ? warningMessage : null,
+            warningPhone: shouldShowWarning ? warningPhone : null,
+            workingStaffList: shouldShowWarning ? workingStaffList : []
         });
     } catch (error: any) {
         console.error('Error POST it-requests:', error);

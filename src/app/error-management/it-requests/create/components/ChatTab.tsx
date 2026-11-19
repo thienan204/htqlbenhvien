@@ -341,6 +341,7 @@ export function ChatTab({
                     showNoStaffWarningModal({
                         warningMessage: data.warningMessage,
                         warningPhone: data.warningPhone,
+                        workingStaffList: data.workingStaffList,
                         onOk: () => {
                             router.push(redirectPath);
                         }

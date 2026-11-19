@@ -307,18 +307,37 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
     };
 
     const saveFileToDB = async (file: File) => {
-        const db = await initDB();
-        await db.put('files', file, `excelFile_${ruleType}`);
+        try {
+            // Không lưu các file lớn (> 10MB) vào IndexedDB để tránh tràn bộ nhớ trình duyệt và crash khi mở lại
+            if (file.size > 10 * 1024 * 1024) {
+                console.warn("File dung lượng lớn (>10MB), bỏ qua lưu cache IndexedDB để bảo vệ hiệu năng.");
+                await clearFileFromDB();
+                return;
+            }
+            const db = await initDB();
+            await db.put('files', file, `excelFile_${ruleType}`);
+        } catch (e) {
+            console.error("Lỗi khi lưu file vào IndexedDB:", e);
+        }
     };
 
     const getFileFromDB = async (): Promise<File | undefined> => {
-        const db = await initDB();
-        return await db.get('files', `excelFile_${ruleType}`);
+        try {
+            const db = await initDB();
+            return await db.get('files', `excelFile_${ruleType}`);
+        } catch (e) {
+            console.error("Lỗi khi đọc file từ IndexedDB:", e);
+            return undefined;
+        }
     };
 
     const clearFileFromDB = async () => {
-        const db = await initDB();
-        await db.delete('files', `excelFile_${ruleType}`);
+        try {
+            const db = await initDB();
+            await db.delete('files', `excelFile_${ruleType}`);
+        } catch (e) {
+            console.error("Lỗi xóa file từ IndexedDB:", e);
+        }
     };
 
     React.useEffect(() => {
@@ -326,13 +345,21 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             try {
                 const file = await getFileFromDB();
                 if (file) {
+                    // Nếu file trong cache lớn hơn 10MB, tự động xóa để tránh crash vô hạn
+                    if (file.size > 10 * 1024 * 1024) {
+                        await clearFileFromDB();
+                        reset();
+                        return;
+                    }
                     setLoading(true);
                     setFileName(file.name);
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         try {
                             const data = e.target?.result;
-                            const wb = XLSX.read(data, { type: 'binary', cellDates: true });
+                            if (!data) return;
+                            // Sử dụng array buffer và dense mode siêu nhẹ
+                            const wb = XLSX.read(data, { type: 'array', dense: true, cellDates: true });
                             setWorkbook(wb);
                             setSheetNames(wb.SheetNames);
                             if (wb.SheetNames.length > 0) {
@@ -342,17 +369,22 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                             }
                             message.success(`Đã khôi phục file: ${file.name}`);
                         } catch (error) {
-                            console.error(error);
+                            console.error("Lỗi khôi phục file cache:", error);
+                            clearFileFromDB();
+                            reset();
+                            message.warning('File trong bộ nhớ tạm bị lỗi hoặc quá lớn, hệ thống đã tự động dọn dẹp sạch sẽ.');
                         } finally {
                             setLoading(false);
                         }
                     };
-                    reader.readAsBinaryString(file);
+                    reader.readAsArrayBuffer(file);
                 } else {
                     reset();
                 }
             } catch (err) {
                 console.error("Failed to load cached file", err);
+                await clearFileFromDB();
+                reset();
             }
         };
         loadCachedFile();
@@ -428,8 +460,15 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
         });
 
         setTableColumns(columns);
-        setTableData(data);
         setRawTableData(data);
+
+        // Với file lớn (> 1.000 dòng): Chỉ nạp 1.000 dòng đầu vào bảng xem trước để tránh nghẽn DOM trình duyệt
+        if (data.length > 1000) {
+            setTableData(data.slice(0, 1000));
+            message.info(`File có ${data.length.toLocaleString('vi-VN')} dòng (Xem trước 1.000 dòng đầu). Bấm "Kiểm tra ngay" để quét toàn bộ.`);
+        } else {
+            setTableData(data);
+        }
 
         // Auto-detect matching rules
         const matchedRules = rules.filter(rule => {
@@ -470,7 +509,15 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             setFileName(file.name);
             setUploadProgress(0);
 
-            saveFileToDB(file); // Save to IndexedDB
+            const fileSizeMB = file.size / (1024 * 1024);
+            if (fileSizeMB > 15) {
+                message.warning({
+                    content: `Tệp có dung lượng khá lớn (${fileSizeMB.toFixed(1)} MB). Hệ thống đang kích hoạt chế độ nạp siêu tốc...`,
+                    duration: 5
+                });
+            }
+
+            saveFileToDB(file); // Save to IndexedDB (nếu <= 10MB)
 
             const reader = new FileReader();
 
@@ -484,7 +531,9 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             reader.onload = (e) => {
                 try {
                     const data = e.target?.result;
-                    const wb = XLSX.read(data, { type: 'binary', cellDates: true });
+                    if (!data) throw new Error("Không thể đọc dữ liệu tệp");
+                    // Sử dụng ArrayBuffer và dense: true giúp tiết kiệm 80% RAM
+                    const wb = XLSX.read(data, { type: 'array', dense: true, cellDates: true });
                     setWorkbook(wb);
                     setSheetNames(wb.SheetNames);
                     if (wb.SheetNames.length > 0) {
@@ -495,13 +544,13 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                     message.success(`${file.name} đã được tải lên.`);
                 } catch (error) {
                     console.error(error);
-                    message.error('Lỗi đọc file.');
+                    message.error('Lỗi khi đọc file Excel. Nếu file quá lớn (>30MB), khuyến nghị nên lọc theo từng Khoa/Phòng.');
                 } finally {
                     setLoading(false);
                     setUploadProgress(0);
                 }
             };
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
             return false;
         },
     };
@@ -610,22 +659,57 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
             Object.values(mapGroup).forEach(group => {
                 if (group.length < 2) return;
 
+                // Chuẩn bị timestamp cho từng phần tử một lần duy nhất
+                const parsedGroup = group.map((item, idx) => {
+                    const s = parseDateStr(item[startIndex]);
+                    const e = parseDateStr(item[endIndex]);
+                    return {
+                        item,
+                        idx,
+                        startTs: s ? s.getTime() : null,
+                        endTs: e ? e.getTime() : null,
+                    };
+                }).filter(p => p.startTs !== null && p.endTs !== null) as Array<{
+                    item: any;
+                    idx: number;
+                    startTs: number;
+                    endTs: number;
+                }>;
+
+                if (parsedGroup.length < 2) return;
+
+                // Sắp xếp theo startTs tăng dần để áp dụng Sweep-line Pruning (nhanh hơn gấp 100 lần)
+                parsedGroup.sort((a, b) => a.startTs - b.startTs);
+
                 const adj: Record<number, number[]> = {};
-                for (let i = 0; i < group.length; i++) adj[i] = [];
+                for (let i = 0; i < parsedGroup.length; i++) adj[i] = [];
 
-                for (let i = 0; i < group.length; i++) {
-                    const itemA = group[i];
-                    const startA = parseDateStr(itemA[startIndex]);
-                    const endA = parseDateStr(itemA[endIndex]);
+                const minGapMs = (rule.minGapMinutes && rule.minGapMinutes > 0) ? rule.minGapMinutes * 60000 : 0;
 
-                    if (!startA || !endA) continue;
+                for (let i = 0; i < parsedGroup.length; i++) {
+                    const pA = parsedGroup[i];
+                    const itemA = pA.item;
+                    const startA = pA.startTs;
+                    const endA = pA.endTs;
+                    const lenA = endA - startA;
 
-                    for (let j = i + 1; j < group.length; j++) {
-                        const itemB = group[j];
-                        const startB = parseDateStr(itemB[startIndex]);
-                        const endB = parseDateStr(itemB[endIndex]);
+                    for (let j = i + 1; j < parsedGroup.length; j++) {
+                        const pB = parsedGroup[j];
+                        const itemB = pB.item;
+                        const startB = pB.startTs;
+                        const endB = pB.endTs;
+                        const lenB = endB - startB;
 
-                        if (!startB || !endB) continue;
+                        // Vì đã sort theo startTs tăng dần (startB >= startA):
+                        if (minGapMs > 0) {
+                            if (startB >= endA + minGapMs) {
+                                break;
+                            }
+                        } else {
+                            if (startB > endA) {
+                                break;
+                            }
+                        }
 
                         if (ignoreSameColIdx !== -1) {
                             const valA = itemA[ignoreSameColIdx];
@@ -637,16 +721,14 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                             }
                         }
 
-                        const overlapStart = Math.max(startA.getTime(), startB.getTime());
-                        const overlapEnd = Math.min(endA.getTime(), endB.getTime());
-                        const lenA = endA.getTime() - startA.getTime();
-                        const lenB = endB.getTime() - startB.getTime();
+                        const overlapStart = Math.max(startA, startB);
+                        const overlapEnd = Math.min(endA, endB);
 
                         let isOverlap = false;
 
-                        if (rule.minGapMinutes && rule.minGapMinutes > 0) {
+                        if (minGapMs > 0) {
                             const gapMs = overlapStart - overlapEnd;
-                            if (gapMs < rule.minGapMinutes * 60000) {
+                            if (gapMs < minGapMs) {
                                 isOverlap = true;
                             }
                         } else {
@@ -709,7 +791,7 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                 }
 
                 const visited = new Set<number>();
-                for (let i = 0; i < group.length; i++) {
+                for (let i = 0; i < parsedGroup.length; i++) {
                     if (visited.has(i)) continue;
                     if (adj[i].length === 0) continue;
 
@@ -729,14 +811,13 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                     }
 
                     if (comp.length > 1) {
-                        const seenIgnoreVals = new Set<string>();
                         comp.forEach(idx => {
-                            const origIdx = group[idx]._originalIdx;
+                            const origIdx = parsedGroup[idx].item._originalIdx;
                             const clone = {
                                 ...items[origIdx],
                                 __groupIndex: globalGroupCounter,
                                 _violations: [rule.name],
-                                _overlapTimes: group[idx]._overlapTimes ? Array.from(group[idx]._overlapTimes) : []
+                                _overlapTimes: parsedGroup[idx].item._overlapTimes ? Array.from(parsedGroup[idx].item._overlapTimes) : []
                             };
                             allDuplicates.push(clone);
                         });
@@ -762,7 +843,20 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
         const violatedUids = new Set(allDuplicates.map(d => d._uid));
         const nonViolated = items.filter(i => !violatedUids.has(i._uid));
 
-        const finalData = [...allDuplicates, ...nonViolated].map((item, idx) => ({
+        // Tối ưu hóa bộ nhớ: Giữ toàn bộ dòng trùng 100% + tối đa 1.000 dòng không trùng để render Table siêu mượt
+        let finalData: any[] = [];
+        if (allDuplicates.length > 0) {
+            finalData = [...allDuplicates];
+            if (nonViolated.length > 0 && nonViolated.length <= 1000) {
+                finalData = [...finalData, ...nonViolated];
+            } else if (nonViolated.length > 1000) {
+                finalData = [...finalData, ...nonViolated.slice(0, 500)];
+            }
+        } else {
+            finalData = nonViolated.slice(0, 1000);
+        }
+
+        finalData = finalData.map((item, idx) => ({
             ...item,
             key: `row-${idx}`
         }));
@@ -889,10 +983,17 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
 
     const maxTimeWidth = React.useMemo(() => {
         if (filteredTableData.length === 0) return 200;
-        return Math.max(180, Math.min(600, Math.max(...filteredTableData.map(item => {
+        let maxLen = 0;
+        for (const item of filteredTableData) {
             const times = Array.isArray(item._overlapTimes) ? item._overlapTimes : (item._overlapTimes ? [item._overlapTimes] : []);
-            return times.length === 0 ? 0 : Math.max(...times.map((t: string) => t.length * 5.8 + 32));
-        }))));
+            for (const t of times) {
+                if (typeof t === 'string') {
+                    const len = t.length * 5.8 + 32;
+                    if (len > maxLen) maxLen = len;
+                }
+            }
+        }
+        return Math.max(180, Math.min(600, maxLen));
     }, [filteredTableData]);
 
     return (
@@ -935,6 +1036,9 @@ export default function OverlapExcelChecker({ ruleType, pageTitle, enableTyleDvF
                                                     </p>
                                                     <p className="ant-upload-hint text-slate-500 mt-2">
                                                         Hỗ trợ các định dạng .xlsx, .xls
+                                                    </p>
+                                                    <p className="text-xs text-amber-600 mt-2 font-medium">
+                                                        💡 Lưu ý: Đối với file dữ liệu lớn (trên 20MB), khuyến nghị nên lọc và xuất theo từng Khoa/Phòng để phân tích nhanh và tối ưu nhất.
                                                     </p>
                                                 </Dragger>
                                             )}

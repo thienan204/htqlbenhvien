@@ -466,10 +466,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             }),
             render: (_: any, record: Ticket) => {
                 const isMyTask = Boolean(record.assigneeId) && record.assigneeId === user?.id;
-                const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && user?.role === targetDepartment));
-                const hasEditPerm = Boolean(isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT'));
-                const canReceive = hasEditPerm && (
-                    (assignmentMode === 'A' && !record.assigneeId) ||
+                const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && (user?.role === targetDepartment || user?.ma_khoa === targetDepartment)));
+                // Chỉ nhân viên thuộc phòng ban kỹ thuật phụ trách (hoặc Admin) mới có quyền nhận việc
+                const canReceive = isDeptStaff && (
+                    !record.assigneeId ||
                     (isMyTask && record.status === 'PENDING')
                 );
                 const isTransferringToMe = record.status === 'TRANSFERRING' && record.transferToId === user?.id;
@@ -594,7 +594,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                             {(() => {
                                 const canProcess = Boolean(
-                                    isDeptStaff || hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
+                                    isDeptStaff && hasPermission('MENU_ERROR_REQUESTS', 'EDIT')
                                 );
 
                                 // Gom các thao tác phụ vào menu 3 chấm khi đã có nút Xử lý (như tài khoản Admin/CNTT)

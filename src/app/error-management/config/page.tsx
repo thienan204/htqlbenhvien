@@ -44,6 +44,13 @@ export default function ITConfigPage() {
     const [dutyShiftWarningEnabled, setDutyShiftWarningEnabled] = useState<boolean>(true);
     const [noStaffWarningMessage, setNoStaffWarningMessage] = useState<string>('');
     const [noStaffPhone, setNoStaffPhone] = useState<string>('');
+    const [officeWarningEnabled, setOfficeWarningEnabled] = useState<boolean>(true);
+    const [officeWarningMessage, setOfficeWarningMessage] = useState<string>('');
+    const [officeWarningPhone, setOfficeWarningPhone] = useState<string>('');
+    const [dutyWarningMessage, setDutyWarningMessage] = useState<string>('');
+    const [dutyWarningPhone, setDutyWarningPhone] = useState<string>('');
+    const [showStaffListOnWarning, setShowStaffListOnWarning] = useState<boolean>(false);
+    const [showLeadersOnWarning, setShowLeadersOnWarning] = useState<boolean>(false);
     const [maxImageSizeMB, setMaxImageSizeMB] = useState<number>(15);
     const [allowedFileExtensions, setAllowedFileExtensions] = useState<string>('.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
     const [maBaLength, setMaBaLength] = useState<number>(11);
@@ -140,6 +147,13 @@ export default function ITConfigPage() {
                 setDutyShiftWarningEnabled(data.dutyShiftWarningEnabled !== undefined ? Boolean(data.dutyShiftWarningEnabled) : true);
                 setNoStaffWarningMessage(data.noStaffWarningMessage || '');
                 setNoStaffPhone(data.noStaffPhone || '');
+                setOfficeWarningEnabled(data.officeWarningEnabled !== undefined ? Boolean(data.officeWarningEnabled) : (data.noStaffWarningEnabled !== undefined ? Boolean(data.noStaffWarningEnabled) : true));
+                setOfficeWarningMessage(data.officeWarningMessage || '');
+                setOfficeWarningPhone(data.officeWarningPhone || '');
+                setDutyWarningMessage(data.dutyWarningMessage || data.noStaffWarningMessage || '');
+                setDutyWarningPhone(data.dutyWarningPhone || data.noStaffPhone || '');
+                setShowStaffListOnWarning(Boolean(data.showStaffListOnWarning));
+                setShowLeadersOnWarning(Boolean(data.showLeadersOnWarning));
                 setMaxImageSizeMB(data.maxFileSizeMB || data.maxImageSizeMB || 15);
                 setAllowedFileExtensions(data.allowedFileExtensions || '.jpg, .jpeg, .png, .gif, .pdf, .docx, .xlsx, .doc, .xls, .zip, .rar');
                 setMaBaLength(data.maBaLength || 11);
@@ -316,8 +330,15 @@ export default function ITConfigPage() {
                 makeupWorkdays,
                 noStaffWarningEnabled,
                 dutyShiftWarningEnabled,
-                noStaffWarningMessage: noStaffWarningMessage.trim(),
-                noStaffPhone: noStaffPhone.trim(),
+                noStaffWarningMessage: dutyWarningMessage.trim() || noStaffWarningMessage.trim(),
+                noStaffPhone: dutyWarningPhone.trim() || noStaffPhone.trim(),
+                officeWarningEnabled,
+                officeWarningMessage: officeWarningMessage.trim(),
+                officeWarningPhone: officeWarningPhone.trim(),
+                dutyWarningMessage: dutyWarningMessage.trim(),
+                dutyWarningPhone: dutyWarningPhone.trim(),
+                showStaffListOnWarning,
+                showLeadersOnWarning,
                 maxImageSizeMB,
                 maxFileSizeMB: maxImageSizeMB,
                 allowedFileExtensions,
@@ -1298,7 +1319,7 @@ export default function ITConfigPage() {
                         </div>
                     </Card>
 
-                    {/* Card 3: Cảnh báo Khoa/Phòng khi không có ai nhận việc */}
+                    {/* Card 3: Cảnh báo Khoa/Phòng khi không có ai nhận việc (Phân biệt Giờ Hành Chính & Giờ Trực) */}
                     <Card 
                         size="small" 
                         title={
@@ -1313,81 +1334,204 @@ export default function ITConfigPage() {
                                         disabled={!isAdmin}
                                     />
                                 </div>
-                                <Tooltip title="Khi Khoa gửi yêu cầu mà không có ai nhận (ngoài giờ hoặc không ai trực), hệ thống sẽ bật cảnh báo cho Khoa đồng thời bắn cảnh báo đỏ lên Telegram/Zalo">
+                                <Tooltip title="Khi Khoa gửi yêu cầu mà không có ai nhận (trong giờ hành chính hoặc ngoài giờ trực), hệ thống sẽ bật cảnh báo cho Khoa đồng thời gửi cảnh báo khẩn cấp lên Telegram/Zalo">
                                     <QuestionCircleOutlined className="text-slate-400 text-xs cursor-pointer hover:text-blue-500" />
                                 </Tooltip>
                             </div>
                         }
                         className="border border-slate-200"
                     >
-                        <div className="flex flex-col gap-3">
-                            <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <div className="text-xs font-semibold text-amber-950 flex items-center gap-1.5">
-                                        <span>🌙 Trong Giờ trực: Vừa gửi việc cho nhân viên trực vừa hiện Cảnh báo & Hotline cho Khoa/Phòng</span>
+                        <div className="flex flex-col gap-4">
+                            {/* KHỐI 1: TRONG GIỜ HÀNH CHÍNH */}
+                            <div className="p-3.5 bg-blue-50/60 border border-blue-200/80 rounded-xl flex flex-col gap-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-blue-200/60">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base">🏢</span>
+                                        <div>
+                                            <div className="text-xs font-bold text-blue-950">
+                                                Cảnh báo Trong Giờ Hành Chính (Sáng & Chiều)
+                                            </div>
+                                            <div className="text-[11px] text-blue-700">
+                                                Hiển thị khi tất cả kỹ thuật viên CNTT đều đang bận / tắt nhận việc / đi khoa phòng trong giờ hành chính.
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-[11px] text-amber-800 mt-1 leading-relaxed">
-                                        Khi bật tùy chọn này: Các yêu cầu gửi trong giờ trực (buổi trưa, tối/đêm, cuối tuần, ngày lễ) sẽ <b>vẫn tự động phân công cho nhân viên trực</b> (nếu có nhân viên trực đang sẵn sàng), đồng thời <b>vẫn hiển thị bảng cảnh báo Hotline</b> để Khoa/Phòng biết và gọi khẩn cấp khi cần. Nếu nhân viên trực đang bật chế độ tập trung hoặc không có ai trực, hệ thống vẫn hiển thị bảng cảnh báo này.
-                                    </div>
-                                </div>
-                                <Switch 
-                                    checked={dutyShiftWarningEnabled} 
-                                    onChange={checked => setDutyShiftWarningEnabled(checked)} 
-                                    checkedChildren="Bật" 
-                                    unCheckedChildren="Tắt"
-                                    disabled={!isAdmin}
-                                    className="shrink-0 self-start sm:self-center"
-                                />
-                            </div>
-
-                            <div>
-                                <div className="text-xs font-semibold text-slate-700 mb-1">
-                                    Nội dung thông điệp cảnh báo hiển thị cho Khoa/Phòng:
-                                </div>
-                                <Input.TextArea 
-                                    rows={3}
-                                    value={noStaffWarningMessage}
-                                    onChange={e => setNoStaffWarningMessage(e.target.value)}
-                                    placeholder="Ví dụ: Hiện tại ngoài khung giờ hành chính / kỹ thuật viên đang bận ca trực ngoài viện nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhóm trực. Nếu là sự cố khẩn cấp, vui lòng gọi điện thoại trực ban..."
-                                    disabled={!isAdmin}
-                                    className="text-xs"
-                                />
-                                <div className="text-[11px] text-slate-400 mt-1 italic">
-                                    * Thông điệp này sẽ hiện lên màn hình Khoa/Phòng khi họ gửi yêu cầu mà không có nhân viên kỹ thuật nào tiếp nhận.
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="text-xs font-semibold text-slate-700 mb-1">
-                                    Số điện thoại Hotline / Trực ban (Tùy chọn - Hệ thống cũng tự động nhận diện nếu đã có SĐT trong nội dung trên):
-                                </div>
-                                <Input 
-                                    value={noStaffPhone}
-                                    onChange={e => setNoStaffPhone(e.target.value)}
-                                    placeholder="Ví dụ: 02053.600.553 hoặc 0912.345.678"
-                                    disabled={!isAdmin}
-                                    className="text-xs max-w-md"
-                                />
-                                <div className="text-[11px] text-slate-400 mt-1 italic">
-                                    * Khi có số điện thoại, hệ thống sẽ tự động hiển thị Nút gọi trực tiếp [📞 Gọi ngay], [Zalo], [📋 Sao chép] cho Khoa/Phòng.
-                                </div>
-                            </div>
-
-                            {noStaffWarningEnabled && (noStaffWarningMessage || noStaffPhone) && (
-                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                                    <div className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                                        <span>👁️ Xem trước giao diện cảnh báo hiển thị cho Khoa/Phòng:</span>
-                                    </div>
-                                    <NoStaffWarningContent 
-                                        warningMessage={noStaffWarningMessage} 
-                                        hotline={noStaffPhone} 
+                                    <Switch 
+                                        checked={officeWarningEnabled} 
+                                        onChange={checked => setOfficeWarningEnabled(checked)} 
+                                        checkedChildren="Bật" 
+                                        unCheckedChildren="Tắt"
+                                        disabled={!isAdmin || !noStaffWarningEnabled}
+                                        className="shrink-0 self-start sm:self-center"
                                     />
                                 </div>
-                            )}
+
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-700 mb-1">
+                                        Nội dung thông điệp cảnh báo trong Giờ hành chính:
+                                    </div>
+                                    <Input.TextArea 
+                                        rows={3}
+                                        value={officeWarningMessage}
+                                        onChange={e => setOfficeWarningMessage(e.target.value)}
+                                        placeholder="Ví dụ: Hiện tại tất cả kỹ thuật viên CNTT đang bận xử lý sự cố tại các Khoa/Phòng hoặc đang hỗ trợ chuyên môn nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống. Nếu là sự cố khẩn cấp ảnh hưởng đến công tác khám chữa bệnh, vui lòng gọi điện thoại phòng CNTT để được hỗ trợ kịp thời!"
+                                        disabled={!isAdmin || !noStaffWarningEnabled || !officeWarningEnabled}
+                                        className="text-xs"
+                                    />
+                                    <div className="text-[11px] text-slate-400 mt-1 italic">
+                                        * Thông điệp này sẽ hiện lên màn hình Khoa/Phòng khi họ gửi yêu cầu trong giờ hành chính mà không có kỹ thuật viên nào tiếp nhận.
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-700 mb-1">
+                                        Số điện thoại Hotline / Máy bàn Giờ hành chính (Tùy chọn):
+                                    </div>
+                                    <Input 
+                                        value={officeWarningPhone}
+                                        onChange={e => setOfficeWarningPhone(e.target.value)}
+                                        placeholder="Ví dụ: 02053.600.553 (Số máy bàn hoặc Hotline phòng CNTT)"
+                                        disabled={!isAdmin || !noStaffWarningEnabled || !officeWarningEnabled}
+                                        className="text-xs max-w-md"
+                                    />
+                                    <div className="text-[11px] text-slate-400 mt-1 italic">
+                                        * Khi có SĐT, Khoa/Phòng sẽ có nút bấm nhanh [📞 Gọi ngay], [Zalo], [📋 Sao chép].
+                                    </div>
+                                </div>
+
+                                {/* Tùy chọn 1: Hiển thị danh sách nhân sự đi làm hôm nay */}
+                                <div className="pt-2.5 border-t border-blue-200/60 flex flex-col gap-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <div className="text-xs font-semibold text-blue-950 flex items-center gap-1.5">
+                                                <span>👥 Hiển thị danh sách nhân sự đi làm hôm nay khi tất cả đều bận</span>
+                                            </div>
+                                            <div className="text-[11px] text-blue-700">
+                                                Khi bật: Bảng cảnh báo gửi cho Khoa/Phòng sẽ kèm danh sách nhân viên CNTT đi làm hôm nay (kèm SĐT, gọi, Zalo và trạng thái thực tế).
+                                            </div>
+                                        </div>
+                                        <Switch 
+                                            checked={showStaffListOnWarning} 
+                                            onChange={checked => {
+                                                setShowStaffListOnWarning(checked);
+                                                if (!checked) setShowLeadersOnWarning(false);
+                                            }} 
+                                            checkedChildren="Bật" 
+                                            unCheckedChildren="Tắt"
+                                            disabled={!isAdmin || !noStaffWarningEnabled || !officeWarningEnabled}
+                                            className="shrink-0 self-start sm:self-center"
+                                        />
+                                    </div>
+
+                                    {/* Tùy chọn 2: Hiển thị cả Lãnh đạo phòng */}
+                                    {showStaffListOnWarning && (
+                                        <div className="ml-0 sm:ml-4 p-2.5 bg-blue-100/70 rounded-lg border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <div className="text-xs font-semibold text-blue-950 flex items-center gap-1.5">
+                                                    <span>👑 Hiển thị cả Lãnh đạo phòng (Trưởng phòng, Phó phòng)</span>
+                                                </div>
+                                                <div className="text-[11px] text-blue-800">
+                                                    Hiển thị thêm Trưởng phòng & Phó trưởng phòng trên danh sách khi có sự cố khẩn cấp.
+                                                </div>
+                                            </div>
+                                            <Switch 
+                                                checked={showLeadersOnWarning} 
+                                                onChange={checked => setShowLeadersOnWarning(checked)} 
+                                                checkedChildren="Bật" 
+                                                unCheckedChildren="Tắt"
+                                                disabled={!isAdmin || !noStaffWarningEnabled || !officeWarningEnabled || !showStaffListOnWarning}
+                                                className="shrink-0 self-start sm:self-center"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {noStaffWarningEnabled && officeWarningEnabled && (officeWarningMessage || officeWarningPhone) && (
+                                    <div className="p-3 bg-white border border-blue-100 rounded-lg shadow-2xs">
+                                        <div className="text-xs font-bold text-blue-900 mb-2 flex items-center gap-1.5">
+                                            <span>👁️ Xem trước giao diện cảnh báo Giờ hành chính hiển thị cho Khoa/Phòng:</span>
+                                        </div>
+                                        <NoStaffWarningContent 
+                                            warningMessage={officeWarningMessage} 
+                                            hotline={officeWarningPhone} 
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* KHỐI 2: TRONG GIỜ TRỰC & NGOÀI GIỜ */}
+                            <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl flex flex-col gap-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-amber-200/60">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base">🌙</span>
+                                        <div>
+                                            <div className="text-xs font-bold text-amber-950">
+                                                Cảnh báo & Hotline Trong Giờ Trực (Trưa, Tối/Đêm, Cuối tuần, Ngày lễ)
+                                            </div>
+                                            <div className="text-[11px] text-amber-800">
+                                                Vừa tự động phân công cho nhân viên trực, vừa hiển thị bảng cảnh báo Hotline để Khoa/Phòng biết và gọi khẩn cấp khi cần.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Switch 
+                                        checked={dutyShiftWarningEnabled} 
+                                        onChange={checked => setDutyShiftWarningEnabled(checked)} 
+                                        checkedChildren="Bật" 
+                                        unCheckedChildren="Tắt"
+                                        disabled={!isAdmin || !noStaffWarningEnabled}
+                                        className="shrink-0 self-start sm:self-center"
+                                    />
+                                </div>
+
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-700 mb-1">
+                                        Nội dung thông điệp cảnh báo trong Giờ trực:
+                                    </div>
+                                    <Input.TextArea 
+                                        rows={3}
+                                        value={dutyWarningMessage}
+                                        onChange={e => setDutyWarningMessage(e.target.value)}
+                                        placeholder="Ví dụ: Hiện tại nhân viên trực CNTT đang có việc tại khoa phòng nên chưa thể tiếp nhận ngay. Yêu cầu của Khoa/Phòng đã được lưu trên hệ thống và chuyển đến nhân viên trực. Nếu là sự cố khẩn cấp ảnh hưởng đến hoạt động khám chữa bệnh, vui lòng gọi điện thoại trực để được hỗ trợ!"
+                                        disabled={!isAdmin || !noStaffWarningEnabled || !dutyShiftWarningEnabled}
+                                        className="text-xs"
+                                    />
+                                    <div className="text-[11px] text-slate-400 mt-1 italic">
+                                        * Thông điệp này sẽ hiện lên màn hình Khoa/Phòng khi họ gửi yêu cầu ngoài giờ hành chính hoặc trong ca trực.
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-700 mb-1">
+                                        Số điện thoại Hotline / Trực ban Giờ trực (Tùy chọn):
+                                    </div>
+                                    <Input 
+                                        value={dutyWarningPhone}
+                                        onChange={e => setDutyWarningPhone(e.target.value)}
+                                        placeholder="Ví dụ: 02053.600.553 hoặc SĐT nhân viên trực ban"
+                                        disabled={!isAdmin || !noStaffWarningEnabled || !dutyShiftWarningEnabled}
+                                        className="text-xs max-w-md"
+                                    />
+                                    <div className="text-[11px] text-slate-400 mt-1 italic">
+                                        * Khi có SĐT trực ban, Khoa/Phòng có thể bấm gọi ngay khẩn cấp ca đêm.
+                                    </div>
+                                </div>
+
+                                {noStaffWarningEnabled && dutyShiftWarningEnabled && (dutyWarningMessage || dutyWarningPhone) && (
+                                    <div className="p-3 bg-white border border-amber-100 rounded-lg shadow-2xs">
+                                        <div className="text-xs font-bold text-amber-900 mb-2 flex items-center gap-1.5">
+                                            <span>👁️ Xem trước giao diện cảnh báo Giờ trực hiển thị cho Khoa/Phòng:</span>
+                                        </div>
+                                        <NoStaffWarningContent 
+                                            warningMessage={dutyWarningMessage} 
+                                            hotline={dutyWarningPhone} 
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
                             {isAdmin && (
-                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit bg-blue-600 hover:bg-blue-500">
-                                    Lưu nội dung cảnh báo
+                                <Button type="primary" onClick={() => handleSaveGeneralConfig()} className="w-fit bg-blue-600 hover:bg-blue-500 font-semibold px-4">
+                                    Lưu cấu hình cảnh báo
                                 </Button>
                             )}
                         </div>
