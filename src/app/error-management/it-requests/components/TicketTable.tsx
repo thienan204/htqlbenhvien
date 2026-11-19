@@ -68,8 +68,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 })
             });
             if (res.ok) {
-                message.success(nextState 
-                    ? 'Đã bật chế độ Đi khoa phòng (Tạm ngưng nhận việc tự động)!' 
+                message.success(nextState
+                    ? 'Đã bật chế độ Đi khoa phòng (Tạm ngưng nhận việc tự động)!'
                     : 'Đã tắt chế độ Đi khoa phòng (Sẵn sàng nhận việc tự động)!'
                 );
                 onFetchTickets();
@@ -107,7 +107,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             setResolvingId(null);
         }
     };
-    
+
     const handleReceiveTicket = async (id: string) => {
         if (onReceiveTicket) {
             await onReceiveTicket(id);
@@ -134,7 +134,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
     const handleTransferResponse = async (id: string, action: 'ACCEPT_TRANSFER' | 'REJECT_TRANSFER') => {
         const res = await fetch(`${getBasePath()}/api/error-management/it-requests`, {
-            method: 'PUT', 
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, action })
         });
@@ -193,7 +193,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                     })()}
                                     {record.dynamicFields && Object.keys(record.dynamicFields).length > 0 && (() => {
                                         const excludeKeys = [
-                                            'Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm', 
+                                            'Hình ảnh đính kèm', 'Tệp đính kèm', 'File đính kèm', 'Tài liệu đính kèm', 'tệp đính kèm', 'hình ảnh đính kèm',
                                             'Mã LK', 'Lý do phân việc', 'assignReason', 'Lý do tạm dừng', 'pauseReason',
                                             'createdById', 'creatorUsername', 'creatorStaffId', 'creatorName', 'senderId', 'nguoi_bao_id', 'ma_nv'
                                         ];
@@ -284,7 +284,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         <div className="flex items-center gap-1 flex-wrap">
                             <Tag color="purple">{record.assigneeName}</Tag>
                             {canViewReason && assignReason && (
-                                <Tooltip 
+                                <Tooltip
                                     placement="topLeft"
                                     styles={{ container: { maxWidth: 450 } }}
                                     title={
@@ -437,10 +437,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 if (record.status === 'RESOLVED' && record.updatedAt) {
                     const resolved = dayjs(record.updatedAt);
                     const diffMins = resolved.diff(created, 'minute');
-                    const kpiText = diffMins > 60 
-                        ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` 
+                    const kpiText = diffMins > 60
+                        ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m`
                         : `${diffMins} phút`;
-                    
+
                     return (
                         <div className="text-xs">
                             <div className="text-slate-500">Tạo: {created.format('DD/MM HH:mm')}</div>
@@ -466,6 +466,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             }),
             render: (_: any, record: Ticket) => {
                 const isMyTask = Boolean(record.assigneeId) && record.assigneeId === user?.id;
+                const isManager = Boolean(user?.isManager || user?.role === 'ADMIN');
                 const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && (user?.role === targetDepartment || user?.ma_khoa === targetDepartment)));
                 // Chỉ nhân viên thuộc phòng ban kỹ thuật phụ trách (hoặc Admin) mới có quyền nhận việc
                 const canReceive = isDeptStaff && (
@@ -498,9 +499,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                     <div className="flex flex-col items-center justify-center gap-1.5 py-1 w-full">
                         {/* 1. Nhận việc (khi chờ nhận) */}
                         {canReceive && (
-                            <Button 
-                                size="small" 
-                                type="primary" 
+                            <Button
+                                size="small"
+                                type="primary"
                                 className="bg-green-600 hover:bg-green-500 whitespace-nowrap font-medium text-xs px-2.5 w-full max-w-[105px]"
                                 onClick={() => handleReceiveTicket(record.id)}
                             >
@@ -510,22 +511,22 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
                         {/* Nút Xử lý chính (Khi đã tiếp nhận hoặc đang xử lý/tạm dừng - Đúng vị trí chính phía trên) */}
                         {!canReceive && canProcess && (
-                            <Button 
-                                size="small" 
-                                type="primary" 
-                                ghost 
-                                className="whitespace-nowrap font-medium text-xs px-2.5 w-full max-w-[105px] border-blue-400 text-blue-600 hover:bg-blue-50" 
+                            <Button
+                                size="small"
+                                type="primary"
+                                ghost
+                                className="whitespace-nowrap font-medium text-xs px-2.5 w-full max-w-[105px] border-blue-400 text-blue-600 hover:bg-blue-50"
                                 onClick={() => onProcessClick(record)}
                             >
-                                {record.status === 'RESOLVED' ? 'Xem lại' : 'Xử lý'}
+                                {record.status === 'RESOLVED' ? 'Xem lại' : (isMyTask || isManager ? 'Xử lý' : 'Xem phiếu')}
                             </Button>
                         )}
 
                         {/* 2. Tiếp tục (khi đang Tạm dừng) */}
                         {record.status === 'PAUSED' && isMyTask && (
-                            <Button 
-                                size="small" 
-                                type="primary" 
+                            <Button
+                                size="small"
+                                type="primary"
                                 className="bg-amber-600 hover:bg-amber-500 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 w-full max-w-[105px]"
                                 onClick={() => onResumeTicket ? onResumeTicket(record) : handleReceiveTicket(record.id)}
                             >
@@ -535,9 +536,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
                         {/* 3. Tạm dừng (khi đang Xử lý - 1 row riêng) */}
                         {record.status === 'IN_PROGRESS' && isMyTask && onPauseTicket && (
-                            <Button 
-                                size="small" 
-                                type="default" 
+                            <Button
+                                size="small"
+                                type="default"
                                 className="text-amber-700 border-amber-300 hover:bg-amber-50 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 w-full max-w-[105px]"
                                 onClick={() => {
                                     let reasonText = '';
@@ -546,9 +547,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                         content: (
                                             <div className="py-2 space-y-2 text-xs">
                                                 <p>Nhập lý do tạm dừng (đang vướng, chờ khoa phản hồi, chờ dữ liệu...):</p>
-                                                <Input.TextArea 
-                                                    rows={3} 
-                                                    placeholder="VD: Đã làm được 50%, đang chờ Khoa Dược gửi lại mẫu..." 
+                                                <Input.TextArea
+                                                    rows={3}
+                                                    placeholder="VD: Đã làm được 50%, đang chờ Khoa Dược gửi lại mẫu..."
                                                     onChange={(e) => { reasonText = e.target.value; }}
                                                 />
                                             </div>
@@ -568,12 +569,12 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         {/* 4. Đi khoa / Về VP (khi đang Xử lý - 1 row riêng) */}
                         {record.status === 'IN_PROGRESS' && isMyTask && (
                             <Tooltip title={record.isFocusTask ? "Đã xong việc tại khoa phòng, bấm để báo về văn phòng & tiếp tục nhận phân việc tự động" : "Bấm khi rời phòng xuống khoa phòng để tạm ngưng nhận chia việc tự động"}>
-                                <Button 
-                                    size="small" 
+                                <Button
+                                    size="small"
                                     loading={togglingOnSiteId === record.id}
-                                    type={record.isFocusTask ? "primary" : "default"} 
-                                    className={record.isFocusTask 
-                                        ? "!bg-purple-600 hover:!bg-purple-500 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 shadow-2xs w-full max-w-[105px]" 
+                                    type={record.isFocusTask ? "primary" : "default"}
+                                    className={record.isFocusTask
+                                        ? "!bg-purple-600 hover:!bg-purple-500 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 shadow-2xs w-full max-w-[105px]"
                                         : "text-purple-700 border-purple-300 hover:bg-purple-50 whitespace-nowrap font-medium text-xs px-2 flex items-center justify-center gap-1 w-full max-w-[105px]"
                                     }
                                     onClick={() => handleToggleOnSite(record)}
@@ -586,16 +587,16 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                         {/* Chuyển giao: Đồng ý / Từ chối */}
                         {isTransferringToMe && (
                             <div className="flex items-center justify-center gap-1 w-full max-w-[105px]">
-                                <Button 
-                                    size="small" 
-                                    type="primary" 
+                                <Button
+                                    size="small"
+                                    type="primary"
                                     className="bg-green-600 hover:bg-green-500 whitespace-nowrap text-xs px-1.5 flex-1"
                                     onClick={() => handleTransferResponse(record.id, 'ACCEPT_TRANSFER')}
                                 >
                                     Đồng ý
                                 </Button>
-                                <Button 
-                                    size="small" 
+                                <Button
+                                    size="small"
                                     danger
                                     className="whitespace-nowrap text-xs px-1.5 flex-1"
                                     onClick={() => handleTransferResponse(record.id, 'REJECT_TRANSFER')}
@@ -655,8 +656,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                     <>
                                         {/* Nếu KHÔNG có nút Xử lý (ví dụ Khoa phòng) mà có XML riêng */}
                                         {!canProcess && record.ma_ba && record.hasXml && (
-                                            <Button 
-                                                size="small" 
+                                            <Button
+                                                size="small"
                                                 type="default"
                                                 icon={<FileTextOutlined />}
                                                 title="Xem hồ sơ XML gốc"
@@ -670,16 +671,16 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                                 Xử lý
                                             </Button>
                                         )}
-                                        
+
                                         {/* Nút Chat thảo luận */}
                                         {onChatClick && (
                                             <Badge count={record.unreadMessageCount || 0} size="small" offset={[-4, 4]}>
-                                                <Button 
-                                                    size="small" 
-                                                    type="dashed" 
-                                                    icon={<MessageOutlined />} 
-                                                    title={record.unreadMessageCount ? `${record.unreadMessageCount} tin chưa đọc` : 'Thảo luận'} 
-                                                    onClick={() => onChatClick(record)} 
+                                                <Button
+                                                    size="small"
+                                                    type="dashed"
+                                                    icon={<MessageOutlined />}
+                                                    title={record.unreadMessageCount ? `${record.unreadMessageCount} tin chưa đọc` : 'Thảo luận'}
+                                                    onClick={() => onChatClick(record)}
                                                 />
                                             </Badge>
                                         )}
@@ -688,10 +689,10 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                         {canProcess ? (
                                             moreMenuItems.length > 0 && (
                                                 <Dropdown menu={{ items: moreMenuItems }} trigger={['click']} placement="bottomRight">
-                                                    <Button 
-                                                        size="small" 
-                                                        type="text" 
-                                                        icon={<EllipsisOutlined className="text-slate-600 text-base" />} 
+                                                    <Button
+                                                        size="small"
+                                                        type="text"
+                                                        icon={<EllipsisOutlined className="text-slate-600 text-base" />}
                                                         className="hover:bg-slate-100 rounded-md"
                                                         title="Thao tác khác"
                                                     />
@@ -702,9 +703,9 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                             <>
                                                 {canEdit && onEditClick && (
                                                     <Tooltip title="Chỉnh sửa nội dung yêu cầu">
-                                                        <Button 
-                                                            size="small" 
-                                                            type="default" 
+                                                        <Button
+                                                            size="small"
+                                                            type="default"
                                                             icon={<EditOutlined className="text-blue-600" />}
                                                             className="hover:border-blue-500 hover:bg-blue-50 text-blue-600 rounded-md font-medium"
                                                             onClick={() => onEditClick(record)}
@@ -715,18 +716,18 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                                 )}
 
                                                 {canDelete && (
-                                                    <Popconfirm 
-                                                        title="Xóa yêu cầu?" 
+                                                    <Popconfirm
+                                                        title="Xóa yêu cầu?"
                                                         description="Bạn có chắc chắn muốn xóa yêu cầu này không?"
                                                         onConfirm={() => onDeleteTicket(record.id)}
                                                         disabled={record.status !== 'PENDING'}
                                                         okText="Xóa"
                                                         cancelText="Hủy"
                                                     >
-                                                        <Button 
-                                                            size="small" 
-                                                            danger 
-                                                            icon={<DeleteOutlined />} 
+                                                        <Button
+                                                            size="small"
+                                                            danger
+                                                            icon={<DeleteOutlined />}
                                                             disabled={record.status !== 'PENDING'}
                                                             title={record.status !== 'PENDING' ? 'Chỉ có thể xóa yêu cầu đang Chờ xử lý' : 'Xóa yêu cầu'}
                                                         />
@@ -766,7 +767,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
         <div className="w-full">
             {/* 1. DẠNG THẺ (CARD VIEW): Hiển thị khi viewMode === 'CARD' hoặc tự động trên mobile / tablet nhỏ (< md) */}
             <div className={viewMode === 'CARD' ? 'block p-2 sm:p-3' : viewMode === 'TABLE' ? 'hidden' : 'block md:hidden p-2 sm:p-3'}>
-                <TicketCardList 
+                <TicketCardList
                     tickets={tickets}
                     loading={loading}
                     departments={departments}
@@ -793,13 +794,13 @@ export const TicketTable: React.FC<TicketTableProps> = ({
 
             {/* 2. DẠNG BẢNG (DESKTOP TABLE): Hiển thị khi viewMode === 'TABLE' hoặc tự động trên màn hình lớn (>= md) */}
             <div className={viewMode === 'TABLE' ? 'block' : viewMode === 'CARD' ? 'hidden' : 'hidden md:block'}>
-                <Table 
+                <Table
                     bordered
-                    dataSource={tickets} 
+                    dataSource={tickets}
                     columns={columns}
-                    rowKey="id" 
+                    rowKey="id"
                     loading={loading}
-                    pagination={getDefaultPagination({ 
+                    pagination={getDefaultPagination({
                         current: currentPage,
                         pageSize: pageSize,
                         unit: 'yêu cầu',

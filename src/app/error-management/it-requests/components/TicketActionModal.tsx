@@ -40,6 +40,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
     const isUnassigned = !ticket?.assigneeId;
 
     const canChangeAssignee = isManager || isMyTicket || isUnassigned;
+    const canChangeStatus = Boolean(isManager || isMyTicket || isUnassigned);
 
     let availableUsers = itUsers;
     if (!isManager && isUnassigned) {
@@ -208,13 +209,17 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
 
             const payload: any = {
                 ...values,
-                isFocusTask: Boolean(values.isFocusTask),
+                status: canChangeStatus ? values.status : ticket?.status,
+                assigneeId: canChangeAssignee ? values.assigneeId : ticket?.assigneeId,
+                isFocusTask: canChangeStatus ? Boolean(values.isFocusTask) : Boolean(ticket?.isFocusTask),
                 it_images: finalUrls,
-                vendorId: values.vendorId !== undefined ? values.vendorId : (ticket?.vendorId || null),
-                vendorName: selectedVendor ? selectedVendor.name : (values.vendorName || ticket?.vendorName || null),
-                vendorTicketCode: values.vendorTicketCode !== undefined ? values.vendorTicketCode : (ticket?.vendorTicketCode || null),
-                vendorExpectedReturnAt: values.vendorExpectedReturnAt 
-                    ? values.vendorExpectedReturnAt.toISOString() 
+                vendorId: canChangeStatus ? (values.vendorId !== undefined ? values.vendorId : (ticket?.vendorId || null)) : (ticket?.vendorId || null),
+                vendorName: canChangeStatus ? (selectedVendor ? selectedVendor.name : (values.vendorName || ticket?.vendorName || null)) : (ticket?.vendorName || null),
+                vendorTicketCode: canChangeStatus ? (values.vendorTicketCode !== undefined ? values.vendorTicketCode : (ticket?.vendorTicketCode || null)) : (ticket?.vendorTicketCode || null),
+                vendorExpectedReturnAt: canChangeStatus 
+                    ? (values.vendorExpectedReturnAt 
+                        ? values.vendorExpectedReturnAt.toISOString() 
+                        : (ticket?.vendorExpectedReturnAt ? dayjs(ticket.vendorExpectedReturnAt).toISOString() : null))
                     : (ticket?.vendorExpectedReturnAt ? dayjs(ticket.vendorExpectedReturnAt).toISOString() : null),
             };
             await onOk(payload);
@@ -245,9 +250,15 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                         )}
                     </div>
                     {ticket?.status === 'RESOLVED' && (
-                        <span className="text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                            ✓ Đang mở xem lại - Có thể đổi trạng thái để mở lại xử lý
-                        </span>
+                        canChangeStatus ? (
+                            <span className="text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                                ✓ Đang mở xem lại - Có thể đổi trạng thái để mở lại xử lý
+                            </span>
+                        ) : (
+                            <span className="text-xs text-slate-600 font-medium bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                                👁️ Đang xem lại phiếu của {ticket?.assigneeName || 'đồng nghiệp'} (Chế độ xem & bổ sung ghi chú)
+                            </span>
+                        )
                     )}
                 </div>
             }
@@ -256,9 +267,11 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
             onOk={() => actionForm.submit()}
             confirmLoading={submitting}
             okText={
-                ticket?.status === 'RESOLVED'
-                    ? (selectedStatus === 'RESOLVED' ? 'Lưu bổ sung ghi chú / ảnh' : 'Tái mở phiếu & Lưu')
-                    : 'Lưu cập nhật'
+                !canChangeStatus
+                    ? 'Lưu bổ sung ghi chú / ảnh'
+                    : (ticket?.status === 'RESOLVED'
+                        ? (selectedStatus === 'RESOLVED' ? 'Lưu bổ sung ghi chú / ảnh' : 'Tái mở phiếu & Lưu')
+                        : 'Lưu cập nhật')
             }
             cancelText="Đóng"
             destroyOnHidden
@@ -271,10 +284,16 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                     <Form.Item 
                         name="status" 
                         label={<span className="font-semibold text-slate-700">Trạng thái xử lý</span>} 
+                        extra={!canChangeStatus ? (
+                            <span className="text-[11px] text-amber-700 font-medium">
+                                🔒 Chỉ người phụ trách ({ticket?.assigneeName || 'KTV'} hoặc Lãnh đạo mới có quyền đổi trạng thái xử lý
+                            </span>
+                        ) : undefined}
                         className="mb-0"
                     >
                         <Select 
                             size="large" 
+                            disabled={!canChangeStatus}
                             className="!rounded-xl"
                             onChange={(val) => setSelectedStatus(val)}
                         >
@@ -377,7 +396,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                         </div>
                     </div>
                     <Form.Item name="isFocusTask" valuePropName="checked" noStyle>
-                        <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                        <Switch disabled={!canChangeStatus} checkedChildren="Bật" unCheckedChildren="Tắt" />
                     </Form.Item>
                 </div>
 
@@ -409,6 +428,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                                 <Select
                                     placeholder="Chọn đối tác (VNPT, Viettel, Minh Khang...)"
                                     showSearch
+                                    disabled={!canChangeStatus}
                                     filterOption={(input, option: any) => 
                                         (option?.label || '').toLowerCase().includes(input.toLowerCase())
                                     }
@@ -443,6 +463,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                                 <DatePicker 
                                     format="DD/MM/YYYY" 
                                     placeholder="Chọn ngày hẹn (Tùy chọn)"
+                                    disabled={!canChangeStatus}
                                     className="w-full !rounded-lg"
                                     disabledDate={(current) => current && current.isBefore(dayjs().subtract(1, 'day'))}
                                 />
@@ -454,7 +475,7 @@ export const TicketActionModal: React.FC<TicketActionModalProps> = ({
                                 className="mb-0"
                                 extra={<span className="text-[11px] text-amber-700">Ví dụ: BN-2026-092 hoặc Ticket #18239</span>}
                             >
-                                <Input placeholder="Nhập mã phiếu nếu có..." className="!rounded-lg" />
+                                <Input disabled={!canChangeStatus} placeholder="Nhập mã phiếu nếu có..." className="!rounded-lg" />
                             </Form.Item>
                         </div>
 

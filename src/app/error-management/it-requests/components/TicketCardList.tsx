@@ -186,6 +186,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                 {paginatedTickets.map((ticket, index) => {
                     const dept = departments.find(d => d.ma_khoa === ticket.ma_khoa);
                     const isMyTask = Boolean(ticket.assigneeId) && ticket.assigneeId === user?.id;
+                    const isManager = Boolean(user?.isManager || user?.role === 'ADMIN');
                     const isDeptStaff = Boolean(user?.role === 'ADMIN' || (targetDepartment && (user?.role === targetDepartment || user?.ma_khoa === targetDepartment)));
                     // Chỉ nhân viên thuộc phòng ban kỹ thuật phụ trách (hoặc Admin) mới có quyền nhận việc
                     const canReceive = isDeptStaff && (
@@ -456,7 +457,7 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
                                             className="bg-blue-600 hover:bg-blue-500 font-medium text-xs rounded-xl flex-1 xs:flex-initial"
                                             onClick={() => onProcessClick(ticket)}
                                         >
-                                            {ticket.status === 'RESOLVED' ? 'Xem lại' : 'Xử lý'}
+                                            {ticket.status === 'RESOLVED' ? 'Xem lại' : (isMyTask || isManager ? 'Xử lý' : 'Xem phiếu')}
                                         </Button>
                                     )}
 

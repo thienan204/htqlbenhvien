@@ -1348,9 +1348,16 @@ export async function PUT(request: Request) {
             }
         }
 
-        // Nhiệm vụ của ai người đó mới được hoàn thành (trừ Quản trị viên/Lãnh đạo khi cần can thiệp)
-        if (newStatus === 'RESOLVED' && ticket.status !== 'RESOLVED' && !isManager && ticket.assigneeId !== user.id) {
-            return NextResponse.json({ error: 'Nhiệm vụ của ai người đó mới được hoàn thành!' }, { status: 403 });
+        // Phân quyền đổi trạng thái xử lý: Chỉ người phụ trách hoặc Lãnh đạo/Admin mới được phép đổi trạng thái
+        if (newStatus !== ticket.status) {
+            const isMyTicket = ticket.assigneeId === user.id;
+            const isSelfClaiming = !ticket.assigneeId && assigneeId === user.id;
+
+            if (!isManager && !isMyTicket && !isSelfClaiming) {
+                return NextResponse.json({ 
+                    error: 'Bạn không có quyền thay đổi trạng thái xử lý phiếu của người khác (chỉ người phụ trách hoặc Lãnh đạo mới có quyền)' 
+                }, { status: 403 });
+            }
         }
 
         // Đơn tác vụ: Nếu chuyển sang IN_PROGRESS, tự động tạm dừng (PAUSED) tất cả các việc IN_PROGRESS khác của nhân viên này
