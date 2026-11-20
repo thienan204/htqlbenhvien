@@ -179,13 +179,24 @@ export async function GET(request: Request) {
             }
         });
 
-        // Lấy tất cả bản ghi chấm trực trong tháng
+        // Lấy tất cả bản ghi chấm trực trong tháng kèm theo thông tin các ngày đã nghỉ bù (compensations)
         const dutyRecords = await db.staffDutyRecord.findMany({
             where: {
                 staffId: { in: staffIds },
                 dutyDate: {
                     gte: startDateStr,
                     lte: endDateStr
+                }
+            },
+            include: {
+                compensations: {
+                    select: {
+                        id: true,
+                        workDate: true,
+                        session: true,
+                        value: true,
+                        code: true
+                    }
                 }
             }
         });
@@ -441,6 +452,43 @@ export async function GET(request: Request) {
             const trueRemainingCompensatoryDays = staffUncompDuties.reduce((acc, item) => acc + item.remainingDays, 0);
             const dutyDatesText = staffUncompDuties.map(d => d.label).join(', ');
 
+            // Thu thập chi tiết các ngày đã chấm nghỉ bù trong tháng của cán bộ
+            const actualCompensatedRecords: Array<{
+                date: string;
+                day: number;
+                session: string;
+                code: string;
+                value: number;
+                dutyRecordId?: string | null;
+                dutyDate?: string | null;
+                dutyCode?: string | null;
+                shortDutyDate?: string | null;
+            }> = [];
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const att = attMap[d];
+                if (att) {
+                    const c = (att.code || '').trim().toUpperCase();
+                    if (c === 'NB' || c === 'NB/2' || c === 'NB/X' || c === 'X/NB') {
+                        const val = att.value ?? (c === 'NB/2' || att.session === 'MORNING' || att.session === 'AFTERNOON' ? 0.5 : 1.0);
+                        const parts = att.dutyRecord?.dutyDate ? att.dutyRecord.dutyDate.split('-') : null;
+                        const shortDutyDate = parts && parts.length === 3 ? `${parts[2]}/${parts[1]}` : null;
+                        actualCompensatedRecords.push({
+                            date: att.workDate,
+                            day: d,
+                            session: att.session || 'FULL_DAY',
+                            code: att.code,
+                            value: val,
+                            dutyRecordId: att.dutyRecordId || null,
+                            dutyDate: att.dutyRecord?.dutyDate || null,
+                            dutyCode: att.dutyRecord?.dutyCode || null,
+                            shortDutyDate
+                        });
+                    }
+                }
+            }
+            const actualCompensatedDays = actualCompensatedRecords.reduce((acc, r) => acc + r.value, 0);
+
             // Tính làm thêm giờ (Overtime):
             const otMap = overtimeByStaffAndDay[st.id] || {};
             let totalDayHours = 0;
@@ -492,6 +540,8 @@ export async function GET(request: Request) {
                     tongSo: totalDuty,
                     totalAllowanceDays,
                     totalCompensatedDays,
+                    actualCompensatedDays,
+                    actualCompensatedRecords,
                     remainingCompensatoryDays: trueRemainingCompensatoryDays,
                     uncompensatedDuties: staffUncompDuties,
                     dutyDatesText

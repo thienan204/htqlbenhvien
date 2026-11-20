@@ -44,11 +44,68 @@ export default function DutySheetPage() {
             customClass = 'border-dashed border-indigo-500';
         }
 
-        return (
+        const allowance = duty.allowanceDays || 0;
+        const comp = duty.compensatedDays || 0;
+        const remaining = Math.max(0, allowance - comp);
+        const compensations = duty.compensations || [];
+
+        const tagElement = (
             <Tag color={color} className={`m-0 font-extrabold text-xs px-1.5 py-0.5 shadow-xs ${customClass}`}>
                 {duty.dutyCode}
                 {duty.allowanceDays === 2 && <span className="text-[10px] ml-0.5 text-amber-300">⭐2d</span>}
+                {allowance > 0 && comp >= allowance && (
+                    <span className="text-[9px] ml-0.5 text-emerald-300 font-bold" title="Đã nghỉ bù đủ">✓</span>
+                )}
+                {allowance > 0 && comp > 0 && comp < allowance && (
+                    <span className="text-[9px] ml-0.5 text-amber-200 font-normal" title={`Đã bù ${comp}d, còn ${remaining}d`}>
+                        ({comp}/{allowance})
+                    </span>
+                )}
             </Tag>
+        );
+
+        const dutyDateFormatted = duty.dutyDate ? duty.dutyDate.split('-').reverse().join('/') : '';
+        const dutyTypeLabel = duty.dutyType === 'TRUC_KEM' ? 'Trực kèm' : duty.dutyType === 'TRUC_THUONG_TRU' ? 'Trực thường trú' : 'Trực chính';
+
+        return (
+            <Tooltip
+                title={
+                    <div className="text-xs py-1 space-y-1 max-w-[260px]">
+                        <div className="font-bold text-amber-300 border-b border-slate-600/60 pb-1 flex items-center justify-between">
+                            <span>Ca trực {duty.dutyCode} ({dutyTypeLabel})</span>
+                            <span>{dutyDateFormatted}</span>
+                        </div>
+                        {allowance > 0 ? (
+                            <>
+                                <div>• Định mức nghỉ bù: <strong>{allowance} ngày</strong></div>
+                                <div>• Đã nghỉ bù: <strong className="text-emerald-300">{comp} ngày</strong></div>
+                                {compensations.length > 0 && (
+                                    <div className="text-[11px] bg-slate-800/80 p-1 rounded border border-slate-700 space-y-0.5 mt-1">
+                                        <div className="text-slate-300 font-semibold">Chi tiết ngày đã bù:</div>
+                                        {compensations.map((cp: any, idx: number) => (
+                                            <div key={idx} className="text-emerald-300 flex items-center justify-between">
+                                                <span>Ngày {cp.workDate.split('-').reverse().join('/')} ({cp.code})</span>
+                                                <span className="font-bold">+{cp.value || 0.5}d</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="pt-0.5 font-semibold">
+                                    {remaining > 0 ? (
+                                        <span className="text-rose-300">• Quỹ còn lại được bù: <strong>{remaining} ngày</strong></span>
+                                    ) : (
+                                        <span className="text-emerald-300">✓ Đã nghỉ bù hết ({allowance}/{allowance} ngày)</span>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-slate-300 italic">• Trực thường trú hưởng phụ cấp, không bù ngày công.</div>
+                        )}
+                    </div>
+                }
+            >
+                {tagElement}
+            </Tooltip>
         );
     };
 

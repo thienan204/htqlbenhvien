@@ -65,40 +65,91 @@ export default function CompensatoryLedgerPage() {
         },
         {
             title: 'Đã Nghỉ Bù (Thực tế)',
-            dataIndex: ['dutySummary', 'totalCompensatedDays'],
             key: 'totalCompensatedDays',
-            width: 130,
+            width: 150,
             align: 'center' as const,
-            render: (val: number) => <Tag color="green" className="font-bold">{val} ngày</Tag>
+            render: (_: any, record: StaffMatrixData) => {
+                const totalComp = record.dutySummary?.actualCompensatedDays ?? record.dutySummary?.totalCompensatedDays ?? 0;
+                const compRecords = record.dutySummary?.actualCompensatedRecords || [];
+
+                if (totalComp <= 0 || compRecords.length === 0) {
+                    return <Tag color="default" className="text-slate-400 font-medium m-0">Chưa nghỉ bù</Tag>;
+                }
+
+                const tooltipContent = (
+                    <div className="w-72 p-1 text-xs">
+                        <div className="font-bold text-amber-300 border-b border-slate-600/70 pb-1.5 mb-1.5 flex items-center justify-between">
+                            <span>Chi tiết các ngày đã nghỉ bù</span>
+                            <span className="text-emerald-300 font-black">Tổng: {totalComp} ngày</span>
+                        </div>
+                        <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                            {compRecords.map((item, idx) => {
+                                const workDateFormatted = item.date.split('-').reverse().join('/');
+                                const sessionLabel = item.session === 'MORNING' ? 'Buổi Sáng (4h)' : item.session === 'AFTERNOON' ? 'Buổi Chiều (4h)' : 'Cả ngày (8h)';
+                                const dutyInfo = item.dutyDate
+                                    ? `Bù ca ${item.dutyDate.split('-').reverse().join('/')} (${item.dutyCode || 'Trực'})`
+                                    : 'Chưa rõ ca';
+
+                                return (
+                                    <div
+                                        key={idx}
+                                        className="p-1.5 bg-slate-800/90 border border-slate-700 rounded flex items-center justify-between gap-2"
+                                    >
+                                        <div>
+                                            <div className="font-semibold text-white flex items-center gap-1.5">
+                                                <Tag color="success" className="text-[10px] px-1 py-0 m-0 font-bold">
+                                                    {item.code}{item.session === 'MORNING' ? ' (S)' : item.session === 'AFTERNOON' ? ' (C)' : ''}
+                                                </Tag>
+                                                <span>Ngày {workDateFormatted}</span>
+                                            </div>
+                                            <div className="text-[10px] text-slate-300 mt-0.5">
+                                                {sessionLabel} • {dutyInfo}
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <span className="font-bold text-emerald-300 text-xs">+{item.value}d</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+
+                return (
+                    <Tooltip title={tooltipContent} placement="top">
+                        <Tag
+                            color="green"
+                            className="font-bold text-xs cursor-pointer hover:opacity-85 shadow-2xs transition-all m-0"
+                        >
+                            Đã bù {totalComp} ngày <InfoCircleOutlined className="text-[10px] ml-0.5 text-emerald-600" />
+                        </Tag>
+                    </Tooltip>
+                );
+            }
         },
         {
             title: 'Quỹ Ngày Trực Còn Dư Có Thể Bù',
             dataIndex: ['dutySummary', 'remainingCompensatoryDays'],
             key: 'remainingCompensatoryDays',
-            width: 250,
+            width: 170,
             align: 'center' as const,
             render: (val: number, record: StaffMatrixData) => {
                 const uncompList = record.dutySummary?.uncompensatedDuties || [];
 
                 if (val <= 0 || uncompList.length === 0) {
                     return (
-                        <div className="py-1">
-                            <Tag color="default" className="font-medium text-slate-500">
-                                <CheckCircleOutlined className="mr-1 text-emerald-500" /> Đã bù hết
-                            </Tag>
-                        </div>
+                        <Tag color="default" className="font-medium text-slate-500 m-0">
+                            <CheckCircleOutlined className="mr-1 text-emerald-500" /> Đã bù hết
+                        </Tag>
                     );
                 }
 
-                // Chi tiết popover nội dung khi bấm vào
-                const popoverContent = (
+                const tooltipContent = (
                     <div className="w-80 p-1 text-xs">
-                        <div className="font-bold text-slate-800 border-b pb-1.5 mb-2 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5">
-                                <ClockCircleOutlined className="text-blue-600" />
-                                <span>Chi tiết các ca trực chưa nghỉ bù</span>
-                            </span>
-                            <span className="text-rose-600 font-black">Còn {val} ngày</span>
+                        <div className="font-bold text-amber-300 border-b border-slate-600/70 pb-1.5 mb-1.5 flex items-center justify-between">
+                            <span>Chi tiết các ca trực chưa nghỉ bù</span>
+                            <span className="text-rose-300 font-black">Còn {val} ngày</span>
                         </div>
                         <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                             {uncompList.map((item, idx) => {
@@ -121,36 +172,28 @@ export default function CompensatoryLedgerPage() {
                                 return (
                                     <div
                                         key={item.id || idx}
-                                        className="p-1.5 bg-slate-50 border border-slate-200 rounded flex items-center justify-between gap-2"
+                                        className="p-1.5 bg-slate-800/90 border border-slate-700 rounded flex items-center justify-between gap-2"
                                     >
                                         <div>
-                                            <div className="font-semibold text-slate-800 flex items-center gap-1.5">
+                                            <div className="font-semibold text-white flex items-center gap-1.5">
                                                 <Tag color={tagColor} className="text-[10px] px-1 py-0 m-0 font-bold">
                                                     {item.dutyCode}
                                                 </Tag>
                                                 <span>Ngày {formattedDate}</span>
                                             </div>
-                                            <div className="text-[10px] text-slate-500 mt-0.5">
+                                            <div className="text-[10px] text-slate-300 mt-0.5">
                                                 {typeLabel} (Hạn mức: {item.allowanceDays}d - Đã bù: {item.compensatedDays}d)
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <span className="font-bold text-rose-600 text-xs">Còn {item.remainingDays}d</span>
+                                            <span className="font-bold text-rose-300 text-xs">Còn {item.remainingDays}d</span>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <div className="mt-2 pt-1.5 border-t text-right">
-                            <Button
-                                type="primary"
-                                size="small"
-                                icon={<CalendarOutlined />}
-                                onClick={() => router.push('/staff/attendance')}
-                                className="text-xs font-medium"
-                            >
-                                Đi đến Chấm Nghỉ Bù (NB)
-                            </Button>
+                        <div className="mt-2 pt-1.5 border-t border-slate-700 text-right">
+                            <span className="text-[11px] text-slate-400">Sang Tab 1 để bấm chấm nghỉ bù</span>
                         </div>
                     </div>
                 );
@@ -158,54 +201,14 @@ export default function CompensatoryLedgerPage() {
                 const badgeColor = val <= 1 ? 'warning' : 'error';
 
                 return (
-                    <div className="py-1 flex flex-col items-center gap-1">
-                        <Popover
-                            content={popoverContent}
-                            title={null}
-                            trigger="click"
-                            placement="left"
+                    <Tooltip title={tooltipContent} placement="top">
+                        <Tag
+                            color={badgeColor}
+                            className="font-bold text-xs cursor-pointer hover:opacity-85 shadow-2xs transition-all m-0"
                         >
-                            <Tag
-                                color={badgeColor}
-                                className="font-bold text-xs cursor-pointer hover:opacity-85 shadow-2xs transition-all"
-                                title="Bấm để xem chi tiết từng ca trực chưa nghỉ bù"
-                            >
-                                Còn {val} ngày <InfoCircleOutlined className="text-[10px] ml-0.5 text-slate-400" />
-                            </Tag>
-                        </Popover>
-
-                        {/* Danh sách các ngày trực cụ thể ngay dưới Tag */}
-                        <div className="flex flex-wrap items-center justify-center gap-1 mt-0.5 max-w-[240px]">
-                            {uncompList.slice(0, 3).map((item, idx) => {
-                                const codeUpper = (item.dutyCode || '').toUpperCase();
-                                const tagColor =
-                                    codeUpper === 'C' ? 'orange' :
-                                    codeUpper === 'L' || codeUpper === 'TE' ? 'purple' :
-                                    codeUpper === 'T' ? 'blue' : 'default';
-
-                                return (
-                                    <Tooltip
-                                        key={item.id || idx}
-                                        title={`Ca ${item.dutyCode} ngày ${item.dutyDate.split('-').reverse().join('/')}: Định mức ${item.allowanceDays} ngày, đã bù ${item.compensatedDays} ngày, còn được bù ${item.remainingDays} ngày.`}
-                                    >
-                                        <Tag
-                                            color={tagColor}
-                                            className="text-[10px] px-1.5 py-0 m-0 font-medium cursor-help"
-                                        >
-                                            {item.shortDate} ({item.dutyCode}: {item.remainingDays}d)
-                                        </Tag>
-                                    </Tooltip>
-                                );
-                            })}
-                            {uncompList.length > 3 && (
-                                <Popover content={popoverContent} trigger="click" placement="left">
-                                    <Tag className="text-[10px] px-1 py-0 m-0 cursor-pointer bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200">
-                                        +{uncompList.length - 3} ngày
-                                    </Tag>
-                                </Popover>
-                            )}
-                        </div>
-                    </div>
+                            Còn {val} ngày <InfoCircleOutlined className="text-[10px] ml-0.5 text-slate-400" />
+                        </Tag>
+                    </Tooltip>
                 );
             }
         },

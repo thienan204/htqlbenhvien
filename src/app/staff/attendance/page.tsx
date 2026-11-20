@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Tag, Popover, Tooltip, Button } from 'antd';
+import { Table, Tag, Popover, Tooltip, Button, Select } from 'antd';
 import { EditOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAttendance, StaffMatrixData } from './AttendanceContext';
@@ -65,6 +65,315 @@ function AttendanceOptionButton({
     );
 }
 
+interface AttendanceCellPopoverContentProps {
+    record: StaffMatrixData;
+    d: any;
+    att: any;
+    canCompensate: boolean;
+    uncompList: any[];
+    remDays: number;
+    isPostResignation: boolean;
+    selectedDate: dayjs.Dayjs;
+    onSelect: (code: string, dutyId?: string, session?: string) => void;
+}
+
+function AttendanceCellPopoverContent({
+    record,
+    d,
+    att,
+    canCompensate,
+    uncompList,
+    remDays,
+    isPostResignation,
+    selectedDate,
+    onSelect
+}: AttendanceCellPopoverContentProps) {
+    const currentCode = (att?.code || '').trim().toUpperCase();
+    const currentSession = (att?.session || '').trim().toUpperCase();
+    const currentDutyRecordId = att?.dutyRecordId || att?.dutyRecord?.id;
+
+    // Chuẩn bị danh sách ca trực khả dụng để chọn bù
+    const fullDutyList = [...uncompList];
+    const hasCurrentDuty = uncompList.some(u => u.id === currentDutyRecordId);
+    if (!hasCurrentDuty && att?.dutyRecord) {
+        const p = (att.dutyRecord.dutyDate || '').split('-');
+        const sDate = p.length === 3 ? `${p[2]}/${p[1]}` : att.dutyRecord.dutyDate;
+        fullDutyList.unshift({
+            id: att.dutyRecord.id || currentDutyRecordId,
+            dutyDate: att.dutyRecord.dutyDate,
+            dutyCode: att.dutyRecord.dutyCode,
+            dutyType: att.dutyRecord.dutyType || 'TRUC_CHINH',
+            allowanceDays: att.dutyRecord.allowanceDays || 1.0,
+            compensatedDays: 0,
+            remainingDays: 0,
+            shortDate: sDate,
+            label: `${sDate} (${att.dutyRecord.dutyCode} - Đang liên kết)`
+        });
+    }
+
+    const [selectedDutyId, setSelectedDutyId] = useState<string>(
+        currentDutyRecordId || fullDutyList[0]?.id || ''
+    );
+
+    const selectedDuty = fullDutyList.find(u => u.id === selectedDutyId) || fullDutyList[0];
+    const isCurrentlyCompensating = (currentCode === 'NB' || currentCode === 'NB/2');
+
+    return (
+        <div className="w-[660px] p-1 text-slate-800">
+            {/* Cảnh báo nếu ngày này sau ngày chuyển công tác */}
+            {isPostResignation && (
+                <div className="mb-2 p-1.5 bg-amber-50 border border-amber-300 rounded text-amber-900 text-xs flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Cán bộ này đã <strong>{record.resignedStatus || 'chuyển công tác'}</strong> từ ngày <strong>{record.resignedDay}/{selectedDate.format('MM/YYYY')}</strong>.</span>
+                </div>
+            )}
+
+            {/* Thông báo nếu ô này đang được chấm nghỉ bù */}
+            {isCurrentlyCompensating && (
+                <div className="mb-2 p-1.5 bg-amber-50 border border-amber-300 rounded text-xs flex items-center justify-between text-amber-900">
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-amber-600">🔔</span>
+                        <span>
+                            Đang chấm: <strong>{currentCode === 'NB' ? 'Nghỉ bù cả ngày' : `Nghỉ bù ${currentSession === 'MORNING' ? 'buổi Sáng' : 'buổi Chiều'}`}</strong>
+                            {att?.dutyRecord?.dutyDate && (
+                                <span> (Bù ca trực <strong>{att.dutyRecord.dutyDate.split('-').reverse().join('/')}</strong> - Ca {att.dutyRecord.dutyCode})</span>
+                            )}
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => onSelect('', undefined)}
+                        className="text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer text-[11px] ml-2"
+                        title="Hủy chấm nghỉ bù ngày này"
+                    >
+                        ✕ Hủy bù
+                    </button>
+                </div>
+            )}
+
+            {/* Header Popup */}
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <span className="text-blue-600 font-bold">{record.ho_ten}</span>
+                    <span className="text-slate-300">|</span>
+                    <span>Ngày {d.day}/{selectedDate.format('MM/YYYY')} ({d.dayOfWeek})</span>
+                </div>
+                {att?.code && (
+                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded font-medium">
+                        Đang chấm: <strong className="text-blue-600 font-mono">{att.code}{att.session === 'MORNING' ? ' (S)' : att.session === 'AFTERNOON' ? ' (C)' : ''}</strong>
+                    </span>
+                )}
+            </div>
+
+            {/* Khối 3 Cột chức năng */}
+            <div className="grid grid-cols-3 gap-2.5">
+                {/* Cột 1: Đi Làm */}
+                <div className="space-y-1">
+                    <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 flex items-center gap-1 mb-1.5">
+                        🟢 1. Đi Làm
+                    </div>
+                    <AttendanceOptionButton
+                        code="+"
+                        label="Đi làm đủ ngày (8h)"
+                        desc="8h hành chính (Mặc định)"
+                        colorType="emerald"
+                        active={currentCode === '+' && currentSession === 'FULL_DAY'}
+                        onClick={() => onSelect('+', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="+/2"
+                        label="Làm buổi Sáng (4h)"
+                        desc="07:00 - 11:30 (Sáng)"
+                        colorType="emerald"
+                        active={currentCode === '+/2' && currentSession === 'MORNING'}
+                        onClick={() => onSelect('+/2', undefined, 'MORNING')}
+                    />
+                    <AttendanceOptionButton
+                        code="+/2"
+                        label="Làm buổi Chiều (4h)"
+                        desc="13:30 - 17:00 (Chiều)"
+                        colorType="emerald"
+                        active={currentCode === '+/2' && currentSession === 'AFTERNOON'}
+                        onClick={() => onSelect('+/2', undefined, 'AFTERNOON')}
+                    />
+                    <div className="my-1 border-t border-slate-100" />
+                    <AttendanceOptionButton
+                        code="x"
+                        label="Đi làm đủ ngày (8h)"
+                        desc="8h hành chính"
+                        colorType="teal"
+                        active={currentCode === 'X' && currentSession === 'FULL_DAY'}
+                        onClick={() => onSelect('x', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="x/2"
+                        label="Đi làm nửa ngày"
+                        desc="4h làm việc"
+                        colorType="teal"
+                        active={currentCode === 'X/2'}
+                        onClick={() => onSelect('x/2', undefined, 'HALF_DAY')}
+                    />
+                </div>
+
+                {/* Cột 2: Phép & Nghỉ Bù */}
+                <div className="space-y-1">
+                    <div className="text-xs font-bold text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-200 flex items-center gap-1 mb-1.5">
+                        🔵 2. Phép & Nghỉ Bù
+                    </div>
+                    <AttendanceOptionButton
+                        code="P"
+                        label="Nghỉ phép cả ngày"
+                        desc="Hưởng nguyên lương"
+                        colorType="blue"
+                        active={currentCode === 'P' && currentSession === 'FULL_DAY'}
+                        onClick={() => onSelect('P', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="P/2"
+                        label="Phép buổi Sáng"
+                        desc="07:00 - 11:30 (Nghỉ sáng)"
+                        colorType="blue"
+                        active={currentCode === 'P/2' && currentSession === 'MORNING'}
+                        onClick={() => onSelect('P/2', undefined, 'MORNING')}
+                    />
+                    <AttendanceOptionButton
+                        code="P/2"
+                        label="Phép buổi Chiều"
+                        desc="13:30 - 17:00 (Nghỉ chiều)"
+                        colorType="blue"
+                        active={currentCode === 'P/2' && currentSession === 'AFTERNOON'}
+                        onClick={() => onSelect('P/2', undefined, 'AFTERNOON')}
+                    />
+
+                    {/* KHU VỰC CHỌN NGHỈ BÙ TRỰC CHUYÊN SÂU */}
+                    <div className="my-1 border-t border-slate-200" />
+                    <div className="bg-amber-50/70 p-1.5 rounded border border-amber-200 space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-amber-900">
+                            <span>📅 Chọn ca trực nghỉ bù:</span>
+                            <span className="text-[10px] font-medium text-amber-700">
+                                Quỹ: <b className="text-rose-600 font-bold">{remDays}d</b>
+                            </span>
+                        </div>
+
+                        {fullDutyList.length > 0 ? (
+                            <Select
+                                size="small"
+                                className="w-full text-xs"
+                                value={selectedDutyId || undefined}
+                                onChange={(val) => setSelectedDutyId(val)}
+                                placeholder="-- Chọn ngày trực cần bù --"
+                                options={fullDutyList.map(u => {
+                                    const typeText = u.dutyCode === 'C' ? 'T7/CN' : (u.dutyCode === 'L' || u.dutyCode === 'TE') ? 'Lễ/Tết' : 'Thường';
+                                    const isCurrentActive = u.id === currentDutyRecordId;
+                                    return {
+                                        value: u.id,
+                                        label: `📅 ${u.shortDate} (Ca ${u.dutyCode}: ${typeText}) - Còn: ${u.remainingDays}d`
+                                    };
+                                })}
+                            />
+                        ) : (
+                            <div className="text-[11px] text-slate-500 italic py-1 text-center bg-white rounded border border-slate-200">
+                                Không có ca trực nào còn quỹ bù
+                            </div>
+                        )}
+
+                        <div className="space-y-1 pt-0.5">
+                            <AttendanceOptionButton
+                                code="Nb"
+                                label="Nghỉ bù cả ngày (1 ngày)"
+                                desc={selectedDuty ? `Trừ 1 ngày ca ${selectedDuty.shortDate} (còn ${selectedDuty.remainingDays}d)` : 'Chọn ca trực để bù'}
+                                disabled={!selectedDutyId}
+                                colorType="amber"
+                                active={currentCode === 'NB' && currentSession === 'FULL_DAY' && currentDutyRecordId === selectedDutyId}
+                                onClick={() => onSelect('Nb', selectedDutyId, 'FULL_DAY')}
+                            />
+                            <AttendanceOptionButton
+                                code="Nb/2"
+                                label="Bù buổi Sáng (0.5 ngày)"
+                                desc={selectedDuty ? `07:00 - 11:30 (Trừ 0.5d ca ${selectedDuty.shortDate})` : 'Chọn ca trực để bù'}
+                                disabled={!selectedDutyId}
+                                colorType="amber"
+                                active={currentCode === 'NB/2' && currentSession === 'MORNING' && currentDutyRecordId === selectedDutyId}
+                                onClick={() => onSelect('Nb/2', selectedDutyId, 'MORNING')}
+                            />
+                            <AttendanceOptionButton
+                                code="Nb/2"
+                                label="Bù buổi Chiều (0.5 ngày)"
+                                desc={selectedDuty ? `13:30 - 17:00 (Trừ 0.5d ca ${selectedDuty.shortDate})` : 'Chọn ca trực để bù'}
+                                disabled={!selectedDutyId}
+                                colorType="amber"
+                                active={currentCode === 'NB/2' && currentSession === 'AFTERNOON' && currentDutyRecordId === selectedDutyId}
+                                onClick={() => onSelect('Nb/2', selectedDutyId, 'AFTERNOON')}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Cột 3: Chế Độ Khác */}
+                <div className="space-y-1">
+                    <div className="text-xs font-bold text-purple-800 bg-purple-50 px-2 py-1 rounded border border-purple-200 flex items-center gap-1 mb-1.5">
+                        🟣 3. Chế Độ Khác
+                    </div>
+                    <AttendanceOptionButton
+                        code="L"
+                        label="Nghỉ Lễ hưởng lương"
+                        desc="Theo quy định nhà nước"
+                        colorType="purple"
+                        active={currentCode === 'L'}
+                        onClick={() => onSelect('L', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="Ô"
+                        label="Nghỉ ốm đau"
+                        desc="Hưởng chế độ BHXH"
+                        colorType="red"
+                        active={currentCode === 'Ô' || currentCode === 'O'}
+                        onClick={() => onSelect('Ô', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="TS"
+                        label="Nghỉ thai sản"
+                        desc="Hưởng chế độ BHXH"
+                        colorType="red"
+                        active={currentCode === 'TS'}
+                        onClick={() => onSelect('TS', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="H"
+                        label="Đi học, hội nghị"
+                        desc="Cử đi học, công tác"
+                        colorType="cyan"
+                        active={currentCode === 'H'}
+                        onClick={() => onSelect('H', undefined, 'FULL_DAY')}
+                    />
+                    <AttendanceOptionButton
+                        code="KL"
+                        label="Nghỉ không lương"
+                        desc="Trừ lương thời gian"
+                        colorType="slate"
+                        active={currentCode === 'KL'}
+                        onClick={() => onSelect('KL', undefined, 'FULL_DAY')}
+                    />
+                </div>
+            </div>
+
+            {/* Footer Popup */}
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <div className="text-[11px] text-slate-400">
+                    💡 Nhấp chọn mã công để áp dụng ngay
+                </div>
+                <button
+                    type="button"
+                    onClick={() => onSelect('', undefined)}
+                    className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                    🗑️ Xóa công ngày này
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function AttendanceSheetPage() {
     const {
         selectedDate,
@@ -109,28 +418,41 @@ export default function AttendanceSheetPage() {
             sessionDesc = 'Buổi Chiều (13:30 - 17:00)';
         }
 
+        const isCompensatory = (c === 'NB' || c === 'NB/2' || c === 'NB/X' || c === 'X/NB');
+
+        if (isCompensatory) {
+            const dutyDateStr = att.dutyRecord?.dutyDate;
+            const parts = (dutyDateStr || '').split('-');
+            const shortDuty = parts && parts.length === 3 ? `${parts[2]}/${parts[1]}` : null;
+            const formattedDutyDate = parts && parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dutyDateStr;
+
+            return (
+                <Tooltip
+                    title={
+                        <div className="text-xs py-0.5">
+                            <div className="font-semibold text-amber-300">
+                                Nghỉ bù chế độ trực {sessionSuffix ? `(${sessionDesc})` : '(Cả ngày)'}
+                            </div>
+                            {dutyDateStr ? (
+                                <div>📅 Bù cho ca trực: <strong className="text-white">{formattedDutyDate}</strong> (Ca {att.dutyRecord?.dutyCode || 'Trực'})</div>
+                            ) : (
+                                <div className="text-amber-200">⚠️ Chưa liên kết ca trực cụ thể</div>
+                            )}
+                        </div>
+                    }
+                >
+                    <Tag color={color} className={`m-0 font-bold text-xs px-1.5 py-0.5 shadow-xs ${bgStyle}`}>
+                        {att.code}{sessionSuffix}
+                    </Tag>
+                </Tooltip>
+            );
+        }
+
         const tagNode = (
             <Tag color={color} className={`m-0 font-bold text-xs px-1.5 py-0.5 shadow-xs ${bgStyle}`}>
                 {att.code}{sessionSuffix}
             </Tag>
         );
-
-        if ((c === 'NB' || c === 'NB/2' || c === 'NB/X' || c === 'X/NB') && att.dutyRecord) {
-            const parts = (att.dutyRecord.dutyDate || '').split('-');
-            const formattedDutyDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : att.dutyRecord.dutyDate;
-            return (
-                <Tooltip
-                    title={
-                        <div className="text-xs py-0.5">
-                            <div className="font-semibold text-amber-300">Nghỉ bù chế độ trực {sessionSuffix ? `(${sessionDesc})` : ''}</div>
-                            <div>📅 Từ ca trực: <strong>{formattedDutyDate}</strong> (Ca {att.dutyRecord.dutyCode})</div>
-                        </div>
-                    }
-                >
-                    {tagNode}
-                </Tooltip>
-            );
-        }
 
         if (sessionDesc) {
             return (
@@ -266,228 +588,19 @@ export default function AttendanceSheetPage() {
                         handleUpdateAttendanceCell(record.staffId, d.day, code, dutyId, session);
                     };
 
-                    const currentCode = (att?.code || '').trim().toUpperCase();
-                    const currentSession = (att?.session || '').trim().toUpperCase();
-
                     const popoverContent = (
-                        <div className="w-[660px] p-1 text-slate-800">
-                            {/* Cảnh báo nếu ngày này sau ngày chuyển công tác */}
-                            {isPostResignation && (
-                                <div className="mb-2 p-1.5 bg-amber-50 border border-amber-300 rounded text-amber-900 text-xs flex items-center gap-1.5">
-                                    <span>⚠️</span>
-                                    <span>Cán bộ này đã <strong>{record.resignedStatus || 'chuyển công tác'}</strong> từ ngày <strong>{record.resignedDay}/{selectedDate.format('MM/YYYY')}</strong>.</span>
-                                </div>
-                            )}
-
-                            {/* Header Popup */}
-                            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-                                <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                                    <span className="text-blue-600 font-bold">{record.ho_ten}</span>
-                                    <span className="text-slate-300">|</span>
-                                    <span>Ngày {d.day}/{selectedDate.format('MM/YYYY')} ({d.dayOfWeek})</span>
-                                </div>
-                                {att?.code && (
-                                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded font-medium">
-                                        Đang chấm: <strong className="text-blue-600 font-mono">{att.code}{att.session === 'MORNING' ? ' (S)' : att.session === 'AFTERNOON' ? ' (C)' : ''}</strong>
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Khối 3 Cột chức năng */}
-                            <div className="grid grid-cols-3 gap-2.5">
-                                {/* Cột 1: Đi Làm */}
-                                <div className="space-y-1">
-                                    <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 flex items-center gap-1 mb-1.5">
-                                        🟢 1. Đi Làm
-                                    </div>
-                                    <AttendanceOptionButton
-                                        code="+"
-                                        label="Đi làm đủ ngày (8h)"
-                                        desc="8h hành chính (Mặc định)"
-                                        colorType="emerald"
-                                        active={currentCode === '+' && currentSession === 'FULL_DAY'}
-                                        onClick={() => handleSelect('+', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="+/2"
-                                        label="Làm buổi Sáng (4h)"
-                                        desc="07:00 - 11:30 (Sáng)"
-                                        colorType="emerald"
-                                        active={currentCode === '+/2' && currentSession === 'MORNING'}
-                                        onClick={() => handleSelect('+/2', undefined, 'MORNING')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="+/2"
-                                        label="Làm buổi Chiều (4h)"
-                                        desc="13:30 - 17:00 (Chiều)"
-                                        colorType="emerald"
-                                        active={currentCode === '+/2' && currentSession === 'AFTERNOON'}
-                                        onClick={() => handleSelect('+/2', undefined, 'AFTERNOON')}
-                                    />
-                                    <div className="my-1 border-t border-slate-100" />
-                                    <AttendanceOptionButton
-                                        code="x"
-                                        label="Đi làm đủ ngày (8h)"
-                                        desc="8h hành chính"
-                                        colorType="teal"
-                                        active={currentCode === 'X' && currentSession === 'FULL_DAY'}
-                                        onClick={() => handleSelect('x', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="x/2"
-                                        label="Đi làm nửa ngày"
-                                        desc="4h làm việc"
-                                        colorType="teal"
-                                        active={currentCode === 'X/2'}
-                                        onClick={() => handleSelect('x/2', undefined, 'HALF_DAY')}
-                                    />
-                                </div>
-
-                                {/* Cột 2: Phép & Nghỉ Bù */}
-                                <div className="space-y-1">
-                                    <div className="text-xs font-bold text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-200 flex items-center gap-1 mb-1.5">
-                                        🔵 2. Phép & Nghỉ Bù
-                                    </div>
-                                    <AttendanceOptionButton
-                                        code="P"
-                                        label="Nghỉ phép cả ngày"
-                                        desc="Hưởng nguyên lương"
-                                        colorType="blue"
-                                        active={currentCode === 'P' && currentSession === 'FULL_DAY'}
-                                        onClick={() => handleSelect('P', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="P/2"
-                                        label="Phép buổi Sáng"
-                                        desc="07:00 - 11:30 (Nghỉ sáng)"
-                                        colorType="blue"
-                                        active={currentCode === 'P/2' && currentSession === 'MORNING'}
-                                        onClick={() => handleSelect('P/2', undefined, 'MORNING')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="P/2"
-                                        label="Phép buổi Chiều"
-                                        desc="13:30 - 17:00 (Nghỉ chiều)"
-                                        colorType="blue"
-                                        active={currentCode === 'P/2' && currentSession === 'AFTERNOON'}
-                                        onClick={() => handleSelect('P/2', undefined, 'AFTERNOON')}
-                                    />
-                                    <div className="my-1 border-t border-slate-100" />
-                                    <AttendanceOptionButton
-                                        code="Nb"
-                                        label="Nghỉ bù cả ngày"
-                                        desc={canCompensate ? `Ca ${uncompList[0]?.shortDate || ''} (Quỹ: ${remDays}d)` : 'Không có ca trực để bù'}
-                                        disabled={!canCompensate}
-                                        colorType="amber"
-                                        active={currentCode === 'NB' && currentSession === 'FULL_DAY'}
-                                        onClick={() => handleSelect('Nb', uncompList[0]?.id, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="Nb/2"
-                                        label="Bù buổi Sáng"
-                                        desc={canCompensate ? `07:00 - 11:30 (Trừ 0.5d ca ${uncompList[0]?.shortDate || ''})` : 'Không có ca trực để bù'}
-                                        disabled={!canCompensate}
-                                        colorType="amber"
-                                        active={currentCode === 'NB/2' && currentSession === 'MORNING'}
-                                        onClick={() => handleSelect('Nb/2', uncompList[0]?.id, 'MORNING')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="Nb/2"
-                                        label="Bù buổi Chiều"
-                                        desc={canCompensate ? `13:30 - 17:00 (Trừ 0.5d ca ${uncompList[0]?.shortDate || ''})` : 'Không có ca trực để bù'}
-                                        disabled={!canCompensate}
-                                        colorType="amber"
-                                        active={currentCode === 'NB/2' && currentSession === 'AFTERNOON'}
-                                        onClick={() => handleSelect('Nb/2', uncompList[0]?.id, 'AFTERNOON')}
-                                    />
-
-                                    {/* Danh sách các ca trực khác nếu có từ 2 ca trở lên */}
-                                    {canCompensate && uncompList.length > 1 && (
-                                        <div className="mt-1 pt-1 border-t border-dashed border-amber-200">
-                                            <div className="text-[10px] text-amber-800 font-medium mb-1">
-                                                Ca trực khác còn quỹ bù:
-                                            </div>
-                                            <div className="flex flex-wrap gap-1">
-                                                {uncompList.slice(1).map(u => (
-                                                    <button
-                                                        key={u.id}
-                                                        type="button"
-                                                        onClick={() => handleSelect('Nb', u.id, 'FULL_DAY')}
-                                                        className="px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded text-[10px] font-medium transition-colors cursor-pointer"
-                                                        title={`Bù cả ngày từ ca ${u.dutyDate} (${u.dutyCode}) - Quỹ còn: ${u.remainingDays}d`}
-                                                    >
-                                                        {u.shortDate} ({u.remainingDays}d)
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Cột 3: Chế Độ Khác */}
-                                <div className="space-y-1">
-                                    <div className="text-xs font-bold text-purple-800 bg-purple-50 px-2 py-1 rounded border border-purple-200 flex items-center gap-1 mb-1.5">
-                                        🟣 3. Chế Độ Khác
-                                    </div>
-                                    <AttendanceOptionButton
-                                        code="L"
-                                        label="Nghỉ Lễ hưởng lương"
-                                        desc="Theo quy định nhà nước"
-                                        colorType="purple"
-                                        active={currentCode === 'L'}
-                                        onClick={() => handleSelect('L', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="Ố"
-                                        label="Nghỉ ốm đau"
-                                        desc="Hưởng chế độ BHXH"
-                                        colorType="red"
-                                        active={['Ô', 'Ố', 'O'].includes(currentCode)}
-                                        onClick={() => handleSelect('Ố', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="TS"
-                                        label="Nghỉ thai sản"
-                                        desc="Hưởng chế độ BHXH"
-                                        colorType="red"
-                                        active={currentCode === 'TS'}
-                                        onClick={() => handleSelect('TS', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="H"
-                                        label="Đi học, hội nghị"
-                                        desc="Cử đi học, công tác"
-                                        colorType="cyan"
-                                        active={currentCode === 'H'}
-                                        onClick={() => handleSelect('H', undefined, 'FULL_DAY')}
-                                    />
-                                    <AttendanceOptionButton
-                                        code="KL"
-                                        label="Nghỉ không lương"
-                                        desc="Trừ lương thời gian"
-                                        colorType="slate"
-                                        active={currentCode === 'KL'}
-                                        onClick={() => handleSelect('KL', undefined, 'FULL_DAY')}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Footer Popup */}
-                            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                <div className="text-[11px] text-slate-400">
-                                    💡 Nhấp chọn mã công để áp dụng ngay
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => handleSelect('', undefined)}
-                                    className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 font-medium transition-colors flex items-center gap-1 cursor-pointer"
-                                >
-                                    🗑️ Xóa công ngày này
-                                </button>
-                            </div>
-                        </div>
+                        <AttendanceCellPopoverContent
+                            record={record}
+                            d={d}
+                            att={att}
+                            canCompensate={canCompensate}
+                            uncompList={uncompList}
+                            remDays={remDays}
+                            isPostResignation={isPostResignation}
+                            selectedDate={selectedDate}
+                            onSelect={handleSelect}
+                        />
                     );
-
                     return (
                         <Popover
                             open={isOpen}

@@ -54,6 +54,18 @@ export interface StaffMatrixData {
         tongSo: number;
         totalAllowanceDays: number;
         totalCompensatedDays: number;
+        actualCompensatedDays?: number;
+        actualCompensatedRecords?: Array<{
+            date: string;
+            day: number;
+            session: string;
+            code: string;
+            value: number;
+            dutyRecordId?: string | null;
+            dutyDate?: string | null;
+            dutyCode?: string | null;
+            shortDutyDate?: string | null;
+        }>;
         remainingCompensatoryDays: number;
         uncompensatedDuties?: Array<{
             id: string;

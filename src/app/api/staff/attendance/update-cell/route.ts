@@ -302,22 +302,10 @@ export async function POST(request: Request) {
 
             // Nếu người dùng chọn xóa công (cleanCode rỗng)
             if (!cleanCode) {
+                const dutyIdsToRecalc = new Set<string>();
                 for (const rec of existingRecords) {
-                    // Nếu công cũ là nghỉ bù có gắn dutyRecordId -> Hoàn lại quỹ ngày bù cho ca trực đó!
                     if (rec.dutyRecordId) {
-                        const targetDuty = await prisma.staffDutyRecord.findUnique({
-                            where: { id: rec.dutyRecordId }
-                        });
-                        if (targetDuty) {
-                            const newCompensated = Math.max(0, targetDuty.compensatedDays - (rec.value || 0.5));
-                            await prisma.staffDutyRecord.update({
-                                where: { id: targetDuty.id },
-                                data: {
-                                    compensatedDays: newCompensated,
-                                    isFullyCompensated: newCompensated >= targetDuty.allowanceDays
-                                }
-                            });
-                        }
+                        dutyIdsToRecalc.add(rec.dutyRecordId);
                     }
                 }
 
@@ -325,6 +313,22 @@ export async function POST(request: Request) {
                 await prisma.staffAttendanceRecord.deleteMany({
                     where: { staffId, workDate: date }
                 });
+
+                // Cập nhật lại chính xác compensatedDays cho các ca trực liên quan từ DB thực tế
+                for (const dutyId of Array.from(dutyIdsToRecalc)) {
+                    const targetDuty = await prisma.staffDutyRecord.findUnique({ where: { id: dutyId } });
+                    if (targetDuty) {
+                        const remainingComps = await prisma.staffAttendanceRecord.findMany({ where: { dutyRecordId: dutyId } });
+                        const totalComp = remainingComps.reduce((acc, c) => acc + (c.value || (c.code === 'Nb/2' || c.session === 'MORNING' || c.session === 'AFTERNOON' ? 0.5 : 1.0)), 0);
+                        await prisma.staffDutyRecord.update({
+                            where: { id: dutyId },
+                            data: {
+                                compensatedDays: totalComp,
+                                isFullyCompensated: totalComp >= targetDuty.allowanceDays
+                            }
+                        });
+                    }
+                }
 
                 return NextResponse.json({ success: true, message: `Đã xóa chấm công ngày ${date}` });
             }
@@ -400,24 +404,9 @@ export async function POST(request: Request) {
 
             // Cập nhật hoặc tạo mới bản ghi chấm công
             let updatedAttendance;
-            if (existingAttendance) {
-                // Nếu đổi ca trực liên kết hoặc đổi hình thức nghỉ bù -> hoàn lại ca cũ và trừ ca mới
-                if (existingAttendance.dutyRecordId && existingAttendance.dutyRecordId !== finalDutyRecordId) {
-                    const oldDuty = await prisma.staffDutyRecord.findUnique({
-                        where: { id: existingAttendance.dutyRecordId }
-                    });
-                    if (oldDuty) {
-                        const restoredComp = Math.max(0, oldDuty.compensatedDays - (existingAttendance.value || 0.5));
-                        await prisma.staffDutyRecord.update({
-                            where: { id: oldDuty.id },
-                            data: {
-                                compensatedDays: restoredComp,
-                                isFullyCompensated: restoredComp >= oldDuty.allowanceDays
-                            }
-                        });
-                    }
-                }
+            const oldDutyRecordId = existingAttendance?.dutyRecordId;
 
+            if (existingAttendance) {
                 updatedAttendance = await prisma.staffAttendanceRecord.update({
                     where: { id: existingAttendance.id },
                     data: {
@@ -458,18 +447,33 @@ export async function POST(request: Request) {
                 });
             }
 
-            // Nếu chấm Nghỉ bù -> Tính lại chính xác tổng compensatedDays từ các bản ghi bù
+            // Đồng bộ lại chính xác compensatedDays cho ca trực cũ (nếu có thay đổi)
+            if (oldDutyRecordId && oldDutyRecordId !== (isNb ? finalDutyRecordId : null)) {
+                const oldDuty = await prisma.staffDutyRecord.findUnique({ where: { id: oldDutyRecordId } });
+                if (oldDuty) {
+                    const remainingOldComps = await prisma.staffAttendanceRecord.findMany({ where: { dutyRecordId: oldDutyRecordId } });
+                    const oldTotalComp = remainingOldComps.reduce((acc, c) => acc + (c.value || (c.code === 'Nb/2' || c.session === 'MORNING' || c.session === 'AFTERNOON' ? 0.5 : 1.0)), 0);
+                    await prisma.staffDutyRecord.update({
+                        where: { id: oldDutyRecordId },
+                        data: {
+                            compensatedDays: oldTotalComp,
+                            isFullyCompensated: oldTotalComp >= oldDuty.allowanceDays
+                        }
+                    });
+                }
+            }
+
+            // Đồng bộ lại chính xác compensatedDays cho ca trực mới (nếu là nghỉ bù)
             if (isNb && finalDutyRecordId) {
                 const targetDuty = await prisma.staffDutyRecord.findUnique({
-                    where: { id: finalDutyRecordId },
-                    include: { compensations: true }
+                    where: { id: finalDutyRecordId }
                 });
 
                 if (targetDuty) {
                     const allComps = await prisma.staffAttendanceRecord.findMany({
                         where: { dutyRecordId: finalDutyRecordId }
                     });
-                    const totalComp = allComps.reduce((acc, c) => acc + (c.code === 'Nb/2' || c.session === 'HALF_DAY' ? 0.5 : 1.0), 0);
+                    const totalComp = allComps.reduce((acc, c) => acc + (c.value || (c.code === 'Nb/2' || c.session === 'MORNING' || c.session === 'AFTERNOON' ? 0.5 : 1.0)), 0);
                     await prisma.staffDutyRecord.update({
                         where: { id: finalDutyRecordId },
                         data: {
