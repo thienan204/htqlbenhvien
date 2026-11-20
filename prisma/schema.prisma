@@ -2225,3 +2225,40 @@ model StaffLeaveRequest {
 
 
 
+
+
+model StaffAttendanceDriveConfig {
+  id                String    @id @default(cuid())
+  scope             String    @default("DEPARTMENT") // "DEPARTMENT" | "USER" | "SYSTEM"
+  targetId          String    // ma_khoa hoặc userId hoặc "SYSTEM"
+  method            String    @default("APPS_SCRIPT") // "APPS_SCRIPT" | "OAUTH" | "SERVICE_ACCOUNT"
+  isEnabled         Boolean   @default(true)
+
+  // Phương thức 1: Google Apps Script Webhook
+  webhookUrl        String?
+
+  // Phương thức 2: OAuth 2.0 cá nhân
+  oauthEmail        String?
+  accessToken       String?
+  refreshToken      String?
+  tokenExpiry       DateTime?
+  folderId          String?
+
+  // Phương thức 3: Google Drive tập trung Bệnh viện
+  centralFolderId   String?
+  serviceAccountKey String?
+  notifyEmail       String?
+
+  // Cấu hình tự động & Theo dõi lịch sử
+  autoSyncOnLock    Boolean   @default(true)
+  lastSyncAt        DateTime?
+  lastSyncStatus    String?   // "SUCCESS" | "FAILED"
+  lastSyncMessage   String?
+  lastSyncFolderUrl String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([scope, targetId])
+  @@index([targetId])
+}

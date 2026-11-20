@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Card, Tabs, Select, DatePicker, Input, Button, Tag, Dropdown, Tooltip, Alert, Popconfirm, message, Modal, Radio } from 'antd';
+import { Card, Tabs, Select, DatePicker, Input, Button, Tag, Dropdown, Tooltip, Alert, Popconfirm, message, Modal, Radio, type MenuProps } from 'antd';
 import {
     ScheduleOutlined,
     CalendarOutlined,
@@ -19,11 +19,14 @@ import {
     FileExcelOutlined,
     FileTextOutlined,
     SettingOutlined,
-    ExperimentOutlined
+    ExperimentOutlined,
+    CloudSyncOutlined
 } from '@ant-design/icons';
 import { AttendanceProvider, useAttendance } from './AttendanceContext';
 import { NoteEditModal } from './_components/NoteEditModal';
 import { HospitalAttendanceConfigModal } from './_components/HospitalAttendanceConfigModal';
+import { AttendanceDriveConfigModal } from './_components/AttendanceDriveConfigModal';
+import { AttendanceDriveSyncModal } from './_components/AttendanceDriveSyncModal';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -46,6 +49,8 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     } = useAttendance();
 
     const [hospitalConfigOpen, setHospitalConfigOpen] = React.useState(false);
+    const [driveConfigOpen, setDriveConfigOpen] = React.useState(false);
+    const [driveSyncOpen, setDriveSyncOpen] = React.useState(false);
 
     // Xác định tab đang active dựa theo URL
     const activeKey = React.useMemo(() => {
@@ -82,7 +87,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
         window.open(`${basePath}/api/staff/attendance/export-excel?monthYear=${monthYear}&ma_khoa=${selectedDept}&type=${type}`, '_blank');
     };
 
-    const exportMenuItems = [
+    const exportMenuItems: MenuProps['items'] = [
         {
             key: 'export_cong',
             label: '1. Xuất Bảng Chấm Công Chuẩn Mẫu',
@@ -118,6 +123,19 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
             label: '6. Xuất Bảng Chấm Công Bồi Dưỡng Hiện Vật (Độc Hại)',
             icon: <FileExcelOutlined className="text-rose-600" />,
             onClick: () => handleExportExcel('CHAM_DOC_HAI')
+        },
+        { type: 'divider' },
+        {
+            key: 'sync_google_drive',
+            label: '☁️ Đồng bộ 5 bảng lên Google Drive',
+            icon: <CloudSyncOutlined className="text-blue-600" />,
+            onClick: () => setDriveSyncOpen(true)
+        },
+        {
+            key: 'config_google_drive',
+            label: '⚙️ Cài đặt Google Drive (3 phương thức)',
+            icon: <SettingOutlined className="text-slate-500" />,
+            onClick: () => setDriveConfigOpen(true)
         }
     ];
 
@@ -302,6 +320,15 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                             </Button>
                         )}
                         <Button
+                            size="small"
+                            icon={<CloudSyncOutlined className="text-blue-500" />}
+                            onClick={() => setDriveConfigOpen(true)}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-50 font-medium"
+                            title="Cấu hình sao lưu Google Drive (Apps Script, OAuth, Drive Viện)"
+                        >
+                            ☁️ Cài Đặt Google Drive
+                        </Button>
+                        <Button
                             type="text"
                             size="small"
                             icon={<InfoCircleOutlined className={showGuide ? "text-blue-600" : "text-slate-400"} />}
@@ -484,6 +511,17 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                                 </div>
                             </div>
                         </Modal>
+
+                        {/* Nút Đồng bộ Google Drive */}
+                        <Button
+                            type="primary"
+                            icon={<CloudSyncOutlined />}
+                            onClick={() => setDriveSyncOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-500 font-medium text-white shadow-sm"
+                            title="Tự động đồng bộ 5 bảng Excel chuẩn mẫu lên Google Drive"
+                        >
+                            ☁️ Đồng Bộ Google Drive
+                        </Button>
 
                         {/* Nút Xuất Excel */}
                         <Dropdown menu={{ items: exportMenuItems }}>
@@ -694,6 +732,27 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                     onClose={() => setHospitalConfigOpen(false)}
                 />
             )}
+
+            {/* Modal Cấu Hình Sao Lưu Google Drive */}
+            <AttendanceDriveConfigModal
+                open={driveConfigOpen}
+                onClose={() => setDriveConfigOpen(false)}
+                ma_khoa={selectedDept}
+                deptName={matrixData?.ten_khoa || selectedDept}
+            />
+
+            {/* Modal Tiến Trình Đồng Bộ Google Drive */}
+            <AttendanceDriveSyncModal
+                open={driveSyncOpen}
+                onClose={() => setDriveSyncOpen(false)}
+                onOpenConfig={() => {
+                    setDriveSyncOpen(false);
+                    setDriveConfigOpen(true);
+                }}
+                monthYear={selectedDate.format('YYYY-MM')}
+                ma_khoa={selectedDept}
+                deptName={matrixData?.ten_khoa || selectedDept}
+            />
         </div>
     );
 };
