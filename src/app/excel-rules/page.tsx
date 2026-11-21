@@ -552,14 +552,15 @@ export default function ExcelRulesPage() {
                             <Form.Item 
                                 label="Tỷ lệ dịch vụ bỏ qua nếu trùng (Nằm ghép)" 
                                 name="ignoredRates"
-                                tooltip="Nhập các tỷ lệ phần trăm (VD: 50 cho ghép 2, 30 cho ghép 3) rồi ấn Enter. Nếu các dòng trùng nhau cùng giường đều có tỷ lệ này thì hệ thống sẽ bỏ qua không báo lỗi."
+                                tooltip="Nhập các tỷ lệ phần trăm (VD: 50 cho ghép 2, 30 hoặc 33 cho ghép 3) rồi ấn Enter. Chỉ bỏ qua khi tổng tỷ lệ giường của các bệnh nhân khác nhau <= 100%."
                             >
                                 <Select
                                     mode="tags"
-                                    placeholder="Nhập tỷ lệ (VD: 50, 30...) rồi ấn Enter"
+                                    placeholder="Nhập tỷ lệ (VD: 50, 30, 33...) rồi ấn Enter"
                                     options={[
                                         { value: '50', label: '50% (Ghép 2 người)' },
-                                        { value: '30', label: '30% (Ghép 3 người trở lên)' }
+                                        { value: '30', label: '30% (Ghép 3 người trở lên)' },
+                                        { value: '33', label: '33% (Ghép 3 người - 1/3)' }
                                     ]}
                                     style={{ width: '100%' }}
                                 />

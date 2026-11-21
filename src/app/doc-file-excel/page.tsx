@@ -30,6 +30,80 @@ const normalizeRate = (val: any): string => {
     return str;
 };
 
+const parseRateNumeric = (val: any): number => {
+    if (val === null || val === undefined || val === '') return 0;
+    let str = String(val).replace('%', '').trim();
+    const num = Number(str);
+    if (!isNaN(num)) {
+        if (num > 0 && num <= 1) {
+            return num * 100;
+        }
+        return num;
+    }
+    return 0;
+};
+
+const isValidBedSharingGroup = (
+    groupItems: any[],
+    rateColIdx: number,
+    patientColIdx: number,
+    allowedRatesList?: string[]
+): boolean => {
+    if (rateColIdx === -1 || groupItems.length < 2) return false;
+
+    const allowedSet = new Set<string>();
+    if (allowedRatesList && allowedRatesList.length > 0) {
+        allowedRatesList.forEach(r => {
+            const norm = normalizeRate(r);
+            if (norm) {
+                allowedSet.add(norm);
+                if (norm === '30') allowedSet.add('33');
+                if (norm === '33') allowedSet.add('30');
+            }
+        });
+    }
+
+    const patientRatesMap: Record<string, number[]> = {};
+
+    groupItems.forEach((it, idx) => {
+        const pid = (patientColIdx !== -1 && it[patientColIdx] !== undefined && String(it[patientColIdx]).trim() !== '')
+            ? String(it[patientColIdx]).trim()
+            : `__row_${idx}`;
+        
+        const rNum = parseRateNumeric(it[rateColIdx]);
+        if (!patientRatesMap[pid]) patientRatesMap[pid] = [];
+        patientRatesMap[pid].push(rNum);
+    });
+
+    const uniquePids = Object.keys(patientRatesMap);
+    // Phải có từ 2 bệnh nhân khác nhau trở lên
+    if (uniquePids.length < 2) return false;
+
+    let totalRate = 0;
+
+    for (const pid of uniquePids) {
+        const rates = patientRatesMap[pid];
+        const maxRate = Math.max(...rates);
+
+        // Bắt buộc tỷ lệ phải > 0 và < 100% (nếu có bất kỳ dòng nào 100% thì báo lỗi ngay, không bỏ qua)
+        if (maxRate <= 0 || maxRate >= 100) {
+            return false;
+        }
+
+        if (allowedSet.size > 0) {
+            const roundedStr = String(Math.round(maxRate));
+            if (!allowedSet.has(roundedStr)) {
+                return false;
+            }
+        }
+
+        totalRate += maxRate;
+    }
+
+    // Tổng tỷ lệ giường của các bệnh nhân khác nhau phải <= 100.5% (dung sai 0.5% cho 33% x 3)
+    return totalRate <= 100.5;
+};
+
 // --- Interfaces & Constants ---
 
 interface DuplicateRule {
@@ -629,7 +703,12 @@ export default function ExcelReaderPage() {
                             if (valA !== undefined && valB !== undefined) {
                                 const strA = String(valA).trim();
                                 const strB = String(valB).trim();
-                                if (strA !== '' && strA === strB) continue;
+                                if (strA !== '' && strA === strB) {
+                                    // Bỏ qua nếu cùng mã BN và thời gian bắt đầu, kết thúc giống hệt nhau (lỗi duplicate xuất từ HIS)
+                                    if (startA.getTime() === startB.getTime() && endA.getTime() === endB.getTime()) {
+                                        continue;
+                                    }
+                                }
                             }
                         }
 
@@ -683,14 +762,10 @@ export default function ExcelReaderPage() {
                     }
 
                     if (comp.length > 1) {
-                        // Bỏ qua nếu là nhóm nằm ghép hợp lệ theo tỷ lệ cấu hình (VD: ghép 2 = 50%, ghép 3 = 30%)
-                        if (rateColIdx !== -1 && ignoredRatesList.length > 0) {
+                        // Bỏ qua nếu là nhóm nằm ghép hợp lệ theo tỷ lệ (tổng tỷ lệ giường <= 100%, không lẫn dòng 100%)
+                        if (rateColIdx !== -1) {
                             const compItems = comp.map(idx => group[idx]);
-                            const isAllBedShare = compItems.every(it => {
-                                const r = normalizeRate(it[rateColIdx]);
-                                return r !== '' && ignoredRatesList.includes(r);
-                            });
-                            if (isAllBedShare) {
+                            if (isValidBedSharingGroup(compItems, rateColIdx, ignoreSameColIdx, ignoredRatesList)) {
                                 return;
                             }
                         }
@@ -791,18 +866,28 @@ export default function ExcelReaderPage() {
 
         if (tyleDvIdx === -1) return [];
 
-        // 2. Lấy danh sách tỷ lệ được bỏ qua: từ quy tắc nếu có, hoặc mặc định ['50', '30', '33']
-        const allowedRates = new Set<string>();
+        // 2. Tìm cột bệnh nhân (MA_BN)
+        let patientColIdx = -1;
+        const activeRulePatientCols = rules.filter(r => selectedRuleIds.includes(r.id) && r.ignoreIfSameField).map(r => r.ignoreIfSameField!);
+        for (const colName of activeRulePatientCols) {
+            const idx = headers.findIndex(h => h && String(h).toUpperCase().trim() === String(colName).toUpperCase().trim());
+            if (idx !== -1) {
+                patientColIdx = idx;
+                break;
+            }
+        }
+        if (patientColIdx === -1) {
+            const commonPatientCols = ['MA_BN', 'MABN', 'MA_BENH_NHAN', 'MA_BENHNHAN', 'SO_BENH_AN'];
+            patientColIdx = headers.findIndex(h => h && commonPatientCols.includes(String(h).toUpperCase().trim()));
+        }
+
+        // 3. Lấy danh sách tỷ lệ được bỏ qua: từ quy tắc nếu có, hoặc mặc định ['50', '30', '33']
+        const allowedRatesList: string[] = [];
         rules.filter(r => selectedRuleIds.includes(r.id) && r.ignoredRates && r.ignoredRates.length > 0).forEach(r => {
-            r.ignoredRates!.forEach(rate => {
-                const norm = normalizeRate(rate);
-                if (norm) allowedRates.add(norm);
-            });
+            allowedRatesList.push(...r.ignoredRates!);
         });
-        if (allowedRates.size === 0) {
-            allowedRates.add('50');
-            allowedRates.add('30');
-            allowedRates.add('33');
+        if (allowedRatesList.length === 0) {
+            allowedRatesList.push('50', '30', '33');
         }
 
         const groups = new Map<number, any[]>();
@@ -814,18 +899,14 @@ export default function ExcelReaderPage() {
             }
         });
 
-        const invalidGroups = new Set<number>();
+        const validBedShareGroups = new Set<number>();
         groups.forEach((items, gIdx) => {
-            const isAllBedShare = items.every(i => {
-                const r = normalizeRate(i[tyleDvIdx]);
-                return r !== '' && allowedRates.has(r);
-            });
-            if (isAllBedShare) {
-                invalidGroups.add(gIdx);
+            if (isValidBedSharingGroup(items, tyleDvIdx, patientColIdx, allowedRatesList)) {
+                validBedShareGroups.add(gIdx);
             }
         });
 
-        return tableData.filter(item => item.__groupIndex !== undefined && invalidGroups.has(item.__groupIndex));
+        return tableData.filter(item => item.__groupIndex !== undefined && validBedShareGroups.has(item.__groupIndex));
     }, [tableData, hide50Percent, headers, rules, selectedRuleIds]);
 
     const filteredTableData = React.useMemo(() => {
@@ -1039,7 +1120,7 @@ export default function ExcelReaderPage() {
                             )}
                             {hide50Percent && hidden50PercentDups.length > 0 && (
                                 <Tag color="error" className="ml-2 px-3 py-1 font-medium text-sm rounded-full">
-                                    Đã ẩn: {hidden50PercentDups.length} dòng nằm ghép
+                                    Đã ẩn: {hidden50PercentDups.length} dòng nằm ghép (tổng tỷ lệ ≤ 100%)
                                     <a
                                         className="ml-2 text-red-600 underline cursor-pointer hover:text-red-800"
                                         onClick={async (e) => {
