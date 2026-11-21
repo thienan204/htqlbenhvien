@@ -67,7 +67,8 @@ export async function POST(request: Request) {
             folderId,
             centralFolderId,
             notifyEmail,
-            autoSyncOnLock = true
+            autoSyncOnLock = true,
+            fileNamingStyle = 'MONTHLY'
         } = body;
 
         const effectiveTargetId = targetId || (scope === 'DEPARTMENT' ? (user.ma_khoa || 'KP046') : user.id);
@@ -87,7 +88,8 @@ export async function POST(request: Request) {
                 folderId: folderId ? folderId.trim() : null,
                 centralFolderId: centralFolderId ? centralFolderId.trim() : null,
                 notifyEmail: notifyEmail ? notifyEmail.trim() : null,
-                autoSyncOnLock
+                autoSyncOnLock,
+                fileNamingStyle
             },
             create: {
                 scope,
@@ -99,7 +101,8 @@ export async function POST(request: Request) {
                 folderId: folderId ? folderId.trim() : null,
                 centralFolderId: centralFolderId ? centralFolderId.trim() : null,
                 notifyEmail: notifyEmail ? notifyEmail.trim() : null,
-                autoSyncOnLock
+                autoSyncOnLock,
+                fileNamingStyle
             }
         });
 

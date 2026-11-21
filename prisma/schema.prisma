@@ -2251,6 +2251,7 @@ model StaffAttendanceDriveConfig {
 
   // Cấu hình tự động & Theo dõi lịch sử
   autoSyncOnLock    Boolean   @default(true)
+  fileNamingStyle   String    @default("MONTHLY") // "MONTHLY" (theo tháng, ghi đè snapshot) | "DAILY" (lưu theo ngày cụ thể)
   lastSyncAt        DateTime?
   lastSyncStatus    String?   // "SUCCESS" | "FAILED"
   lastSyncMessage   String?

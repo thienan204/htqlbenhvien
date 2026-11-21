@@ -61,7 +61,15 @@ export async function POST(request: Request) {
         const folderPath = `ChamCong_BVDKLS/${deptSafeName}/Nam_${year}/Thang_${month}`;
 
         // 3. Sinh toàn bộ 5 file Excel chuẩn mẫu của Bệnh viện
-        const files = await generateAllAttendanceWorkbooks(monthYear, ma_khoa, user.name || user.username || 'Người chấm công');
+        const fileNamingStyle = (body.fileNamingStyle || (config as any).fileNamingStyle || 'MONTHLY') as 'MONTHLY' | 'DAILY';
+        const targetDate = body.targetDate;
+        const files = await generateAllAttendanceWorkbooks(
+            monthYear,
+            ma_khoa,
+            user.name || user.username || 'Người chấm công',
+            fileNamingStyle,
+            targetDate
+        );
 
         let folderUrl: string | null = null;
         let syncStatus = 'SUCCESS';

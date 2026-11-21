@@ -141,6 +141,33 @@ Model `StaffAttendanceDriveConfig` lưu cấu hình đồng bộ linh hoạt the
     - `400 Bad Request`: Chưa cấu hình Google Drive hoặc thiếu tham số tháng năm.
     - `500 Server Error`: Quá trình sinh file Excel hoặc tải file lên bị gián đoạn.
 
+### 3.4. API Kết Xuất & Đóng Gói ZIP Lưu Máy Tính
+- **Endpoint**: `POST /api/staff/attendance/export-zip`
+  - **Headers**: `Content-Type: application/json`
+  - **Request Body**:
+    ```json
+    {
+      "ma_khoa": "KP046",
+      "monthYear": "2026-11",
+      "fileNamingStyle": "MONTHLY",
+      "targetDate": "2026-11-21",
+      "selectedKeys": ["CHAM_CONG", "CHAM_TRUC", "SO_DOI_SOAT", "CHAM_THEM_GIO", "CHAM_DOC_HAI"]
+    }
+    ```
+  - **Response Thành Công (200)**:
+    ```json
+    {
+      "success": true,
+      "zipFileName": "SaoLuu_ChamCong_Phong_Cong_Nghe_Thong_Tin_T11_2026.zip",
+      "zipBase64": "UEsDBB...",
+      "files": [
+        { "key": "CHAM_CONG", "fileName": "Bang_cham_cong_T11_2026_Phong_Cong_Nghe_Thong_Tin.xlsx", "base64": "..." }
+      ],
+      "totalFiles": 5,
+      "deptName": "Phòng Công nghệ thông tin"
+    }
+    ```
+
 ---
 
 ## 4. Các Component Giao Diện (Frontend Components)

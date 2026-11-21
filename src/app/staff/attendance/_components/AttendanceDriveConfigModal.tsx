@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Tabs, Form, Input, Button, Switch, Alert, message, Tag, Space, Card, Divider, Collapse } from 'antd';
+import { Modal, Tabs, Form, Input, Button, Switch, Alert, message, Tag, Space, Card, Divider, Collapse, Radio } from 'antd';
 import {
     CloudSyncOutlined,
     CopyOutlined,
@@ -129,7 +129,8 @@ export function AttendanceDriveConfigModal({
                         folderId: data.config.folderId || '',
                         centralFolderId: data.config.centralFolderId || '',
                         notifyEmail: data.config.notifyEmail || '',
-                        autoSyncOnLock: data.config.autoSyncOnLock !== false
+                        autoSyncOnLock: data.config.autoSyncOnLock !== false,
+                        fileNamingStyle: data.config.fileNamingStyle || 'MONTHLY'
                     });
                     setLastSyncInfo({
                         lastSyncAt: data.config.lastSyncAt,
@@ -141,7 +142,8 @@ export function AttendanceDriveConfigModal({
                     form.setFieldsValue({
                         method: 'APPS_SCRIPT',
                         isEnabled: true,
-                        autoSyncOnLock: true
+                        autoSyncOnLock: true,
+                        fileNamingStyle: 'MONTHLY'
                     });
                 }
             } catch (err) {
@@ -433,6 +435,22 @@ export function AttendanceDriveConfigModal({
                     </div>
                     <Form.Item name="autoSyncOnLock" valuePropName="checked" className="mb-0">
                         <Switch checkedChildren="BẬT" unCheckedChildren="TẮT" />
+                    </Form.Item>
+                </div>
+
+                <div className="p-3 bg-slate-50 border rounded mb-3 space-y-1.5">
+                    <div className="font-bold text-xs text-slate-800">Quy cách đặt tên tệp tin lưu trữ (Theo yêu cầu Khoa/Phòng):</div>
+                    <Form.Item name="fileNamingStyle" className="mb-0">
+                        <Radio.Group className="flex flex-col gap-2 pt-1">
+                            <Radio value="MONTHLY" className="text-xs">
+                                <span className="font-semibold text-slate-800">Lưu theo Tháng (Khuyên dùng):</span>
+                                <span className="text-slate-500 ml-1">Mỗi ngày bấm lưu sẽ cập nhật snapshot mới nhất của tháng (tên dạng <code>..._T11_2026_[TênKhoa].xlsx</code>)</span>
+                            </Radio>
+                            <Radio value="DAILY" className="text-xs">
+                                <span className="font-semibold text-slate-800">Lưu theo Ngày cụ thể:</span>
+                                <span className="text-slate-500 ml-1">Mỗi ngày lưu sẽ tạo 1 file riêng có ngày tháng (tên dạng <code>..._T11_2026_[TênKhoa]_2026-11-21.xlsx</code>)</span>
+                            </Radio>
+                        </Radio.Group>
                     </Form.Item>
                 </div>
 

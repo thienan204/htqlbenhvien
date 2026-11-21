@@ -20,7 +20,8 @@ import {
     FileTextOutlined,
     SettingOutlined,
     ExperimentOutlined,
-    CloudSyncOutlined
+    CloudSyncOutlined,
+    SaveOutlined
 } from '@ant-design/icons';
 import { AttendanceProvider, useAttendance } from './AttendanceContext';
 import { NoteEditModal } from './_components/NoteEditModal';
@@ -81,7 +82,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     // Xuất Excel
-    const handleExportExcel = (type: 'CHAM_CONG' | 'CHAM_TRUC' | 'TRUC_KEM' | 'TRUC_THUONG_TRU' | 'CHAM_THEM_GIO' | 'CHAM_DOC_HAI') => {
+    const handleExportExcel = (type: 'CHAM_CONG' | 'CHAM_TRUC' | 'SO_DOI_SOAT' | 'TRUC_KEM' | 'TRUC_THUONG_TRU' | 'CHAM_THEM_GIO' | 'CHAM_DOC_HAI') => {
         const basePath = getBasePath();
         const monthYear = selectedDate.format('YYYY-MM');
         window.open(`${basePath}/api/staff/attendance/export-excel?monthYear=${monthYear}&ma_khoa=${selectedDept}&type=${type}`, '_blank');
@@ -101,39 +102,45 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
             onClick: () => handleExportExcel('CHAM_TRUC')
         },
         {
+            key: 'export_doi_soat',
+            label: '3. Xuất Sổ Theo Dõi & Đối Soát Nghỉ Bù',
+            icon: <FileExcelOutlined className="text-purple-600" />,
+            onClick: () => handleExportExcel('SO_DOI_SOAT')
+        },
+        {
             key: 'export_truc_kem',
-            label: '3. Xuất Bảng Trực Kèm (Tk)',
+            label: '4. Xuất Bảng Trực Kèm (Tk)',
             icon: <FileExcelOutlined className="text-teal-600" />,
             onClick: () => handleExportExcel('TRUC_KEM')
         },
         {
             key: 'export_truc_thuong_tru',
-            label: '4. Xuất Bảng Trực Thường Trú (TT)',
+            label: '5. Xuất Bảng Trực Thường Trú (TT)',
             icon: <FileExcelOutlined className="text-indigo-600" />,
             onClick: () => handleExportExcel('TRUC_THUONG_TRU')
         },
         {
             key: 'export_them_gio',
-            label: '5. Xuất Bảng Chấm Thêm Giờ',
+            label: '6. Xuất Bảng Chấm Thêm Giờ',
             icon: <FileExcelOutlined className="text-amber-600" />,
             onClick: () => handleExportExcel('CHAM_THEM_GIO')
         },
         {
             key: 'export_doc_hai',
-            label: '6. Xuất Bảng Chấm Công Bồi Dưỡng Hiện Vật (Độc Hại)',
+            label: '7. Xuất Bảng Chấm Công Bồi Dưỡng Hiện Vật (Độc Hại)',
             icon: <FileExcelOutlined className="text-rose-600" />,
             onClick: () => handleExportExcel('CHAM_DOC_HAI')
         },
         { type: 'divider' },
         {
-            key: 'sync_google_drive',
-            label: '☁️ Đồng bộ 5 bảng lên Google Drive',
-            icon: <CloudSyncOutlined className="text-blue-600" />,
+            key: 'sync_all_backup',
+            label: '💾 Lưu trọn bộ 5 bảng (Máy tính & Drive)',
+            icon: <SaveOutlined className="text-blue-600" />,
             onClick: () => setDriveSyncOpen(true)
         },
         {
             key: 'config_google_drive',
-            label: '⚙️ Cài đặt Google Drive (3 phương thức)',
+            label: '⚙️ Cài đặt Sao lưu & Google Drive (3 phương thức)',
             icon: <SettingOutlined className="text-slate-500" />,
             onClick: () => setDriveConfigOpen(true)
         }
@@ -512,15 +519,15 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                             </div>
                         </Modal>
 
-                        {/* Nút Đồng bộ Google Drive */}
+                        {/* Nút Lưu Trọn Bộ Máy Tính & Đồng bộ Google Drive */}
                         <Button
                             type="primary"
-                            icon={<CloudSyncOutlined />}
+                            icon={<SaveOutlined />}
                             onClick={() => setDriveSyncOpen(true)}
                             className="bg-blue-600 hover:bg-blue-500 font-medium text-white shadow-sm"
-                            title="Tự động đồng bộ 5 bảng Excel chuẩn mẫu lên Google Drive"
+                            title="Lưu trọn bộ 5 bảng Excel vào máy tính (nhớ thư mục) và đồng bộ Google Drive"
                         >
-                            ☁️ Đồng Bộ Google Drive
+                            💾 Lưu Máy Tính & Drive
                         </Button>
 
                         {/* Nút Xuất Excel */}
@@ -750,6 +757,7 @@ const AttendanceLayoutInner: React.FC<{ children: React.ReactNode }> = ({ childr
                     setDriveConfigOpen(true);
                 }}
                 monthYear={selectedDate.format('YYYY-MM')}
+                selectedDateStr={selectedDate.format('YYYY-MM-DD')}
                 ma_khoa={selectedDept}
                 deptName={matrixData?.ten_khoa || selectedDept}
             />
