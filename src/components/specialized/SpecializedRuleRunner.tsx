@@ -524,6 +524,11 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             const maBs = item.MA_BS || item.MA_BAC_SI || '';
                             const nguoiThucHien = item.NGUOI_THUC_HIEN || '';
 
+                            const rateFieldName = fields?.rate || 'TYLE_TT_DV';
+                            const dynamicRate = item[rateFieldName] !== undefined && item[rateFieldName] !== '' 
+                                ? item[rateFieldName] 
+                                : (item.TYLE_TT_DV !== undefined && item.TYLE_TT_DV !== '' ? item.TYLE_TT_DV : (item.TYLE_TT_BH || ''));
+
                             keyValues.forEach((keyValue, kIndex) => {
                                 list.push({
                                     key: `${record.id}_${item.MA_DICH_VU}_${index}_${kIndex}`,
@@ -544,7 +549,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                                     MA_GIUONG: item.MA_GIUONG || '', // Keep original MA_GIUONG for columns
                                     KEY_VALUE: keyValue || '',       // The dynamic value (e.g., Doctor code, Machine code)
                                     TYLE_BH: item.TYLE_TT_BH || '',
-                                    TYLE_DV: item.TYLE_TT_DV || '',
+                                    TYLE_DV: dynamicRate,
                                     NGAY_YL: item.NGAY_YL || '',
                                     NGAY_KQ: item.NGAY_KQ || '',
                                     NGAY_VAO: record.summary?.NGAY_VAO || '',
@@ -681,6 +686,57 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                     }
 
                     if (component.length > 1) {
+                        // Kiểm tra quy tắc nằm ghép theo tỷ lệ BHYT
+                        const isBedRule = rule.logicConfig?.filter?.MA_NHOM == 15 || rule.slug?.includes('giuong');
+                        let isValidBedSharing = false;
+                        let errorReason = '';
+
+                        if (isBedRule) {
+                            const patientRatesMap: Record<string, number[]> = {};
+                            component.forEach(idx => {
+                                const it = items[idx];
+                                const pid = String(it.MA_BN || it.MA_LK || it.recordId || idx);
+                                let r = Number(it.TYLE_DV);
+                                if (isNaN(r) || r <= 0) r = 100;
+                                if (!patientRatesMap[pid]) patientRatesMap[pid] = [];
+                                patientRatesMap[pid].push(r);
+                            });
+
+                            const uniquePids = Object.keys(patientRatesMap);
+
+                            if (uniquePids.length >= 2) {
+                                const hasBedSingle = uniquePids.some(pid => Math.max(...patientRatesMap[pid]) >= 100);
+                                const totalRate = uniquePids.reduce((sum, pid) => sum + Math.max(...patientRatesMap[pid]), 0);
+
+                                // Nằm ghép hợp lệ:
+                                // - Tuyệt đối không có BN nào kê >= 100% (giường đơn)
+                                // - Tổng tỷ lệ các BN <= 100.5% (Dung sai 0.5% cho 33.33% x 3)
+                                // - Thỏa mãn số người: Nếu 50% chỉ tối đa 2 BN, nếu 30% chỉ tối đa 3 BN
+                                if (!hasBedSingle && totalRate <= 100.5) {
+                                    isValidBedSharing = true;
+                                } else {
+                                    if (hasBedSingle) {
+                                        errorReason = `Trùng giường đơn: Có BN kê 100% (${uniquePids.length} BN)`;
+                                    } else if (uniquePids.length >= 3 && uniquePids.every(pid => Math.max(...patientRatesMap[pid]) === 50)) {
+                                        errorReason = `Ghép quá 2 BN: Có ${uniquePids.length} BN kê 50% (Tổng ${totalRate}%)`;
+                                    } else if (uniquePids.length >= 4 && uniquePids.every(pid => Math.max(...patientRatesMap[pid]) === 30 || Math.max(...patientRatesMap[pid]) === 33)) {
+                                        errorReason = `Ghép quá 3 BN: Có ${uniquePids.length} BN kê 30% (Tổng ${totalRate}%)`;
+                                    } else if (totalRate > 100.5) {
+                                        errorReason = `Bội thu tỷ lệ giường: ${uniquePids.length} BN (Tổng ${totalRate}%)`;
+                                    } else {
+                                        errorReason = `Trùng giường: ${uniquePids.length} BN`;
+                                    }
+                                }
+                            } else {
+                                errorReason = `Cùng 1 BN bị trùng nhiều dòng giường`;
+                            }
+                        }
+
+                        // Nếu là nằm ghép hợp lệ (2 BN 50% hoặc 3 BN 30% với tổng <= 100%) -> Tự động bỏ qua không báo lỗi
+                        if (isValidBedSharing) {
+                            return;
+                        }
+
                         const groupColor = DISTINCT_COLORS[globalColorIndex % DISTINCT_COLORS.length];
                         const groupId = `group_${globalColorIndex}`;
                         globalColorIndex++;
@@ -689,7 +745,8 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                             duplicateItems.push({
                                 ...items[idx],
                                 groupId,
-                                rowColor: groupColor
+                                rowColor: groupColor,
+                                ERROR_NOTE: errorReason
                             });
                         });
                     }
@@ -762,12 +819,22 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             const validGroups = new Set<string>();
             groups.forEach((items, key) => {
                 if (key.startsWith('group_')) {
-                    const isAllBedShare = items.every(i => {
-                        const r = Number(i.TYLE_DV);
-                        return r === 50 || r === 30 || r === 0.5 || r === 0.3;
+                    const patientRatesMap: Record<string, number[]> = {};
+                    items.forEach(it => {
+                        const pid = String(it.MA_BN || it.MA_LK || it.recordId);
+                        let r = Number(it.TYLE_DV);
+                        if (isNaN(r) || r <= 0) r = 100;
+                        if (!patientRatesMap[pid]) patientRatesMap[pid] = [];
+                        patientRatesMap[pid].push(r);
                     });
-                    if (!isAllBedShare) {
-                        validGroups.add(key);
+                    const uniquePids = Object.keys(patientRatesMap);
+                    const hasSingle = uniquePids.some(pid => Math.max(...patientRatesMap[pid]) >= 100);
+                    const totalRate = uniquePids.reduce((sum, pid) => sum + Math.max(...patientRatesMap[pid]), 0);
+
+                    // Chỉ coi là hợp lệ để ẩn nếu có >= 2 BN, không có dòng 100% và tổng tỷ lệ <= 100.5%
+                    const isAllBedShareValid = !hasSingle && uniquePids.length >= 2 && totalRate <= 100.5;
+                    if (!isAllBedShareValid) {
+                        validGroups.add(key); // Giữ lại cảnh báo các ca vi phạm (3 BN 50%, 4 BN 30%, hoặc có 100%)
                     }
                 } else {
                     validGroups.add(key);
@@ -802,6 +869,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
             { header: 'Số Lượng', key: 'SOLUONG', width: 10 },
             { header: 'Tỷ lệ BH', key: 'TYLE_BH', width: 10 },
             { header: 'Tỷ lệ DV', key: 'TYLE_DV', width: 10 },
+            { header: 'Cảnh báo lỗi', key: 'ERROR_NOTE', width: 30 },
             { header: 'Ngày Vào', key: 'NGAY_VAO', width: 20 },
             { header: 'Ngày Ra', key: 'NGAY_RA', width: 20 },
             { header: 'Ngày YL', key: 'NGAY_YL', width: 20 },
@@ -833,6 +901,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 SOLUONG: item.SOLUONG,
                 TYLE_BH: item.TYLE_BH,
                 TYLE_DV: item.TYLE_DV,
+                ERROR_NOTE: item.ERROR_NOTE || '',
                 NGAY_VAO: formatDateTime(item.NGAY_VAO),
                 NGAY_RA: formatDateTime(item.NGAY_RA),
                 NGAY_YL: formatDateTime(item.NGAY_YL),
@@ -904,6 +973,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                 { header: 'Số Lượng', key: 'SOLUONG', width: 10 },
                 { header: 'Tỷ lệ BH', key: 'TYLE_BH', width: 10 },
                 { header: 'Tỷ lệ DV', key: 'TYLE_DV', width: 10 },
+                { header: 'Cảnh báo lỗi', key: 'ERROR_NOTE', width: 30 },
                 { header: 'Ngày Vào', key: 'NGAY_VAO', width: 20 },
                 { header: 'Ngày Ra', key: 'NGAY_RA', width: 20 },
                 { header: 'Ngày YL', key: 'NGAY_YL', width: 20 },
@@ -938,6 +1008,7 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
                     SOLUONG: item.SOLUONG,
                     TYLE_BH: item.TYLE_BH,
                     TYLE_DV: item.TYLE_DV,
+                    ERROR_NOTE: item.ERROR_NOTE || '',
                     NGAY_VAO: formatDateTime(item.NGAY_VAO),
                     NGAY_RA: formatDateTime(item.NGAY_RA),
                     NGAY_YL: formatDateTime(item.NGAY_YL),
@@ -1443,7 +1514,11 @@ export default function SpecializedRuleRunner({ rule }: SpecializedRuleRunnerPro
         },
         {
             title: 'Tỷ lệ DV', dataIndex: 'TYLE_DV', key: 'TYLE_DV', width: 80, align: 'center' as const,
-            render: (v: any) => v ? <Tag color="cyan">{v}</Tag> : '-'
+            render: (v: any) => v ? <Tag color={Number(v) === 100 ? 'red' : Number(v) === 50 ? 'orange' : 'cyan'}>{v}</Tag> : '-'
+        },
+        {
+            title: 'Cảnh báo lỗi', dataIndex: 'ERROR_NOTE', key: 'ERROR_NOTE', width: 220,
+            render: (v: string) => v ? <Tag color="error" className="font-medium text-xs whitespace-normal">{v}</Tag> : '-'
         },
         {
             title: 'Ngày Vào', dataIndex: 'NGAY_VAO', key: 'NGAY_VAO', width: 150,

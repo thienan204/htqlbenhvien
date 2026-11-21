@@ -29,6 +29,7 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
                     bed: parsed.fields?.bed || 'MA_GIUONG',
                     startTime: parsed.fields?.startTime || 'NGAY_YL',
                     endTime: parsed.fields?.endTime || 'NGAY_KQ',
+                    rateField: parsed.fields?.rate || parsed.rateField || 'TYLE_TT_DV',
                     maNhom: parsed.filter?.MA_NHOM !== undefined ? parsed.filter.MA_NHOM : 15,
                     tyleTtDv: parsed.filter?.TYLE_TT_DV || '',
                     includeServices: parsed.filter?.MA_DICH_VU_INCLUDE || [],
@@ -43,6 +44,7 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
             bed: 'MA_GIUONG',
             startTime: 'NGAY_YL',
             endTime: 'NGAY_KQ',
+            rateField: 'TYLE_TT_DV',
             maNhom: 15,
             tyleTtDv: '',
             includeServices: [],
@@ -89,7 +91,8 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
                     room: "MA_PHONG", // Default hardcoded for now or allow config if needed
                     department: "MA_KHOA",
                     startTime: newState.startTime,
-                    endTime: newState.endTime
+                    endTime: newState.endTime,
+                    rate: newState.rateField || 'TYLE_TT_DV'
                 },
                 filter: filter,
                 toleranceMinutes: Number(newState.tolerance),
@@ -177,6 +180,32 @@ const DuplicateBedConfigInput = ({ value, onChange }: { value?: string, onChange
                             onChange={(v) => handleChange('ignoreNullValues', v)}
                         />
                         <span className="text-sm text-slate-600">Tự động bỏ qua không quét các dịch vụ không có mã</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Trường Tỷ lệ (Field Tỷ lệ XML)</label>
+                    <Select
+                        mode="tags"
+                        maxCount={1}
+                        value={state.rateField ? [state.rateField] : ['TYLE_TT_DV']}
+                        onChange={(v) => handleChange('rateField', v[0] || 'TYLE_TT_DV')}
+                        className="w-full"
+                        placeholder="VD: TYLE_TT_DV, TYLE_TT_BH, TYLE_TT..."
+                        options={[
+                            { label: 'TYLE_TT_DV (Tỷ lệ TT Dịch Vụ - Mặc định)', value: 'TYLE_TT_DV' },
+                            { label: 'TYLE_TT_BH (Tỷ lệ TT BHYT)', value: 'TYLE_TT_BH' },
+                            { label: 'TYLE_TT (Tỷ lệ Thanh Toán)', value: 'TYLE_TT' }
+                        ]}
+                    />
+                    <div className="text-xs text-slate-400 mt-1">Trường XML3 chứa tỷ lệ thanh toán (Dùng kiểm tra nằm ghép: 50%, 30%).</div>
+                </div>
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Quy tắc Nằm ghép Tự động</label>
+                    <div className="text-xs text-slate-600 bg-amber-50/80 p-2 rounded border border-amber-200/60 leading-relaxed mt-0.5">
+                        <span className="font-semibold text-amber-800">Quy tắc:</span> Ghép 2 BN 50% (Tổng ≤ 100%) hoặc 3 BN 30% (Tổng ≤ 100%) là hợp lệ. Nếu ≥ 3 BN 50% hoặc ≥ 4 BN 30% hoặc có BN 100% sẽ tự động báo lỗi.
                     </div>
                 </div>
             </div>
