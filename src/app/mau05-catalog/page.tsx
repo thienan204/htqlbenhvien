@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Tag, Switch, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, HeartOutlined, ContainerOutlined, ExperimentOutlined, CloudSyncOutlined, FileExcelOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Tag, Switch, Select, Badge, Alert } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, HeartOutlined, ContainerOutlined, ExperimentOutlined, CloudSyncOutlined, FileExcelOutlined, AuditOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,15 +15,116 @@ export default function Mau05CatalogPage() {
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
-    const [machineFilter, setMachineFilter] = useState<'ALL' | 'REQUIRED' | 'NOT_REQUIRED'>('ALL');
+    const [machineFilter, setMachineFilter] = useState<'ALL' | 'REQUIRED' | 'NOT_REQUIRED' | 'DISCREPANT'>('ALL');
     const [sourceFilter, setSourceFilter] = useState<'ALL' | 'BENH_VIEN' | 'BHYT_PORTAL'>('ALL');
     const [syncLoading, setSyncLoading] = useState(false);
+    const [auditData, setAuditData] = useState<any>(null);
+    const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+    const [auditLoading, setAuditLoading] = useState(false);
+    const [restoringAudit, setRestoringAudit] = useState(false);
+    const [uploadingAuditFile, setUploadingAuditFile] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [togglingMachineId, setTogglingMachineId] = useState<string | null>(null);
     const { user } = useAuth();
+
+    const fetchAuditData = async () => {
+        try {
+            setAuditLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau05-catalog/audit-bhyt`);
+            if (res.ok) {
+                const result = await res.json();
+                if (result.success) {
+                    setAuditData(result);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching audit data:', err);
+        } finally {
+            setAuditLoading(false);
+        }
+    };
+
+    const handleUploadAndAudit = (file: any) => {
+        const reader = new FileReader();
+        setUploadingAuditFile(true);
+        reader.onload = async (e) => {
+            try {
+                const dataBuffer = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(dataBuffer, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                if (!jsonData || jsonData.length === 0) {
+                    message.warning('File Excel trống!');
+                    setUploadingAuditFile(false);
+                    return;
+                }
+
+                const res = await fetch(`${getBasePath()}/api/mau05-catalog/audit-bhyt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'AUDIT_UPLOAD',
+                        rows: jsonData,
+                        fileName: file.name
+                    })
+                });
+
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    setAuditData(result);
+                    setIsAuditModalOpen(true);
+                    message.success(`Đối soát thành công với file: ${file.name} (${result.totalExcelCodes} mã)!`);
+                } else {
+                    message.error(result.error || 'Lỗi khi đối soát file');
+                }
+            } catch (err) {
+                message.error('Lỗi đọc file Excel');
+            } finally {
+                setUploadingAuditFile(false);
+            }
+        };
+        reader.readAsArrayBuffer(file as Blob);
+    };
+
+    const handleRestoreAllFromAudit = async () => {
+        try {
+            setRestoringAudit(true);
+            const payload = auditData?.source === 'UPLOAD'
+                ? { action: 'RESTORE_FROM_UPLOAD', ids: auditData?.discrepantList?.map((d: any) => d.id) }
+                : { action: 'RESTORE_ALL' };
+
+            const res = await fetch(`${getBasePath()}/api/mau05-catalog/audit-bhyt`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                message.success(result.message || 'Đã bật lại mã máy thành công!');
+                fetchData();
+                if (auditData?.source === 'UPLOAD') {
+                    setAuditData((prev: any) => ({
+                        ...prev,
+                        matchedCount: (prev?.matchedCount || 0) + (prev?.discrepantOffCount || 0),
+                        discrepantOffCount: 0,
+                        discrepantList: []
+                    }));
+                } else {
+                    fetchAuditData();
+                }
+            } else {
+                message.error(result.error || 'Thao tác thất bại');
+            }
+        } catch (err) {
+            message.error('Lỗi khi bật lại danh mục');
+        } finally {
+            setRestoringAudit(false);
+        }
+    };
 
     const handleSyncFromBHYTServer = async () => {
         try {
@@ -39,6 +140,7 @@ export default function Mau05CatalogPage() {
                     6
                 );
                 fetchData();
+                fetchAuditData();
             } else {
                 message.error(result.error || 'Đồng bộ thất bại');
             }
@@ -56,6 +158,7 @@ export default function Mau05CatalogPage() {
             if (!res.ok) throw new Error('Failed to fetch data');
             const result = await res.json();
             setData(result);
+            fetchAuditData();
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -65,6 +168,7 @@ export default function Mau05CatalogPage() {
 
     useEffect(() => {
         fetchData();
+        fetchAuditData();
     }, []);
 
     useEffect(() => {
@@ -143,6 +247,7 @@ export default function Mau05CatalogPage() {
                 message.success('Lưu thành công');
                 setIsModalOpen(false);
                 fetchData();
+                fetchAuditData();
             } else {
                 message.error('Lỗi khi lưu');
             }
@@ -162,6 +267,7 @@ export default function Mau05CatalogPage() {
             if (res.ok) {
                 message.success('Đã cập nhật trạng thái');
                 setData(prev => prev.map(item => item.id === id ? { ...item, isActive: checked } : item));
+                fetchAuditData();
             } else {
                 message.error('Cập nhật thất bại');
             }
@@ -185,6 +291,7 @@ export default function Mau05CatalogPage() {
                 message.success(`Đã cập nhật trạng thái cho ${selectedRowKeys.length} dòng`);
                 setSelectedRowKeys([]);
                 fetchData();
+                fetchAuditData();
             } else {
                 message.error('Cập nhật thất bại');
             }
@@ -206,6 +313,20 @@ export default function Mau05CatalogPage() {
             if (res.ok) {
                 message.success(checked ? 'Đã bật bắt buộc mã máy' : 'Đã bỏ yêu cầu mã máy');
                 setData(prev => prev.map(item => item.id === id ? { ...item, bat_buoc_co_ma_may: checked } : item));
+                if (auditData?.source === 'UPLOAD') {
+                    setAuditData((prev: any) => {
+                        if (!prev) return prev;
+                        const newList = prev.discrepantList?.filter((item: any) => item.id !== id) || [];
+                        return {
+                            ...prev,
+                            matchedCount: checked ? (prev.matchedCount || 0) + 1 : Math.max(0, (prev.matchedCount || 0) - 1),
+                            discrepantOffCount: newList.length,
+                            discrepantList: newList
+                        };
+                    });
+                } else {
+                    fetchAuditData();
+                }
             } else {
                 message.error('Cập nhật thất bại');
             }
@@ -229,6 +350,7 @@ export default function Mau05CatalogPage() {
                 message.success(`Đã cập nhật yêu cầu mã máy cho ${selectedRowKeys.length} dòng`);
                 setSelectedRowKeys([]);
                 fetchData();
+                fetchAuditData();
             } else {
                 message.error('Cập nhật thất bại');
             }
@@ -402,6 +524,10 @@ export default function Mau05CatalogPage() {
 
         if (machineFilter === 'REQUIRED' && !item.bat_buoc_co_ma_may) return false;
         if (machineFilter === 'NOT_REQUIRED' && item.bat_buoc_co_ma_may) return false;
+        if (machineFilter === 'DISCREPANT') {
+            const discrepantIdSet = new Set(auditData?.discrepantList?.map((d: any) => d.id) || []);
+            if (!discrepantIdSet.has(item.id)) return false;
+        }
 
         if (sourceFilter === 'BENH_VIEN' && item.nguon_du_lieu === 'BHYT_PORTAL') return false;
         if (sourceFilter === 'BHYT_PORTAL' && item.nguon_du_lieu !== 'BHYT_PORTAL') return false;
@@ -428,10 +554,29 @@ export default function Mau05CatalogPage() {
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
-                    <Card size="small" className="bg-white border-red-200 shadow-sm">
-                        <div className="text-xs text-red-600 font-medium">Bắt buộc có mã máy</div>
+                    <Card 
+                        size="small" 
+                        className={`bg-white shadow-sm transition-all ${auditData?.discrepantOffCount > 0 ? 'border-amber-400 hover:border-amber-500 cursor-pointer shadow-amber-50' : 'border-red-200'}`}
+                        onClick={() => {
+                            if (auditData?.discrepantOffCount > 0) setIsAuditModalOpen(true);
+                        }}
+                    >
+                        <div className="flex justify-between items-center">
+                            <div className="text-xs text-red-600 font-medium">Bắt buộc có mã máy</div>
+                            {auditData?.discrepantOffCount > 0 && (
+                                <Tag color="warning" className="cursor-pointer m-0 font-semibold animate-pulse">
+                                    ⚠️ {auditData.discrepantOffCount} DV đang TẮT
+                                </Tag>
+                            )}
+                        </div>
                         <div className="text-2xl font-bold text-red-700">{machineReqCount.toLocaleString()}</div>
-                        <div className="text-xs text-slate-400 mt-1">Kiểm soát chặt chẽ XML3</div>
+                        <div className="text-xs text-slate-400 mt-1">
+                            {auditData?.discrepantOffCount > 0 ? (
+                                <span className="text-amber-600 font-medium hover:underline">Nhấn đối soát với Cổng BHYT ↗</span>
+                            ) : (
+                                'Kiểm soát chặt chẽ XML3'
+                            )}
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
@@ -450,7 +595,7 @@ export default function Mau05CatalogPage() {
                             placeholder="Tìm Mã DV, Tên DV..." 
                             allowClear 
                             onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} 
-                            style={{ width: 240 }} 
+                            style={{ width: 220 }} 
                         />
                         <Select 
                             value={statusFilter} 
@@ -465,11 +610,17 @@ export default function Mau05CatalogPage() {
                         <Select 
                             value={machineFilter} 
                             onChange={val => { setMachineFilter(val); setCurrentPage(1); }}
-                            style={{ width: 180 }}
+                            style={{ minWidth: 200 }}
                             options={[
                                 { label: 'Tất cả mã máy', value: 'ALL' },
                                 { label: 'Bắt buộc có mã máy', value: 'REQUIRED' },
                                 { label: 'Không yêu cầu mã máy', value: 'NOT_REQUIRED' },
+                                { 
+                                    label: auditData?.discrepantOffCount > 0 
+                                        ? `⚠️ Lệch chuẩn BHYT (${auditData.discrepantOffCount} DV đang TẮT)` 
+                                        : 'Lệch chuẩn BHYT (0)', 
+                                    value: 'DISCREPANT' 
+                                },
                             ]}
                         />
                         <Select 
@@ -484,6 +635,20 @@ export default function Mau05CatalogPage() {
                         />
                     </Space>
                     <Space wrap>
+                        <Badge count={auditData?.discrepantOffCount || 0} offset={[-2, 2]}>
+                            <Button 
+                                type="default" 
+                                icon={<AuditOutlined />} 
+                                onClick={() => {
+                                    fetchAuditData();
+                                    setIsAuditModalOpen(true);
+                                }}
+                                className={auditData?.discrepantOffCount > 0 ? "border-amber-500 text-amber-700 bg-amber-50 font-semibold" : "border-slate-300 text-slate-700"}
+                            >
+                                Đối soát Cổng BHYT
+                            </Button>
+                        </Badge>
+
                         <Popconfirm
                             title="Xác nhận đồng bộ từ Server?"
                             description="Hệ thống sẽ đọc file BHYT trên máy chủ: DVKT chưa có sẽ thêm mới, DVKT đã có sẽ cập nhật cờ mã máy và lưu bản cũ vào lịch sử."
@@ -678,6 +843,236 @@ export default function Mau05CatalogPage() {
 
                         </div>
                     </Form>
+                </Modal>
+
+                {/* Modal Đối soát Danh mục Bắt buộc Mã máy với Cổng BHYT */}
+                <Modal
+                    title={
+                        <div className="flex items-center gap-2 text-slate-800">
+                            <AuditOutlined className="text-amber-600 text-xl" />
+                            <span className="font-bold text-lg">Đối soát Danh mục Bắt buộc Mã máy với Cổng BHYT</span>
+                        </div>
+                    }
+                    open={isAuditModalOpen}
+                    onCancel={() => setIsAuditModalOpen(false)}
+                    width={1000}
+                    footer={[
+                        <Button key="close" onClick={() => setIsAuditModalOpen(false)}>
+                            Đóng
+                        </Button>,
+                        auditData?.discrepantOffCount > 0 ? (
+                            <Button 
+                                key="filter" 
+                                onClick={() => {
+                                    setMachineFilter('DISCREPANT');
+                                    setIsAuditModalOpen(false);
+                                }}
+                            >
+                                Xem trên bảng chính ({auditData.discrepantOffCount})
+                            </Button>
+                        ) : null,
+                        auditData?.discrepantOffCount > 0 ? (
+                            <Popconfirm
+                                key="restore"
+                                title="Bật lại toàn bộ dịch vụ lệch chuẩn?"
+                                description={`Hệ thống sẽ bật lại cờ "Bắt buộc có mã máy" cho tất cả ${auditData.discrepantOffCount} dịch vụ theo đúng danh mục ${auditData?.source === 'UPLOAD' ? 'file vừa tải lên' : 'chuẩn của Cổng BHYT'}.`}
+                                onConfirm={handleRestoreAllFromAudit}
+                                okText="Bật ngay"
+                                cancelText="Hủy"
+                            >
+                                <Button 
+                                    type="primary" 
+                                    icon={<CheckCircleOutlined />} 
+                                    loading={restoringAudit}
+                                    className="bg-amber-600 hover:bg-amber-500 border-none"
+                                >
+                                    Bật lại toàn bộ ({auditData.discrepantOffCount} dịch vụ)
+                                </Button>
+                            </Popconfirm>
+                        ) : null
+                    ]}
+                >
+                    <div className="space-y-4 py-2">
+                        {/* Khu vực Tải lên file Excel trực tiếp để đối soát */}
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-amber-100 border border-amber-200 rounded-lg text-amber-700">
+                                    <FileExcelOutlined className="text-xl" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-800 text-sm">
+                                            {auditData?.fileName || 'File quy chuẩn trên máy chủ'}
+                                        </span>
+                                        {auditData?.source === 'UPLOAD' ? (
+                                            <Tag color="volcano" className="font-medium">File bạn tải lên</Tag>
+                                        ) : (
+                                            <Tag color="blue" className="font-medium">File máy chủ</Tag>
+                                        )}
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">
+                                        Tự tải lên file Excel mới từ Cổng BHYT để đối soát trực tiếp mà không cần cập nhật server
+                                    </div>
+                                </div>
+                            </div>
+                            <Space wrap>
+                                <Upload
+                                    beforeUpload={(file) => {
+                                        handleUploadAndAudit(file);
+                                        return false;
+                                    }}
+                                    showUploadList={false}
+                                    accept=".xlsx, .xls"
+                                >
+                                    <Button 
+                                        type="primary" 
+                                        icon={<UploadOutlined />} 
+                                        loading={uploadingAuditFile}
+                                        className="bg-amber-600 hover:bg-amber-500 border-none font-semibold shadow-sm"
+                                    >
+                                        Tải file Excel BHYT mới
+                                    </Button>
+                                </Upload>
+                                {auditData?.source === 'UPLOAD' && (
+                                    <Button 
+                                        icon={<CloudSyncOutlined />} 
+                                        onClick={() => fetchAuditData()}
+                                        title="Chuyển về đối soát với file gốc trên máy chủ"
+                                    >
+                                        Dùng lại file máy chủ
+                                    </Button>
+                                )}
+                            </Space>
+                        </div>
+
+                        {/* Summary Stats */}
+                        <Row gutter={[12, 12]}>
+                            <Col span={6}>
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                                    <div className="text-xs text-slate-500">
+                                        {auditData?.source === 'UPLOAD' ? 'Mã trong file upload' : 'Chuẩn Cổng BHYT'}
+                                    </div>
+                                    <div className="text-xl font-bold text-slate-800">{auditData?.totalExcelCodes?.toLocaleString() || 0}</div>
+                                    <div className="text-[11px] text-slate-400">
+                                        {auditData?.source === 'UPLOAD' ? 'File bạn vừa tải' : 'File quy chuẩn máy chủ'}
+                                    </div>
+                                </div>
+                            </Col>
+                            <Col span={6}>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                    <div className="text-xs text-blue-600">Đang dùng tại viện</div>
+                                    <div className="text-xl font-bold text-blue-700">{auditData?.totalActive?.toLocaleString() || 0}</div>
+                                    <div className="text-[11px] text-blue-400">Bản ghi hiệu lực</div>
+                                </div>
+                            </Col>
+                            <Col span={6}>
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                                    <div className="text-xs text-green-600">Đã chuẩn BHYT</div>
+                                    <div className="text-xl font-bold text-green-700">{auditData?.matchedCount?.toLocaleString() || 0}</div>
+                                    <div className="text-[11px] text-green-500">Đang BẬT mã máy</div>
+                                </div>
+                            </Col>
+                            <Col span={6}>
+                                <div className={`${auditData?.discrepantOffCount > 0 ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200'} border rounded-lg p-3 text-center`}>
+                                    <div className={`text-xs ${auditData?.discrepantOffCount > 0 ? 'text-amber-700 font-semibold' : 'text-slate-500'}`}>Lệch chuẩn BHYT</div>
+                                    <div className={`text-xl font-bold ${auditData?.discrepantOffCount > 0 ? 'text-amber-700' : 'text-slate-600'}`}>{auditData?.discrepantOffCount?.toLocaleString() || 0}</div>
+                                    <div className={`text-[11px] ${auditData?.discrepantOffCount > 0 ? 'text-amber-600 font-medium' : 'text-slate-400'}`}>
+                                        {auditData?.newInExcelCount > 0 ? `+ ${auditData.newInExcelCount} mã mới` : 'Đang bị TẮT mã máy'}
+                                    </div>
+                                </div>
+                            </Col>
+                        </Row>
+
+                        {/* Notice Alert */}
+                        {auditData?.discrepantOffCount > 0 ? (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                message={<span className="font-semibold text-amber-800">Cảnh báo rủi ro xuất toán XML3: Có {auditData.discrepantOffCount} dịch vụ BHYT yêu cầu mã máy nhưng đang bị TẮT</span>}
+                                description="Các dịch vụ này nằm trong danh mục quy định bắt buộc phải có mã máy của Cổng giám định BHYT. Nếu hồ sơ XML3 gửi đi mà trường MA_MAY để trống thì cổng BHYT sẽ từ chối thanh toán. Bạn có thể bật lại từng dịch vụ bằng công tắc bên dưới hoặc bấm 'Bật lại toàn bộ'."
+                            />
+                        ) : (
+                            <Alert
+                                type="success"
+                                showIcon
+                                message={<span className="font-semibold text-green-800">Danh mục hoàn toàn chuẩn xác</span>}
+                                description="Toàn bộ các dịch vụ kỹ thuật đang dùng tại bệnh viện có trong danh mục của Cổng BHYT đều đã được BẬT yêu cầu mã máy đầy đủ."
+                            />
+                        )}
+
+                        {/* Table of Discrepant Services */}
+                        {auditData?.discrepantOffCount > 0 && (
+                            <div className="border rounded-lg overflow-hidden">
+                                <Table
+                                    size="small"
+                                    dataSource={auditData?.discrepantList || []}
+                                    rowKey="id"
+                                    pagination={{ pageSize: 8, showSizeChanger: false }}
+                                    columns={[
+                                        {
+                                            title: 'STT',
+                                            key: 'stt',
+                                            width: 50,
+                                            align: 'center' as const,
+                                            render: (_: any, __: any, idx: number) => idx + 1
+                                        },
+                                        {
+                                            title: 'Mã Dịch Vụ',
+                                            dataIndex: 'MA_DICH_VU',
+                                            width: 130,
+                                            render: (code: string) => (
+                                                <span className="font-mono font-semibold text-red-600">{code}</span>
+                                            )
+                                        },
+                                        {
+                                            title: 'Tên Dịch Vụ (BV / BHYT)',
+                                            key: 'names',
+                                            render: (_: any, r: any) => (
+                                                <div>
+                                                    <div className="font-medium text-slate-800">{r.TEN_DICH_VU}</div>
+                                                    {r.excelName && r.excelName !== r.TEN_DICH_VU && (
+                                                        <div className="text-xs text-slate-500 italic mt-0.5">Tên Cổng: {r.excelName}</div>
+                                                    )}
+                                                </div>
+                                            )
+                                        },
+                                        {
+                                            title: 'Đơn giá',
+                                            dataIndex: 'DON_GIA',
+                                            width: 110,
+                                            align: 'right' as const,
+                                            render: (val: number) => val ? val.toLocaleString() : '-'
+                                        },
+                                        {
+                                            title: 'Nguồn',
+                                            dataIndex: 'nguon_du_lieu',
+                                            width: 110,
+                                            align: 'center' as const,
+                                            render: (src: string) => src === 'BHYT_PORTAL' ? <Tag color="orange">Cổng BHYT</Tag> : <Tag color="blue">Bệnh viện</Tag>
+                                        },
+                                        {
+                                            title: 'Bật mã máy',
+                                            key: 'toggle',
+                                            width: 120,
+                                            align: 'center' as const,
+                                            render: (_: any, r: any) => (
+                                                <Switch
+                                                    checked={Boolean(r.bat_buoc_co_ma_may)}
+                                                    checkedChildren="Bắt buộc"
+                                                    unCheckedChildren="Không"
+                                                    loading={togglingMachineId === r.id}
+                                                    onChange={async (checked) => {
+                                                        await handleToggleMachine(r.id, checked);
+                                                        fetchAuditData();
+                                                    }}
+                                                />
+                                            )
+                                        }
+                                    ]}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </Modal>
             </Card>
         </div>
