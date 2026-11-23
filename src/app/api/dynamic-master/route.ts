@@ -47,6 +47,22 @@ export async function GET(request: Request) {
                 }
                 continue;
             }
+
+            if (ref === 'Mau06_MA_MAY' || ref === 'Mau06Catalog.MA_MAY' || ref === 'Mau06.MA_MAY') {
+                try {
+                    const data: any[] = await prisma.$queryRaw`
+                        SELECT DISTINCT "MA_MAY" 
+                        FROM "Mau06Catalog" 
+                        WHERE "isActive" = true AND "MA_MAY" IS NOT NULL
+                    `;
+                    result[ref] = data
+                        .map((d: any) => d.MA_MAY ? String(d.MA_MAY).trim() : '')
+                        .filter(Boolean);
+                } catch (err: any) {
+                    console.error('Error fetching Mau06_MA_MAY:', err.message);
+                }
+                continue;
+            }
             
             if (ref === 'BedCatalog.MaKhoa_MaGiuong') {
                 try {

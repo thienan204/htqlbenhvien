@@ -43,6 +43,45 @@ import { getBasePath } from '@/utils/config';
 // XML_FIELDS will be fetched dynamically, not statically.
 const XML_TYPES = Array.from({ length: 15 }, (_, i) => `XML${i + 1}`);
 
+const MASTER_TABLES = [
+    { value: 'Mau06_MA_MAY', label: 'Mẫu 06 - Thiết bị y tế (Mau06)' },
+    { value: 'Mau05Catalog', label: 'Mẫu 05 - Dịch vụ KCB (Mau05)' },
+    { value: 'Department', label: 'Khoa phòng (Department)' },
+    { value: 'Staff', label: 'Nhân sự / Bác sĩ (Staff)' },
+    { value: 'PracticingCertificate', label: 'Chứng chỉ hành nghề (CCHN)' },
+    { value: 'BedCatalog', label: 'Giường bệnh (BedCatalog)' },
+    { value: 'MedicineCatalog', label: 'Danh mục Thuốc (MedicineCatalog)' }
+];
+
+const MASTER_TABLE_COLUMNS: Record<string, { value: string; label: string }[]> = {
+    'Mau06_MA_MAY': [
+        { value: 'MA_MAY', label: 'Mã máy thiết bị (MA_MAY)' }
+    ],
+    'Mau05Catalog': [
+        { value: 'MA_DICH_VU', label: 'Mã dịch vụ (MA_DICH_VU)' },
+        { value: 'TEN_DICH_VU', label: 'Tên dịch vụ (TEN_DICH_VU)' },
+        { value: 'MA_GIA', label: 'Mã giá (MA_GIA)' }
+    ],
+    'Department': [
+        { value: 'ma_khoa', label: 'Mã khoa (ma_khoa)' },
+        { value: 'name', label: 'Tên khoa (name)' }
+    ],
+    'Staff': [
+        { value: 'ma_nv', label: 'Mã nhân viên (ma_nv)' },
+        { value: 'ho_ten', label: 'Họ tên nhân viên (ho_ten)' }
+    ],
+    'PracticingCertificate': [
+        { value: 'so_cchn', label: 'Số CCHN (so_cchn)' }
+    ],
+    'BedCatalog': [
+        { value: 'ma_giuong', label: 'Mã giường (ma_giuong)' },
+        { value: 'ma_khoa', label: 'Mã khoa (ma_khoa)' }
+    ],
+    'MedicineCatalog': [
+        { value: 'ma_thuoc', label: 'Mã thuốc (ma_thuoc)' }
+    ]
+};
+
 export default function RuleSettings({ isOpen, onClose, rules: initialRules, onSave, sampleRecords, isModal = true, masterData = {} }: RuleSettingsProps) {
     const [rules, setRules] = useState<ValidationRule[]>(initialRules.length > 0 ? initialRules : DEFAULT_RULES);
     const [editingRule, setEditingRule] = useState<ValidationRule | null>(null);
@@ -53,6 +92,9 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isGuideModalVisible, setIsGuideModalVisible] = useState(false);
     const [dynamicXmlFields, setDynamicXmlFields] = useState<Record<string, string[]>>({});
+    const [selectedMasterTable, setSelectedMasterTable] = useState<string>('Mau06_MA_MAY');
+    const [selectedMasterCol, setSelectedMasterCol] = useState<string>('MA_MAY');
+    const [checkMode, setCheckMode] = useState<string>('NOT_IN');
 
     useEffect(() => {
         setRules(initialRules);
@@ -519,6 +561,81 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
         </Form.Item>
     );
 
+    const handleInsertExistsIn = () => {
+        const currentCode = form.getFieldValue('code') || '';
+        const currentField = form.getFieldValue('field') || '';
+        
+        let refKey = '';
+        if (selectedMasterTable === 'Mau06_MA_MAY') {
+            refKey = 'Mau06_MA_MAY';
+        } else {
+            refKey = `${selectedMasterTable}.${selectedMasterCol}`;
+        }
+
+        const targetField = currentField || (selectedMasterTable === 'Mau06_MA_MAY' ? 'MA_MAY' : 'TRUONG_XML');
+        
+        let expr = '';
+        if (checkMode === 'NOT_IN') {
+            expr = `${targetField} != null && ${targetField} != '' && !EXISTS_IN('${refKey}', ${targetField})`;
+        } else {
+            expr = `EXISTS_IN('${refKey}', ${targetField})`;
+        }
+
+        const newCode = currentCode.trim() ? `${currentCode.trim()} && ${expr}` : expr;
+        form.setFieldsValue({ code: newCode });
+        message.success(`Đã chèn biểu thức kiểm tra ${refKey}`);
+    };
+
+    const renderExistsInHelper = () => (
+        <div className="mb-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded text-xs space-y-2">
+            <div className="font-semibold text-blue-800 flex items-center justify-between">
+                <span>⚡ Chèn nhanh hàm EXISTS_IN (Kiểm tra theo Bảng & Cột CSDL):</span>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+                <Select
+                    size="small"
+                    placeholder="1. Chọn Bảng danh mục"
+                    style={{ minWidth: 190 }}
+                    value={selectedMasterTable}
+                    onChange={(val) => {
+                        setSelectedMasterTable(val);
+                        setSelectedMasterCol(MASTER_TABLE_COLUMNS[val]?.[0]?.value || '');
+                    }}
+                    options={MASTER_TABLES}
+                />
+                <Select
+                    size="small"
+                    placeholder="2. Chọn Cột CSDL"
+                    style={{ minWidth: 150 }}
+                    value={selectedMasterCol}
+                    onChange={setSelectedMasterCol}
+                    options={MASTER_TABLE_COLUMNS[selectedMasterTable] || []}
+                />
+                <Select
+                    size="small"
+                    style={{ minWidth: 170 }}
+                    value={checkMode}
+                    onChange={setCheckMode}
+                    options={[
+                        { value: 'NOT_IN', label: 'Báo lỗi nếu KHÔNG CÓ (!EXISTS_IN)' },
+                        { value: 'IN', label: 'Báo lỗi nếu CÓ (EXISTS_IN)' }
+                    ]}
+                />
+                <Button
+                    size="small"
+                    type="primary"
+                    onClick={handleInsertExistsIn}
+                    className="bg-blue-600"
+                >
+                    + Chèn vào biểu thức
+                </Button>
+            </div>
+            <div className="text-[11px] text-gray-500 italic">
+                * Mẹo: Cú pháp chuẩn <code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('TênBảng.TênCột', TRƯỜNG_XML)</code> hoạt động linh hoạt với mọi bảng/cột trong cơ sở dữ liệu.
+            </div>
+        </div>
+    );
+
     const logicCheatSheetItems = [
         {
             key: '1',
@@ -529,6 +646,7 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                         <div className="font-bold text-blue-700">1. Kiểm tra danh mục hệ thống (EXISTS_IN)</div>
                         <div className="text-gray-600 mb-1">Dùng để đối chiếu MÃ của File XML với danh sách trong Database hệ thống.</div>
                         <ul className="list-disc pl-4 space-y-1">
+                            <li><code className="bg-white px-1 border rounded text-red-600">MA_MAY != null && MA_MAY != '' && !EXISTS_IN('Mau06_MA_MAY', MA_MAY)</code> : Báo lỗi nếu dịch vụ có kê khai Mã máy nhưng mã máy lại KHÔNG CÓ trong Danh mục Thiết bị y tế (Mẫu 06/TB).</li>
                             <li><code className="bg-white px-1 border rounded text-red-600">MA_BAC_SI != '' && !EXISTS_IN('Staff_All_Codes', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ có dữ liệu nhưng lại KHÔNG có trên hệ thống Nhân sự (kiểm tra cả CCHN và Mã NV).</li>
                             <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('PracticingCertificate.so_cchn', MA_BAC_SI)</code> : Báo lỗi nếu Mã Bác sĩ không tồn tại trong danh sách CCHN.</li>
                             <li><code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('Department.ma_khoa', MA_KHOA)</code> : Báo lỗi nếu Mã Khoa không có trên hệ thống.</li>
@@ -784,6 +902,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                         <TextArea rows={4} className="font-mono bg-sky-50" />
                                     </Form.Item>
 
+                                    {renderExistsInHelper()}
+
                                     {logicCheatSheet}
 
                                     <div className="mb-4 p-3 bg-white rounded border border-blue-100">
@@ -1034,6 +1154,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                                 >
                                     <TextArea rows={4} className="font-mono bg-sky-50" />
                                 </Form.Item>
+
+                                {renderExistsInHelper()}
 
                                 {logicCheatSheet}
 

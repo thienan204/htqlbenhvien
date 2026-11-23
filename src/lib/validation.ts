@@ -922,7 +922,16 @@ export class ValidationEngine {
                 if (!valStr) return false;
                 const parts = valStr.split(';').map(s => s.trim()).filter(Boolean);
                 if (parts.length === 0) return false;
-                return parts.every(p => this.masterData[listName].has(p));
+                const set = this.masterData[listName];
+                return parts.every(p => {
+                    if (set.has(p)) return true;
+                    if (set.has(p.toUpperCase())) return true;
+                    const pLower = p.toLowerCase();
+                    for (const item of set) {
+                        if (item.toLowerCase() === pLower) return true;
+                    }
+                    return false;
+                });
             };
 
             const CHECK_DUPLICATE_DIFF = (pathSame: string, valSame: any, pathDiff: string, valDiff: any): boolean => {
@@ -1287,7 +1296,16 @@ export class ValidationEngine {
                 if (this.masterData && this.masterData[listName] && valStr !== '') {
                     const parts = valStr.split(';').map(s => s.trim()).filter(Boolean);
                     if (parts.length > 0) {
-                        exists = parts.every(p => this.masterData[listName].has(p));
+                        const set = this.masterData[listName];
+                        exists = parts.every(p => {
+                            if (set.has(p)) return true;
+                            if (set.has(p.toUpperCase())) return true;
+                            const pLower = p.toLowerCase();
+                            for (const item of set) {
+                                if (item.toLowerCase() === pLower) return true;
+                            }
+                            return false;
+                        });
                     }
                 }
                 const result = notOp ? !exists : exists;
@@ -1865,6 +1883,18 @@ export const DEFAULT_RULES: ValidationRule[] = [
         description: 'Đối chiếu danh mục DVKT bắt buộc có mã máy từ Cổng BHYT (3,471 dịch vụ) với trường MA_MAY trong XML3.',
         code: "EXISTS_IN('Mau05_REQUIRE_MACHINE', MA_DICH_VU) && MA_MAY == null",
         errorMessage: 'Dịch vụ kỹ thuật [TEN_DICH_VU] (Mã: [MA_DICH_VU]) bắt buộc phải có Mã máy thực hiện (MA_MAY) theo quy định BHXH nhưng trong XML3 đang để trống'
+    },
+    {
+        id: 'rule_mau06_machine_catalog_audit',
+        active: true,
+        checkNotNull: false,
+        type: 'Xuất toán',
+        xmlType: 'XML3',
+        field: 'MA_MAY',
+        name: 'Mã máy thực hiện (MA_MAY) không tồn tại trong Danh mục Thiết bị y tế (Mẫu 06/TB)',
+        description: 'Kiểm tra mã máy thực hiện trong XML3: Nếu có kê khai mã máy (khác null và không rỗng) thì bắt buộc mã máy đó phải có trong Danh mục Thiết bị y tế Mẫu 06/TB đã phê duyệt. Báo lỗi nếu mã máy không tồn tại trong danh mục.',
+        code: "MA_MAY != null && MA_MAY != '' && !EXISTS_IN('Mau06_MA_MAY', MA_MAY)",
+        errorMessage: 'Mã máy thực hiện [{MA_MAY}] của dịch vụ {TEN_DICH_VU} (Mã: {MA_DICH_VU}) không tồn tại trong Danh mục Thiết bị y tế (Mẫu 06/TB) của bệnh viện'
     },
     {
         id: '1',

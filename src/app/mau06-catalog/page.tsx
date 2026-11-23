@@ -272,7 +272,11 @@ export default function Mau06CatalogPage() {
 
                 if (res.ok) {
                     const result = await res.json();
-                    message.success(`Đã Import thành công ${result.count || jsonData.length} dòng.`);
+                    if (result.skipped !== undefined) {
+                        message.success(`Import hoàn tất! Thêm mới: ${result.count || 0}, Cập nhật: ${result.updatedCount || 0}, Giữ nguyên: ${result.skipped || 0}.`, 5);
+                    } else {
+                        message.success(`Đã Import thành công ${result.count || jsonData.length} dòng.`);
+                    }
                     fetchData();
                 } else {
                     message.error('Import thất bại');
@@ -285,6 +289,32 @@ export default function Mau06CatalogPage() {
         };
         reader.readAsArrayBuffer(file as any as Blob);
         return false;
+    };
+
+    const handleRecoverHospitalNames = async () => {
+        try {
+            setLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau06-catalog`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'RECOVER_HOSPITAL_NAMES' })
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                if (result.recoveredCount > 0) {
+                    message.success(result.message || `Đã khôi phục ${result.recoveredCount} thiết bị.`);
+                    fetchData();
+                } else {
+                    message.info('Không phát hiện thiết bị nào bị mất Tên bệnh viện trong lịch sử.');
+                }
+            } else {
+                message.error(result.error || 'Khôi phục thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi khi khôi phục');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const columns = [
@@ -389,6 +419,15 @@ export default function Mau06CatalogPage() {
                             options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
                         />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
+                        <Tooltip title="Tự động tìm trong lịch sử và khôi phục lại Tên Bệnh viện cho các máy đang bị trống">
+                            <Button 
+                                icon={<SyncOutlined />} 
+                                onClick={handleRecoverHospitalNames}
+                                className="text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100"
+                            >
+                                Khôi phục Tên BV
+                            </Button>
+                        </Tooltip>
                         {selectedRowKeys.length > 0 && (
                             <>
                                 <Button className="bg-green-500 text-white border-none hover:bg-green-600" onClick={() => handleBulkUpdateStatus(true)}>

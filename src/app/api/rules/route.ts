@@ -162,6 +162,30 @@ export async function GET() {
             }
         }
 
+        // Tự động bổ sung rule_mau06_machine_catalog_audit vào DB nếu chưa có
+        const existingMau06Rule = rules.find(r => r.id === 'rule_mau06_machine_catalog_audit');
+        if (!existingMau06Rule && rules.length > 0) {
+            try {
+                const created = await prisma.validationRule.create({
+                    data: {
+                        id: 'rule_mau06_machine_catalog_audit',
+                        active: true,
+                        type: 'Xuất toán',
+                        xmlType: 'XML3',
+                        field: 'MA_MAY',
+                        name: 'Mã máy thực hiện (MA_MAY) không tồn tại trong Danh mục Thiết bị y tế (Mẫu 06/TB)',
+                        description: 'Kiểm tra mã máy thực hiện trong XML3: Nếu có kê khai mã máy (khác null và không rỗng) thì bắt buộc mã máy đó phải có trong Danh mục Thiết bị y tế Mẫu 06/TB đã phê duyệt. Báo lỗi nếu mã máy không tồn tại trong danh mục.',
+                        code: "MA_MAY != null && MA_MAY != '' && !EXISTS_IN('Mau06_MA_MAY', MA_MAY)",
+                        errorMessage: 'Mã máy thực hiện [{MA_MAY}] của dịch vụ {TEN_DICH_VU} (Mã: {MA_DICH_VU}) không tồn tại trong Danh mục Thiết bị y tế (Mẫu 06/TB) của bệnh viện',
+                        checkNotNull: false
+                    }
+                });
+                rules = [created, ...rules];
+            } catch (seedErr) {
+                console.warn('Could not auto-seed rule_mau06_machine_catalog_audit:', seedErr);
+            }
+        }
+
         // Đảm bảo rule kiểm tra MA_MAY (1768445961548) luôn có code chuẩn nếu chưa có, tuyệt đối không can thiệp trạng thái active
         const machineRule = rules.find(r => r.id === '1768445961548');
         if (machineRule && (!machineRule.code || !machineRule.code.includes('Mau05_REQUIRE_MACHINE'))) {

@@ -42,6 +42,30 @@ export async function fetchMasterDataForRules(rules: ValidationRule[]): Promise<
             } catch (e) {}
             continue;
         }
+
+        if (ref === 'Mau05_REQUIRE_MACHINE' || ref === 'Mau05Catalog.BatBuocMaMay') {
+            try {
+                const data: any[] = await prisma.$queryRaw`
+                    SELECT DISTINCT "MA_DICH_VU" 
+                    FROM "Mau05Catalog" 
+                    WHERE "isActive" = true AND "bat_buoc_co_ma_may" = true AND "MA_DICH_VU" IS NOT NULL
+                `;
+                result[ref] = new Set(data.map((d: any) => d.MA_DICH_VU ? String(d.MA_DICH_VU).trim() : '').filter(Boolean));
+            } catch (e) {}
+            continue;
+        }
+
+        if (ref === 'Mau06_MA_MAY' || ref === 'Mau06Catalog.MA_MAY' || ref === 'Mau06.MA_MAY') {
+            try {
+                const data: any[] = await prisma.$queryRaw`
+                    SELECT DISTINCT "MA_MAY" 
+                    FROM "Mau06Catalog" 
+                    WHERE "isActive" = true AND "MA_MAY" IS NOT NULL
+                `;
+                result[ref] = new Set(data.map((d: any) => d.MA_MAY ? String(d.MA_MAY).trim() : '').filter(Boolean));
+            } catch (e) {}
+            continue;
+        }
         
         if (ref === 'BedCatalog.MaKhoa_MaGiuong') {
             try {
