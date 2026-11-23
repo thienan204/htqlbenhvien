@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined, DiffOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { getBasePath } from '@/utils/config';
 import { useAuth } from '@/contexts/AuthContext';
+import MachineReconciliationModal from './_components/MachineReconciliationModal';
 
 export default function Mau06CatalogPage() {
     const [data, setData] = useState<any[]>([]);
@@ -13,6 +14,7 @@ export default function Mau06CatalogPage() {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+    const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
     const [selectedMachineForLocation, setSelectedMachineForLocation] = useState<any>(null);
     const [departments, setDepartments] = useState<any[]>([]);
@@ -440,6 +442,15 @@ export default function Mau06CatalogPage() {
                         )}
                     </Space>
                     <Space>
+                        <Button
+                            icon={<DiffOutlined />}
+                            onClick={() => setIsReconciliationModalOpen(true)}
+                            style={{ backgroundColor: '#4f46e5', color: 'white', border: 'none' }}
+                            className="font-semibold hover:opacity-90 shadow-sm"
+                            title="Đối soát danh mục thiết bị trong Database với file Cổng BHXH và file HIS"
+                        >
+                            Đối soát Cổng - HIS
+                        </Button>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
                         {isMounted && user?.role === 'ADMIN' && (
                             <Popconfirm 
@@ -567,6 +578,11 @@ export default function Mau06CatalogPage() {
                         </Form.Item>
                     </Form>
                 </Modal>
+                <MachineReconciliationModal
+                    isOpen={isReconciliationModalOpen}
+                    onClose={() => setIsReconciliationModalOpen(false)}
+                    dbMachines={data}
+                />
             </Card>
         </div>
     );
