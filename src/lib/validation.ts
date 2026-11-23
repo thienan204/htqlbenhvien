@@ -469,11 +469,6 @@ export class ValidationEngine {
                                     if (!valStr || !allowedValues.includes(valStr)) {
                                         return;
                                     }
-                                } else if (rule.conditionMaDichVu || rule.name.includes('MA_MAY')) {
-                                    // Logic if condition is MISSING but we suspect it should be there
-                                    const fieldToCheck = rule.conditionMaDichVu || 'MA_DICH_VU';
-                                    const valStr = this.getDataValue(item[fieldToCheck]);
-                                    debugMsg = `[DEBUG: RuleCondValue='${rule.conditionMaDichVuValue}', RowVal='${valStr}']`;
                                 }
                                 // End check
 

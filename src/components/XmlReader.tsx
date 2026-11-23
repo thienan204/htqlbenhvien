@@ -23,9 +23,11 @@ import {
     InboxOutlined, UploadOutlined, FileExcelOutlined, SearchOutlined,
     CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, DeleteOutlined,
     CloudUploadOutlined, CloudDownloadOutlined, ContainerOutlined, SettingOutlined, ToolOutlined, ExperimentOutlined,
-    MedicineBoxOutlined, CheckOutlined, EditOutlined, ClockCircleOutlined
+    MedicineBoxOutlined, CheckOutlined, EditOutlined, ClockCircleOutlined,
+    DesktopOutlined
 } from '@ant-design/icons';
 import BedDaysAuditModal from '@/app/(modules)/xml-checker/_components/BedDaysAuditModal';
+import MachineAuditModal from '@/app/(modules)/xml-checker/_components/MachineAuditModal';
 import { calculateBedDaysForRecord, parseAllowedMaNhom, parseExcludedMaBenh } from '@/app/(modules)/xml-checker/_components/bedDaysCalculator';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -382,6 +384,19 @@ export default function XmlReader() {
 
     const { rules, saveRules, isLoaded: isRulesLoaded, reloadRules } = useRules();
     
+    // Modal đối soát mã máy XML3 & Đề xuất Mẫu 06
+    const [isMachineAuditModalOpen, setIsMachineAuditModalOpen] = useState(false);
+    const machineErrorCount = React.useMemo(() => {
+        return records.filter(r => r.validationResults?.some(v => 
+            v.ruleId === 'rule_mau06_machine_catalog_audit' ||
+            v.ruleId?.includes('mau06') ||
+            v.ruleName?.toLowerCase().includes('mã máy') ||
+            v.message?.toLowerCase().includes('mã máy') ||
+            v.message?.toLowerCase().includes('mẫu 06') ||
+            v.message?.toLowerCase().includes('mau06')
+        )).length;
+    }, [records]);
+
     // Modal đối soát tiền ngày giường & Khoa phòng
     const [isBedAuditModalOpen, setIsBedAuditModalOpen] = useState(false);
     const bedDaysRule = rules.find(r => r.id === 'rule_bed_days_audit' || r.code?.includes('CHECK_BED_DAYS') || r.name?.includes('ngày giường'));
@@ -2577,6 +2592,17 @@ export default function XmlReader() {
                                                     Lưu DB (XML Viewer)
                                                 </Button>
                                             )}
+                                            <Badge count={machineErrorCount} overflowCount={999} offset={[-4, 4]}>
+                                                <Button
+                                                    icon={<DesktopOutlined />}
+                                                    onClick={() => setIsMachineAuditModalOpen(true)}
+                                                    style={{ backgroundColor: '#4f46e5', color: 'white', border: 'none' }}
+                                                    className="font-semibold hover:opacity-90 shadow-sm"
+                                                    title="Đối soát và đề xuất mã máy XML3 dựa trên số Serial/Ký hiệu Mẫu 06"
+                                                >
+                                                    Đối soát mã máy XML
+                                                </Button>
+                                            </Badge>
                                             <Button icon={<ToolOutlined />} onClick={() => setIsSpecialCharModalVisible(true)} style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none' }}>
                                                 Quét ký tự đặc biệt
                                             </Button>
@@ -2931,6 +2957,18 @@ export default function XmlReader() {
                 onSelectRecord={(rec) => {
                     setSelectedRecord(rec as ExtendedHosoRecord);
                     setActiveTab('XML1');
+                }}
+            />
+
+            {/* Modal Đối soát mã máy XML3 & Đề xuất Mẫu 06 */}
+            <MachineAuditModal
+                isOpen={isMachineAuditModalOpen}
+                onClose={() => setIsMachineAuditModalOpen(false)}
+                records={records}
+                departments={departments}
+                onSelectRecord={(rec) => {
+                    setSelectedRecord(rec as ExtendedHosoRecord);
+                    setActiveTab('XML3');
                 }}
             />
         </div>

@@ -114,6 +114,21 @@ export default function DetailedReport() {
         }).join('; ');
     };
 
+    const resolveStaffName = (code?: string | null): string => {
+        if (!code) return '';
+        const clean = String(code).trim();
+        if (staffList[clean]) return staffList[clean];
+        if (staffList[clean.toUpperCase()]) return staffList[clean.toUpperCase()];
+        if (clean.includes(';') || clean.includes(',')) {
+            return clean.split(/[;,]+/)
+                .map(c => c.trim())
+                .filter(Boolean)
+                .map(c => staffList[c] || staffList[c.toUpperCase()] || c)
+                .join('; ');
+        }
+        return '';
+    };
+
     useEffect(() => {
         const fetchDepts = async () => {
             try {
@@ -137,7 +152,29 @@ export default function DetailedReport() {
                     const data = await res.json();
                     const map: Record<string, string> = {};
                     data.forEach((s: any) => {
-                        if (s.ma_nhan_vien) map[s.ma_nhan_vien] = s.ho_ten;
+                        if (!s.ho_ten) return;
+                        const hoTen = String(s.ho_ten).trim();
+                        // 1. Map theo mã nhân viên
+                        if (s.ma_nv) {
+                            const nv = String(s.ma_nv).trim();
+                            map[nv] = hoTen;
+                            map[nv.toUpperCase()] = hoTen;
+                        }
+                        if (s.ma_nhan_vien) {
+                            const nv = String(s.ma_nhan_vien).trim();
+                            map[nv] = hoTen;
+                            map[nv.toUpperCase()] = hoTen;
+                        }
+                        // 2. Map theo số chứng chỉ hành nghề (so_cchn / CCHN)
+                        if (Array.isArray(s.certificates)) {
+                            s.certificates.forEach((c: any) => {
+                                if (c.so_cchn) {
+                                    const cchn = String(c.so_cchn).trim();
+                                    map[cchn] = hoTen;
+                                    map[cchn.toUpperCase()] = hoTen;
+                                }
+                            });
+                        }
                     });
                     setStaffList(map);
                 }
@@ -239,7 +276,11 @@ export default function DetailedReport() {
                                         ngayKQ = formatDateTime(item.NGAY_KQ);
                                         donGiaBh = renderValue(item.DON_GIA_BH);
                                         if (item.MA_KHOA) maKhoa = renderValue(item.MA_KHOA);
-                                        if (item.MA_GIUONG) maGiuong = renderValue(item.MA_GIUONG);
+                                        if (item.MA_GIUONG) {
+                                            maGiuong = renderValue(item.MA_GIUONG);
+                                        } else if (item.MA_MAY) {
+                                            maGiuong = renderValue(item.MA_MAY);
+                                        }
                                         if (item.PP_VO_CAM) ppVoCam = renderValue(item.PP_VO_CAM);
                                         if (item.MA_BAC_SI) maBacSi = renderValue(item.MA_BAC_SI);
                                         if (item.NGUOI_THUC_HIEN) nguoiThucHien = renderValue(item.NGUOI_THUC_HIEN);
@@ -386,7 +427,7 @@ export default function DetailedReport() {
             { header: 'Mã DV/Thuốc', key: 'ma_dv', width: 15 },
             { header: 'Chi tiết lỗi', key: 'chi_tiet_loi', width: 60 },
             { header: 'PP Vô Cảm', key: 'pp_vo_cam', width: 12 },
-            { header: 'Mã giường', key: 'ma_giuong', width: 12 },
+            { header: 'Mã giường / Mã máy', key: 'ma_giuong', width: 16 },
             { header: 'Tên DV/Thuốc', key: 'ten_dv', width: 40 },
             { header: 'Đơn giá BH', key: 'don_gia_bh', width: 15 },
             { header: 'Mã LK', key: 'ma_lk', width: 14 },
@@ -401,8 +442,8 @@ export default function DetailedReport() {
                 ...row,
                 stt: idx + 1,
                 ten_khoa: resolveTenKhoa(row.ma_khoa),
-                ten_bac_si: staffList[row.ma_bac_si] || '',
-                ten_nguoi_thuc_hien: staffList[row.nguoi_thuc_hien] || ''
+                ten_bac_si: resolveStaffName(row.ma_bac_si),
+                ten_nguoi_thuc_hien: resolveStaffName(row.nguoi_thuc_hien)
             });
         });
 
@@ -525,7 +566,7 @@ export default function DetailedReport() {
                 { header: 'Mã DV/Thuốc', key: 'ma_dv', width: 15 },
                 { header: 'Chi tiết lỗi', key: 'chi_tiet_loi', width: 60 },
                 { header: 'PP Vô Cảm', key: 'pp_vo_cam', width: 12 },
-                { header: 'Mã giường', key: 'ma_giuong', width: 12 },
+                { header: 'Mã giường / Mã máy', key: 'ma_giuong', width: 16 },
                 { header: 'Tên DV/Thuốc', key: 'ten_dv', width: 40 },
                 { header: 'Đơn giá BH', key: 'don_gia_bh', width: 15 },
                 { header: 'Mã LK', key: 'ma_lk', width: 14 },
@@ -539,8 +580,8 @@ export default function DetailedReport() {
                     ...row,
                     stt: idx + 1,
                     ten_khoa: resolveTenKhoa(row.ma_khoa),
-                    ten_bac_si: staffList[row.ma_bac_si] || '',
-                    ten_nguoi_thuc_hien: staffList[row.nguoi_thuc_hien] || ''
+                    ten_bac_si: resolveStaffName(row.ma_bac_si),
+                    ten_nguoi_thuc_hien: resolveStaffName(row.nguoi_thuc_hien)
                 });
             });
 
@@ -646,7 +687,10 @@ export default function DetailedReport() {
             dataIndex: 'ten_bac_si', 
             key: 'ten_bac_si', 
             width: 180, 
-            render: (_: any, record: ReportRow) => <span className="text-slate-600 truncate block">{staffList[record.ma_bac_si] || ''}</span>
+            render: (_: any, record: ReportRow) => {
+                const name = resolveStaffName(record.ma_bac_si);
+                return <span className="text-slate-700 truncate block font-medium" title={name}>{name}</span>;
+            }
         },
         { title: 'Mã NTH', dataIndex: 'nguoi_thuc_hien', key: 'nguoi_thuc_hien', width: 120, onCell: createOnCell('nguoi_thuc_hien') },
         { 
@@ -654,7 +698,10 @@ export default function DetailedReport() {
             dataIndex: 'ten_nguoi_thuc_hien', 
             key: 'ten_nguoi_thuc_hien', 
             width: 180, 
-            render: (_: any, record: ReportRow) => <span className="text-slate-600 truncate block">{staffList[record.nguoi_thuc_hien] || ''}</span>
+            render: (_: any, record: ReportRow) => {
+                const name = resolveStaffName(record.nguoi_thuc_hien);
+                return <span className="text-slate-700 truncate block font-medium" title={name}>{name}</span>;
+            }
         },
         { title: 'Ngày TH YL', dataIndex: 'ngay_th_yl', key: 'ngay_th_yl', width: 140, onCell: createOnCell('ngay_th_yl') },
         { title: 'Ngày KQ', dataIndex: 'ngay_kq', key: 'ngay_kq', width: 140, onCell: createOnCell('ngay_kq') },
@@ -688,7 +735,7 @@ export default function DetailedReport() {
             },
         },
         { title: 'PP Vô Cảm', dataIndex: 'pp_vo_cam', key: 'pp_vo_cam', width: 100, onCell: createOnCell('pp_vo_cam') },
-        { title: 'Mã giường', dataIndex: 'ma_giuong', key: 'ma_giuong', width: 100, onCell: createOnCell('ma_giuong') },
+        { title: 'Mã giường / Mã máy', dataIndex: 'ma_giuong', key: 'ma_giuong', width: 130, onCell: createOnCell('ma_giuong') },
         {
             title: 'Tên DV/Thuốc', dataIndex: 'ten_dv', key: 'ten_dv', width: 250, ellipsis: true, onCell: createOnCell('ten_dv'), render: (text: string) => (
                 <Tooltip title={text}>
