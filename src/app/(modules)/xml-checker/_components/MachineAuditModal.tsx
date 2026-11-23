@@ -46,6 +46,7 @@ export default function MachineAuditModal({
     // Filters
     const [filterErrorType, setFilterErrorType] = useState<string>('ALL');
     const [filterDept, setFilterDept] = useState<string>('ALL');
+    const [filterNgayRa, setFilterNgayRa] = useState<string>('ALL');
     const [searchText, setSearchText] = useState<string>('');
 
     // 1. Tải danh mục Mẫu 06 và dịch vụ Mẫu 05 bắt buộc mã máy
@@ -106,6 +107,21 @@ export default function MachineAuditModal({
         }));
     }, [allAuditItems, departments]);
 
+    // Danh sách các Ngày ra viện xuất hiện trong dữ liệu lỗi
+    const ngayRaOptions = useMemo(() => {
+        const map = new Map<string, number>();
+        allAuditItems.forEach(item => {
+            const d = item.ngayRaDateOnly || 'Khong_Xac_Dinh';
+            map.set(d, (map.get(d) || 0) + 1);
+        });
+        return Array.from(map.entries())
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([date, count]) => ({
+                value: date,
+                label: `Ra viện ${date} (${count} lỗi)`
+            }));
+    }, [allAuditItems]);
+
     // 4. Lọc dữ liệu hiển thị trên bảng
     const filteredItems = useMemo(() => {
         return allAuditItems.filter(item => {
@@ -117,6 +133,9 @@ export default function MachineAuditModal({
 
             // Lọc theo Khoa
             if (filterDept !== 'ALL' && item.maKhoa !== filterDept) return false;
+
+            // Lọc theo Ngày ra viện
+            if (filterNgayRa !== 'ALL' && item.ngayRaDateOnly !== filterNgayRa) return false;
 
             // Tìm kiếm tự do
             if (searchText.trim()) {
@@ -134,7 +153,7 @@ export default function MachineAuditModal({
 
             return true;
         });
-    }, [allAuditItems, filterErrorType, filterDept, searchText]);
+    }, [allAuditItems, filterErrorType, filterDept, filterNgayRa, searchText]);
 
     // 5. Thống kê theo Khoa để xuất sheet tổng hợp
     const departmentSummaries = useMemo(() => {
@@ -184,116 +203,134 @@ export default function MachineAuditModal({
         workbook.creator = 'HTQLBV - XML Checker';
         workbook.created = new Date();
 
-        // -------------------------------------------------------------
-        // Sheet 1: Chi tiết Đối soát & Đề xuất Mã máy
-        // -------------------------------------------------------------
-        const ws = workbook.addWorksheet('Chi tiết sai mã máy XML3');
+        // Helper tạo Sheet chi tiết các dòng lỗi mã máy với đầy đủ thông tin ngày vào, ngày ra
+        const buildDetailWorksheet = (
+            wb: ExcelJS.Workbook,
+            sheetTitle: string,
+            items: MachineAuditItem[],
+            headerColorHex: string = 'FF1E3A8A'
+        ) => {
+            // Excel giới hạn tên sheet tối đa 31 ký tự và cấm các ký tự đặc biệt: \ / ? * [ ] :
+            const cleanSheetName = sheetTitle.replace(/[\\/?*\[\]:]/g, '_').substring(0, 31);
+            const ws = wb.addWorksheet(cleanSheetName);
 
-        ws.columns = [
-            { header: 'STT', key: 'stt', width: 8 },
-            { header: 'Mã LK', key: 'maLk', width: 14 },
-            { header: 'Mã BN', key: 'maBn', width: 14 },
-            { header: 'Họ và tên', key: 'hoTen', width: 22 },
-            { header: 'Ngày Y lệnh', key: 'ngayYl', width: 18 },
-            { header: 'Mã dịch vụ', key: 'maDichVu', width: 14 },
-            { header: 'Tên dịch vụ kỹ thuật', key: 'tenDichVu', width: 36 },
-            { header: 'Mã khoa', key: 'maKhoa', width: 12 },
-            { header: 'Tên khoa phòng', key: 'tenKhoa', width: 24 },
-            { header: 'Mã máy ở XML', key: 'maMayXml', width: 18 },
-            { header: 'Trạng thái vi phạm', key: 'errorLabel', width: 26 },
-            { header: 'Mã máy đề xuất (Mẫu 06)', key: 'suggestedMaMay', width: 26 },
-            { header: 'Tên thiết bị đề xuất', key: 'suggestedTenTb', width: 32 },
-            { header: 'Ký hiệu / Serial (Mẫu 06)', key: 'suggestedKyHieu', width: 24 },
-            { header: 'Căn cứ đề xuất', key: 'suggestedReason', width: 32 },
-            { header: 'Số lượng', key: 'soLuong', width: 10 },
-            { header: 'Đơn giá', key: 'donGia', width: 14 },
-            { header: 'Thành tiền', key: 'thanhTien', width: 16 }
-        ];
+            ws.columns = [
+                { header: 'STT', key: 'stt', width: 8 },
+                { header: 'Mã LK', key: 'maLk', width: 14 },
+                { header: 'Mã BN', key: 'maBn', width: 14 },
+                { header: 'Họ và tên', key: 'hoTen', width: 22 },
+                { header: 'Ngày vào (XML1)', key: 'ngayVao', width: 18 },
+                { header: 'Ngày ra (XML1)', key: 'ngayRa', width: 18 },
+                { header: 'Ngày Y lệnh', key: 'ngayYl', width: 18 },
+                { header: 'Mã dịch vụ', key: 'maDichVu', width: 14 },
+                { header: 'Tên dịch vụ kỹ thuật', key: 'tenDichVu', width: 36 },
+                { header: 'Mã khoa', key: 'maKhoa', width: 12 },
+                { header: 'Tên khoa phòng', key: 'tenKhoa', width: 24 },
+                { header: 'Mã máy ở XML', key: 'maMayXml', width: 18 },
+                { header: 'Trạng thái vi phạm', key: 'errorLabel', width: 26 },
+                { header: 'Mã máy đề xuất (Mẫu 06)', key: 'suggestedMaMay', width: 26 },
+                { header: 'Tên thiết bị đề xuất', key: 'suggestedTenTb', width: 32 },
+                { header: 'Ký hiệu / Serial (Mẫu 06)', key: 'suggestedKyHieu', width: 24 },
+                { header: 'Căn cứ đề xuất', key: 'suggestedReason', width: 32 },
+                { header: 'Số lượng', key: 'soLuong', width: 10 },
+                { header: 'Đơn giá', key: 'donGia', width: 14 },
+                { header: 'Thành tiền', key: 'thanhTien', width: 16 }
+            ];
 
-        // Header styling
-        const headerRow = ws.getRow(1);
-        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        headerRow.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FF1E3A8A' } // Navy blue
+            // Header styling
+            const headerRow = ws.getRow(1);
+            headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+            headerRow.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: headerColorHex }
+            };
+            headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            headerRow.height = 32;
+
+            // Thêm từng dòng dữ liệu (Dữ liệu đã được sắp xếp MA_LK -> MA_BN -> NGAY_YL -> MA_DICH_VU)
+            items.forEach((item, idx) => {
+                const row = ws.addRow({
+                    stt: idx + 1,
+                    maLk: item.maLk,
+                    maBn: item.maBn,
+                    hoTen: item.hoTen,
+                    ngayVao: item.ngayVaoFormatted || item.ngayVao,
+                    ngayRa: item.ngayRaFormatted || item.ngayRa,
+                    ngayYl: item.ngayYlFormatted || item.ngayYl,
+                    maDichVu: item.maDichVu,
+                    tenDichVu: item.tenDichVu,
+                    maKhoa: item.maKhoa,
+                    tenKhoa: item.tenKhoa,
+                    maMayXml: item.maMayXml || '(Để trống)',
+                    errorLabel: item.errorLabel,
+                    suggestedMaMay: item.suggestedMaMay || '(Chưa có)',
+                    suggestedTenTb: item.suggestedTenTb || '',
+                    suggestedKyHieu: item.suggestedKyHieu || '',
+                    suggestedReason: item.suggestedReason || '',
+                    soLuong: item.soLuong,
+                    donGia: item.donGia,
+                    thanhTien: item.thanhTien
+                });
+
+                // Định dạng alignment
+                row.getCell('stt').alignment = { horizontal: 'center' };
+                row.getCell('maLk').alignment = { horizontal: 'center' };
+                row.getCell('maBn').alignment = { horizontal: 'center' };
+                row.getCell('ngayVao').alignment = { horizontal: 'center' };
+                row.getCell('ngayRa').alignment = { horizontal: 'center' };
+                row.getCell('ngayYl').alignment = { horizontal: 'center' };
+                row.getCell('maDichVu').alignment = { horizontal: 'center' };
+                row.getCell('maKhoa').alignment = { horizontal: 'center' };
+                row.getCell('maMayXml').alignment = { horizontal: 'center' };
+                row.getCell('suggestedMaMay').alignment = { horizontal: 'center' };
+                row.getCell('soLuong').numFmt = '#,##0.00';
+                row.getCell('donGia').numFmt = '#,##0';
+                row.getCell('thanhTien').numFmt = '#,##0';
+
+                // Tô màu cảnh báo vi phạm
+                if (item.errorType === 'NOT_IN_MAU06') {
+                    row.getCell('maMayXml').font = { color: { argb: 'FFDC2626' }, bold: true };
+                    row.getCell('errorLabel').fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFEE2E2' } // Light red
+                    };
+                } else {
+                    row.getCell('maMayXml').font = { color: { argb: 'FFD97706' }, italic: true };
+                    row.getCell('errorLabel').fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFEF3C7' } // Light yellow
+                    };
+                }
+
+                // Tô màu xanh cho các dòng có đề xuất mã máy thành công
+                if (item.suggestedMaMay) {
+                    row.getCell('suggestedMaMay').font = { color: { argb: 'FF047857' }, bold: true };
+                    row.getCell('suggestedMaMay').fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFD1FAE5' } // Light green
+                    };
+                }
+
+                // Border mỏng
+                row.eachCell({ includeEmpty: true }, cell => {
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                    };
+                });
+            });
         };
-        headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-        headerRow.height = 32;
 
-        // Thêm từng dòng dữ liệu (Dữ liệu allAuditItems đã được sắp xếp MA_LK -> MA_BN -> NGAY_YL -> MA_DICH_VU)
-        allAuditItems.forEach((item, idx) => {
-            const row = ws.addRow({
-                stt: idx + 1,
-                maLk: item.maLk,
-                maBn: item.maBn,
-                hoTen: item.hoTen,
-                ngayYl: item.ngayYlFormatted || item.ngayYl,
-                maDichVu: item.maDichVu,
-                tenDichVu: item.tenDichVu,
-                maKhoa: item.maKhoa,
-                tenKhoa: item.tenKhoa,
-                maMayXml: item.maMayXml || '(Để trống)',
-                errorLabel: item.errorLabel,
-                suggestedMaMay: item.suggestedMaMay || '(Chưa có)',
-                suggestedTenTb: item.suggestedTenTb || '',
-                suggestedKyHieu: item.suggestedKyHieu || '',
-                suggestedReason: item.suggestedReason || '',
-                soLuong: item.soLuong,
-                donGia: item.donGia,
-                thanhTien: item.thanhTien
-            });
-
-            // Định dạng alignment
-            row.getCell('stt').alignment = { horizontal: 'center' };
-            row.getCell('maLk').alignment = { horizontal: 'center' };
-            row.getCell('maBn').alignment = { horizontal: 'center' };
-            row.getCell('ngayYl').alignment = { horizontal: 'center' };
-            row.getCell('maDichVu').alignment = { horizontal: 'center' };
-            row.getCell('maKhoa').alignment = { horizontal: 'center' };
-            row.getCell('maMayXml').alignment = { horizontal: 'center' };
-            row.getCell('suggestedMaMay').alignment = { horizontal: 'center' };
-            row.getCell('soLuong').numFmt = '#,##0.00';
-            row.getCell('donGia').numFmt = '#,##0';
-            row.getCell('thanhTien').numFmt = '#,##0';
-
-            // Tô màu cảnh báo vi phạm
-            if (item.errorType === 'NOT_IN_MAU06') {
-                row.getCell('maMayXml').font = { color: { argb: 'FFDC2626' }, bold: true };
-                row.getCell('errorLabel').fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFEE2E2' } // Light red
-                };
-            } else {
-                row.getCell('maMayXml').font = { color: { argb: 'FFD97706' }, italic: true };
-                row.getCell('errorLabel').fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFEF3C7' } // Light yellow
-                };
-            }
-
-            // Tô màu xanh cho các dòng có đề xuất mã máy thành công
-            if (item.suggestedMaMay) {
-                row.getCell('suggestedMaMay').font = { color: { argb: 'FF047857' }, bold: true };
-                row.getCell('suggestedMaMay').fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFD1FAE5' } // Light green
-                };
-            }
-
-            // Border mỏng
-            row.eachCell({ includeEmpty: true }, cell => {
-                cell.border = {
-                    top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                    bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                    left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                    right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
-                };
-            });
-        });
+        // -------------------------------------------------------------
+        // Sheet 1: Tất cả lỗi mã máy XML3 (kèm thông tin Ngày vào, Ngày ra)
+        // -------------------------------------------------------------
+        buildDetailWorksheet(workbook, 'Tất cả lỗi mã máy', allAuditItems, 'FF1E3A8A');
 
         // -------------------------------------------------------------
         // Sheet 2: Tổng hợp lỗi theo Khoa phòng
@@ -353,6 +390,37 @@ export default function MachineAuditModal({
             });
         });
 
+        // -------------------------------------------------------------
+        // Sheet 3+: Từng Sheet chi tiết lọc theo NGAY_RA (ngày ra viện BN)
+        // -------------------------------------------------------------
+        const itemsByNgayRa = new Map<string, MachineAuditItem[]>();
+        allAuditItems.forEach(item => {
+            const d = item.ngayRaDateOnly || 'Khong_Xac_Dinh';
+            if (!itemsByNgayRa.has(d)) {
+                itemsByNgayRa.set(d, []);
+            }
+            itemsByNgayRa.get(d)!.push(item);
+        });
+
+        // Sắp xếp ngày ra tăng dần theo trình tự thời gian
+        const sortedNgayRaList = Array.from(itemsByNgayRa.keys()).sort((a, b) => {
+            const partsA = a.split('-');
+            const partsB = b.split('-');
+            if (partsA.length === 3 && partsB.length === 3) {
+                const da = `${partsA[2]}${partsA[1]}${partsA[0]}`;
+                const db = `${partsB[2]}${partsB[1]}${partsB[0]}`;
+                return da.localeCompare(db);
+            }
+            return a.localeCompare(b);
+        });
+
+        sortedNgayRaList.forEach(dateStr => {
+            const items = itemsByNgayRa.get(dateStr) || [];
+            const sheetName = `Ra ${dateStr}`;
+            // Header màu xanh Teal trang nhã cho các sheet theo ngày ra viện
+            buildDetailWorksheet(workbook, sheetName, items, 'FF0D9488');
+        });
+
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         saveAs(blob, `DoiSoat_MaMay_XML_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`);
@@ -383,6 +451,23 @@ export default function MachineAuditModal({
                     </div>
                     <div className="text-xs text-slate-800 font-medium truncate" title={r.hoTen}>
                         {r.hoTen}
+                    </div>
+                </div>
+            )
+        },
+        {
+            title: 'Thời gian Vào - Ra (XML1)',
+            key: 'thoiGianVaoRa',
+            width: 160,
+            render: (_: any, r: MachineAuditItem) => (
+                <div className="text-xs">
+                    <div>
+                        <span className="text-slate-400">Vào: </span>
+                        <span className="text-slate-700 font-mono">{r.ngayVaoFormatted || '--'}</span>
+                    </div>
+                    <div className="mt-0.5">
+                        <span className="text-slate-400">Ra: </span>
+                        <span className="text-emerald-700 font-mono font-medium">{r.ngayRaFormatted || '--'}</span>
                     </div>
                 </div>
             )
@@ -640,6 +725,19 @@ export default function MachineAuditModal({
                             ]}
                         />
 
+                        <Select
+                            value={filterNgayRa}
+                            onChange={setFilterNgayRa}
+                            placeholder="Lọc theo Ngày ra viện"
+                            style={{ width: 220 }}
+                            showSearch
+                            optionFilterProp="label"
+                            options={[
+                                { value: 'ALL', label: 'Tất cả Ngày ra viện' },
+                                ...ngayRaOptions
+                            ]}
+                        />
+
                         <Input
                             placeholder="Tìm Mã LK, BN, Tên DV, Mã máy..."
                             prefix={<SearchOutlined className="text-slate-400" />}
@@ -668,7 +766,7 @@ export default function MachineAuditModal({
                         pageSizeOptions: ['15', '30', '50', '100'],
                         showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} dòng vi phạm`
                     }}
-                    scroll={{ x: 1200, y: 460 }}
+                    scroll={{ x: 1360, y: 460 }}
                     locale={{
                         emptyText: allAuditItems.length === 0 ? (
                             <div className="py-8 text-center text-slate-400">

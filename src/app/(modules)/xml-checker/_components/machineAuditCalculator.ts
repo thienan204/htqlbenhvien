@@ -8,6 +8,11 @@ export interface MachineAuditItem {
     maLk: string;
     maBn: string;
     hoTen: string;
+    ngayVao: string;
+    ngayVaoFormatted: string;
+    ngayRa: string;
+    ngayRaFormatted: string;
+    ngayRaDateOnly: string;
     ngayYl: string;
     ngayYlFormatted: string;
     maDichVu: string;
@@ -56,6 +61,21 @@ export function formatXmlDate(rawDate?: string | null): string {
         const m = clean.substring(4, 6);
         const d = clean.substring(6, 8);
         return `${d}/${m}/${y}`;
+    }
+    return clean;
+}
+
+/**
+ * Định dạng ngày ra viện dạng DD-MM-YYYY (thích hợp cho tên Sheet Excel hoặc lọc theo ngày)
+ */
+export function formatXmlDateOnly(rawDate?: string | null): string {
+    if (!rawDate) return '';
+    const clean = String(rawDate).trim();
+    if (clean.length >= 8) {
+        const y = clean.substring(0, 4);
+        const m = clean.substring(4, 6);
+        const d = clean.substring(6, 8);
+        return `${d}-${m}-${y}`;
     }
     return clean;
 }
@@ -293,6 +313,11 @@ export function auditMachineRecords(
         const maLk = String(record.id || record.summary?.MA_LK || '').trim();
         const maBn = String(record.summary?.MA_BN || '').trim();
         const hoTen = String(record.summary?.HO_TEN || '').trim();
+        const ngayVao = String(record.summary?.NGAY_VAO || '').trim();
+        const ngayRa = String(record.summary?.NGAY_RA || '').trim();
+        const ngayVaoFormatted = formatXmlDate(ngayVao);
+        const ngayRaFormatted = formatXmlDate(ngayRa);
+        const ngayRaDateOnly = formatXmlDateOnly(ngayRa) || 'Khong_Xac_Dinh';
 
         const xml3Group = record.groups?.find(g => g.type === 'XML3');
         if (!xml3Group) continue;
@@ -350,6 +375,11 @@ export function auditMachineRecords(
                     maLk,
                     maBn,
                     hoTen,
+                    ngayVao,
+                    ngayVaoFormatted,
+                    ngayRa,
+                    ngayRaFormatted,
+                    ngayRaDateOnly,
                     ngayYl,
                     ngayYlFormatted: formatXmlDate(ngayYl),
                     maDichVu,
