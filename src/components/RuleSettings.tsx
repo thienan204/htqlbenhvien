@@ -95,6 +95,8 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
     const [selectedMasterTable, setSelectedMasterTable] = useState<string>('Mau06_MA_MAY');
     const [selectedMasterCol, setSelectedMasterCol] = useState<string>('MA_MAY');
     const [checkMode, setCheckMode] = useState<string>('NOT_IN');
+    const [ruleTrimEnds, setRuleTrimEnds] = useState<boolean>(true);
+    const [ruleRemoveMiddle, setRuleRemoveMiddle] = useState<boolean>(true);
 
     useEffect(() => {
         setRules(initialRules);
@@ -630,8 +632,23 @@ export default function RuleSettings({ isOpen, onClose, rules: initialRules, onS
                     + Chèn vào biểu thức
                 </Button>
             </div>
+            <div className="flex flex-wrap gap-4 items-center pt-1 border-t border-blue-100 text-[11px] text-slate-700">
+                <span className="font-semibold text-blue-900">Xử lý khoảng trắng:</span>
+                <Checkbox
+                    checked={ruleTrimEnds}
+                    onChange={e => setRuleTrimEnds(e.target.checked)}
+                >
+                    <span className="text-xs">Bỏ khoảng trắng 2 đầu</span>
+                </Checkbox>
+                <Checkbox
+                    checked={ruleRemoveMiddle}
+                    onChange={e => setRuleRemoveMiddle(e.target.checked)}
+                >
+                    <span className="text-xs">Bỏ khoảng trắng ở giữa (trong chuỗi)</span>
+                </Checkbox>
+            </div>
             <div className="text-[11px] text-gray-500 italic">
-                * Mẹo: Cú pháp chuẩn <code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('TênBảng.TênCột', TRƯỜNG_XML)</code> hoạt động linh hoạt với mọi bảng/cột trong cơ sở dữ liệu.
+                * Mẹo: Cú pháp chuẩn <code className="bg-white px-1 border rounded text-red-600">!EXISTS_IN('TênBảng.TênCột', TRƯỜNG_XML)</code> tự động hỗ trợ kiểm tra nguyên cả cụm chuỗi (như mã máy có dấu ;) và tự động bỏ qua khác biệt khoảng trắng thừa.
             </div>
         </div>
     );

@@ -913,20 +913,41 @@ export class ValidationEngine {
 
             const EXISTS_IN = (listName: string, value: any): boolean => {
                 if (!this.masterData || !this.masterData[listName] || value === null || value === undefined) return false;
-                const valStr = String(value).trim();
-                if (!valStr) return false;
-                const parts = valStr.split(';').map(s => s.trim()).filter(Boolean);
-                if (parts.length === 0) return false;
+                const valStr = String(value);
+                const trimmed = valStr.trim();
+                if (!trimmed) return false;
                 const set = this.masterData[listName];
-                return parts.every(p => {
-                    if (set.has(p)) return true;
-                    if (set.has(p.toUpperCase())) return true;
-                    const pLower = p.toLowerCase();
-                    for (const item of set) {
-                        if (item.toLowerCase() === pLower) return true;
-                    }
-                    return false;
-                });
+
+                // 1. Kiểm tra nguyên cả chuỗi trước (Full Match - cả có dấu cách, phân biệt/không phân biệt hoa thường)
+                if (set.has(valStr) || set.has(trimmed) || set.has(trimmed.toUpperCase())) return true;
+                const lower = trimmed.toLowerCase();
+                for (const item of set) {
+                    if (item.toLowerCase() === lower) return true;
+                }
+
+                // 2. So khớp linh hoạt khoảng trắng (loại bỏ khoảng trắng ở giữa và 2 đầu)
+                const noSpace = trimmed.replace(/\s+/g, '').toLowerCase();
+                for (const item of set) {
+                    if (item.replace(/\s+/g, '').toLowerCase() === noSpace) return true;
+                }
+
+                // 3. Nếu chuỗi có dấu chấm phẩy ';', thử kiểm tra từng phần tử con
+                const parts = trimmed.split(';').map(s => s.trim()).filter(Boolean);
+                if (parts.length > 1) {
+                    const allParts = parts.every(p => {
+                        if (set.has(p) || set.has(p.toUpperCase())) return true;
+                        const pLower = p.toLowerCase();
+                        const pNoSpace = p.replace(/\s+/g, '').toLowerCase();
+                        for (const item of set) {
+                            if (item.toLowerCase() === pLower) return true;
+                            if (item.replace(/\s+/g, '').toLowerCase() === pNoSpace) return true;
+                        }
+                        return false;
+                    });
+                    if (allParts) return true;
+                }
+
+                return false;
             };
 
             const CHECK_DUPLICATE_DIFF = (pathSame: string, valSame: any, pathDiff: string, valDiff: any): boolean => {
@@ -1284,28 +1305,58 @@ export class ValidationEngine {
             };
 
             // 0. Handle EXISTS_IN Helper (Dynamic substitution)
-            cleanCode = cleanCode.replace(/(!?)EXISTS_IN\(\s*['"]([^'"]+)['"]\s*,\s*([^)]+)\s*\)/g, (match, notOp, listName, field) => {
+            cleanCode = cleanCode.replace(/(!?)EXISTS_IN\(\s*['"]([^'"]+)['"]\s*,\s*([^,)]+)(?:\s*,\s*['"]?([^'")]+)['"]?)?\s*\)/g, (match, notOp, listName, field) => {
                 const val = getVal(field.trim());
-                const valStr = val !== null && val !== undefined ? String(val).trim() : '';
+                const valStr = val !== null && val !== undefined ? String(val) : '';
+                const trimmed = valStr.trim();
                 let exists = false;
-                if (this.masterData && this.masterData[listName] && valStr !== '') {
-                    const parts = valStr.split(';').map(s => s.trim()).filter(Boolean);
-                    if (parts.length > 0) {
-                        const set = this.masterData[listName];
-                        exists = parts.every(p => {
-                            if (set.has(p)) return true;
-                            if (set.has(p.toUpperCase())) return true;
-                            const pLower = p.toLowerCase();
-                            for (const item of set) {
-                                if (item.toLowerCase() === pLower) return true;
+                if (this.masterData && this.masterData[listName] && trimmed !== '') {
+                    const set = this.masterData[listName];
+
+                    // 1. Kiểm tra nguyên cả chuỗi trước (cả phân biệt hoa thường và không phân biệt)
+                    if (set.has(valStr) || set.has(trimmed) || set.has(trimmed.toUpperCase())) {
+                        exists = true;
+                    } else {
+                        const lower = trimmed.toLowerCase();
+                        for (const item of set) {
+                            if (item.toLowerCase() === lower) {
+                                exists = true;
+                                break;
                             }
-                            return false;
-                        });
+                        }
+                    }
+
+                    // 2. So khớp linh hoạt khoảng trắng (loại bỏ khoảng trắng ở giữa và 2 đầu)
+                    if (!exists) {
+                        const noSpace = trimmed.replace(/\s+/g, '').toLowerCase();
+                        for (const item of set) {
+                            if (item.replace(/\s+/g, '').toLowerCase() === noSpace) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 3. Nếu cả chuỗi không khớp và có dấu ';', kiểm tra từng phần tử con
+                    if (!exists) {
+                        const parts = trimmed.split(';').map(s => s.trim()).filter(Boolean);
+                        if (parts.length > 1) {
+                            exists = parts.every(p => {
+                                if (set.has(p) || set.has(p.toUpperCase())) return true;
+                                const pLower = p.toLowerCase();
+                                const pNoSpace = p.replace(/\s+/g, '').toLowerCase();
+                                for (const item of set) {
+                                    if (item.toLowerCase() === pLower) return true;
+                                    if (item.replace(/\s+/g, '').toLowerCase() === pNoSpace) return true;
+                                }
+                                return false;
+                            });
+                        }
                     }
                 }
                 const result = notOp ? !exists : exists;
                 
-                if (listName.includes('BedCatalog')) {
+                if (listName.includes('BedCatalog') || listName.includes('Mau06')) {
                     console.log(`[EVAL] match: ${match} | valStr: ${valStr} | existsInDB: ${exists} | notOp: ${notOp} | result: ${result}`);
                 }
                 
