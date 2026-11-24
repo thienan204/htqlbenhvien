@@ -285,6 +285,34 @@ export function findSuggestedMachine(
 }
 
 /**
+ * Chuẩn hóa khoảng trắng của mã máy theo 2 tùy chọn độc lập:
+ * - trimEnds: bỏ khoảng trắng 2 đầu
+ * - removeMiddle: bỏ khoảng trắng ở giữa (bên trong chuỗi)
+ */
+export function normalizeMachineWhitespace(
+    text?: string | null,
+    trimEnds: boolean = false,
+    removeMiddle: boolean = false
+): string {
+    if (text === null || text === undefined) return '';
+    let s = String(text);
+    if (!trimEnds && !removeMiddle) return s;
+    if (trimEnds && removeMiddle) return s.replace(/\s+/g, '');
+    if (trimEnds) return s.trim();
+    if (removeMiddle) {
+        const leading = s.match(/^\s*/)?.[0] || '';
+        const trailing = s.match(/\s*$/)?.[0] || '';
+        return leading + s.trim().replace(/\s+/g, '') + trailing;
+    }
+    return s;
+}
+
+export interface MachineAuditOptions {
+    trimEnds?: boolean;
+    removeMiddle?: boolean;
+}
+
+/**
  * Quét toàn bộ hồ sơ XML, đối soát mã máy và sắp xếp kết quả chuẩn theo:
  * MA_LK -> MA_BN -> NGAY_YL -> MA_DICH_VU
  */
@@ -292,15 +320,22 @@ export function auditMachineRecords(
     records: HosoRecord[],
     mau06List: MachineCatalogItem[],
     requiredServiceCodes: Set<string>,
-    departments: Record<string, string> = {}
+    departments: Record<string, string> = {},
+    options: MachineAuditOptions = {}
 ): {
     items: MachineAuditItem[];
     summary: MachineAuditSummary;
 } {
-    // 1. Tạo tập hợp mã máy hợp lệ trong Mẫu 06
+    const trimEnds = Boolean(options.trimEnds);
+    const removeMiddle = Boolean(options.removeMiddle);
+
+    // 1. Tạo tập hợp mã máy hợp lệ trong Mẫu 06 theo cấu hình khoảng trắng
     const mau06MaMaySet = new Set<string>();
     mau06List.forEach(m => {
-        if (m.MA_MAY) mau06MaMaySet.add(m.MA_MAY.trim());
+        if (m.MA_MAY !== undefined && m.MA_MAY !== null) {
+            const normalized = normalizeMachineWhitespace(m.MA_MAY, trimEnds, removeMiddle);
+            if (normalized !== '') mau06MaMaySet.add(normalized);
+        }
     });
 
     const errorItems: MachineAuditItem[] = [];
@@ -331,7 +366,11 @@ export function auditMachineRecords(
             const maDichVu = String(item.MA_DICH_VU || '').trim();
             const tenDichVu = String(item.TEN_DICH_VU || '').trim();
             const ngayYl = String(item.NGAY_YL || '').trim();
-            const rawMaMay = item.MA_MAY !== undefined && item.MA_MAY !== null ? String(item.MA_MAY).trim() : '';
+            // Lấy nguyên chuỗi gốc không tự ý trim khoảng trắng (có như thế nào kiểm tra thế)
+            const rawMaMay = item.MA_MAY !== undefined && item.MA_MAY !== null ? String(item.MA_MAY) : '';
+            // Chuỗi mã máy sau khi áp dụng tuỳ chọn khoảng trắng để so khớp
+            const comparedMaMay = normalizeMachineWhitespace(rawMaMay, trimEnds, removeMiddle);
+
             const maKhoa = String(item.MA_KHOA || record.summary?.MA_KHOA || '').trim();
             const tenKhoa = departments[maKhoa] || maKhoa;
 
@@ -343,8 +382,8 @@ export function auditMachineRecords(
             let errorLabel = '';
 
             // Kiểm tra lỗi 1: Có mã máy nhưng không thuộc Mẫu 06
-            if (rawMaMay !== '') {
-                if (!mau06MaMaySet.has(rawMaMay)) {
+            if (comparedMaMay !== '' && comparedMaMay.trim() !== '') {
+                if (!mau06MaMaySet.has(comparedMaMay)) {
                     errorType = 'NOT_IN_MAU06';
                     errorLabel = 'Mã máy không thuộc Mẫu 06';
                     totalNotInMau06++;

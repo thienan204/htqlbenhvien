@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     Modal, Table, Tag, Card, Row, Col, Statistic, Select, Input,
-    Button, Space, Tooltip, Badge, Alert, Typography, Spin, message
+    Button, Space, Tooltip, Badge, Alert, Typography, Spin, message, Checkbox
 } from 'antd';
 import {
     FileExcelOutlined, SearchOutlined, CheckCircleOutlined,
@@ -49,6 +49,10 @@ export default function MachineAuditModal({
     const [filterNgayRa, setFilterNgayRa] = useState<string>('ALL');
     const [searchText, setSearchText] = useState<string>('');
 
+    // Tùy chọn xử lý khoảng trắng mã máy
+    const [trimEnds, setTrimEnds] = useState<boolean>(false);
+    const [removeMiddle, setRemoveMiddle] = useState<boolean>(false);
+
     // 1. Tải danh mục Mẫu 06 và dịch vụ Mẫu 05 bắt buộc mã máy
     const fetchCatalogData = async () => {
         try {
@@ -90,8 +94,11 @@ export default function MachineAuditModal({
                 } as MachineAuditSummary
             };
         }
-        return auditMachineRecords(records, mau06List, requiredServiceCodes, departments);
-    }, [records, mau06List, requiredServiceCodes, departments, isOpen]);
+        return auditMachineRecords(records, mau06List, requiredServiceCodes, departments, {
+            trimEnds,
+            removeMiddle
+        });
+    }, [records, mau06List, requiredServiceCodes, departments, isOpen, trimEnds, removeMiddle]);
 
     const { items: allAuditItems, summary } = auditResult;
 
@@ -746,6 +753,22 @@ export default function MachineAuditModal({
                             style={{ width: 280 }}
                             allowClear
                         />
+
+                        <div className="flex items-center gap-3 bg-white px-3 py-1 rounded border border-slate-200">
+                            <span className="text-xs font-semibold text-slate-600">Khoảng trắng mã máy:</span>
+                            <Checkbox
+                                checked={trimEnds}
+                                onChange={e => setTrimEnds(e.target.checked)}
+                            >
+                                <span className="text-xs text-slate-700">Bỏ khoảng trắng 2 đầu</span>
+                            </Checkbox>
+                            <Checkbox
+                                checked={removeMiddle}
+                                onChange={e => setRemoveMiddle(e.target.checked)}
+                            >
+                                <span className="text-xs text-slate-700">Bỏ khoảng trắng ở giữa</span>
+                            </Checkbox>
+                        </div>
                     </Space>
 
                     <div className="text-xs text-slate-500 font-medium">
