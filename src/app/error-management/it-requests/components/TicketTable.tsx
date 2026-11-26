@@ -160,7 +160,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
             title: 'Lỗi yêu cầu',
             dataIndex: 'ten_loi',
             key: 'ten_loi',
-            width: 250,
+            width: 320,
             render: (text: string, record: Ticket) => {
                 const hasDetails = !!record.ma_ba || (record.dynamicFields && Object.keys(record.dynamicFields).length > 0);
                 return (
@@ -173,7 +173,15 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                     </Tag>
                                 </Tooltip>
                             )}
-                            <span className="min-w-0 break-all">{renderTextWithLinks(text)}</span>
+                            <Tooltip 
+                                title={text && text.length > 50 ? text : undefined} 
+                                placement="topLeft"
+                                overlayClassName="max-w-[450px]"
+                            >
+                                <span className="min-w-0 break-words leading-relaxed [overflow-wrap:anywhere] cursor-default">
+                                    {renderTextWithLinks(text)}
+                                </span>
+                            </Tooltip>
                         </div>
                         {hasDetails && (
                             <div className="mt-1.5 flex flex-col gap-2">
@@ -211,7 +219,20 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                                                         </div>
                                                     );
                                                 }
-                                                return <Tag key={k} className="text-xs"><b>{k}:</b> {v as string}</Tag>;
+                                                const strVal = String(v ?? '');
+                                                const tagEl = (
+                                                    <Tag key={k} className="text-xs whitespace-normal break-words h-auto py-0.5 max-w-full">
+                                                        <b>{k}:</b> {strVal}
+                                                    </Tag>
+                                                );
+                                                if (strVal.length > 40) {
+                                                    return (
+                                                        <Tooltip key={k} title={`${k}: ${strVal}`} placement="topLeft" overlayClassName="max-w-[400px]">
+                                                            {tagEl}
+                                                        </Tooltip>
+                                                    );
+                                                }
+                                                return tagEl;
                                             });
                                     })()}
                                     {record.sdt && !record.dynamicFields?.['SĐT'] && !record.dynamicFields?.['sdt'] && (
@@ -416,14 +437,14 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                 return (
                     <div className="space-y-1.5 min-w-0 max-w-full">
                         {text ? (
-                            <div className="text-slate-700 whitespace-pre-wrap leading-relaxed break-all">
+                            <div className="text-slate-700 whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere]">
                                 {renderTextWithLinks(text)}
                             </div>
                         ) : (
                             (!pauseReason || record.status !== 'PAUSED') && <div className="text-slate-400 italic">-</div>
                         )}
                         {record.status === 'PAUSED' && pauseReason && (
-                            <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 leading-relaxed break-all">
+                            <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 leading-relaxed break-words [overflow-wrap:anywhere]">
                                 ⏸️ <b>Lý do tạm dừng:</b> {renderTextWithLinks(pauseReason)}
                             </div>
                         )}
@@ -431,7 +452,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({
                             const vResp = record.vendorResponse || (record.dynamicFields as any)?.vendorResponse || (record.dynamicFields as any)?.['Phản hồi của đối tác'];
                             if (!vResp) return null;
                             return (
-                                <div className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 leading-relaxed break-all">
+                                <div className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 leading-relaxed break-words [overflow-wrap:anywhere]">
                                     💬 <b>Đối tác ({record.vendorName || 'Đối tác ngoài'}):</b> {renderTextWithLinks(vResp)}
                                 </div>
                             );

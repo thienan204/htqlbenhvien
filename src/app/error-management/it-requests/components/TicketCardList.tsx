@@ -284,9 +284,15 @@ export const TicketCardList: React.FC<TicketCardListProps> = ({
 
                             {/* HÀNG 2: TIÊU ĐỀ LỖI & MÃ HỒ SƠ / BỆNH ÁN */}
                             <div>
-                                <div className="font-semibold text-slate-900 text-sm sm:text-base leading-snug">
-                                    {renderTextWithLinks(ticket.ten_loi)}
-                                </div>
+                                <Tooltip
+                                    title={ticket.ten_loi && ticket.ten_loi.length > 50 ? ticket.ten_loi : undefined}
+                                    placement="topLeft"
+                                    overlayClassName="max-w-[450px]"
+                                >
+                                    <div className="font-semibold text-slate-900 text-sm sm:text-base leading-snug break-words [overflow-wrap:anywhere] cursor-default">
+                                        {renderTextWithLinks(ticket.ten_loi)}
+                                    </div>
+                                </Tooltip>
 
                                 {ticket.ma_ba && (
                                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
