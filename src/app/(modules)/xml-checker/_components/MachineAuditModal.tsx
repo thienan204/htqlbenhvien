@@ -21,6 +21,7 @@ import {
     auditMachineRecords
 } from './machineAuditCalculator';
 import { MachineCatalogItem } from '@/app/api/xml-checker/machine-audit-data/route';
+import type { ValidationRule } from '@/lib/validation';
 
 const { Text } = Typography;
 
@@ -29,6 +30,7 @@ interface MachineAuditModalProps {
     onClose: () => void;
     records: any[];
     departments?: Record<string, string>;
+    rules?: ValidationRule[];
     onSelectRecord?: (record: any) => void;
 }
 
@@ -37,6 +39,7 @@ export default function MachineAuditModal({
     onClose,
     records,
     departments = {},
+    rules = [],
     onSelectRecord
 }: MachineAuditModalProps) {
     const [loading, setLoading] = useState<boolean>(false);
@@ -52,6 +55,26 @@ export default function MachineAuditModal({
     // Tùy chọn xử lý khoảng trắng mã máy
     const [trimEnds, setTrimEnds] = useState<boolean>(false);
     const [removeMiddle, setRemoveMiddle] = useState<boolean>(false);
+
+    // Tùy chọn đồng bộ điều kiện lọc & trạng thái từ Cấu hình Quy tắc (/rules)
+    const [applyRules, setApplyRules] = useState<boolean>(true);
+
+    // Lấy cấu hình 2 quy tắc mã máy từ trang /rules
+    const mau06Rule = useMemo(() => {
+        const matches = rules.filter(r =>
+            r.id === 'rule_mau06_machine_catalog_audit' ||
+            r.code?.includes('Mau06_MA_MAY')
+        );
+        return matches.find(r => r.active) || matches[0];
+    }, [rules]);
+
+    const mau05Rule = useMemo(() => {
+        const matches = rules.filter(r =>
+            r.id === '1768445961548' ||
+            r.code?.includes('Mau05_REQUIRE_MACHINE')
+        );
+        return matches.find(r => r.active) || matches[0];
+    }, [rules]);
 
     // 1. Tải danh mục Mẫu 06 và dịch vụ Mẫu 05 bắt buộc mã máy
     const fetchCatalogData = async () => {
@@ -96,9 +119,12 @@ export default function MachineAuditModal({
         }
         return auditMachineRecords(records, mau06List, requiredServiceCodes, departments, {
             trimEnds,
-            removeMiddle
+            removeMiddle,
+            applyRules,
+            mau06Rule,
+            mau05Rule
         });
-    }, [records, mau06List, requiredServiceCodes, departments, isOpen, trimEnds, removeMiddle]);
+    }, [records, mau06List, requiredServiceCodes, departments, isOpen, trimEnds, removeMiddle, applyRules, mau06Rule, mau05Rule]);
 
     const { items: allAuditItems, summary } = auditResult;
 
@@ -654,7 +680,7 @@ export default function MachineAuditModal({
                             <Statistic
                                 title={<span className="text-xs font-semibold text-slate-600">Tổng dòng XML3 đã quét</span>}
                                 value={summary.totalXml3Scanned}
-                                valueStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                                styles={{ content: { color: '#0f172a', fontWeight: 'bold' } }}
                                 prefix={<ToolOutlined className="text-slate-400 mr-1" />}
                             />
                             <div className="text-[11px] text-slate-500 mt-1">
@@ -667,7 +693,7 @@ export default function MachineAuditModal({
                             <Statistic
                                 title={<span className="text-xs font-semibold text-red-700">Tổng dòng sai mã máy</span>}
                                 value={summary.totalErrors}
-                                valueStyle={{ color: '#dc2626', fontWeight: 'bold' }}
+                                styles={{ content: { color: '#dc2626', fontWeight: 'bold' } }}
                                 prefix={<CloseCircleOutlined className="text-red-500 mr-1" />}
                             />
                             <div className="text-[11px] text-red-600 mt-1">
@@ -680,7 +706,7 @@ export default function MachineAuditModal({
                             <Statistic
                                 title={<span className="text-xs font-semibold text-emerald-700">Đã đề xuất mã máy</span>}
                                 value={summary.totalWithSuggestions}
-                                valueStyle={{ color: '#059669', fontWeight: 'bold' }}
+                                styles={{ content: { color: '#059669', fontWeight: 'bold' } }}
                                 prefix={<CheckCircleOutlined className="text-emerald-500 mr-1" />}
                             />
                             <div className="text-[11px] text-emerald-600 mt-1">
@@ -693,7 +719,7 @@ export default function MachineAuditModal({
                             <Statistic
                                 title={<span className="text-xs font-semibold text-blue-700">Thiết bị trong Mẫu 06</span>}
                                 value={mau06List.length}
-                                valueStyle={{ color: '#2563eb', fontWeight: 'bold' }}
+                                styles={{ content: { color: '#2563eb', fontWeight: 'bold' } }}
                                 prefix={<DesktopOutlined className="text-blue-500 mr-1" />}
                             />
                             <div className="text-[11px] text-blue-600 mt-1">
@@ -769,6 +795,27 @@ export default function MachineAuditModal({
                                 <span className="text-xs text-slate-700">Bỏ khoảng trắng ở giữa</span>
                             </Checkbox>
                         </div>
+
+                        <Tooltip
+                            title={
+                                <div className="text-xs space-y-1">
+                                    <div>Tự động đồng bộ trạng thái Bật/Tắt &amp; điều kiện lọc (MA_NHOM, Mã DV...) từ trang Quy tắc (/rules):</div>
+                                    <div>• Mẫu 06: {mau06Rule ? (mau06Rule.active ? 'Đang BẬT' : 'Đang TẮT') : 'Mặc định BẬT'} {mau06Rule?.conditionField ? `(${mau06Rule.conditionField}=${mau06Rule.conditionValue})` : ''}</div>
+                                    <div>• Mẫu 05: {mau05Rule ? (mau05Rule.active ? 'Đang BẬT' : 'Đang TẮT') : 'Mặc định BẬT'} {mau05Rule?.conditionField ? `(${mau05Rule.conditionField}=${mau05Rule.conditionValue})` : ''}</div>
+                                </div>
+                            }
+                        >
+                            <div className="flex items-center bg-indigo-50 px-3 py-1 rounded border border-indigo-200">
+                                <Checkbox
+                                    checked={applyRules}
+                                    onChange={e => setApplyRules(e.target.checked)}
+                                >
+                                    <span className="text-xs font-semibold text-indigo-700">
+                                        Áp dụng điều kiện Rule (/rules)
+                                    </span>
+                                </Checkbox>
+                            </div>
+                        </Tooltip>
                     </Space>
 
                     <div className="text-xs text-slate-500 font-medium">

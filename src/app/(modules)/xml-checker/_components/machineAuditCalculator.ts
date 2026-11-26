@@ -1,5 +1,6 @@
 import { HosoRecord, getXmlDataList } from '@/lib/xml';
 import { MachineCatalogItem } from '@/app/api/xml-checker/machine-audit-data/route';
+import type { ValidationRule } from '@/lib/validation';
 
 export type MachineAuditErrorType = 'NOT_IN_MAU06' | 'MISSING_REQUIRED';
 
@@ -307,9 +308,93 @@ export function normalizeMachineWhitespace(
     return s;
 }
 
+/**
+ * Trích xuất giá trị trường dữ liệu từ item XML3 hoặc summary XML1 (hỗ trợ cả prefix XML1. và không phân biệt hoa thường)
+ */
+function extractXmlFieldValue(item: any, record: HosoRecord, fieldName: string): string {
+    if (!fieldName) return '';
+    const cleanField = fieldName.trim();
+
+    let rawVal: any = undefined;
+    if (cleanField.toUpperCase().startsWith('XML1.')) {
+        const subKey = cleanField.slice(5);
+        const summary: any = record.summary || {};
+        rawVal = summary[subKey];
+        if (rawVal === undefined) {
+            const actualKey = Object.keys(summary).find(k => k.toLowerCase() === subKey.toLowerCase());
+            if (actualKey) rawVal = summary[actualKey];
+        }
+    } else {
+        rawVal = item?.[cleanField];
+        if (rawVal === undefined && item) {
+            const actualKey = Object.keys(item).find(k => k.toLowerCase() === cleanField.toLowerCase());
+            if (actualKey) rawVal = item[actualKey];
+        }
+        if (rawVal === undefined && record.summary) {
+            const summary: any = record.summary;
+            rawVal = summary[cleanField];
+            if (rawVal === undefined) {
+                const actualKey = Object.keys(summary).find(k => k.toLowerCase() === cleanField.toLowerCase());
+                if (actualKey) rawVal = summary[actualKey];
+            }
+        }
+    }
+
+    if (rawVal === null || rawVal === undefined) return '';
+    if (typeof rawVal === 'object' && rawVal['#text'] !== undefined) {
+        return String(rawVal['#text']).trim();
+    }
+    return String(rawVal).trim();
+}
+
+/**
+ * Kiểm tra xem 1 dòng XML3 có thỏa mãn điều kiện kích hoạt của Rule (/rules) hay không:
+ * - Trạng thái active
+ * - Trường điều kiện (conditionField / conditionValue, ví dụ: MA_NHOM)
+ * - Mã dịch vụ điều kiện (conditionMaDichVuValue)
+ * - Trường loại trừ (excludeConditionField / excludeConditionValue, ví dụ loại trừ MA_NHOM = 10)
+ */
+export function matchesRuleConditions(item: any, record: HosoRecord, rule?: ValidationRule): boolean {
+    if (!rule) return true;
+    if (rule.active === false) return false;
+
+    // 1. Điều kiện bắt buộc (VD: conditionField = 'MA_NHOM', conditionValue = '1,2,3,8,18')
+    if (rule.conditionField && rule.conditionValue) {
+        const valStr = extractXmlFieldValue(item, record, rule.conditionField);
+        const allowedValues = rule.conditionValue.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean);
+        if (allowedValues.length > 0 && (!valStr || !allowedValues.includes(valStr))) {
+            return false;
+        }
+    }
+
+    // 2. Điều kiện mã dịch vụ
+    if (rule.conditionMaDichVuValue) {
+        const fieldToCheck = rule.conditionMaDichVu || 'MA_DICH_VU';
+        const valStr = extractXmlFieldValue(item, record, fieldToCheck);
+        const allowedValues = rule.conditionMaDichVuValue.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean);
+        if (allowedValues.length > 0 && (!valStr || !allowedValues.includes(valStr))) {
+            return false;
+        }
+    }
+
+    // 3. Điều kiện loại trừ (VD: excludeConditionField = 'MA_NHOM', excludeConditionValue = '10,11')
+    if (rule.excludeConditionField && rule.excludeConditionValue) {
+        const valStr = extractXmlFieldValue(item, record, rule.excludeConditionField);
+        const excludedValues = rule.excludeConditionValue.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean);
+        if (valStr && excludedValues.includes(valStr)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 export interface MachineAuditOptions {
     trimEnds?: boolean;
     removeMiddle?: boolean;
+    applyRules?: boolean;
+    mau06Rule?: ValidationRule;
+    mau05Rule?: ValidationRule;
 }
 
 /**
@@ -328,6 +413,7 @@ export function auditMachineRecords(
 } {
     const trimEnds = Boolean(options.trimEnds);
     const removeMiddle = Boolean(options.removeMiddle);
+    const applyRules = options.applyRules !== undefined ? options.applyRules : true;
 
     // 1. Tạo tập hợp mã máy hợp lệ trong Mẫu 06 theo cấu hình khoảng trắng
     const mau06MaMaySet = new Set<string>();
@@ -364,7 +450,10 @@ export function auditMachineRecords(
             totalXml3Scanned++;
 
             const maDichVu = String(item.MA_DICH_VU || '').trim();
-            const tenDichVu = String(item.TEN_DICH_VU || '').trim();
+            const rawTenDv = String(item.TEN_DICH_VU || '').trim();
+            const rawTenVt = String(item.TEN_VAT_TU || '').trim();
+            const maNhom = String(item.MA_NHOM || '').trim();
+            const tenDichVu = rawTenDv || (rawTenVt ? `[VTYT${maNhom ? ` - Nhóm ${maNhom}` : ''}] ${rawTenVt}` : '');
             const ngayYl = String(item.NGAY_YL || '').trim();
             // Lấy nguyên chuỗi gốc không tự ý trim khoảng trắng (có như thế nào kiểm tra thế)
             const rawMaMay = item.MA_MAY !== undefined && item.MA_MAY !== null ? String(item.MA_MAY) : '';
@@ -383,14 +472,20 @@ export function auditMachineRecords(
 
             // Kiểm tra lỗi 1: Có mã máy nhưng không thuộc Mẫu 06
             if (comparedMaMay !== '' && comparedMaMay.trim() !== '') {
-                if (!mau06MaMaySet.has(comparedMaMay)) {
+                const shouldCheckMau06 = applyRules
+                    ? matchesRuleConditions(item, record, options.mau06Rule)
+                    : true;
+                if (shouldCheckMau06 && !mau06MaMaySet.has(comparedMaMay)) {
                     errorType = 'NOT_IN_MAU06';
                     errorLabel = 'Mã máy không thuộc Mẫu 06';
                     totalNotInMau06++;
                 }
             } else {
                 // Kiểm tra lỗi 2: Không có mã máy nhưng dịch vụ bắt buộc có theo Mẫu 05
-                if (maDichVu && requiredServiceCodes.has(maDichVu)) {
+                const shouldCheckMau05 = applyRules
+                    ? matchesRuleConditions(item, record, options.mau05Rule)
+                    : true;
+                if (shouldCheckMau05 && maDichVu && requiredServiceCodes.has(maDichVu)) {
                     errorType = 'MISSING_REQUIRED';
                     errorLabel = 'Thiếu mã máy bắt buộc (Mẫu 05)';
                     totalMissingRequired++;

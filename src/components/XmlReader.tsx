@@ -386,16 +386,37 @@ export default function XmlReader() {
     
     // Modal đối soát mã máy XML3 & Đề xuất Mẫu 06
     const [isMachineAuditModalOpen, setIsMachineAuditModalOpen] = useState(false);
+    const mau06Rule = React.useMemo(() => {
+        const matches = rules.filter(r => r.id === 'rule_mau06_machine_catalog_audit' || r.code?.includes('Mau06_MA_MAY'));
+        return matches.find(r => r.active) || matches[0];
+    }, [rules]);
+    const mau05Rule = React.useMemo(() => {
+        const matches = rules.filter(r => r.id === '1768445961548' || r.code?.includes('Mau05_REQUIRE_MACHINE'));
+        return matches.find(r => r.active) || matches[0];
+    }, [rules]);
+    const isMau06RuleActive = mau06Rule ? Boolean(mau06Rule.active) : true;
+    const isMau05RuleActive = mau05Rule ? Boolean(mau05Rule.active) : true;
+
     const machineErrorCount = React.useMemo(() => {
-        return records.filter(r => r.validationResults?.some(v => 
-            v.ruleId === 'rule_mau06_machine_catalog_audit' ||
-            v.ruleId?.includes('mau06') ||
-            v.ruleName?.toLowerCase().includes('mã máy') ||
-            v.message?.toLowerCase().includes('mã máy') ||
-            v.message?.toLowerCase().includes('mẫu 06') ||
-            v.message?.toLowerCase().includes('mau06')
-        )).length;
-    }, [records]);
+        if (!isMau06RuleActive && !isMau05RuleActive) return 0;
+        return records.filter(r => r.validationResults?.some(v => {
+            if (!isMau06RuleActive && (v.ruleId === 'rule_mau06_machine_catalog_audit' || v.ruleId === mau06Rule?.id || v.message?.toLowerCase().includes('mẫu 06'))) {
+                return false;
+            }
+            if (!isMau05RuleActive && (v.ruleId === '1768445961548' || v.ruleId === mau05Rule?.id || v.message?.toLowerCase().includes('bắt buộc phải có mã máy'))) {
+                return false;
+            }
+            return (
+                v.ruleId === 'rule_mau06_machine_catalog_audit' ||
+                v.ruleId === '1768445961548' ||
+                v.ruleId?.includes('mau06') ||
+                v.ruleName?.toLowerCase().includes('mã máy') ||
+                v.message?.toLowerCase().includes('mã máy') ||
+                v.message?.toLowerCase().includes('mẫu 06') ||
+                v.message?.toLowerCase().includes('mau06')
+            );
+        })).length;
+    }, [records, isMau06RuleActive, isMau05RuleActive, mau06Rule, mau05Rule]);
 
     // Modal đối soát tiền ngày giường & Khoa phòng
     const [isBedAuditModalOpen, setIsBedAuditModalOpen] = useState(false);
@@ -2966,6 +2987,7 @@ export default function XmlReader() {
                 onClose={() => setIsMachineAuditModalOpen(false)}
                 records={records}
                 departments={departments}
+                rules={rules}
                 onSelectRecord={(rec) => {
                     setSelectedRecord(rec as ExtendedHosoRecord);
                     setActiveTab('XML3');
