@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined, DiffOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined, DiffOutlined, SettingOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
+import Link from 'next/link';
 import { getBasePath } from '@/utils/config';
 import { useAuth } from '@/contexts/AuthContext';
 import MachineReconciliationModal from './_components/MachineReconciliationModal';
@@ -28,7 +29,7 @@ export default function Mau06CatalogPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [isMounted, setIsMounted] = useState(false);
-    const { user } = useAuth();
+    const { user, hasPermission } = useAuth();
 
     useEffect(() => {
         setIsMounted(true);
@@ -37,8 +38,34 @@ export default function Mau06CatalogPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            // Đọc cấu hình phân quyền xem toàn viện động từ SystemConfig (không fix cứng Role trong code)
+            let filterByDept = true;
+            let viewAllRoles: string[] = ['ADMIN'];
+            try {
+                const configRes = await fetch(`${getBasePath()}/api/system-config?module=DANH_MUC_BHYT`);
+                if (configRes.ok) {
+                    const cfgJson = await configRes.json();
+                    const configsList = Array.isArray(cfgJson?.configs) ? cfgJson.configs : [];
+                    const filterCfg = configsList.find((c: any) => c.key === 'MAU06_FILTER_BY_DEPARTMENT');
+                    const rolesCfg = configsList.find((c: any) => c.key === 'MAU06_VIEW_ALL_ROLES');
+                    if (filterCfg) {
+                        filterByDept = filterCfg.value === 'true' || filterCfg.value === '1';
+                    }
+                    if (rolesCfg && typeof rolesCfg.value === 'string') {
+                        viewAllRoles = rolesCfg.value.split(',').map((s: string) => s.trim()).filter(Boolean);
+                    }
+                }
+            } catch {
+                // Giữ mặc định an toàn nếu chưa lấy được cấu hình
+            }
+
+            const canViewAll = user && (
+                viewAllRoles.includes(user.role) ||
+                hasPermission('MENU_CATALOG_06', 'EDIT')
+            );
+
             let url = `${getBasePath()}/api/mau06-catalog`;
-            if (user && user.role !== 'ADMIN' && user.ma_khoa) {
+            if (filterByDept && user && !canViewAll && user.ma_khoa) {
                 url += `?ma_khoa=${user.ma_khoa}`;
             }
 
@@ -69,7 +96,7 @@ export default function Mau06CatalogPage() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [user?.role, user?.ma_khoa]);
 
     useEffect(() => {
         if (isModalOpen) {
@@ -180,6 +207,47 @@ export default function Mau06CatalogPage() {
         }
     };
 
+    const handleDeleteBulk = async () => {
+        if (selectedRowKeys.length === 0) return;
+        try {
+            setLoading(true);
+            const res = await fetch(`${getBasePath()}/api/mau06-catalog/bulk`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys })
+            });
+            if (res.ok) {
+                message.success(`Đã xóa ${selectedRowKeys.length} bản ghi đã chọn`);
+                setSelectedRowKeys([]);
+                fetchData();
+            } else {
+                message.error('Xóa thất bại');
+            }
+        } catch (error) {
+            message.error('Lỗi khi xóa');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateMachineType = async (recordId: string, loaiMayCode: string | null) => {
+        try {
+            const res = await fetch(`${getBasePath()}/api/mau06-catalog/${recordId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ loai_may_code: loaiMayCode })
+            });
+            if (res.ok) {
+                message.success('Đã cập nhật phân loại máy');
+                setData(prev => prev.map(item => item.id === recordId ? { ...item, loai_may_code: loaiMayCode } : item));
+            } else {
+                message.error('Không thể cập nhật phân loại máy');
+            }
+        } catch (error) {
+            message.error('Lỗi khi cập nhật phân loại máy');
+        }
+    };
+
     const handleSave = async (values: any) => {
         try {
             const url = editingRecord ? `${getBasePath()}/api/mau06-catalog/${editingRecord.id}` : `${getBasePath()}/api/mau06-catalog`;
@@ -230,7 +298,7 @@ export default function Mau06CatalogPage() {
     const handleDownloadTemplate = () => {
         const headers = [
             'TEN_TB', 'TEN_BV', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
-            'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
+            'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB', 'loai_may_code'
         ];
 
         const wb = XLSX.utils.book_new();
@@ -240,17 +308,52 @@ export default function Mau06CatalogPage() {
     };
 
     const handleExportData = () => {
-        const headers = [
-            'TEN_TB', 'TEN_BV', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
-            'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
+        const exportHeaders = [
+            'STT', 'MA_MAY', 'TEN_TB', 'TEN_BV', 'KHOA_PHONG',
+            'PHAN_LOAI_MAY', 'MA_LOAI_MAY', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX',
+            'NAM_SX', 'NAM_SD', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
         ];
 
-        const exportData = data.map(item => headers.map(key => item[key] !== undefined && item[key] !== null ? item[key] : ''));
+        // Ưu tiên danh sách đã chọn qua checkbox, nếu không chọn thì lấy danh sách đang lọc trên bảng
+        const sourceData = selectedRowKeys.length > 0 
+            ? data.filter(item => selectedRowKeys.includes(item.id)) 
+            : filteredData;
+
+        if (sourceData.length === 0) {
+            message.warning('Không có dữ liệu để xuất!');
+            return;
+        }
+
+        const exportRows = sourceData.map((item, index) => {
+            const matchedType = machineTypes.find(t => t.code === item.loai_may_code);
+            return [
+                index + 1,
+                item.MA_MAY || '',
+                item.TEN_TB || '',
+                item.TEN_BV || '',
+                item.ten_khoa_su_dung || '',
+                matchedType ? matchedType.name : (item.loai_may_code || ''),
+                item.loai_may_code || '',
+                item.KY_HIEU || '',
+                item.CONGTY_SX || '',
+                item.NUOC_SX || '',
+                item.NAM_SX ?? '',
+                item.NAM_SD ?? '',
+                item.SO_LUU_HANH || '',
+                item.HD_TU || '',
+                item.HD_DEN || '',
+                item.TU_NGAY || '',
+                item.DEN_NGAY || '',
+                item.MA_CSKCB || ''
+            ];
+        });
 
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...exportData]);
+        const ws = XLSX.utils.aoa_to_sheet([exportHeaders, ...exportRows]);
         XLSX.utils.book_append_sheet(wb, ws, 'Mau06_DM_Export');
-        XLSX.writeFile(wb, 'Mau06_TBYT_Export.xlsx');
+        const fileName = `Mau06_TBYT_Export_${selectedRowKeys.length > 0 ? 'DaChon_' : ''}${new Date().toISOString().slice(0, 10)}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        message.success(`Đã xuất Excel thành công (${sourceData.length} thiết bị)!`);
     };
 
     const handleImportExcel = (info: any) => {
@@ -293,32 +396,6 @@ export default function Mau06CatalogPage() {
         return false;
     };
 
-    const handleRecoverHospitalNames = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`${getBasePath()}/api/mau06-catalog`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'RECOVER_HOSPITAL_NAMES' })
-            });
-            const result = await res.json();
-            if (res.ok && result.success) {
-                if (result.recoveredCount > 0) {
-                    message.success(result.message || `Đã khôi phục ${result.recoveredCount} thiết bị.`);
-                    fetchData();
-                } else {
-                    message.info('Không phát hiện thiết bị nào bị mất Tên bệnh viện trong lịch sử.');
-                }
-            } else {
-                message.error(result.error || 'Khôi phục thất bại');
-            }
-        } catch (error) {
-            message.error('Lỗi khi khôi phục');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const columns = [
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1 },
         { title: 'Mã Máy', dataIndex: 'MA_MAY', width: 150 },
@@ -338,11 +415,22 @@ export default function Mau06CatalogPage() {
         { 
             title: 'Phân loại (Loại máy)', 
             dataIndex: 'loai_may_code', 
-            width: 200,
-            render: (code: string) => {
-                const type = machineTypes.find(t => t.code === code);
-                return type ? type.name : code;
-            }
+            width: 230,
+            render: (code: string, record: any) => (
+                <Select
+                    size="small"
+                    showSearch
+                    allowClear
+                    placeholder="-- Chọn loại máy --"
+                    value={code || undefined}
+                    className="w-full"
+                    onChange={(newCode) => handleUpdateMachineType(record.id, newCode || null)}
+                    filterOption={(input, option) =>
+                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={machineTypes.map(t => ({ value: t.code, label: t.name }))}
+                />
+            )
         },
         { title: 'Model (Ký hiệu)', dataIndex: 'KY_HIEU', width: 150 },
         { title: 'Công ty SX', dataIndex: 'CONGTY_SX', width: 200 },
@@ -391,9 +479,18 @@ export default function Mau06CatalogPage() {
     });
 
     return (
-        <div className="p-6 h-full flex flex-col bg-slate-50 space-y-4">
-            <div className="flex justify-between items-center">
+        <div className="p-6 h-full w-full min-w-0 flex flex-col bg-slate-50 space-y-4 overflow-x-hidden">
+            <div className="flex flex-wrap justify-between items-center gap-2">
                 <h1 className="text-2xl font-bold text-slate-800 m-0">Danh mục Thiết bị Y tế (Mẫu 06/DM)</h1>
+                {isMounted && user?.role === 'ADMIN' && (
+                    <Tooltip title="Tùy chỉnh cấu hình danh sách Role được xem toàn bộ thiết bị (không bị lọc theo khoa)">
+                        <Link href="/system-config">
+                            <Button icon={<SettingOutlined />} size="small" className="text-slate-600 border-slate-300">
+                                Cấu hình phân quyền xem
+                            </Button>
+                        </Link>
+                    </Tooltip>
+                )}
             </div>
 
             <Tabs 
@@ -407,29 +504,20 @@ export default function Mau06CatalogPage() {
                 className="mb-[-16px]"
             />
 
-            <Card className="flex-1 drop-shadow-sm flex flex-col border-slate-200">
-                <div className="flex justify-between items-center mb-4">
-                    <Space>
-                        <Input.Search placeholder="Tìm Tên TB, Mã máy, Model, Tên BV..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 300 }} />
+            <Card className="flex-1 min-w-0 drop-shadow-sm flex flex-col border-slate-200">
+                <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+                    <Space wrap>
+                        <Input.Search placeholder="Tìm Tên TB, Mã máy, Model, Tên BV..." allowClear onChange={e => { setSearchText(e.target.value); setCurrentPage(1); }} style={{ width: 260 }} />
                         <Select
                             placeholder="Lọc Khoa/Phòng"
                             allowClear
                             showSearch
-                            className="min-w-[200px]"
+                            className="min-w-[180px]"
                             value={filterDept}
                             onChange={(value) => { setFilterDept(value); setCurrentPage(1); }}
                             options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
                         />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
-                        <Tooltip title="Tự động tìm trong lịch sử và khôi phục lại Tên Bệnh viện cho các máy đang bị trống">
-                            <Button 
-                                icon={<SyncOutlined />} 
-                                onClick={handleRecoverHospitalNames}
-                                className="text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100"
-                            >
-                                Khôi phục Tên BV
-                            </Button>
-                        </Tooltip>
                         {selectedRowKeys.length > 0 && (
                             <>
                                 <Button className="bg-green-500 text-white border-none hover:bg-green-600" onClick={() => handleBulkUpdateStatus(true)}>
@@ -441,7 +529,7 @@ export default function Mau06CatalogPage() {
                             </>
                         )}
                     </Space>
-                    <Space>
+                    <Space wrap>
                         <Button
                             icon={<DiffOutlined />}
                             onClick={() => setIsReconciliationModalOpen(true)}
@@ -452,17 +540,34 @@ export default function Mau06CatalogPage() {
                             Đối soát Cổng - HIS
                         </Button>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
-                        {isMounted && user?.role === 'ADMIN' && (
+                        {selectedRowKeys.length > 0 ? (
                             <Popconfirm 
-                                title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
-                                description="Hành động này sẽ xóa sạch danh mục và không thể hoàn tác. Bạn có chắc chắn không?"
-                                onConfirm={handleDeleteAll} 
-                                okText="Có, Xóa hết" 
+                                title={`Xác nhận xóa ${selectedRowKeys.length} thiết bị đã chọn?`}
+                                description="Hành động này sẽ xóa vĩnh viễn các dòng đã chọn theo checkbox và không thể hoàn tác."
+                                onConfirm={handleDeleteBulk} 
+                                okText="Có, Xóa" 
                                 cancelText="Không"
                                 okButtonProps={{ danger: true }}
                             >
-                                <Button danger type="primary" icon={<DeleteOutlined />}>Xóa toàn bộ</Button>
+                                <Button danger type="primary" icon={<DeleteOutlined />}>
+                                    Xóa đã chọn ({selectedRowKeys.length})
+                                </Button>
                             </Popconfirm>
+                        ) : (
+                            isMounted && user?.role === 'ADMIN' && (
+                                <Popconfirm 
+                                    title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
+                                    description="Hành động này sẽ xóa sạch danh mục và không thể hoàn tác. Bạn có chắc chắn không?"
+                                    onConfirm={handleDeleteAll} 
+                                    okText="Có, Xóa hết" 
+                                    cancelText="Không"
+                                    okButtonProps={{ danger: true }}
+                                >
+                                    <Button danger type="primary" icon={<DeleteOutlined />}>
+                                        Xóa toàn bộ
+                                    </Button>
+                                </Popconfirm>
+                            )
                         )}
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600">Tải file mẫu</Button>
                         <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">

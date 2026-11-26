@@ -221,6 +221,35 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         order: 30,
         tooltipOff: '⚪ Đang TẮT (Linh hoạt): Nếu ngày đó chưa chấm công, hệ thống mặc định toàn bộ Bác sĩ, Điều dưỡng có CCHN trong khoa đều đi làm bình thường để khoa có thể chia lịch nhanh. Nhân sự không có CCHN (như Hộ lý) luôn bị loại trừ.',
         tooltipOn: '🟢 Đang BẬT (Kỷ luật nghiêm ngặt): Ngày chọn xếp lịch bắt buộc phải có dữ liệu chấm công/điểm danh. Nếu chưa chấm công, hệ thống sẽ chặn và yêu cầu điểm danh trước khi chia lịch.'
+    },
+
+    // --- CẤU HÌNH PHÂN HỆ: DANH MỤC MẪU BHYT (/mau06-catalog) ---
+    {
+        key: 'MAU06_FILTER_BY_DEPARTMENT',
+        value: 'true',
+        title: 'Giới hạn danh sách thiết bị Mẫu 06 theo Khoa/Phòng của tài khoản',
+        description: 'Khi BẬT: Tài khoản không thuộc danh sách Role xem toàn viện sẽ chỉ thấy các thiết bị thuộc khoa của mình. Khi TẮT: Tất cả tài khoản có quyền vào trang đều xem được danh sách máy toàn viện.',
+        category: 'MODULE',
+        module: 'DANH_MUC_BHYT',
+        route: '/mau06-catalog',
+        dataType: 'BOOLEAN',
+        defaultValue: 'true',
+        order: 35,
+        tooltipOff: '⚪ Đang TẮT: Mọi tài khoản có quyền vào trang Mẫu 06 đều xem được toàn bộ thiết bị của tất cả các khoa.',
+        tooltipOn: '🟢 Đang BẬT: Chỉ các Role được chọn trong danh sách xem toàn viện mới thấy tất cả máy; các tài khoản khác chỉ thấy máy thuộc khoa của mình.'
+    },
+    {
+        key: 'MAU06_VIEW_ALL_ROLES',
+        value: 'ADMIN,CNTT,VTYT',
+        title: 'Các vai trò (Role) được xem danh sách thiết bị Mẫu 06 toàn bệnh viện',
+        description: 'Chọn các vai trò (Role) được phép xem toàn bộ thiết bị Mẫu 06 của tất cả các khoa phòng mà không bị lọc theo mã khoa của tài khoản.',
+        category: 'MODULE',
+        module: 'DANH_MUC_BHYT',
+        route: '/mau06-catalog',
+        dataType: 'MULTI_SELECT',
+        defaultValue: 'ADMIN,CNTT,VTYT',
+        order: 36,
+        helpText: '💡 Chọn một hoặc nhiều Role được phép xem danh sách máy toàn bệnh viện tại /mau06-catalog.'
     }
 ];
 

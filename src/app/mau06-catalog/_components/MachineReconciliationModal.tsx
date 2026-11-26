@@ -126,24 +126,24 @@ export default function MachineReconciliationModal({
 
     // Tiến hành đối soát
     const handleRunReconciliation = () => {
-        if (!portalFile || !hisFile) {
-            message.warning('Vui lòng tải lên cả 2 file Excel (File Cổng và File HIS)!');
+        if (!portalFile && !hisFile) {
+            message.warning('Vui lòng tải lên ít nhất 1 file Excel (File Cổng hoặc File HIS)!');
             return;
         }
 
-        if (!portalMapping.maMayCol) {
+        if (portalFile && !portalMapping.maMayCol) {
             message.error('Vui lòng chọn cột "Mã máy" cho File Cổng!');
             return;
         }
 
-        if (!hisMapping.maMayCol) {
+        if (hisFile && !hisMapping.maMayCol) {
             message.error('Vui lòng chọn cột "Mã máy" cho File HIS!');
             return;
         }
 
         // Trích xuất dữ liệu sau khi map
-        const portalItems = extractMappedRows(portalFile.rawRows, portalMapping, 'PORTAL');
-        const hisItems = extractMappedRows(hisFile.rawRows, hisMapping, 'HIS');
+        const portalItems = portalFile ? extractMappedRows(portalFile.rawRows, portalMapping, 'PORTAL') : [];
+        const hisItems = hisFile ? extractMappedRows(hisFile.rawRows, hisMapping, 'HIS') : [];
 
         const result = reconcileMachines(dbMachines, portalItems, hisItems);
         setReconciliationResult(result);
@@ -161,12 +161,31 @@ export default function MachineReconciliationModal({
         setSearchText('');
     };
 
+    // Đếm số lượng máy trên HIS/DB thiếu Cổng
+    const notInPortalFromHisCount = useMemo(() => {
+        if (!reconciliationResult) return 0;
+        return reconciliationResult.items.filter(i => !!i.hisItem && !i.portalItem).length;
+    }, [reconciliationResult]);
+
+    const notInPortalFromDbCount = useMemo(() => {
+        if (!reconciliationResult) return 0;
+        return reconciliationResult.items.filter(i => !!i.dbItem && !i.portalItem).length;
+    }, [reconciliationResult]);
+
     // Lọc dữ liệu kết quả hiển thị
     const filteredItems = useMemo(() => {
         if (!reconciliationResult) return [];
         return reconciliationResult.items.filter(item => {
             // Lọc theo trạng thái
-            if (filterStatus !== 'ALL' && item.status !== filterStatus) return false;
+            if (filterStatus !== 'ALL') {
+                if (filterStatus === 'NOT_IN_PORTAL_FROM_HIS') {
+                    if (!item.hisItem || !!item.portalItem) return false;
+                } else if (filterStatus === 'NOT_IN_PORTAL_FROM_DB') {
+                    if (!item.dbItem || !!item.portalItem) return false;
+                } else if (item.status !== filterStatus) {
+                    return false;
+                }
+            }
 
             // Tìm kiếm
             if (searchText.trim()) {
@@ -360,6 +379,75 @@ export default function MachineReconciliationModal({
             });
         }
 
+        // ---------------------------------------------------------------------
+        // Sheet 4: Danh sách máy CÓ TRÊN HIS NHƯNG THIẾU TRÊN CỔNG BHXH (Xuất toán)
+        // ---------------------------------------------------------------------
+        const hisNoPortalItems = reconciliationResult.items.filter(i => !!i.hisItem && !i.portalItem);
+        if (hisNoPortalItems.length > 0) {
+            const wsHisNoPortal = workbook.addWorksheet('HIS THIẾU CỔNG (Xuất toán)');
+            wsHisNoPortal.columns = [
+                { header: 'STT', key: 'stt', width: 8 },
+                { header: '[HIS] Mã máy', key: 'hisMaMay', width: 22 },
+                { header: '[HIS] Tên thiết bị', key: 'hisTenTb', width: 35 },
+                { header: '[HIS] Model/Serial', key: 'hisKyHieu', width: 24 },
+                { header: '[HIS] Khoa phòng', key: 'hisKhoa', width: 20 },
+                { header: 'Tình trạng Database viện', key: 'dbStatus', width: 22 },
+                { header: 'Cảnh báo & Hướng dẫn xử lý', key: 'action', width: 50 }
+            ];
+
+            const headerRow4 = wsHisNoPortal.getRow(1);
+            headerRow4.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            headerRow4.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+            headerRow4.height = 30;
+
+            hisNoPortalItems.forEach((item, idx) => {
+                const r = wsHisNoPortal.addRow({
+                    stt: idx + 1,
+                    hisMaMay: item.hisItem?.maMay || '',
+                    hisTenTb: item.hisItem?.tenTb || '',
+                    hisKyHieu: item.hisItem?.kyHieu || '',
+                    hisKhoa: item.hisItem?.khoa || '',
+                    dbStatus: item.dbItem ? 'Đã có trong DB nội bộ' : 'Chưa có trong DB',
+                    action: 'CẦN BỔ SUNG KHAI BÁO CỔNG BHYT: Máy đang kê trên HIS nhưng chưa có trên Cổng!'
+                });
+                r.getCell('hisMaMay').font = { color: { argb: 'FFDC2626' }, bold: true };
+            });
+        }
+
+        // ---------------------------------------------------------------------
+        // Sheet 5: Danh sách máy CÓ TRONG DATABASE NHƯNG THIẾU TRÊN CỔNG BHXH
+        // ---------------------------------------------------------------------
+        const dbNoPortalItems = reconciliationResult.items.filter(i => !!i.dbItem && !i.portalItem);
+        if (dbNoPortalItems.length > 0) {
+            const wsDbNoPortal = workbook.addWorksheet('DB THIẾU CỔNG');
+            wsDbNoPortal.columns = [
+                { header: 'STT', key: 'stt', width: 8 },
+                { header: '[DB] Mã máy', key: 'dbMaMay', width: 22 },
+                { header: '[DB] Tên thiết bị', key: 'dbTenTb', width: 35 },
+                { header: '[DB] Model/Serial', key: 'dbKyHieu', width: 24 },
+                { header: '[DB] Khoa phòng', key: 'dbKhoa', width: 20 },
+                { header: '[DB] Tên Bệnh viện', key: 'tenBv', width: 25 },
+                { header: 'Khuyến nghị xử lý', key: 'action', width: 50 }
+            ];
+
+            const headerRow5 = wsDbNoPortal.getRow(1);
+            headerRow5.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            headerRow5.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEA580C' } };
+            headerRow5.height = 30;
+
+            dbNoPortalItems.forEach((item, idx) => {
+                wsDbNoPortal.addRow({
+                    stt: idx + 1,
+                    dbMaMay: item.dbItem?.maMay || '',
+                    dbTenTb: item.dbItem?.tenTb || '',
+                    dbKyHieu: item.dbItem?.kyHieu || '',
+                    dbKhoa: item.dbItem?.khoa || '',
+                    tenBv: item.dbItem?.tenBv || '',
+                    action: 'Thiết bị trong CSDL viện chưa có trên Cổng BHYT'
+                });
+            });
+        }
+
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         saveAs(blob, `DoiSoat_Mau06_Cong_HIS_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`);
@@ -538,9 +626,9 @@ export default function MachineReconciliationModal({
                         setCurrentStep(step);
                     }}
                     items={[
-                        { title: 'Tải 2 file Excel', description: 'Cổng & HIS' },
-                        { title: 'Chọn cột để Map', description: 'Mã máy, Tên, Serial' },
-                        { title: 'Kết quả Đối soát', description: 'So khớp 3 chiều' }
+                        { title: 'Tải 2 file Excel', content: 'Cổng & HIS' },
+                        { title: 'Chọn cột để Map', content: 'Mã máy, Tên, Serial' },
+                        { title: 'Kết quả Đối soát', content: 'So khớp 3 chiều' }
                     ]}
                     className="mb-6 max-w-3xl mx-auto"
                 />
@@ -649,7 +737,7 @@ export default function MachineReconciliationModal({
                                 type="primary"
                                 size="large"
                                 icon={<ArrowRightOutlined />}
-                                disabled={!portalFile || !hisFile}
+                                disabled={!portalFile && !hisFile}
                                 onClick={() => setCurrentStep(1)}
                             >
                                 Tiếp tục: Cấu hình Map Cột
@@ -821,10 +909,10 @@ export default function MachineReconciliationModal({
                                 size="large"
                                 icon={<SyncOutlined />}
                                 style={{ backgroundColor: '#4f46e5', borderColor: '#4f46e5' }}
-                                disabled={!portalMapping.maMayCol || !hisMapping.maMayCol}
+                                disabled={Boolean((!portalFile && !hisFile) || (portalFile && !portalMapping.maMayCol) || (hisFile && !hisMapping.maMayCol))}
                                 onClick={handleRunReconciliation}
                             >
-                                Bắt đầu Đối soát 3 Nguồn
+                                Bắt đầu Đối soát {portalFile && hisFile ? '3 Nguồn' : 'với Database'}
                             </Button>
                         </div>
                     </div>
@@ -903,9 +991,11 @@ export default function MachineReconciliationModal({
                                 <Select
                                     value={filterStatus}
                                     onChange={setFilterStatus}
-                                    style={{ width: 280 }}
+                                    style={{ width: 320 }}
                                     options={[
                                         { value: 'ALL', label: `Tất cả kết quả (${reconciliationResult.items.length})` },
+                                        { value: 'NOT_IN_PORTAL_FROM_HIS', label: `🔴 Có trên HIS mà KHÔNG CÓ trên Cổng (${notInPortalFromHisCount})` },
+                                        { value: 'NOT_IN_PORTAL_FROM_DB', label: `🟠 Có trong DB mà KHÔNG CÓ trên Cổng (${notInPortalFromDbCount})` },
                                         { value: 'MATCH_ALL', label: `Khớp hoàn toàn 3 nguồn (${reconciliationResult.summary.matchAllCount})` },
                                         { value: 'SAME_SERIAL_DIFF_CODE', label: `Cùng Serial khác Mã máy (${reconciliationResult.summary.sameSerialDiffCodeCount})` },
                                         { value: 'ONLY_HIS', label: `Chỉ có trên HIS (Thiếu Cổng) (${reconciliationResult.summary.onlyHisCount})` },
@@ -917,12 +1007,30 @@ export default function MachineReconciliationModal({
                                     ]}
                                 />
 
+                                <Button
+                                    danger={filterStatus === 'NOT_IN_PORTAL_FROM_HIS'}
+                                    type={filterStatus === 'NOT_IN_PORTAL_FROM_HIS' ? 'primary' : 'default'}
+                                    onClick={() => setFilterStatus(filterStatus === 'NOT_IN_PORTAL_FROM_HIS' ? 'ALL' : 'NOT_IN_PORTAL_FROM_HIS')}
+                                    className="font-medium text-xs shadow-sm"
+                                >
+                                    🔴 Có trên HIS thiếu Cổng ({notInPortalFromHisCount})
+                                </Button>
+
+                                <Button
+                                    type={filterStatus === 'NOT_IN_PORTAL_FROM_DB' ? 'primary' : 'default'}
+                                    style={filterStatus === 'NOT_IN_PORTAL_FROM_DB' ? { backgroundColor: '#ea580c', borderColor: '#ea580c', color: 'white' } : { color: '#ea580c', borderColor: '#fdba74' }}
+                                    onClick={() => setFilterStatus(filterStatus === 'NOT_IN_PORTAL_FROM_DB' ? 'ALL' : 'NOT_IN_PORTAL_FROM_DB')}
+                                    className="font-medium text-xs shadow-sm"
+                                >
+                                    🟠 Có trong DB thiếu Cổng ({notInPortalFromDbCount})
+                                </Button>
+
                                 <Input
                                     placeholder="Tìm Mã máy, Tên thiết bị, Serial..."
                                     prefix={<SearchOutlined className="text-slate-400" />}
                                     value={searchText}
                                     onChange={e => setSearchText(e.target.value)}
-                                    style={{ width: 300 }}
+                                    style={{ width: 260 }}
                                     allowClear
                                 />
                             </Space>

@@ -61,14 +61,18 @@ export default function SystemConfigPage() {
     const [searchText, setSearchText] = useState('');
     const [selectedModule, setSelectedModule] = useState<string | null>(null);
     const [savingKeys, setSavingKeys] = useState<Record<string, boolean>>({});
+    const [rolesList, setRolesList] = useState<{ code: string; name: string }[]>([]);
 
     const isAdmin = user?.role === 'ADMIN' || user?.userLevel === 'LEVEL_1_BGD';
 
-    // Tải danh sách cấu hình từ API
+    // Tải danh sách cấu hình và danh sách Role từ API
     const fetchConfigs = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/system-config');
+            const [res, rolesRes] = await Promise.all([
+                fetch('/api/system-config'),
+                fetch('/api/roles')
+            ]);
             if (res.ok) {
                 const data = await res.json();
                 if (Array.isArray(data.configs)) {
@@ -76,6 +80,12 @@ export default function SystemConfigPage() {
                 }
             } else {
                 message.error('Không thể tải danh sách cấu hình');
+            }
+            if (rolesRes.ok) {
+                const rData = await rolesRes.json();
+                if (Array.isArray(rData)) {
+                    setRolesList(rData);
+                }
             }
         } catch (error) {
             console.error('Lỗi tải cấu hình:', error);
@@ -215,6 +225,38 @@ export default function SystemConfigPage() {
                                 options={options}
                                 className="w-48 text-xs font-medium"
                                 size="middle"
+                            />
+                        </div>
+                    </Tooltip>
+                );
+            }
+
+            case 'MULTI_SELECT': {
+                const options = (item.parsedOptions && item.parsedOptions.length > 0)
+                    ? item.parsedOptions
+                    : (item.key.includes('ROLE')
+                        ? rolesList.map(r => ({ label: `${r.name} (${r.code})`, value: r.code }))
+                        : []);
+                const selectedValues = (item.value ?? item.defaultValue ?? '')
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
+                return (
+                    <Tooltip title={item.helpText || item.description || 'Chọn một hoặc nhiều giá trị'} placement="left">
+                        <div className="inline-block w-full">
+                            <Select
+                                mode="multiple"
+                                allowClear
+                                showSearch
+                                value={selectedValues}
+                                loading={isSaving}
+                                disabled={!isAdmin}
+                                onChange={(vals: string[]) => handleUpdateConfig(item.key, vals.join(','))}
+                                options={options}
+                                placeholder="Chọn các giá trị..."
+                                className="w-64 text-xs font-medium"
+                                size="middle"
+                                maxTagCount="responsive"
                             />
                         </div>
                     </Tooltip>

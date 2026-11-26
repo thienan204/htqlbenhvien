@@ -22,3 +22,22 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: Request) {
+    try {
+        const { ids } = await request.json();
+        
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return NextResponse.json({ error: 'Danh sách ID không hợp lệ' }, { status: 400 });
+        }
+
+        const result = await prisma.mau06Catalog.deleteMany({
+            where: { id: { in: ids } }
+        });
+
+        return NextResponse.json({ success: true, count: result.count });
+    } catch (error) {
+        console.error('Error in bulk delete mau06 catalog:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

@@ -72,9 +72,22 @@ export async function GET(request: Request) {
     }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
     try {
-        const result = await prisma.mau06Catalog.deleteMany({});
+        let ids: string[] | null = null;
+        try {
+            const body = await request.json();
+            if (body && Array.isArray(body.ids)) {
+                ids = body.ids;
+            }
+        } catch {
+            // Không có JSON body -> Xóa toàn bộ
+        }
+
+        const whereClause = ids && ids.length > 0 ? { id: { in: ids } } : {};
+        const result = await prisma.mau06Catalog.deleteMany({
+            where: whereClause
+        });
         return NextResponse.json({ success: true, count: result.count });
     } catch (error) {
         console.error('Error deleting mau06 catalog:', error);
@@ -167,94 +180,130 @@ export async function POST(request: Request) {
                     const ma_may = rawMaMay ? String(rawMaMay).trim() : null;
                     const existing = ma_may ? existingMap.get(ma_may) : null;
 
-                    // Nhận diện linh hoạt Tên Bệnh viện
-                    const rawTenBv = getRowValue(row, 'TEN_BV', 'Tên Bệnh viện', 'Tên bệnh viện', 'Tên BV', 'Ten BV', 'Ten Benh Vien');
-                    // Kế thừa Tên Bệnh viện cũ nếu file mới không có
-                    const finalTenBv = (rawTenBv !== null && String(rawTenBv).trim() !== '')
-                        ? String(rawTenBv).trim()
-                        : (existing && existing.TEN_BV ? existing.TEN_BV : null);
-
-                    // Nhận diện linh hoạt Loại máy
-                    const rawLoaiMay = getRowValue(row, 'loai_may_code', 'Loại máy', 'Loại Máy', 'Loai may');
-                    const finalLoaiMay = (rawLoaiMay !== null && String(rawLoaiMay).trim() !== '')
-                        ? String(rawLoaiMay).trim()
-                        : (existing && existing.loai_may_code ? existing.loai_may_code : null);
-
+                    // Đọc các trường từ file Excel mới
                     const rawTenTb = getRowValue(row, 'TEN_TB', 'Tên Thiết Bị', 'Tên thiết bị', 'Tên TB', 'Ten TB', 'Tên Thiết bị');
                     const rawKyHieu = getRowValue(row, 'KY_HIEU', 'Model', 'Ký hiệu', 'Ký Hiệu', 'Ky hieu');
                     const rawCongTy = getRowValue(row, 'CONGTY_SX', 'Công ty SX', 'Công ty sản xuất', 'Hãng SX', 'Hãng sản xuất', 'Cong ty SX');
                     const rawNuocSx = getRowValue(row, 'NUOC_SX', 'Nước SX', 'Nước sản xuất', 'Nuoc SX');
                     const rawNamSx = getRowValue(row, 'NAM_SX', 'Năm SX', 'Năm sản xuất', 'Nam SX');
                     const rawNamSd = getRowValue(row, 'NAM_SD', 'Năm SD', 'Năm sử dụng', 'Nam SD');
+                    const rawTenBv = getRowValue(row, 'TEN_BV', 'Tên Bệnh viện', 'Tên bệnh viện', 'Tên BV', 'Ten BV', 'Ten Benh Vien');
                     const rawSoLuuHanh = getRowValue(row, 'SO_LUU_HANH', 'Số lưu hành', 'Số Lưu Hành', 'So luu hanh');
                     const rawHdTu = getRowValue(row, 'HD_TU', 'HĐ Từ', 'HD Tu');
                     const rawHdDen = getRowValue(row, 'HD_DEN', 'HĐ Đến', 'HD Den');
                     const rawTuNgay = getRowValue(row, 'TU_NGAY', 'Từ ngày', 'Tu ngay');
                     const rawDenNgay = getRowValue(row, 'DEN_NGAY', 'Đến ngày', 'Den ngay');
                     const rawMaCskcb = getRowValue(row, 'MA_CSKCB', 'Mã CSKCB', 'Ma CSKCB');
+                    const rawLoaiMay = getRowValue(row, 'loai_may_code', 'Loại máy', 'Loại Máy', 'Loai may', 'Phân loại', 'Phân loại máy', 'PHAN_LOAI_MAY', 'Phân loại (Loại máy)');
                     const rawStt = getRowValue(row, 'STT', 'Số thứ tự', 'So thu tu');
 
-                    const createData = {
-                        STT: rawStt ? Number(rawStt) : null,
-                        TEN_TB: rawTenTb ? String(rawTenTb).trim() : null,
-                        KY_HIEU: rawKyHieu ? String(rawKyHieu).trim() : null,
-                        CONGTY_SX: rawCongTy ? String(rawCongTy).trim() : null,
-                        NUOC_SX: rawNuocSx ? String(rawNuocSx).trim().substring(0, 100) : null,
-                        NAM_SX: rawNamSx ? Number(rawNamSx) : null,
-                        NAM_SD: rawNamSd ? Number(rawNamSd) : null,
-                        MA_MAY: ma_may,
-                        TEN_BV: finalTenBv,
-                        SO_LUU_HANH: rawSoLuuHanh ? String(rawSoLuuHanh).trim().substring(0, 20) : null,
-                        HD_TU: rawHdTu ? String(rawHdTu).trim().substring(0, 8) : null,
-                        HD_DEN: rawHdDen ? String(rawHdDen).trim().substring(0, 8) : null,
-                        TU_NGAY: rawTuNgay ? String(rawTuNgay).trim().substring(0, 8) : null,
-                        DEN_NGAY: rawDenNgay ? String(rawDenNgay).trim().substring(0, 8) : null,
-                        MA_CSKCB: rawMaCskcb ? String(rawMaCskcb).trim().substring(0, 5) : null,
-                        loai_may_code: finalLoaiMay,
-                        isActive: true,
+                    // Helper so sánh & kế thừa thông minh: chỉ coi là thay đổi khi người dùng có cung cấp giá trị mới khác với giá trị cũ
+                    let hasFieldChange = false;
+
+                    const checkStr = (rawVal: any, oldVal: string | null | undefined, maxLen?: number): string | null => {
+                        if (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== '') {
+                            let strVal = String(rawVal).trim();
+                            if (maxLen && strVal.length > maxLen) strVal = strVal.substring(0, maxLen);
+                            if ((oldVal || null) !== (strVal || null)) {
+                                hasFieldChange = true;
+                            }
+                            return strVal;
+                        }
+                        // File mới không có trường này -> kế thừa bản cũ nếu có
+                        return oldVal || null;
                     };
 
-                    if (!createData.MA_MAY) {
-                        await tx.mau06Catalog.create({ data: createData });
-                        insertedCount++;
-                        continue;
-                    }
-
-                    if (existing) {
-                        const isIdentical = 
-                            (existing.TEN_TB || null) === (createData.TEN_TB || null) &&
-                            (existing.KY_HIEU || null) === (createData.KY_HIEU || null) &&
-                            (existing.CONGTY_SX || null) === (createData.CONGTY_SX || null) &&
-                            (existing.NUOC_SX || null) === (createData.NUOC_SX || null) &&
-                            (existing.NAM_SX || null) === (createData.NAM_SX || null) &&
-                            (existing.NAM_SD || null) === (createData.NAM_SD || null) &&
-                            (existing.TEN_BV || null) === (createData.TEN_BV || null) &&
-                            (existing.SO_LUU_HANH || null) === (createData.SO_LUU_HANH || null) &&
-                            (existing.HD_TU || null) === (createData.HD_TU || null) &&
-                            (existing.HD_DEN || null) === (createData.HD_DEN || null) &&
-                            (existing.TU_NGAY || null) === (createData.TU_NGAY || null) &&
-                            (existing.DEN_NGAY || null) === (createData.DEN_NGAY || null) &&
-                            (existing.MA_CSKCB || null) === (createData.MA_CSKCB || null) &&
-                            (existing.loai_may_code || null) === (createData.loai_may_code || null);
-
-                        if (isIdentical) {
-                            skippedCount++;
-                            continue; // Bỏ qua vì hoàn toàn trùng khớp
-                        } else {
-                            // Khác thông số kỹ thuật -> lưu bản cũ vào lịch sử và tạo bản mới có đầy đủ Tên Bệnh viện
-                            await tx.mau06Catalog.update({
-                                where: { id: existing.id },
-                                data: { isActive: false }
-                            });
-                            const newRec = await tx.mau06Catalog.create({ data: createData });
-                            insertedCount++;
-                            updatedCount++;
-                            existingMap.set(createData.MA_MAY, newRec);
+                    const checkNum = (rawVal: any, oldVal: number | null | undefined): number | null => {
+                        if (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== '') {
+                            const num = Number(rawVal);
+                            const parsedNum = isNaN(num) ? null : num;
+                            if ((oldVal ?? null) !== (parsedNum ?? null)) {
+                                hasFieldChange = true;
+                            }
+                            return parsedNum;
                         }
-                    } else {
+                        return oldVal ?? null;
+                    };
+
+                    if (!existing) {
+                        // Thiết bị hoàn toàn mới
+                        const createData = {
+                            STT: rawStt ? Number(rawStt) : null,
+                            TEN_TB: rawTenTb ? String(rawTenTb).trim() : null,
+                            KY_HIEU: rawKyHieu ? String(rawKyHieu).trim() : null,
+                            CONGTY_SX: rawCongTy ? String(rawCongTy).trim() : null,
+                            NUOC_SX: rawNuocSx ? String(rawNuocSx).trim().substring(0, 100) : null,
+                            NAM_SX: rawNamSx ? Number(rawNamSx) : null,
+                            NAM_SD: rawNamSd ? Number(rawNamSd) : null,
+                            MA_MAY: ma_may,
+                            TEN_BV: rawTenBv ? String(rawTenBv).trim() : null,
+                            SO_LUU_HANH: rawSoLuuHanh ? String(rawSoLuuHanh).trim().substring(0, 20) : null,
+                            HD_TU: rawHdTu ? String(rawHdTu).trim().substring(0, 8) : null,
+                            HD_DEN: rawHdDen ? String(rawHdDen).trim().substring(0, 8) : null,
+                            TU_NGAY: rawTuNgay ? String(rawTuNgay).trim().substring(0, 8) : null,
+                            DEN_NGAY: rawDenNgay ? String(rawDenNgay).trim().substring(0, 8) : null,
+                            MA_CSKCB: rawMaCskcb ? String(rawMaCskcb).trim().substring(0, 5) : null,
+                            loai_may_code: rawLoaiMay ? String(rawLoaiMay).trim() : null,
+                            isActive: true,
+                        };
                         const newRec = await tx.mau06Catalog.create({ data: createData });
                         insertedCount++;
-                        existingMap.set(createData.MA_MAY, newRec);
+                        if (ma_may) existingMap.set(ma_may, newRec);
+                    } else {
+                        // Đã có bản ghi ACTIVE trong DB -> Kiểm tra từng field
+                        const finalTenTb = checkStr(rawTenTb, existing.TEN_TB);
+                        const finalKyHieu = checkStr(rawKyHieu, existing.KY_HIEU);
+                        const finalCongTy = checkStr(rawCongTy, existing.CONGTY_SX);
+                        const finalNuocSx = checkStr(rawNuocSx, existing.NUOC_SX, 100);
+                        const finalNamSx = checkNum(rawNamSx, existing.NAM_SX);
+                        const finalNamSd = checkNum(rawNamSd, existing.NAM_SD);
+                        const finalTenBv = checkStr(rawTenBv, existing.TEN_BV);
+                        const finalSoLuuHanh = checkStr(rawSoLuuHanh, existing.SO_LUU_HANH, 20);
+                        const finalHdTu = checkStr(rawHdTu, existing.HD_TU, 8);
+                        const finalHdDen = checkStr(rawHdDen, existing.HD_DEN, 8);
+                        const finalTuNgay = checkStr(rawTuNgay, existing.TU_NGAY, 8);
+                        const finalDenNgay = checkStr(rawDenNgay, existing.DEN_NGAY, 8);
+                        const finalMaCskcb = checkStr(rawMaCskcb, existing.MA_CSKCB, 5);
+                        const finalLoaiMay = checkStr(rawLoaiMay, existing.loai_may_code);
+                        const finalStt = checkNum(rawStt, existing.STT);
+
+                        if (!hasFieldChange) {
+                            // Không có field nào thay đổi -> Giữ nguyên, bỏ qua
+                            skippedCount++;
+                            continue;
+                        }
+
+                        // Có field thay đổi -> Disable bản cũ (isActive: false) và Tạo bản mới (isActive: true)
+                        await tx.mau06Catalog.update({
+                            where: { id: existing.id },
+                            data: { isActive: false }
+                        });
+
+                        const newRec = await tx.mau06Catalog.create({
+                            data: {
+                                STT: finalStt,
+                                TEN_TB: finalTenTb,
+                                KY_HIEU: finalKyHieu,
+                                CONGTY_SX: finalCongTy,
+                                NUOC_SX: finalNuocSx,
+                                NAM_SX: finalNamSx,
+                                NAM_SD: finalNamSd,
+                                MA_MAY: ma_may,
+                                TEN_BV: finalTenBv,
+                                SO_LUU_HANH: finalSoLuuHanh,
+                                HD_TU: finalHdTu,
+                                HD_DEN: finalHdDen,
+                                TU_NGAY: finalTuNgay,
+                                DEN_NGAY: finalDenNgay,
+                                MA_CSKCB: finalMaCskcb,
+                                loai_may_code: finalLoaiMay,
+                                isActive: true,
+                            }
+                        });
+
+                        insertedCount++;
+                        updatedCount++;
+                        if (ma_may) existingMap.set(ma_may, newRec);
                     }
                 }
             });
