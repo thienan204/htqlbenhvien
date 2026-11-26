@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { authorizeMau06Action } from '../_auth';
 
 const prisma = new PrismaClient();
 
 export async function PUT(request: Request) {
     try {
+        const auth = await authorizeMau06Action(request, 'EDIT');
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { ids, isActive } = await request.json();
         
         if (!Array.isArray(ids)) {
@@ -25,6 +29,9 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const auth = await authorizeMau06Action(request, 'DELETE');
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { ids } = await request.json();
         
         if (!Array.isArray(ids) || ids.length === 0) {

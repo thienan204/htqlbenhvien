@@ -250,6 +250,32 @@ export const PREDEFINED_CONFIGS: SystemConfigDef[] = [
         defaultValue: 'ADMIN,CNTT,VTYT',
         order: 36,
         helpText: '💡 Chọn một hoặc nhiều Role được phép xem danh sách máy toàn bệnh viện tại /mau06-catalog.'
+    },
+    {
+        key: 'MAU06_EDIT_ROLES',
+        value: 'ADMIN,CNTT,VTYT',
+        title: 'Các vai trò (Role) được Thêm, Sửa, Import & Đối soát Mẫu 06',
+        description: 'Chọn các vai trò (Role) được phép Thêm mới, Sửa, Đổi loại máy, Phân bổ khoa, Import Excel và Đối soát Cổng - HIS tại trang Mẫu 06 (ngoài các Role đã được cấp quyền Sửa tại Quản lý Role).',
+        category: 'MODULE',
+        module: 'DANH_MUC_BHYT',
+        route: '/mau06-catalog',
+        dataType: 'MULTI_SELECT',
+        defaultValue: 'ADMIN,CNTT,VTYT',
+        order: 37,
+        helpText: '💡 Các Role không nằm trong danh sách này (và chưa được cấp quyền EDIT ở /roles) chỉ được phép Xem & Export dữ liệu.'
+    },
+    {
+        key: 'MAU06_DELETE_ROLES',
+        value: 'ADMIN',
+        title: 'Các vai trò (Role) được Xóa thiết bị Mẫu 06',
+        description: 'Chọn các vai trò (Role) được phép Xóa từng thiết bị hoặc xóa các dòng đã chọn tại trang Mẫu 06 (ngoài các Role đã được cấp quyền Xóa tại Quản lý Role).',
+        category: 'MODULE',
+        module: 'DANH_MUC_BHYT',
+        route: '/mau06-catalog',
+        dataType: 'MULTI_SELECT',
+        defaultValue: 'ADMIN',
+        order: 38,
+        helpText: '💡 Nút Xóa toàn bộ danh mục vẫn luôn chỉ dành riêng cho Quản trị viên (ADMIN).'
     }
 ];
 

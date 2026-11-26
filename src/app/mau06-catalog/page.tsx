@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined, DiffOutlined, SettingOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
@@ -29,16 +29,24 @@ export default function Mau06CatalogPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [isMounted, setIsMounted] = useState(false);
+    const [editRoles, setEditRoles] = useState<string[]>([]);
+    const [deleteRoles, setDeleteRoles] = useState<string[]>([]);
     const { user, hasPermission } = useAuth();
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
+    // Tính quyền động theo Cách 3: Kết hợp cấu hình tại /system-config và phân quyền tại /roles
+    const hasMenuEdit = hasPermission('MENU_CATALOG_06', 'EDIT') || hasPermission('MENU_MAU01_CATALOG', 'EDIT');
+    const hasMenuDelete = hasPermission('MENU_CATALOG_06', 'DELETE') || hasPermission('MENU_MAU01_CATALOG', 'DELETE');
+    const canEdit = isMounted && Boolean(user) && (editRoles.includes(user!.role) || hasMenuEdit);
+    const canDelete = isMounted && Boolean(user) && (deleteRoles.includes(user!.role) || hasMenuDelete);
+
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Đọc cấu hình phân quyền xem toàn viện động từ SystemConfig (không fix cứng Role trong code)
+            // Đọc cấu hình phân quyền động từ SystemConfig (không fix cứng Role trong code)
             let filterByDept = true;
             let viewAllRoles: string[] = ['ADMIN'];
             try {
@@ -48,11 +56,20 @@ export default function Mau06CatalogPage() {
                     const configsList = Array.isArray(cfgJson?.configs) ? cfgJson.configs : [];
                     const filterCfg = configsList.find((c: any) => c.key === 'MAU06_FILTER_BY_DEPARTMENT');
                     const rolesCfg = configsList.find((c: any) => c.key === 'MAU06_VIEW_ALL_ROLES');
+                    const editRolesCfg = configsList.find((c: any) => c.key === 'MAU06_EDIT_ROLES');
+                    const deleteRolesCfg = configsList.find((c: any) => c.key === 'MAU06_DELETE_ROLES');
+
                     if (filterCfg) {
                         filterByDept = filterCfg.value === 'true' || filterCfg.value === '1';
                     }
                     if (rolesCfg && typeof rolesCfg.value === 'string') {
                         viewAllRoles = rolesCfg.value.split(',').map((s: string) => s.trim()).filter(Boolean);
+                    }
+                    if (editRolesCfg && typeof editRolesCfg.value === 'string') {
+                        setEditRoles(editRolesCfg.value.split(',').map((s: string) => s.trim()).filter(Boolean));
+                    }
+                    if (deleteRolesCfg && typeof deleteRolesCfg.value === 'string') {
+                        setDeleteRoles(deleteRolesCfg.value.split(',').map((s: string) => s.trim()).filter(Boolean));
                     }
                 }
             } catch {
@@ -61,7 +78,8 @@ export default function Mau06CatalogPage() {
 
             const canViewAll = user && (
                 viewAllRoles.includes(user.role) ||
-                hasPermission('MENU_CATALOG_06', 'EDIT')
+                hasPermission('MENU_CATALOG_06', 'EDIT') ||
+                hasPermission('MENU_MAU01_CATALOG', 'EDIT')
             );
 
             let url = `${getBasePath()}/api/mau06-catalog`;
@@ -416,36 +434,52 @@ export default function Mau06CatalogPage() {
             title: 'Phân loại (Loại máy)', 
             dataIndex: 'loai_may_code', 
             width: 230,
-            render: (code: string, record: any) => (
-                <Select
-                    size="small"
-                    showSearch
-                    allowClear
-                    placeholder="-- Chọn loại máy --"
-                    value={code || undefined}
-                    className="w-full"
-                    onChange={(newCode) => handleUpdateMachineType(record.id, newCode || null)}
-                    filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                    }
-                    options={machineTypes.map(t => ({ value: t.code, label: t.name }))}
-                />
-            )
+            render: (code: string, record: any) => {
+                if (!canEdit) {
+                    const matched = machineTypes.find(t => t.code === code);
+                    return matched ? (
+                        <span className="text-slate-700 text-sm">{matched.name}</span>
+                    ) : (
+                        <span className="text-slate-400 italic text-xs">--</span>
+                    );
+                }
+                return (
+                    <Select
+                        size="small"
+                        showSearch
+                        allowClear
+                        placeholder="-- Chọn loại máy --"
+                        value={code || undefined}
+                        className="w-full"
+                        onChange={(newCode) => handleUpdateMachineType(record.id, newCode || null)}
+                        filterOption={(input, option) =>
+                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={machineTypes.map(t => ({ value: t.code, label: t.name }))}
+                    />
+                );
+            }
         },
         { title: 'Model (Ký hiệu)', dataIndex: 'KY_HIEU', width: 150 },
         { title: 'Công ty SX', dataIndex: 'CONGTY_SX', width: 200 },
         { title: 'Nước SX', dataIndex: 'NUOC_SX', width: 120 },
         { title: 'Năm SX', dataIndex: 'NAM_SX', width: 100, align: 'center' as const },
         { title: 'Trạng thái', dataIndex: 'isActive', width: 120, align: 'center' as const, render: (isActive: boolean, record: any) => (
-            <Switch 
-                checked={isActive} 
-                checkedChildren="Đang dùng" 
-                unCheckedChildren="Lịch sử"
-                onChange={(checked) => handleToggleStatus(record.id, checked)}
-                loading={togglingId === record.id}
-            />
+            canEdit ? (
+                <Switch 
+                    checked={isActive} 
+                    checkedChildren="Đang dùng" 
+                    unCheckedChildren="Lịch sử"
+                    onChange={(checked) => handleToggleStatus(record.id, checked)}
+                    loading={togglingId === record.id}
+                />
+            ) : (
+                <Tag color={isActive ? 'green' : 'default'}>
+                    {isActive ? 'Đang dùng' : 'Lịch sử'}
+                </Tag>
+            )
         )},
-        {
+        ...(canEdit || canDelete ? [{
             title: 'Hành động',
             key: 'action',
             width: 150,
@@ -453,14 +487,20 @@ export default function Mau06CatalogPage() {
             fixed: 'right' as const,
             render: (_: any, record: any) => (
                 <Space size="middle">
-                    <Tooltip title="Sửa"><Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => handleEdit(record)} /></Tooltip>
-                    <Tooltip title="Phân bổ Khoa"><Button type="text" icon={<SwapOutlined className="text-teal-600" />} onClick={() => handleOpenLocation(record)} /></Tooltip>
-                    <Popconfirm title="Xác nhận xóa?" onConfirm={() => handleDelete(record.id)} okText="Có" cancelText="Không">
-                        <Tooltip title="Xóa"><Button type="text" icon={<DeleteOutlined className="text-red-500" />} /></Tooltip>
-                    </Popconfirm>
+                    {canEdit && (
+                        <>
+                            <Tooltip title="Sửa"><Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => handleEdit(record)} /></Tooltip>
+                            <Tooltip title="Phân bổ Khoa"><Button type="text" icon={<SwapOutlined className="text-teal-600" />} onClick={() => handleOpenLocation(record)} /></Tooltip>
+                        </>
+                    )}
+                    {canDelete && (
+                        <Popconfirm title="Xác nhận xóa?" onConfirm={() => handleDelete(record.id)} okText="Có" cancelText="Không">
+                            <Tooltip title="Xóa"><Button type="text" icon={<DeleteOutlined className="text-red-500" />} /></Tooltip>
+                        </Popconfirm>
+                    )}
                 </Space>
             )
-        }
+        }] : [])
     ];
 
     const uniqueDepartments = Array.from(new Set(data.map(item => item.ten_khoa_su_dung))).filter(Boolean);
@@ -482,11 +522,11 @@ export default function Mau06CatalogPage() {
         <div className="p-6 h-full w-full min-w-0 flex flex-col bg-slate-50 space-y-4 overflow-x-hidden">
             <div className="flex flex-wrap justify-between items-center gap-2">
                 <h1 className="text-2xl font-bold text-slate-800 m-0">Danh mục Thiết bị Y tế (Mẫu 06/DM)</h1>
-                {isMounted && user?.role === 'ADMIN' && (
-                    <Tooltip title="Tùy chỉnh cấu hình danh sách Role được xem toàn bộ thiết bị (không bị lọc theo khoa)">
+                {isMounted && hasPermission('MENU_SYSTEM_CONFIG', 'EDIT') && (
+                    <Tooltip title="Tùy chỉnh cấu hình Role được xem toàn viện, thêm/sửa hoặc xóa thiết bị Mẫu 06">
                         <Link href="/system-config">
                             <Button icon={<SettingOutlined />} size="small" className="text-slate-600 border-slate-300">
-                                Cấu hình phân quyền xem
+                                Cấu hình phân quyền
                             </Button>
                         </Link>
                     </Tooltip>
@@ -518,7 +558,7 @@ export default function Mau06CatalogPage() {
                             options={uniqueDepartments.map(dept => ({ label: String(dept), value: String(dept) }))}
                         />
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
-                        {selectedRowKeys.length > 0 && (
+                        {canEdit && selectedRowKeys.length > 0 && (
                             <>
                                 <Button className="bg-green-500 text-white border-none hover:bg-green-600" onClick={() => handleBulkUpdateStatus(true)}>
                                     Đánh dấu Đang dùng ({selectedRowKeys.length})
@@ -530,17 +570,19 @@ export default function Mau06CatalogPage() {
                         )}
                     </Space>
                     <Space wrap>
-                        <Button
-                            icon={<DiffOutlined />}
-                            onClick={() => setIsReconciliationModalOpen(true)}
-                            style={{ backgroundColor: '#4f46e5', color: 'white', border: 'none' }}
-                            className="font-semibold hover:opacity-90 shadow-sm"
-                            title="Đối soát danh mục thiết bị trong Database với file Cổng BHXH và file HIS"
-                        >
-                            Đối soát Cổng - HIS
-                        </Button>
+                        {canEdit && (
+                            <Button
+                                icon={<DiffOutlined />}
+                                onClick={() => setIsReconciliationModalOpen(true)}
+                                style={{ backgroundColor: '#4f46e5', color: 'white', border: 'none' }}
+                                className="font-semibold hover:opacity-90 shadow-sm"
+                                title="Đối soát danh mục thiết bị trong Database với file Cổng BHXH và file HIS"
+                            >
+                                Đối soát Cổng - HIS
+                            </Button>
+                        )}
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
-                        {selectedRowKeys.length > 0 ? (
+                        {canDelete && selectedRowKeys.length > 0 ? (
                             <Popconfirm 
                                 title={`Xác nhận xóa ${selectedRowKeys.length} thiết bị đã chọn?`}
                                 description="Hành động này sẽ xóa vĩnh viễn các dòng đã chọn theo checkbox và không thể hoàn tác."
@@ -569,16 +611,20 @@ export default function Mau06CatalogPage() {
                                 </Popconfirm>
                             )
                         )}
-                        <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600">Tải file mẫu</Button>
-                        <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">
-                            <Button type="default" icon={<UploadOutlined />} className="bg-blue-50 border-blue-200 text-blue-700">Import Excel</Button>
-                        </Upload>
-                        <Button type="primary" className="bg-teal-600 hover:bg-teal-700" icon={<PlusOutlined />} onClick={handleAdd}>Thêm Máy Mới</Button>
+                        {canEdit && (
+                            <>
+                                <Button type="default" icon={<DownloadOutlined />} onClick={handleDownloadTemplate} className="border-green-500 text-green-600">Tải file mẫu</Button>
+                                <Upload beforeUpload={(file) => handleImportExcel({ file })} showUploadList={false} accept=".xlsx, .xls">
+                                    <Button type="default" icon={<UploadOutlined />} className="bg-blue-50 border-blue-200 text-blue-700">Import Excel</Button>
+                                </Upload>
+                                <Button type="primary" className="bg-teal-600 hover:bg-teal-700" icon={<PlusOutlined />} onClick={handleAdd}>Thêm Máy Mới</Button>
+                            </>
+                        )}
                     </Space>
                 </div>
 
                 <Table
-                    rowSelection={rowSelection}
+                    rowSelection={canEdit || canDelete ? rowSelection : undefined}
                     columns={columns}
                     dataSource={filteredData}
                     rowKey="id"

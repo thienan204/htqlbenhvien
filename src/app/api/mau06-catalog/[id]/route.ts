@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { authorizeMau06Action } from '../_auth';
 
 const prisma = new PrismaClient();
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const auth = await authorizeMau06Action(request, 'EDIT');
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { id } = await params;
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
@@ -43,6 +47,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const auth = await authorizeMau06Action(request, 'DELETE');
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { id } = await params;
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 

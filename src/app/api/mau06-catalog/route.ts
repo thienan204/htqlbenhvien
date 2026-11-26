@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getCurrentUserFromRequest } from '@/actions/auth';
+import { getSystemConfig } from '@/lib/systemConfig';
+import { authorizeMau06Action, hasMau06MenuPermission } from './_auth';
 
 const prisma = new PrismaClient();
 
@@ -18,7 +21,22 @@ function getRowValue(row: any, ...keys: string[]): any {
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const ma_khoa = searchParams.get('ma_khoa');
+        let ma_khoa = searchParams.get('ma_khoa');
+
+        // Bảo vệ phân quyền xem theo khoa ngay tại Backend (Defense in Depth)
+        const currentUser = await getCurrentUserFromRequest(request);
+        if (currentUser && currentUser.role !== 'ADMIN' && !hasMau06MenuPermission(currentUser, 'EDIT')) {
+            const filterRaw = await getSystemConfig('MAU06_FILTER_BY_DEPARTMENT', 'true');
+            const filterByDept = filterRaw === 'true' || filterRaw === '1';
+            if (filterByDept) {
+                const rolesRaw = await getSystemConfig('MAU06_VIEW_ALL_ROLES', 'ADMIN,CNTT,VTYT');
+                const viewAllRoles = rolesRaw.split(',').map(s => s.trim()).filter(Boolean);
+                if (!viewAllRoles.includes(currentUser.role) && currentUser.ma_khoa) {
+                    ma_khoa = currentUser.ma_khoa;
+                }
+            }
+        }
+
         let whereClause = {};
 
         if (ma_khoa) {
@@ -84,6 +102,10 @@ export async function DELETE(request: Request) {
             // Không có JSON body -> Xóa toàn bộ
         }
 
+        const isDeleteAll = !ids || ids.length === 0;
+        const auth = await authorizeMau06Action(request, 'DELETE', isDeleteAll);
+        if (auth.errorResponse) return auth.errorResponse;
+
         const whereClause = ids && ids.length > 0 ? { id: { in: ids } } : {};
         const result = await prisma.mau06Catalog.deleteMany({
             where: whereClause
@@ -97,6 +119,9 @@ export async function DELETE(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const auth = await authorizeMau06Action(request, 'EDIT');
+        if (auth.errorResponse) return auth.errorResponse;
+
         const body = await request.json();
 
         // 1. Chức năng khôi phục Tên Bệnh viện từ lịch sử cho các máy đang bị null
