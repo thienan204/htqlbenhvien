@@ -8,6 +8,7 @@ import { emitEvent } from '@/lib/notificationService';
 import { sendZaloGroupNotification } from '@/lib/zalo';
 import { getCurrentHospitalShift } from '@/lib/shiftUtils';
 import { decryptField, prepareStaffForSave } from '@/lib/staffCrypto';
+import { createDeleteSnapshot, SnapshotLimitError } from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -360,6 +361,12 @@ export async function POST(request: Request) {
             const isITStaff = user.role === targetDepartment || user.role === 'ADMIN';
             if (!isITStaff) {
                 return NextResponse.json({ error: 'Bạn không có quyền thực hiện thao tác này!' }, { status: 403 });
+            }
+            if (body.confirmClear !== true) {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmClear=true khi xóa sạch lý do phân việc.' },
+                    { status: 400 }
+                );
             }
             try {
                 const allTickets = await prisma.iTRequest.findMany({
@@ -1605,16 +1612,34 @@ export async function DELETE(request: Request) {
             if (user.role !== 'ADMIN') {
                 return NextResponse.json({ error: 'Chỉ Admin mới có quyền xóa tất cả' }, { status: 403 });
             }
+            if (searchParams.get('confirmDeleteAll') !== 'true') {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa toàn bộ Yêu cầu xử lý.' },
+                    { status: 400 }
+                );
+            }
 
             let whereClause: any = {};
             if (targetDepartment) whereClause.targetDepartment = targetDepartment;
 
-            // Xóa tất cả file ảnh vật lý của các ticket
+            // Tự động chụp Snapshot toàn bộ phiếu yêu cầu trước khi xóa
             const allTickets = await prisma.iTRequest.findMany({
                 where: whereClause,
-                select: { dynamicFields: true }
+            });
+            const snap = await createDeleteSnapshot({
+                tableName: 'ITRequest',
+                displayName: targetDepartment
+                    ? `Toàn bộ Yêu cầu bộ phận ${targetDepartment}`
+                    : 'Toàn bộ Yêu cầu sự cố',
+                actionType: 'DELETE_ALL',
+                filterSummary: targetDepartment ? `Bộ phận: ${targetDepartment}` : 'Toàn bệnh viện',
+                recordsCount: allTickets.length,
+                data: allTickets,
+                user,
+                restorable: false,
             });
 
+            // Xóa tất cả file ảnh vật lý của các ticket
             for (const ticket of allTickets) {
                 if (ticket.dynamicFields) {
                     const fields: any = ticket.dynamicFields;
@@ -1638,7 +1663,7 @@ export async function DELETE(request: Request) {
             await prisma.iTRequest.deleteMany({
                 where: whereClause
             });
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, snapshotId: snap.snapshotId, count: allTickets.length });
         }
 
         const id = searchParams.get('id');
@@ -1690,8 +1715,11 @@ export async function DELETE(request: Request) {
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error DELETE it-requests:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

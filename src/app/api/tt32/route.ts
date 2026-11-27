@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 export async function GET() {
     try {
@@ -95,11 +94,28 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const auth = await authorizeApiRequest(request, {
+            allowedRoles: ['ADMIN'],
+            menuKeys: ['MENU_TT32'],
+            action: 'DELETE',
+        });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
         if (!id) {
             return NextResponse.json({ error: 'Thiếu ID' }, { status: 400 });
+        }
+
+        const usedCount = await prisma.practicingCertificate.count({
+            where: { tt32_category_id: id },
+        });
+        if (usedCount > 0) {
+            return NextResponse.json(
+                { error: `Không thể xóa vì đang có ${usedCount} CCHN được phân quyền theo nhóm TT32 này.` },
+                { status: 400 }
+            );
         }
 
         await prisma.tT32Category.delete({

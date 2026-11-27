@@ -2263,3 +2263,24 @@ model StaffAttendanceDriveConfig {
   @@unique([scope, targetId])
   @@index([targetId])
 }
+
+model DataDeleteSnapshot {
+  id             String    @id @default(cuid())
+  tableName      String
+  displayName    String
+  actionType     String
+  filterSummary  String?
+  recordCount    Int       @default(0)
+  rawSizeBytes   Int       @default(0)
+  payloadGzip    Bytes
+  restorable     Boolean   @default(true)
+  deletedById    String?
+  deletedByName  String?
+  deletedByRole  String?
+  restoredAt     DateTime?
+  restoredByName String?
+  createdAt      DateTime  @default(now())
+
+  @@index([tableName])
+  @@index([createdAt])
+}

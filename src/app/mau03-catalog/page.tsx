@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function Mau03CatalogPage() {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [deletingSelected, setDeletingSelected] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
     const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -116,19 +117,33 @@ export default function Mau03CatalogPage() {
         }
     };
 
-    const handleDeleteAll = async () => {
+    const handleDeleteSelected = async () => {
+        if (selectedRowKeys.length === 0) return;
         try {
+            setDeletingSelected(true);
             setLoading(true);
-            const res = await fetch(`${getBasePath()}/api/mau03-catalog`, { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/mau03-catalog`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys }),
+            });
             if (res.ok) {
-                message.success('Đã xóa toàn bộ danh mục');
+                const result = await res.json().catch(() => ({}));
+                message.success(
+                    result.snapshotId
+                        ? `Đã xóa ${result.count ?? selectedRowKeys.length} bản ghi đã chọn (đã lưu Snapshot dự phòng).`
+                        : `Đã xóa ${result.count ?? selectedRowKeys.length} bản ghi đã chọn.`
+                );
+                setSelectedRowKeys([]);
                 fetchData();
             } else {
-                message.error('Xóa thất bại');
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Xóa thất bại');
             }
         } catch (error) {
             message.error('Xóa thất bại');
         } finally {
+            setDeletingSelected(false);
             setLoading(false);
         }
     };
@@ -290,17 +305,18 @@ export default function Mau03CatalogPage() {
                     </Space>
                     <Space>
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
-                        {user?.role === 'ADMIN' && (
+                        {['ADMIN', 'CNTT', 'VTYT'].includes(user?.role || '') && (
                             <Popconfirm
-                                title="Xóa toàn bộ danh mục?"
-                                description="Hành động này sẽ xóa sạch dữ liệu hiện tại. Bạn có chắc chắn?"
-                                onConfirm={handleDeleteAll}
-                                okText="Có, Xóa hết"
-                                cancelText="Không"
+                                title={`Xác nhận xóa ${selectedRowKeys.length} bản ghi đã chọn?`}
+                                description="Hệ thống sẽ tự động chụp Snapshot dự phòng trước khi xóa."
+                                onConfirm={handleDeleteSelected}
+                                okText="Xóa đã chọn"
+                                cancelText="Hủy"
                                 okButtonProps={{ danger: true }}
+                                disabled={selectedRowKeys.length === 0}
                             >
-                                <Button danger type="primary" icon={<DeleteOutlined />}>
-                                    Xóa toàn bộ
+                                <Button danger type="primary" icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0} loading={deletingSelected}>
+                                    Xóa đã chọn{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
                                 </Button>
                             </Popconfirm>
                         )}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'saved-reports');
 const METADATA_FILE = path.join(UPLOAD_DIR, 'metadata.json');
@@ -23,6 +24,9 @@ const saveMetadata = (data: any) => {
 export async function DELETE(req: Request, context: any) {
     const { params } = context;
     try {
+        const auth = await authorizeApiRequest(req, { allowAuthenticated: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const resolvedParams = await params;
         const fileName = resolvedParams.filename;
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
+import { authorizeApiRequest } from "@/lib/deleteProtection";
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -161,6 +162,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await authorizeApiRequest(req, { allowAuthenticated: true });
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { id } = await props.params;
     const existing = await prisma.inventoryVoucher.findUnique({
       where: { id },

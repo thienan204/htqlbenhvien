@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
     try {
+        const auth = await authorizeApiRequest(request, { allowAuthenticated: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const body = await request.json();
         const { date, maKhoa, schedules } = body;
 

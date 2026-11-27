@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
 import { getSystemConfig } from '@/lib/systemConfig';
 import { authorizeMau06Action, hasMau06MenuPermission } from './_auth';
-
-const prisma = new PrismaClient();
+import { createDeleteSnapshot, SnapshotLimitError } from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,26 +92,66 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
     try {
         let ids: string[] | null = null;
+        let deleteAllBody = false;
+        let confirmBody = false;
         try {
             const body = await request.json();
             if (body && Array.isArray(body.ids)) {
                 ids = body.ids;
             }
+            if (body?.deleteAll === true) deleteAllBody = true;
+            if (body?.confirmDeleteAll === true) confirmBody = true;
         } catch {
-            // Không có JSON body -> Xóa toàn bộ
+            // Body rỗng
         }
 
-        const isDeleteAll = !ids || ids.length === 0;
+        const { searchParams } = new URL(request.url);
+        const deleteAllQuery = searchParams.get('deleteAll') === 'true';
+        const confirmQuery = searchParams.get('confirmDeleteAll') === 'true';
+
+        const isDeleteAll = (!ids || ids.length === 0);
         const auth = await authorizeMau06Action(request, 'DELETE', isDeleteAll);
         if (auth.errorResponse) return auth.errorResponse;
 
+        if (isDeleteAll) {
+            // Chặn trường hợp client gửi nhầm ids: [] hoặc gọi DELETE rỗng không xác nhận
+            if (Array.isArray(ids) && ids.length === 0 && !deleteAllBody && !deleteAllQuery) {
+                return NextResponse.json({ error: 'Chưa chọn thiết bị nào để xóa.' }, { status: 400 });
+            }
+            if (!confirmBody && !confirmQuery) {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa toàn bộ Danh mục Mẫu 06.' },
+                    { status: 400 }
+                );
+            }
+        }
+
         const whereClause = ids && ids.length > 0 ? { id: { in: ids } } : {};
-        const result = await prisma.mau06Catalog.deleteMany({
-            where: whereClause
-        });
-        return NextResponse.json({ success: true, count: result.count });
+        const result = await prisma.$transaction(
+            async (tx) => {
+                const targetRows = await tx.mau06Catalog.findMany({ where: whereClause });
+                const snap = await createDeleteSnapshot({
+                    tx,
+                    tableName: 'Mau06Catalog',
+                    displayName: isDeleteAll ? 'Toàn bộ Danh mục Mẫu 06 (Thiết bị y tế)' : `Mẫu 06 (${targetRows.length} thiết bị)`,
+                    actionType: isDeleteAll ? 'DELETE_ALL' : 'BULK_DELETE',
+                    filterSummary: isDeleteAll ? 'Toàn bệnh viện' : `${targetRows.length} ID đã chọn`,
+                    recordsCount: targetRows.length,
+                    data: targetRows,
+                    user: auth.user,
+                });
+                const deleted = await tx.mau06Catalog.deleteMany({ where: whereClause });
+                return { count: deleted.count, snapshotId: snap.snapshotId };
+            },
+            { timeout: 30000 }
+        );
+
+        return NextResponse.json({ success: true, ...result });
     } catch (error) {
         console.error('Error deleting mau06 catalog:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

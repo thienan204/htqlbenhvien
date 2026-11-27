@@ -406,42 +406,6 @@ export default function HoSoDaGuiPage() {
         });
     };
 
-    const handleDeleteAll = () => {
-        Modal.confirm({
-            title: 'Cảnh báo nguy hiểm',
-            content: 'Bạn đang yêu cầu XÓA TOÀN BỘ hồ sơ thỏa mãn bộ lọc hiện tại (hoặc tất cả nếu không lọc). Hành động này cực kỳ nguy hiểm và không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục?',
-            okText: 'Xóa Toàn Bộ',
-            okType: 'danger',
-            cancelText: 'Hủy',
-            onOk: async () => {
-                try {
-                    const res = await fetch(`${getBasePath()}/api/ho-so-da-gui`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            deleteAll: true,
-                            search: searchText,
-                            trangThaiHS: filterTrangThaiHS,
-                            trangThaiTT: filterTrangThaiTT,
-                            ngayRaTu: listDateRangeStr?.[0],
-                            ngayRaDen: listDateRangeStr?.[1]
-                        })
-                    });
-                    const json = await res.json();
-                    if (json.success) {
-                        Modal.success({ title: 'Thành công', content: json.message });
-                        setSelectedRowKeys([]);
-                        fetchList(1, pagination.pageSize, searchText, filterTrangThaiHS, filterTrangThaiTT, onlyModified, listDateRangeStr);
-                    } else {
-                        Modal.error({ title: 'Lỗi', content: json.error });
-                    }
-                } catch (error) {
-                    Modal.error({ title: 'Lỗi', content: 'Không thể kết nối tới máy chủ.' });
-                }
-            }
-        });
-    };
-
     // --- IMPORT LOGIC ---
     const onDrop = (acceptedFiles: File[]) => {
         if (acceptedFiles.length > 0) {
@@ -702,11 +666,10 @@ export default function HoSoDaGuiPage() {
                 <Space>
                     <Title level={4} style={{ margin: 0 }}>Danh Sách Hồ Sơ Đã Gửi</Title>
                     <Button icon={<Download size={16} />} onClick={() => handleExportDiff(listDateRangeStr)} className="ml-4">Xuất File Đối Chiếu</Button>
-                    {user?.role === 'ADMIN' && selectedRowKeys.length > 0 && (
-                        <Button danger onClick={handleDeleteSelected}>Xóa {selectedRowKeys.length} đã chọn</Button>
-                    )}
                     {user?.role === 'ADMIN' && (
-                        <Button danger type="dashed" onClick={handleDeleteAll}>Xóa toàn bộ (theo bộ lọc)</Button>
+                        <Button danger disabled={selectedRowKeys.length === 0} onClick={handleDeleteSelected}>
+                            Xóa đã chọn{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
+                        </Button>
                     )}
                 </Space>
                 <Space className="flex-wrap" style={{ marginTop: '8px' }}>

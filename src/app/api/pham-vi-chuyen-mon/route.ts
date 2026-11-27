@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import {
+    authorizeApiRequest,
+    createDeleteSnapshot,
+    SnapshotLimitError,
+} from '@/lib/deleteProtection';
 
 export async function GET(request: NextRequest) {
     try {
@@ -122,14 +127,82 @@ export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        const deleteAll = searchParams.get('deleteAll');
+        const deleteAll = searchParams.get('deleteAll') === 'true';
+        const confirmDeleteAll = searchParams.get('confirmDeleteAll') === 'true';
+        const allowCascadeCchn = searchParams.get('allowCascadeCchn') === 'true';
 
-        if (deleteAll === 'true') {
-            await prisma.scopeOfPracticeCatalog.deleteMany({});
-            return NextResponse.json({ success: true });
+        if (deleteAll) {
+            const auth = await authorizeApiRequest(request, { requireAdmin: true });
+            if (auth.errorResponse) return auth.errorResponse;
+
+            if (!confirmDeleteAll) {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa toàn bộ Danh mục Phạm vi CM.' },
+                    { status: 400 }
+                );
+            }
+
+            const linkedCchnCount = await prisma.cCHNScopeMapping.count();
+            if (linkedCchnCount > 0 && !allowCascadeCchn) {
+                return NextResponse.json(
+                    {
+                        error: `ĐÃ CHẶN XÓA: Đang có ${linkedCchnCount} liên kết Phạm vi hành nghề trên các CCHN của nhân viên. Xóa Danh mục Phạm vi sẽ gây mất dữ liệu CCHN hàng loạt (Cascade).`,
+                    },
+                    { status: 400 }
+                );
+            }
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const [scopes, scopeServiceMappings, cchnScopeMappings] = await Promise.all([
+                        tx.scopeOfPracticeCatalog.findMany(),
+                        tx.scopeServiceMapping.findMany(),
+                        tx.cCHNScopeMapping.findMany(),
+                    ]);
+
+                    const snap = await createDeleteSnapshot({
+                        tx,
+                        tableName: 'ScopeOfPracticeCatalog',
+                        displayName: 'Danh mục Phạm vi Chuyên môn (kèm liên kết)',
+                        actionType: 'DELETE_ALL',
+                        filterSummary: 'Toàn bệnh viện',
+                        recordsCount: scopes.length + scopeServiceMappings.length + cchnScopeMappings.length,
+                        data: { scopes, scopeServiceMappings, cchnScopeMappings },
+                        user: auth.user,
+                    });
+
+                    const deleted = await tx.scopeOfPracticeCatalog.deleteMany({});
+                    return { count: deleted.count, snapshotId: snap.snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({ success: true, ...result });
         }
 
+        const auth = await authorizeApiRequest(request, {
+            allowedRoles: ['ADMIN', 'PTCCB', 'TCCB', 'CNTT', 'KHOA'],
+            menuKeys: ['PHAM_vi_cm', 'MENU_PHAM_VI_CHUYEN_MON'],
+            action: 'DELETE',
+        });
+        if (auth.errorResponse) return auth.errorResponse;
+
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+        const scope = await prisma.scopeOfPracticeCatalog.findUnique({ where: { id } });
+        if (!scope) return NextResponse.json({ error: 'Không tìm thấy Phạm vi chuyên môn.' }, { status: 404 });
+
+        const cchnUsingCount = await prisma.cCHNScopeMapping.count({
+            where: { ma_pham_vi: scope.ma_pham_vi },
+        });
+        if (cchnUsingCount > 0) {
+            return NextResponse.json(
+                {
+                    error: `Không thể xóa Phạm vi "${scope.ma_pham_vi}" vì đang gắn với ${cchnUsingCount} CCHN của nhân viên. Vui lòng gỡ khỏi CCHN trước khi xóa.`,
+                },
+                { status: 400 }
+            );
+        }
 
         await prisma.scopeOfPracticeCatalog.delete({
             where: { id }
@@ -138,6 +211,9 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting ScopeOfPracticeCatalog:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

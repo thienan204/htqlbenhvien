@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(req, { requireAdmin: true });
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { searchParams } = new URL(req.url);
     const eventCode = searchParams.get('eventCode');
 

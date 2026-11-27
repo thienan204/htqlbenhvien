@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Tabs, Button, Input, Space, Popconfirm, message, Modal, Select, Form } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined, BookOutlined, SearchOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { getBasePath } from '@/utils/config';
 
 const { TabPane } = Tabs;
 
@@ -119,10 +120,13 @@ export default function TT32ManagementPage() {
 
     const handleDeleteCategory = async (id: string) => {
         try {
-            const res = await fetch(`/api/tt32?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/tt32?id=${id}`, { method: 'DELETE' });
             if (res.ok) {
                 message.success('Xóa thành công');
                 fetchData();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Không thể xóa nhóm TT32 này');
             }
         } catch {
             message.error('Lỗi khi xóa');

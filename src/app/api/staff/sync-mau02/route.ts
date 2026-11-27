@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { decryptField } from '@/lib/staffCrypto';
+import {
+    authorizeApiRequest,
+    createDeleteSnapshot,
+    SnapshotLimitError,
+} from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,13 +34,17 @@ function mapToBhytCode(codeStr: string | null | undefined): string {
 
 export async function POST(request: Request) {
     try {
-        // 1. Delete all existing Mau02 records
-        await prisma.mau02Catalog.deleteMany();
+        const auth = await authorizeApiRequest(request, {
+            allowedRoles: ['ADMIN', 'PTCCB', 'TCCB', 'CNTT'],
+            menuKeys: ['MENU_STAFF', 'MENU_CATALOG_02'],
+            action: 'EDIT',
+        });
+        if (auth.errorResponse) return auth.errorResponse;
 
         const body = await request.json().catch(() => ({}));
         const staffIds: string[] = body.staffIds || [];
 
-        // 2. Fetch Staff with their active CCHNs and related refs
+        // 1. Fetch Staff with their active CCHNs and related refs FIRST (before touching Mau02Catalog)
         const whereClause = staffIds.length > 0 ? { id: { in: staffIds } } : {};
 
         const staffList = await prisma.staff.findMany({
@@ -58,7 +68,7 @@ export async function POST(request: Request) {
             }
         });
 
-        const syncData = [];
+        const syncData: Prisma.Mau02CatalogCreateManyInput[] = [];
         let stt = 1;
 
         // 3. Map Data
@@ -118,22 +128,46 @@ export async function POST(request: Request) {
                     TEN_KHOA: staff.department?.ten_khoa || '',
                     HO_TEN: staff.ho_ten,
                     GIOI_TINH: gioi_tinh,
-                    SO_DINH_DANH: staff.cccd || staff.ma_nv || '',
+                    SO_DINH_DANH: (decryptField(staff.cccd) || staff.cccd) || staff.ma_nv || '',
                     CHUCDANH_NN: staff.ma_chuc_danh_bhyt || staff.chuc_danh_ref?.bhyt_code || mapToBhytCode(staff.chuc_danh_ref?.code),
                     VI_TRI: staff.ma_vi_tri_bhyt || staff.vi_tri_bhyt_ref?.code || staff.chuc_vu_ref?.bhyt_code || ''
                 });
             }
         }
 
-        if (syncData.length > 0) {
-            await prisma.mau02Catalog.createMany({
-                data: syncData
-            });
-        }
+        // 3. Wrap Snapshot + Delete old Mau02 + Insert new Mau02 atomically in transaction
+        const result = await prisma.$transaction(
+            async (tx) => {
+                const oldRows = await tx.mau02Catalog.findMany();
+                const snap = await createDeleteSnapshot({
+                    tx,
+                    tableName: 'Mau02Catalog',
+                    displayName: 'Danh mục Mẫu 02 (trước khi Đồng bộ)',
+                    actionType: 'SYNC_OVERWRITE',
+                    filterSummary: staffIds.length > 0 ? `Đồng bộ ${staffIds.length} nhân sự` : 'Đồng bộ toàn viện',
+                    recordsCount: oldRows.length,
+                    data: oldRows,
+                    user: auth.user,
+                });
 
-        return NextResponse.json({ success: true, count: syncData.length });
+                await tx.mau02Catalog.deleteMany();
+                if (syncData.length > 0) {
+                    await tx.mau02Catalog.createMany({
+                        data: syncData,
+                    });
+                }
+
+                return { count: syncData.length, snapshotId: snap.snapshotId };
+            },
+            { timeout: 30000 }
+        );
+
+        return NextResponse.json({ success: true, ...result });
     } catch (error: any) {
         console.error("Sync Mau02 Error:", error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Lỗi đồng bộ: ' + error.message }, { status: 500 });
     }
 }

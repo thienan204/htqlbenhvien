@@ -459,23 +459,6 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
         }
     };
 
-    const handleDeleteAllTickets = async () => {
-        try {
-            const res = await fetch(`${getBasePath()}/api/error-management/it-requests?action=delete_all&targetDepartment=${targetDepartment}`, {
-                method: 'DELETE'
-            });
-            if (res.ok) {
-                message.success('Đã xóa toàn bộ dữ liệu thành công!');
-                fetchTickets();
-            } else {
-                const data = await res.json();
-                message.error(data.error || 'Lỗi khi xóa dữ liệu');
-            }
-        } catch (error) {
-            message.error('Lỗi kết nối');
-        }
-    };
-
     return (
         <div className="w-full max-w-full sm:max-w-[98%] mx-auto px-3 sm:px-[30px] py-3 sm:py-6 space-y-3 sm:space-y-6 overflow-x-hidden">
             <TicketHeader 
@@ -490,7 +473,6 @@ export function SharedRequestsPage({ targetDepartment, createPath }: SharedReque
                 onToggleFocusMode={handleToggleFocusMode}
                 onCreateRequest={() => router.push(createPath)}
                 onOpenSettings={() => setIsSettingsVisible(true)}
-                onDeleteAll={isAdmin ? handleDeleteAllTickets : undefined}
                 targetDepartment={targetDepartment}
                 staffList={itUsers}
             />

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import {
+    authorizeApiRequest,
+    createDeleteSnapshot,
+    MAX_SNAPSHOT_RECORDS,
+    SnapshotLimitError,
+} from '@/lib/deleteProtection';
 
 export async function GET(req: NextRequest) {
     try {
         const searchParams = new URL(req.url).searchParams;
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '50');
+        const idsOnly = searchParams.get('idsOnly') === 'true';
         const search = searchParams.get('search') || '';
         const fromDate = searchParams.get('fromDate') || '';
         const toDate = searchParams.get('toDate') || '';
@@ -77,6 +84,23 @@ export async function GET(req: NextRequest) {
             whereClause = { AND: andConditions };
         }
 
+        if (idsOnly) {
+            const [idRows, total] = await Promise.all([
+                (prisma as any).xml1.findMany({
+                    where: whereClause,
+                    take: MAX_SNAPSHOT_RECORDS,
+                    orderBy: { createdAt: 'desc' },
+                    select: { id: true },
+                }),
+                (prisma as any).xml1.count({ where: whereClause }),
+            ]);
+            return NextResponse.json({
+                ids: idRows.map((r: { id: string }) => r.id),
+                total,
+                limitExceeded: total > MAX_SNAPSHOT_RECORDS,
+            });
+        }
+
         const [records, total] = await Promise.all([
             (prisma as any).xml1.findMany({
                 where: whereClause,
@@ -95,14 +119,24 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
     try {
+        const auth = await authorizeApiRequest(req, { requireAdmin: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const body = await req.json();
-        const { ids, filters } = body;
+        const { ids, filters, confirmDeleteAll } = body;
 
         let whereClause: any = {};
+        const isFilterBulkDelete = !(ids && Array.isArray(ids) && ids.length > 0);
 
-        if (ids && Array.isArray(ids) && ids.length > 0) {
+        if (!isFilterBulkDelete) {
             whereClause = { id: { in: ids } };
         } else if (filters) {
+            if (confirmDeleteAll !== true) {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa hồ sơ XML theo bộ lọc.' },
+                    { status: 400 }
+                );
+            }
             const { search, fromDate, toDate, errorStatus } = filters;
             const andConditions: any[] = [];
 
@@ -152,12 +186,49 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'No IDs or filters provided' }, { status: 400 });
         }
 
-        const result = await (prisma as any).xml1.deleteMany({
-            where: whereClause
-        });
+        const result = await prisma.$transaction(
+            async (tx) => {
+                const headerRows = await tx.xml1.findMany({
+                    where: whereClause,
+                    select: {
+                        id: true,
+                        MA_LK: true,
+                        MA_BN: true,
+                        HO_TEN: true,
+                        MA_THE_BHYT: true,
+                        NGAY_VAO: true,
+                        NGAY_RA: true,
+                        MA_BENH_CHINH: true,
+                        MA_KHOA: true,
+                        hasError: true,
+                    },
+                });
+                const snap = await createDeleteSnapshot({
+                    tx,
+                    tableName: 'Xml1',
+                    displayName: isFilterBulkDelete
+                        ? `Hồ sơ XML1 theo bộ lọc (${headerRows.length} hồ sơ)`
+                        : `Hồ sơ XML1 đã chọn (${headerRows.length} hồ sơ)`,
+                    actionType: isFilterBulkDelete ? 'DELETE_ALL' : 'BULK_DELETE',
+                    filterSummary: isFilterBulkDelete
+                        ? JSON.stringify(filters)
+                        : `${ids.length} ID đã chọn`,
+                    recordsCount: headerRows.length,
+                    data: headerRows,
+                    user: auth.user,
+                    restorable: false, // Xml2..15 cascade không khôi phục ngược lại được từ header
+                });
+                const deleted = await tx.xml1.deleteMany({ where: whereClause });
+                return { count: deleted.count, snapshotId: snap.snapshotId };
+            },
+            { timeout: 30000 }
+        );
 
-        return NextResponse.json({ success: true, count: result.count });
+        return NextResponse.json({ success: true, ...result });
     } catch (error: any) {
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

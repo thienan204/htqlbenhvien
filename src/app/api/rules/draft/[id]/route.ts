@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ id: string }> } // Params is a Promise in Next 15+
 ) {
     try {
+        const auth = await authorizeApiRequest(request, { requireAdmin: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { id } = await params;
         const body = await request.json();
         const action = body.action; // 'approve'
@@ -48,6 +52,9 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = await authorizeApiRequest(request, { requireAdmin: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { id } = await params;
         await prisma.draftRule.delete({
             where: { id },

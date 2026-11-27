@@ -14,7 +14,8 @@ import StaffDetailsModal from './components/StaffDetailsModal';
 import TemplateConfigModal from './components/TemplateConfigModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBasePath } from '@/utils/config';
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined, HistoryOutlined } from '@ant-design/icons';
+import DeleteSnapshotManagerModal from '@/components/common/DeleteSnapshotManagerModal';
 
 export default function StaffPage() {
     const [staffList, setStaffList] = useState<any[]>([]);
@@ -38,6 +39,8 @@ export default function StaffPage() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [reports, setReports] = useState<any[]>([]);
+    const [isSnapshotModalOpen, setIsSnapshotModalOpen] = useState(false);
+    const [deletingSelected, setDeletingSelected] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -115,21 +118,33 @@ export default function StaffPage() {
         }
     };
 
-    const handleDeleteAll = async () => {
+    const handleDeleteSelected = async () => {
+        if (selectedRowKeys.length === 0) return;
         try {
+            setDeletingSelected(true);
             setLoading(true);
-            const res = await fetch(`${getBasePath()}/api/staff?confirmDeleteAll=true`, { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/staff`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys }),
+            });
             if (res.ok) {
                 const result = await res.json();
-                message.success(`Đã xóa thành công ${result.count} nhân sự.`);
+                message.success(
+                    result.snapshotId
+                        ? `Đã xóa thành công ${result.count ?? selectedRowKeys.length} nhân sự đã chọn (đã lưu Snapshot dự phòng).`
+                        : `Đã xóa thành công ${result.count ?? selectedRowKeys.length} nhân sự đã chọn.`
+                );
+                setSelectedRowKeys([]);
                 fetchStaff();
             } else {
                 const err = await res.json().catch(() => ({}));
-                message.error(err.error || 'Xóa toàn bộ thất bại');
+                message.error(err.error || 'Xóa nhân sự đã chọn thất bại');
             }
         } catch (error) {
-            message.error('Lỗi khi xóa toàn bộ');
+            message.error('Lỗi khi xóa nhân sự đã chọn');
         } finally {
+            setDeletingSelected(false);
             setLoading(false);
         }
     };
@@ -480,19 +495,34 @@ export default function StaffPage() {
                                 </Button>
                             </Popconfirm>
 
-                            {user?.role === 'ADMIN' && (
-                                <Popconfirm 
-                                    title="Xóa toàn bộ nhân sự?" 
-                                    description="Hành động này sẽ xóa sạch danh sách nhân sự (không thể hoàn tác). Bạn có chắc không?"
-                                    onConfirm={handleDeleteAll} 
-                                    okText="Có, Xóa hết" 
-                                    cancelText="Không"
-                                    okButtonProps={{ danger: true }}
+                            <Popconfirm
+                                title={`Xác nhận xóa ${selectedRowKeys.length} nhân sự đã chọn?`}
+                                description="Hệ thống sẽ xóa nhân sự đã tick kèm CCHN, Quá trình công tác và Đào tạo liên quan (tự động chụp Snapshot dự phòng). Sẽ chặn nếu nhân sự đã có dữ liệu Chấm công/Nghỉ phép."
+                                onConfirm={handleDeleteSelected}
+                                okText="Xóa đã chọn"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                                disabled={selectedRowKeys.length === 0}
+                            >
+                                <Button
+                                    danger
+                                    disabled={selectedRowKeys.length === 0}
+                                    loading={deletingSelected}
+                                    icon={<DeleteOutlined />}
                                 >
-                                    <Button danger type="text" icon={<DeleteOutlined />} className="hover:bg-rose-50 text-rose-600">
-                                        Xóa tất cả
-                                    </Button>
-                                </Popconfirm>
+                                    Xóa đã chọn{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
+                                </Button>
+                            </Popconfirm>
+
+                            {user?.role === 'ADMIN' && (
+                                <Button
+                                    type="text"
+                                    icon={<HistoryOutlined />}
+                                    className="text-slate-600 hover:bg-slate-100"
+                                    onClick={() => setIsSnapshotModalOpen(true)}
+                                >
+                                    Snapshot
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -667,6 +697,12 @@ export default function StaffPage() {
                 onSuccess={() => {
                     fetchStaff();
                 }}
+            />
+
+            <DeleteSnapshotManagerModal
+                open={isSnapshotModalOpen}
+                onClose={() => setIsSnapshotModalOpen(false)}
+                onRestored={() => fetchStaff()}
             />
         </div>
     );

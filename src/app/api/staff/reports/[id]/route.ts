@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -75,6 +76,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const auth = await authorizeApiRequest(req, {
+            allowedRoles: ['ADMIN', 'PTCCB', 'TCCB', 'CNTT'],
+            menuKeys: ['MENU_STAFF'],
+            action: 'DELETE',
+        });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { id } = await params;
         const template = await prisma.reportTemplate.findUnique({ where: { id } });
         if (template?.excelFilePath) {

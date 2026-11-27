@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,9 @@ export async function GET(req: Request) {
 
 export async function DELETE(req: Request) {
     try {
+        const auth = await authorizeApiRequest(req, { allowAuthenticated: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const url = new URL(req.url);
         const id = url.searchParams.get('id');
 

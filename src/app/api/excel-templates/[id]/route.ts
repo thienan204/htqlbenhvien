@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const configPath = path.join(process.cwd(), 'data', 'excel-templates.json');
 
@@ -57,6 +58,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const auth = await authorizeApiRequest(request, { allowAuthenticated: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { id } = await params;
         const templates = await getTemplates();
         

@@ -5,6 +5,7 @@ import { Table, Button, Space, Modal, Form, Input, Popconfirm, message, Card, To
 import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, AppstoreAddOutlined, ClearOutlined } from '@ant-design/icons';
 import ServiceMappingModal from './components/ServiceMappingModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 
 export default function ScopeOfPracticeCatalogPage() {
     const { user } = useAuth();
@@ -21,7 +22,7 @@ export default function ScopeOfPracticeCatalogPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/pham-vi-chuyen-mon`);
+            const res = await fetch(`${getBasePath()}/api/pham-vi-chuyen-mon`);
             if (!res.ok) throw new Error('Network response was not ok');
             const result = await res.json();
             setData(result);
@@ -64,12 +65,13 @@ export default function ScopeOfPracticeCatalogPage() {
 
     const handleDelete = async (id: string) => {
         try {
-            const res = await fetch(`/api/pham-vi-chuyen-mon?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/pham-vi-chuyen-mon?id=${id}`, { method: 'DELETE' });
             if (res.ok) {
                 message.success('Đã xóa dòng');
                 fetchData();
             } else {
-                message.error('Xóa thất bại');
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Xóa thất bại');
             }
         } catch (error) {
             message.error('Xóa thất bại');
@@ -79,7 +81,7 @@ export default function ScopeOfPracticeCatalogPage() {
     const handleSave = async (values: any) => {
         try {
             if (editingRecord) {
-                const res = await fetch(`/api/pham-vi-chuyen-mon`, {
+                const res = await fetch(`${getBasePath()}/api/pham-vi-chuyen-mon`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...values, id: editingRecord.id })
@@ -93,7 +95,7 @@ export default function ScopeOfPracticeCatalogPage() {
                     message.error(err.error || 'Lỗi cập nhật');
                 }
             } else {
-                const res = await fetch(`/api/pham-vi-chuyen-mon`, {
+                const res = await fetch(`${getBasePath()}/api/pham-vi-chuyen-mon`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(values)
@@ -112,24 +114,24 @@ export default function ScopeOfPracticeCatalogPage() {
         }
     };
 
-    const handleClearAllMappings = async () => {
+    const handleClearSelectedMappings = async () => {
+        const selectedScopes = data.filter(d => selectedRowKeys.includes(d.id)).map(d => d.ma_pham_vi);
+        if (selectedScopes.length === 0) {
+            message.warning('Vui lòng tick chọn ít nhất 1 Phạm vi trước khi làm sạch.');
+            return;
+        }
         try {
-            const selectedScopes = data.filter(d => selectedRowKeys.includes(d.id)).map(d => d.ma_pham_vi);
-            
-            const res = await fetch(`/api/pham-vi-chuyen-mon/mapping`, { 
+            const res = await fetch(`${getBasePath()}/api/pham-vi-chuyen-mon/mapping`, { 
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ma_pham_vi_list: selectedScopes })
             });
             if (res.ok) {
-                if (selectedScopes.length > 0) {
-                    message.success(`Đã xóa dữ liệu gán Dịch vụ của ${selectedScopes.length} Phạm vi`);
-                    setSelectedRowKeys([]);
-                } else {
-                    message.success('Đã xóa toàn bộ dữ liệu gán Dịch vụ vào Phạm vi');
-                }
+                message.success(`Đã xóa dữ liệu gán Dịch vụ của ${selectedScopes.length} Phạm vi (đã chụp Snapshot dự phòng)`);
+                setSelectedRowKeys([]);
             } else {
-                message.error('Xóa thất bại');
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Xóa thất bại');
             }
         } catch (error) {
             message.error('Lỗi kết nối khi xóa');
@@ -202,19 +204,17 @@ export default function ScopeOfPracticeCatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                     </Space>
                     <Space>
-                        {user?.role === 'ADMIN' && (
+                        {user?.role === 'ADMIN' && selectedRowKeys.length > 0 && (
                             <Popconfirm
-                                title={selectedRowKeys.length > 0 ? "Xóa Dịch vụ của Phạm vi đã chọn?" : "Xóa toàn bộ Dịch vụ đã gán?"}
-                                description={selectedRowKeys.length > 0 
-                                    ? `Hành động này sẽ xóa các mã Dịch vụ đã gán của ${selectedRowKeys.length} Phạm vi hành nghề được chọn. Bạn có chắc chắn không?` 
-                                    : "Bạn chưa chọn Phạm vi nào. Hành động này sẽ XÓA TẤT CẢ các mã Dịch vụ đã được gán vào TẤT CẢ Phạm vi hành nghề. Bạn có chắc chắn không?"}
-                                onConfirm={handleClearAllMappings}
+                                title="Xóa Dịch vụ của Phạm vi đã chọn?"
+                                description={`Hành động này sẽ xóa các mã Dịch vụ đã gán của ${selectedRowKeys.length} Phạm vi hành nghề được chọn (hệ thống sẽ tự chụp Snapshot trước khi xóa). Bạn có chắc chắn không?`}
+                                onConfirm={handleClearSelectedMappings}
                                 okText="Có, xóa"
                                 cancelText="Hủy"
                                 okButtonProps={{ danger: true }}
                             >
                                 <Button danger icon={<ClearOutlined />}>
-                                    {selectedRowKeys.length > 0 ? `Làm sạch (${selectedRowKeys.length}) Phạm vi` : 'Làm sạch Dữ liệu Gán (Tất cả)'}
+                                    Làm sạch ({selectedRowKeys.length}) Phạm vi đã chọn
                                 </Button>
                             </Popconfirm>
                         )}

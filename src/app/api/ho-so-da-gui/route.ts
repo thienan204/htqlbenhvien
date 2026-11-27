@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import {
+    authorizeApiRequest,
+    createDeleteSnapshot,
+    SnapshotLimitError,
+} from '@/lib/deleteProtection';
 
 export async function GET(request: Request) {
     try {
@@ -202,14 +205,23 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const body = await request.json();
-        const { ids, deleteAll, search, trangThaiHS, trangThaiTT, ngayRaTu, ngayRaDen } = body;
+        const { ids, deleteAll, confirmDeleteAll, search, trangThaiHS, trangThaiTT, ngayRaTu, ngayRaDen } = body;
 
         if (deleteAll) {
+            const auth = await authorizeApiRequest(request, { requireAdmin: true });
+            if (auth.errorResponse) return auth.errorResponse;
+
+            if (confirmDeleteAll !== true) {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa toàn bộ Hồ sơ đã gửi.' },
+                    { status: 400 }
+                );
+            }
+
             // Build where clause to delete only filtered items
             const where: any = {};
             
             if (search) {
-                // Simplified search for delete all to avoid complex query overhead
                 where.OR = [
                     { maLienKet: { contains: search, mode: 'insensitive' } },
                     { maBN: { contains: search, mode: 'insensitive' } },
@@ -227,19 +239,92 @@ export async function DELETE(request: Request) {
                 if (ngayRaDen) where.ngayRa.lte = ngayRaDen + '235959';
             }
 
-            const deleted = await prisma.hoSoDaGui.deleteMany({ where });
-            return NextResponse.json({ success: true, count: deleted.count, message: `Đã xóa ${deleted.count} hồ sơ` });
-        } else if (ids && ids.length > 0) {
-            // Delete specific ids
-            const deleted = await prisma.hoSoDaGui.deleteMany({
-                where: { id: { in: ids } }
+            const filterDesc = [
+                search ? `Tìm: ${search}` : null,
+                trangThaiHS ? `HS: ${trangThaiHS}` : null,
+                trangThaiTT ? `TT: ${trangThaiTT}` : null,
+                ngayRaTu || ngayRaDen ? `Ngày ra: ${ngayRaTu || '*'}..${ngayRaDen || '*'}` : null,
+            ].filter(Boolean).join('; ') || 'Toàn bộ bảng HoSoDaGui (không lọc)';
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const targetCount = await tx.hoSoDaGui.count({ where });
+                    let snapshotId: string | undefined;
+                    if (targetCount > 0) {
+                        const rows = await tx.hoSoDaGui.findMany({ where });
+                        const snap = await createDeleteSnapshot({
+                            tx,
+                            tableName: 'HoSoDaGui',
+                            displayName: 'Hồ sơ đã gửi BHXH (trước khi xóa hàng loạt)',
+                            actionType: 'DELETE_ALL',
+                            filterSummary: filterDesc,
+                            recordsCount: rows.length,
+                            data: rows,
+                            user: auth.user,
+                        });
+                        snapshotId = snap.snapshotId;
+                    }
+                    const deleted = await tx.hoSoDaGui.deleteMany({ where });
+                    return { count: deleted.count, snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({
+                success: true,
+                count: result.count,
+                snapshotId: result.snapshotId,
+                message: result.snapshotId
+                    ? `Đã xóa ${result.count} hồ sơ (đã lưu Snapshot dự phòng)`
+                    : `Đã xóa ${result.count} hồ sơ`,
             });
-            return NextResponse.json({ success: true, count: deleted.count, message: `Đã xóa ${deleted.count} hồ sơ` });
+        } else if (ids && Array.isArray(ids) && ids.length > 0) {
+            const auth = await authorizeApiRequest(request, {
+                allowedRoles: ['ADMIN', 'CNTT'],
+                menuKeys: ['MENU_ERROR_HSDA', 'MENU_CHUYEN_DE'],
+                action: 'DELETE',
+            });
+            if (auth.errorResponse) return auth.errorResponse;
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const targetRows = await tx.hoSoDaGui.findMany({
+                        where: { id: { in: ids } },
+                    });
+                    const snap = await createDeleteSnapshot({
+                        tx,
+                        tableName: 'HoSoDaGui',
+                        displayName: `Hồ sơ đã gửi BHXH (Xóa ${targetRows.length} dòng đã chọn)`,
+                        actionType: 'BULK_DELETE',
+                        filterSummary: `${ids.length} dòng đã chọn`,
+                        recordsCount: targetRows.length,
+                        data: targetRows,
+                        user: auth.user,
+                    });
+                    const deleted = await tx.hoSoDaGui.deleteMany({
+                        where: { id: { in: ids } },
+                    });
+                    return { count: deleted.count, snapshotId: snap.snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({
+                success: true,
+                count: result.count,
+                snapshotId: result.snapshotId,
+                message: result.snapshotId
+                    ? `Đã xóa ${result.count} hồ sơ (đã lưu Snapshot dự phòng)`
+                    : `Đã xóa ${result.count} hồ sơ`,
+            });
         } else {
             return NextResponse.json({ error: 'Không có dữ liệu để xóa' }, { status: 400 });
         }
     } catch (error: any) {
         console.error('Lỗi API xóa hồ sơ:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Có lỗi xảy ra khi xóa dữ liệu: ' + error.message }, { status: 500 });
     }
 }

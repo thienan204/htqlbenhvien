@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
@@ -71,6 +72,13 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const auth = await authorizeApiRequest(request, {
+            allowedRoles: ['ADMIN', 'PTCCB', 'TCCB', 'CNTT', 'KHOA', 'KHOA_PHONG'],
+            menuKeys: ['MENU_STAFF'],
+            action: 'DELETE',
+        });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 

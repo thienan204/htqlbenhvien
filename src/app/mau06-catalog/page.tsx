@@ -208,23 +208,6 @@ export default function Mau06CatalogPage() {
         }
     };
 
-    const handleDeleteAll = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`${getBasePath()}/api/mau06-catalog`, { method: 'DELETE' });
-            if (res.ok) {
-                message.success('Đã xóa toàn bộ danh mục');
-                fetchData();
-            } else {
-                message.error('Xóa thất bại');
-            }
-        } catch (error) {
-            message.error('Xóa thất bại');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleDeleteBulk = async () => {
         if (selectedRowKeys.length === 0) return;
         try {
@@ -582,34 +565,20 @@ export default function Mau06CatalogPage() {
                             </Button>
                         )}
                         <Button type="default" icon={<DownloadOutlined />} onClick={handleExportData} className="border-indigo-500 text-indigo-600 font-medium">Export Dữ liệu</Button>
-                        {canDelete && selectedRowKeys.length > 0 ? (
+                        {canDelete && (
                             <Popconfirm 
                                 title={`Xác nhận xóa ${selectedRowKeys.length} thiết bị đã chọn?`}
-                                description="Hành động này sẽ xóa vĩnh viễn các dòng đã chọn theo checkbox và không thể hoàn tác."
+                                description="Hệ thống sẽ tự động chụp Snapshot dự phòng trước khi xóa các dòng đã chọn theo checkbox."
                                 onConfirm={handleDeleteBulk} 
                                 okText="Có, Xóa" 
                                 cancelText="Không"
                                 okButtonProps={{ danger: true }}
+                                disabled={selectedRowKeys.length === 0}
                             >
-                                <Button danger type="primary" icon={<DeleteOutlined />}>
-                                    Xóa đã chọn ({selectedRowKeys.length})
+                                <Button danger type="primary" icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0}>
+                                    Xóa đã chọn{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
                                 </Button>
                             </Popconfirm>
-                        ) : (
-                            isMounted && user?.role === 'ADMIN' && (
-                                <Popconfirm 
-                                    title="Xác nhận xóa TOÀN BỘ dữ liệu?" 
-                                    description="Hành động này sẽ xóa sạch danh mục và không thể hoàn tác. Bạn có chắc chắn không?"
-                                    onConfirm={handleDeleteAll} 
-                                    okText="Có, Xóa hết" 
-                                    cancelText="Không"
-                                    okButtonProps={{ danger: true }}
-                                >
-                                    <Button danger type="primary" icon={<DeleteOutlined />}>
-                                        Xóa toàn bộ
-                                    </Button>
-                                </Popconfirm>
-                            )
                         )}
                         {canEdit && (
                             <>

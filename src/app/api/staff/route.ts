@@ -3,12 +3,13 @@ import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
 import { decryptStaffList, decryptStaff, prepareStaffForSave, DEFAULT_ENCRYPTED_FIELDS } from '@/lib/staffCrypto';
 import { getSystemConfig } from '@/lib/systemConfig';
+import { createDeleteSnapshot, parseDeleteIdsFromRequest, SnapshotLimitError } from '@/lib/deleteProtection';
 
 export async function GET(request: Request) {
     try {
         const user = await getCurrentUserFromRequest(request);
         const whereClause: any = {};
-        
+
         // Các vai trò quản trị, TCCB hoặc hỗ trợ kỹ thuật toàn viện (ADMIN, PTCCB, TCCB, CNTT, VTYT, HCQT)
         // được phép xem danh sách nhân sự toàn viện.
         const isSupportOrAdmin = user?.role ? ['ADMIN', 'PTCCB', 'TCCB', 'CNTT', 'VTYT', 'HCQT'].includes(user.role) : false;
@@ -76,9 +77,9 @@ export async function POST(request: Request) {
         }
 
         // Handle Single Object (For Form Add/Update)
-        const { 
-            id, ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa, 
-            trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+        const {
+            id, ho_ten, ma_nv, so_dien_thoai, dia_chi, ma_khoa,
+            trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id,
             vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
             ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
             ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
@@ -113,13 +114,13 @@ export async function POST(request: Request) {
             }
 
             // Update existing
-            const updatePayload = prepareStaffForSave({ 
+            const updatePayload = prepareStaffForSave({
                 ho_ten: finalHoTen,
                 ma_nv: finalMaNv,
                 so_dien_thoai: so_dien_thoai !== undefined ? (so_dien_thoai || null) : undefined,
                 dia_chi: dia_chi !== undefined ? (dia_chi || null) : undefined,
-                ma_khoa: finalMaKhoa, 
-                trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+                ma_khoa: finalMaKhoa,
+                trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id,
                 vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
                 ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
                 ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
@@ -184,9 +185,9 @@ export async function POST(request: Request) {
             }
 
             // Create new
-            const createPayload = prepareStaffForSave({ 
-                ho_ten: finalHoTen, ma_nv: finalMaNv, so_dien_thoai, dia_chi, ma_khoa: finalMaKhoa, 
-                trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id, 
+            const createPayload = prepareStaffForSave({
+                ho_ten: finalHoTen, ma_nv: finalMaNv, so_dien_thoai, dia_chi, ma_khoa: finalMaKhoa,
+                trinh_do_id, chuc_danh_id, cccd, gioi_tinh_id,
                 vi_tri_viec_lam_id, chuc_vu_id, loai_hop_dong_id, ngay_sinh,
                 ma_bhxh, dan_toc_id, ma_chuc_danh_bhyt, ma_vi_tri_bhyt, vi_tri_bhyt_id, trang_thai_id,
                 ma_ho_gia_dinh, ngay_cap_cccd, noi_cap_cccd,
@@ -247,24 +248,62 @@ export async function DELETE(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        const idsParam = searchParams.get('ids');
+        const ids = await parseDeleteIdsFromRequest(request);
         const confirmDeleteAll = searchParams.get('confirmDeleteAll');
 
-        if (idsParam) {
+        if (ids.length > 0) {
             if (!['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user.role)) {
                 return NextResponse.json({ error: 'Bạn không có quyền xóa danh sách nhân sự.' }, { status: 403 });
             }
-            // Bulk delete
-            const ids = idsParam.split(',').filter(Boolean);
-            if (ids.length > 0) {
-                await prisma.staff.deleteMany({
-                    where: { id: { in: ids } }
-                });
-            }
-            return NextResponse.json({ success: true, deletedCount: ids.length });
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const [staffRows, certRows, trainings, workHistories] = await Promise.all([
+                        tx.staff.findMany({ where: { id: { in: ids } } }),
+                        tx.practicingCertificate.findMany({ where: { staffId: { in: ids } } }),
+                        tx.staffTraining.findMany({ where: { staffId: { in: ids } } }),
+                        tx.staffWorkHistory.findMany({ where: { staffId: { in: ids } } }),
+                    ]);
+
+                    const certIds = certRows.map((c) => c.id);
+                    const cchnScopes =
+                        certIds.length > 0
+                            ? await tx.cCHNScopeMapping.findMany({ where: { cchn_id: { in: certIds } } })
+                            : [];
+
+                    const snap = await createDeleteSnapshot({
+                        tx,
+                        tableName: 'Staff',
+                        displayName: `Nhân sự đã chọn (${staffRows.length} người)`,
+                        actionType: 'BULK_DELETE',
+                        filterSummary: `${ids.length} nhân sự được chọn`,
+                        recordsCount: staffRows.length + certRows.length,
+                        data: {
+                            staff: staffRows,
+                            certificates: certRows,
+                            cchnScopeMappings: cchnScopes,
+                            trainings,
+                            workHistories,
+                        },
+                        user,
+                    });
+
+                    await tx.practicingCertificate.deleteMany({ where: { staffId: { in: ids } } });
+                    const deleted = await tx.staff.deleteMany({ where: { id: { in: ids } } });
+                    return { count: deleted.count, snapshotId: snap.snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({
+                success: true,
+                deletedCount: result.count,
+                count: result.count,
+                snapshotId: result.snapshotId,
+            });
         }
 
-        if (!id && !idsParam) {
+        if (!id) {
             isDeleteAllRequest = true;
             if (user.role !== 'ADMIN') {
                 return NextResponse.json({ error: 'Chỉ ADMIN mới có quyền xóa toàn bộ danh sách nhân sự.' }, { status: 403 });
@@ -276,14 +315,40 @@ export async function DELETE(request: Request) {
                 );
             }
 
-            // Bọc trong transaction để nếu Staff bị chặn xóa bởi khóa ngoại (chấm công, nghỉ phép...)
-            // thì toàn bộ giao dịch rollback, tuyệt đối không làm mất dữ liệu PracticingCertificate.
-            const deleted = await prisma.$transaction(async (tx) => {
+            // Bọc trong transaction: tự động chụp Snapshot JSON trước khi xóa, nếu Staff bị chặn xóa
+            // bởi khóa ngoại (chấm công, nghỉ phép...) thì toàn bộ giao dịch rollback (kể cả snapshot).
+            const result = await prisma.$transaction(async (tx) => {
+                const [staffRows, certRows, cchnScopes, trainings, workHistories] = await Promise.all([
+                    tx.staff.findMany(),
+                    tx.practicingCertificate.findMany(),
+                    tx.cCHNScopeMapping.findMany(),
+                    tx.staffTraining.findMany(),
+                    tx.staffWorkHistory.findMany(),
+                ]);
+
+                const snap = await createDeleteSnapshot({
+                    tx,
+                    tableName: 'Staff',
+                    displayName: 'Toàn bộ Danh sách Nhân sự & CCHN',
+                    actionType: 'DELETE_ALL',
+                    filterSummary: 'Toàn bệnh viện',
+                    recordsCount: staffRows.length + certRows.length,
+                    data: {
+                        staff: staffRows,
+                        certificates: certRows,
+                        cchnScopeMappings: cchnScopes,
+                        trainings,
+                        workHistories,
+                    },
+                    user,
+                });
+
                 await tx.practicingCertificate.deleteMany();
-                return tx.staff.deleteMany();
+                const deleted = await tx.staff.deleteMany();
+                return { count: deleted.count, snapshotId: snap.snapshotId };
             }, { timeout: 30000 });
 
-            return NextResponse.json({ success: true, count: deleted.count });
+            return NextResponse.json({ success: true, count: result.count, snapshotId: result.snapshotId });
         }
 
         if (!['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user.role)) {
@@ -301,6 +366,9 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('Error deleting staff:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         const errStr = String(error?.message || '');
         if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001')) {
             return NextResponse.json({

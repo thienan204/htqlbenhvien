@@ -7,6 +7,7 @@ import { SoundConfig, playSoundByConfig, stopAllNotificationSounds, extractYouTu
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 import { NoStaffWarningContent } from '@/components/common/NoStaffWarningModal';
 
 interface ITError {
@@ -30,7 +31,6 @@ export default function ITConfigPage() {
     const [maxConcurrentTasks, setMaxConcurrentTasks] = useState<number>(2);
     const [includeAllUnfinishedTasks, setIncludeAllUnfinishedTasks] = useState<boolean>(false);
     const [saveAssignReason, setSaveAssignReason] = useState<boolean>(true);
-    const [clearingReasons, setClearingReasons] = useState<boolean>(false);
     const [morningStartTime, setMorningStartTime] = useState<string>('07:00');
     const [morningEndTime, setMorningEndTime] = useState<string>('11:30');
     const [afternoonStartTime, setAfternoonStartTime] = useState<string>('13:30');
@@ -369,30 +369,6 @@ export default function ITConfigPage() {
             }
         } catch (error) {
             message.error('Lỗi kết nối');
-        }
-    };
-
-    const handleClearAssignReasons = async () => {
-        try {
-            setClearingReasons(true);
-            const res = await fetch('/api/error-management/it-requests', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'CLEAR_ASSIGN_REASONS',
-                    targetDepartment
-                })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                message.success(data.message || 'Đã dọn dẹp sạch lý do phân việc thành công!');
-            } else {
-                message.error(data.error || 'Có lỗi xảy ra khi dọn dẹp lý do');
-            }
-        } catch (e) {
-            message.error('Lỗi kết nối khi dọn dẹp lý do phân việc');
-        } finally {
-            setClearingReasons(false);
         }
     };
 
@@ -1054,27 +1030,6 @@ export default function ITConfigPage() {
                                             Ghi lại ảnh chụp (snapshot) tình trạng công việc của từng nhân viên lúc chia việc để hiển thị tooltip giải trình tại cột &quot;Người xử lý&quot;.
                                         </div>
                                     </div>
-
-                                    {isAdmin && (
-                                        <Popconfirm
-                                            title="Xóa tất cả lý do phân việc?"
-                                            description="Hành động này sẽ xóa sạch dữ liệu lý do phân việc đã lưu trên tất cả các phiếu yêu cầu của bộ phận để giải phóng dung lượng CSDL. Bạn có chắc chắn không?"
-                                            onConfirm={handleClearAssignReasons}
-                                            okText="Đồng ý xóa"
-                                            cancelText="Hủy"
-                                            okButtonProps={{ danger: true, loading: clearingReasons }}
-                                        >
-                                            <Button 
-                                                danger 
-                                                size="small" 
-                                                icon={<DeleteOutlined />} 
-                                                loading={clearingReasons}
-                                                className="shrink-0"
-                                            >
-                                                Xóa tất cả lý do (Dọn CSDL)
-                                            </Button>
-                                        </Popconfirm>
-                                    )}
                                 </div>
                             </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Switch, Popconfirm, Popover, Input, Segmented, Select, Tag, Alert, message } from 'antd';
-import { PlusOutlined, BugOutlined, SettingOutlined, DeleteOutlined, AimOutlined, ShopOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Switch, Popover, Input, Segmented, Select, Tag, Alert, message } from 'antd';
+import { PlusOutlined, BugOutlined, SettingOutlined, AimOutlined, ShopOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
 interface TicketHeaderProps {
@@ -11,7 +11,6 @@ interface TicketHeaderProps {
     onToggleAvailability: (checked: boolean) => void;
     onCreateRequest: () => void;
     onOpenSettings: () => void;
-    onDeleteAll?: () => void;
     targetDepartment?: string;
     autoAssignDisabled?: boolean;
     focusReason?: string;
@@ -28,7 +27,6 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
     onToggleAvailability,
     onCreateRequest,
     onOpenSettings,
-    onDeleteAll,
     targetDepartment = 'CNTT',
     autoAssignDisabled = false,
     focusReason = '',
@@ -349,24 +347,6 @@ export const TicketHeader: React.FC<TicketHeaderProps> = ({
                                 <span>Cấu hình</span>
                             </Button>
                         </Link>
-                    )}
-                    {onDeleteAll && user?.role === 'ADMIN' && (
-                        <Popconfirm
-                            title="Xóa toàn bộ dữ liệu"
-                            description="Bạn có chắc chắn muốn xóa toàn bộ Yêu cầu xử lý không? Hành động này không thể hoàn tác!"
-                            onConfirm={onDeleteAll}
-                            okText="Xóa tất cả"
-                            cancelText="Hủy"
-                            okButtonProps={{ danger: true }}
-                        >
-                            <Button 
-                                danger 
-                                size="middle" 
-                                icon={<DeleteOutlined />} 
-                                className="rounded-xl shrink-0"
-                                title="Xóa tất cả dữ liệu"
-                            />
-                        </Popconfirm>
                     )}
                     {(user?.role === targetDepartment || user?.role === 'ADMIN') && (
                         <Link href={`/error-management/vendor-tasks?targetDepartment=${targetDepartment}`} className="flex-1 sm:flex-initial">

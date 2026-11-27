@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Tabs, Upload, message, Card, Input, Space, Popconfirm, Tag, Spin, Progress, Modal, DatePicker, Select, Tooltip, InputNumber, Alert, Checkbox, Radio } from 'antd';
-import { InboxOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, FileTextOutlined, MedicineBoxOutlined, ExperimentOutlined, ProfileOutlined, ToolOutlined, DashboardOutlined, DatabaseOutlined, PlayCircleOutlined, FileExcelOutlined, WarningOutlined, SettingOutlined } from '@ant-design/icons';
+import { InboxOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, FileTextOutlined, MedicineBoxOutlined, ExperimentOutlined, ProfileOutlined, ToolOutlined, DashboardOutlined, DatabaseOutlined, PlayCircleOutlined, FileExcelOutlined, WarningOutlined, SettingOutlined, CheckSquareOutlined } from '@ant-design/icons';
 import { addWorkingDays, calculateRemainingTime } from '@/utils/dateUtils';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 
 const { Dragger } = Upload;
 
@@ -93,6 +94,7 @@ export default function XmlViewerPage() {
     }, []);
 
     const [departmentsMap, setDepartmentsMap] = useState<Record<string, string>>({});
+    const [selectingAllFiltered, setSelectingAllFiltered] = useState(false);
 
     const { user } = useAuth();
 
@@ -271,14 +273,18 @@ export default function XmlViewerPage() {
     const handleDelete = async () => {
         if (selectedRowKeys.length === 0) return;
         try {
-            const res = await fetch('/api/xml1', {
+            const res = await fetch(`${getBasePath()}/api/xml1`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: selectedRowKeys })
             });
             const json = await res.json();
             if (json.success) {
-                message.success(`Đã xóa ${json.count} hồ sơ thành công!`);
+                message.success(
+                    json.snapshotId
+                        ? `Đã xóa ${json.count} hồ sơ thành công (đã lưu Snapshot danh sách MA_LK).`
+                        : `Đã xóa ${json.count} hồ sơ thành công!`
+                );
                 setSelectedRowKeys([]);
                 if (selectedRecord && selectedRowKeys.includes(selectedRecord.id)) {
                     setSelectedRecord(null);
@@ -293,30 +299,37 @@ export default function XmlViewerPage() {
         }
     };
 
-    const handleDeleteByFilter = async () => {
-        if (!fromDate && !toDate && !searchText && errorStatus === 'ALL') {
-             message.error('Vui lòng chọn ít nhất một điều kiện lọc (ngày ra viện, tìm kiếm, v.v.) để xóa hàng loạt.');
-             return;
-        }
-        
+    const handleSelectAllFiltered = async () => {
         try {
-            const res = await fetch('/api/xml1', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filters: { search: searchText, fromDate, toDate, errorStatus } })
+            setSelectingAllFiltered(true);
+            const params = new URLSearchParams({
+                idsOnly: 'true',
+                search: searchText,
+                fromDate,
+                toDate,
+                errorStatus,
+                maKhoa: departmentFilter,
+                hasHistory: String(hasHistory),
             });
+            const res = await fetch(`${getBasePath()}/api/xml1?${params.toString()}`);
             const json = await res.json();
-            if (json.success) {
-                message.success(`Đã xóa ${json.count} hồ sơ thành công!`);
-                setSelectedRowKeys([]);
-                setSelectedRecord(null);
-                setRecordDetails(null);
-                fetchData();
+            if (!res.ok) {
+                message.error(json.error || 'Không thể lấy danh sách hồ sơ theo bộ lọc');
+                return;
+            }
+            const ids: string[] = Array.isArray(json.ids) ? json.ids : [];
+            setSelectedRowKeys(ids);
+            if (ids.length === 0) {
+                message.info('Không có hồ sơ nào phù hợp với bộ lọc hiện tại.');
+            } else if (json.limitExceeded) {
+                message.warning(`Đã tick ${ids.length.toLocaleString('vi-VN')} / ${Number(json.total || 0).toLocaleString('vi-VN')} hồ sơ phù hợp bộ lọc (vui lòng thu hẹp bộ lọc nếu cần chọn thêm).`);
             } else {
-                message.error('Lỗi khi xóa: ' + json.error);
+                message.success(`Đã tick toàn bộ ${ids.length.toLocaleString('vi-VN')} hồ sơ phù hợp với bộ lọc.`);
             }
         } catch (error) {
-            message.error('Lỗi hệ thống khi xóa');
+            message.error('Lỗi hệ thống khi chọn hồ sơ theo bộ lọc');
+        } finally {
+            setSelectingAllFiltered(false);
         }
     };
 
@@ -705,19 +718,27 @@ export default function XmlViewerPage() {
                         
                         {user?.role === 'ADMIN' && (
                             <Space>
-                                <Popconfirm 
-                                    title="Xóa theo bộ lọc" 
-                                    description="Bạn có chắc chắn muốn xóa TẤT CẢ hồ sơ theo bộ lọc hiện tại? Tất cả XML liên quan cũng sẽ bị xóa vĩnh viễn (Cascade)."
-                                    onConfirm={handleDeleteByFilter}
+                                <Button
+                                    icon={<CheckSquareOutlined />}
+                                    loading={selectingAllFiltered}
+                                    disabled={total === 0}
+                                    onClick={handleSelectAllFiltered}
                                 >
-                                    <Button type="primary" danger ghost icon={<DeleteOutlined />}>
-                                        Xóa theo bộ lọc
+                                    Chọn tất cả ({total.toLocaleString('vi-VN')})
+                                </Button>
+                                {selectedRowKeys.length > 0 && (
+                                    <Button onClick={() => setSelectedRowKeys([])}>
+                                        Bỏ chọn
                                     </Button>
-                                </Popconfirm>
+                                )}
                                 <Popconfirm 
-                                    title="Xóa hồ sơ" 
-                                    description="Bạn có chắc chắn muốn xóa? Tất cả XML2..15 của MA_LK này cũng sẽ bị xóa vĩnh viễn (Cascade)."
+                                    title={`Xóa ${selectedRowKeys.length} hồ sơ đã chọn?`}
+                                    description="Tất cả XML2..15 của các MA_LK đang tick checkbox sẽ bị xóa vĩnh viễn (Cascade). Chỉ cho phép xóa các hồ sơ đã chọn."
                                     onConfirm={handleDelete}
+                                    okText="Xóa hồ sơ đã chọn"
+                                    cancelText="Hủy"
+                                    okButtonProps={{ danger: true }}
+                                    disabled={selectedRowKeys.length === 0}
                                 >
                                     <Button type="primary" danger disabled={selectedRowKeys.length === 0} icon={<DeleteOutlined />}>
                                         Xóa {selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''} hồ sơ

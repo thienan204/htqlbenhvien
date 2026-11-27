@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUserFromRequest } from '@/actions/auth';
+import { hasMenuPermission } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
@@ -143,11 +144,39 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const user = await getCurrentUserFromRequest(request);
+        if (!user) {
+            return NextResponse.json({ error: 'Vui lòng đăng nhập để thực hiện thao tác xóa CCHN.' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
         if (!id) {
             return NextResponse.json({ error: 'Missing certificate ID' }, { status: 400 });
+        }
+
+        const existingCert = await prisma.practicingCertificate.findUnique({
+            where: { id },
+            include: {
+                staff: { select: { ma_khoa: true } },
+            },
+        });
+
+        if (!existingCert) {
+            return NextResponse.json({ error: 'Không tìm thấy chứng chỉ hành nghề cần xóa.' }, { status: 404 });
+        }
+
+        const isGlobalAllowed =
+            ['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user.role) ||
+            hasMenuPermission(user, ['MENU_PRACTICING_CERTIFICATES', 'MENU_STAFF'], 'DELETE');
+        const isSameDepartment = Boolean(user.ma_khoa && existingCert.staff?.ma_khoa === user.ma_khoa);
+
+        if (!isGlobalAllowed && !isSameDepartment) {
+            return NextResponse.json(
+                { error: 'Bạn không có quyền xóa chứng chỉ hành nghề của khoa/phòng khác.' },
+                { status: 403 }
+            );
         }
 
         await prisma.practicingCertificate.delete({

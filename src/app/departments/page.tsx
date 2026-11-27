@@ -26,6 +26,8 @@ export default function DepartmentPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingDept, setEditingDept] = useState<Department | null>(null);
     const [departmentTypes, setDepartmentTypes] = useState<any[]>([]);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [deletingSelected, setDeletingSelected] = useState(false);
     const [form] = Form.useForm();
     const { user } = useAuth();
 
@@ -112,18 +114,32 @@ export default function DepartmentPage() {
         }
     };
 
-    const handleDeleteAll = async () => {
+    const handleDeleteSelected = async () => {
+        if (selectedRowKeys.length === 0) return;
         try {
-            const res = await fetch(`${getBasePath()}/api/departments?deleteAll=true`, { method: 'DELETE' });
+            setDeletingSelected(true);
+            const res = await fetch(`${getBasePath()}/api/departments`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys }),
+            });
             if (res.ok) {
-                message.success('Đã xóa tất cả danh mục Khoa Phòng');
+                const data = await res.json().catch(() => ({}));
+                message.success(
+                    data.snapshotId
+                        ? `Đã xóa ${data.count ?? selectedRowKeys.length} Khoa/Phòng đã chọn (đã sao lưu Snapshot).`
+                        : `Đã xóa ${data.count ?? selectedRowKeys.length} Khoa/Phòng đã chọn.`
+                );
+                setSelectedRowKeys([]);
                 fetchDepartments();
             } else {
                 const err = await res.json().catch(() => ({}));
-                message.error(err.error || 'Lỗi khi xóa tất cả. Có thể dữ liệu đang được sử dụng ở bảng khác.');
+                message.error(err.error || 'Lỗi khi xóa Khoa/Phòng đã chọn. Có thể dữ liệu đang được sử dụng ở bảng khác.');
             }
         } catch (error) {
             message.error('Lỗi kết nối');
+        } finally {
+            setDeletingSelected(false);
         }
     };
 
@@ -304,9 +320,24 @@ export default function DepartmentPage() {
                             <Upload beforeUpload={handleImportExcel} showUploadList={false} accept=".xlsx,.xls">
                                 <Button icon={<UploadOutlined />}>Import Excel</Button>
                             </Upload>
-                            {user?.role === 'ADMIN' && (
-                                <Popconfirm title="Bạn có chắc chắn muốn xóa TOÀN BỘ danh mục Khoa Phòng?" onConfirm={handleDeleteAll} okText="Xóa hết" cancelText="Hủy" okButtonProps={{ danger: true }}>
-                                    <Button danger icon={<DeleteOutlined />}>Xóa tất cả</Button>
+                            {['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user?.role || '') && (
+                                <Popconfirm
+                                    title={`Xác nhận xóa ${selectedRowKeys.length} Khoa/Phòng đã chọn?`}
+                                    description="Hệ thống sẽ tự động chụp Snapshot dự phòng và chặn xóa nếu khoa đang có Nhân sự hoặc Kho vật tư."
+                                    onConfirm={handleDeleteSelected}
+                                    okText="Xóa đã chọn"
+                                    cancelText="Hủy"
+                                    okButtonProps={{ danger: true }}
+                                    disabled={selectedRowKeys.length === 0}
+                                >
+                                    <Button
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        disabled={selectedRowKeys.length === 0}
+                                        loading={deletingSelected}
+                                    >
+                                        Xóa đã chọn{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
+                                    </Button>
                                 </Popconfirm>
                             )}
                             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
@@ -321,6 +352,10 @@ export default function DepartmentPage() {
                     }
                 >
                     <Table
+                        rowSelection={{
+                            selectedRowKeys,
+                            onChange: (keys) => setSelectedRowKeys(keys),
+                        }}
                         columns={columns}
                         dataSource={filteredData}
                         rowKey="ma_khoa"

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import {
+    authorizeApiRequest,
+    createDeleteSnapshot,
+    parseDeleteIdsFromRequest,
+    SnapshotLimitError,
+} from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +22,79 @@ export async function GET() {
     }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
     try {
-        const result = await prisma.mau05Catalog.deleteMany({});
-        return NextResponse.json({ success: true, count: result.count });
+        const selectedIds = await parseDeleteIdsFromRequest(request);
+        if (selectedIds.length > 0) {
+            const auth = await authorizeApiRequest(request, {
+                allowedRoles: ['ADMIN', 'CNTT', 'VTYT'],
+                menuKeys: ['MENU_CATALOG_05'],
+                action: 'DELETE',
+            });
+            if (auth.errorResponse) return auth.errorResponse;
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const targetRows = await tx.mau05Catalog.findMany({
+                        where: { id: { in: selectedIds } },
+                    });
+                    const snap = await createDeleteSnapshot({
+                        tx,
+                        tableName: 'Mau05Catalog',
+                        displayName: `Mẫu 05 (Xóa ${targetRows.length} dòng đã chọn)`,
+                        actionType: 'BULK_DELETE',
+                        filterSummary: `${selectedIds.length} dòng đã chọn`,
+                        recordsCount: targetRows.length,
+                        data: targetRows,
+                        user: auth.user,
+                    });
+                    const deleted = await tx.mau05Catalog.deleteMany({
+                        where: { id: { in: selectedIds } },
+                    });
+                    return { count: deleted.count, snapshotId: snap.snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({ success: true, ...result });
+        }
+
+        const auth = await authorizeApiRequest(request, { requireAdmin: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
+        const { searchParams } = new URL(request.url);
+        if (searchParams.get('confirmDeleteAll') !== 'true') {
+            return NextResponse.json(
+                { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa toàn bộ Danh mục Mẫu 05.' },
+                { status: 400 }
+            );
+        }
+
+        const result = await prisma.$transaction(
+            async (tx) => {
+                const oldRows = await tx.mau05Catalog.findMany();
+                const snap = await createDeleteSnapshot({
+                    tx,
+                    tableName: 'Mau05Catalog',
+                    displayName: 'Toàn bộ Danh mục Mẫu 05 (DVKT)',
+                    actionType: 'DELETE_ALL',
+                    filterSummary: 'Toàn bệnh viện',
+                    recordsCount: oldRows.length,
+                    data: oldRows,
+                    user: auth.user,
+                });
+                const deleted = await tx.mau05Catalog.deleteMany({});
+                return { count: deleted.count, snapshotId: snap.snapshotId };
+            },
+            { timeout: 30000 }
+        );
+
+        return NextResponse.json({ success: true, ...result });
     } catch (error) {
         console.error('Error deleting mau05 catalog:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

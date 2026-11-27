@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 export async function GET(request: Request) {
     try {
@@ -75,6 +76,9 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const auth = await authorizeApiRequest(request, { requireAdmin: true });
+        if (auth.errorResponse) return auth.errorResponse;
+
         const { searchParams } = new URL(request.url);
         const pageId = searchParams.get('pageId');
 

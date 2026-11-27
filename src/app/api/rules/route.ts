@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { ValidationRule } from '@prisma/client';
+import { getCurrentUserFromRequest } from '@/actions/auth';
+import { createDeleteSnapshot, SnapshotLimitError } from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
 
@@ -232,16 +234,42 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid data format. Expected array of rules.' }, { status: 400 });
         }
 
-        // Transaction: Replace all rules with new set to ensure synchronization
-        // Implementation detail: We treat the frontend state as the source of truth for the configuration
-        // In a more complex system, we might want purely additive/update logic.
+        const existingCount = await prisma.validationRule.count();
+        const user = await getCurrentUserFromRequest(request);
+
+        // Chặn ghi đè bằng mảng rỗng khi DB đang có quy tắc (trừ ADMIN có cờ confirmClearAll)
+        if (existingCount > 0 && body.length === 0) {
+            return NextResponse.json(
+                { error: 'Đã chặn lưu danh sách rỗng để bảo vệ bộ Quy tắc Kiểm soát BHYT.' },
+                { status: 400 }
+            );
+        }
+
+        // Nếu DB đã có dữ liệu quy tắc, yêu cầu phải đăng nhập và không phải GUEST thường
+        if (existingCount > 0 && (!user || user.role === 'GUEST')) {
+            return NextResponse.json(
+                { error: 'Vui lòng đăng nhập bằng tài khoản được phân quyền để cập nhật Quy tắc XML.' },
+                { status: 403 }
+            );
+        }
+
         const result = await prisma.$transaction(async (tx) => {
-            // Option 1: Delete all and recreate (Risky if table grows large, but fine for config)
+            const oldRules = await tx.validationRule.findMany();
+            if (oldRules.length > 0 && body.length < oldRules.length) {
+                await createDeleteSnapshot({
+                    tx,
+                    tableName: 'ValidationRule',
+                    displayName: 'Bộ Quy tắc Kiểm soát BHYT (trước khi giảm/xóa)',
+                    actionType: 'SYNC_OVERWRITE',
+                    filterSummary: `${oldRules.length} -> ${body.length} quy tắc`,
+                    recordsCount: oldRules.length,
+                    data: oldRules,
+                    user,
+                });
+            }
+
             await tx.validationRule.deleteMany({});
 
-            // Prepare data, ensuring IDs are strings or undefined (let DB generate if not provided, but here we want to persist what FE sends)
-            // But Prisma schema has `id String @id @default(cuid())`.
-            // If FE sends ID, we use it. If collision, it will fail (unlikely if strictly sequential or guids).
             const rulesToCreate = body.map((rule: any) => ({
                 id: rule.id || undefined,
                 active: rule.active,
@@ -268,11 +296,14 @@ export async function POST(request: Request) {
             return await tx.validationRule.createMany({
                 data: rulesToCreate
             });
-        });
+        }, { timeout: 30000 });
 
         return NextResponse.json({ success: true, count: result.count });
     } catch (error) {
         console.error('Error saving rules:', error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({
             error: 'Failed to save rules',
             details: error instanceof Error ? error.message : String(error)

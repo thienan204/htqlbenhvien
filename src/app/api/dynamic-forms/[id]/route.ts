@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
@@ -73,6 +74,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authorizeApiRequest(request, {
+      menuKeys: ['MENU_DYNAMIC_FORMS'],
+      action: 'DELETE',
+    });
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { id } = await params;
     
     // First, find the form to get its config

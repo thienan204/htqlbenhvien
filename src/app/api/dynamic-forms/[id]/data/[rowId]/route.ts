@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { authorizeApiRequest } from '@/lib/deleteProtection';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string, rowId: string }> }
 ) {
   try {
+    const auth = await authorizeApiRequest(request, {
+      menuKeys: ['MENU_DYNAMIC_FORMS'],
+      action: 'DELETE',
+    });
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { id, rowId } = await params;
     
     // Xóa record

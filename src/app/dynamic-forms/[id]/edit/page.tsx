@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Switch, Select, message, Space, Table, Spin, Tabs } from 'antd';
+import { Card, Form, Input, Button, Switch, Select, message, Space, Table, Spin, Tabs, Popconfirm } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 
@@ -158,7 +158,15 @@ export default function DynamicFormBuilder({ params }: { params: Promise<{ id: s
             title: '',
             key: 'action',
             render: (_: any, record: any) => (
-                <Button danger icon={<DeleteOutlined />} onClick={() => removeField(record.id)} />
+                <Popconfirm
+                    title="Xóa trường dữ liệu này khỏi form?"
+                    onConfirm={() => removeField(record.id)}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                >
+                    <Button danger icon={<DeleteOutlined />} />
+                </Popconfirm>
             )
         },
     ];

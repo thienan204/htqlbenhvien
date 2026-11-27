@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import {
+    authorizeApiRequest,
+    createDeleteSnapshot,
+    parseDeleteIdsFromRequest,
+    SnapshotLimitError,
+} from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,11 +91,92 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const ma_khoa = searchParams.get('ma_khoa');
-        const deleteAll = searchParams.get('deleteAll');
+        const deleteAll = searchParams.get('deleteAll') === 'true';
+        const confirmDeleteAll = searchParams.get('confirmDeleteAll') === 'true';
 
-        if (deleteAll === 'true') {
-            const result = await prisma.department.deleteMany();
-            return NextResponse.json({ success: true, count: result.count });
+        if (deleteAll) {
+            const auth = await authorizeApiRequest(request, { requireAdmin: true });
+            if (auth.errorResponse) return auth.errorResponse;
+
+            if (!confirmDeleteAll) {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true khi xóa toàn bộ danh mục Khoa/Phòng.' },
+                    { status: 400 }
+                );
+            }
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const allDepts = await tx.department.findMany();
+                    const snap = await createDeleteSnapshot({
+                        tx,
+                        tableName: 'Department',
+                        displayName: 'Toàn bộ Danh mục Khoa/Phòng',
+                        actionType: 'DELETE_ALL',
+                        filterSummary: 'Toàn bệnh viện',
+                        recordsCount: allDepts.length,
+                        data: allDepts,
+                        user: auth.user,
+                    });
+                    const deleted = await tx.department.deleteMany();
+                    return { count: deleted.count, snapshotId: snap.snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({ success: true, ...result });
+        }
+
+        const auth = await authorizeApiRequest(request, {
+            allowedRoles: ['ADMIN', 'PTCCB', 'TCCB', 'CNTT'],
+            menuKeys: ['MENU_DEPARTMENTS'],
+            action: 'DELETE',
+        });
+        if (auth.errorResponse) return auth.errorResponse;
+
+        const selectedIds = await parseDeleteIdsFromRequest(request);
+        if (selectedIds.length > 0) {
+            const [staffCount, warehouseCount] = await Promise.all([
+                prisma.staff.count({ where: { ma_khoa: { in: selectedIds } } }),
+                prisma.warehouse.count({ where: { department_id: { in: selectedIds } } }),
+            ]);
+
+            if (staffCount > 0 || warehouseCount > 0) {
+                const msgParts: string[] = [];
+                if (staffCount > 0) msgParts.push(`${staffCount} Nhân sự`);
+                if (warehouseCount > 0) msgParts.push(`${warehouseCount} Kho vật tư`);
+                return NextResponse.json(
+                    {
+                        error: `Không thể xóa các Khoa/Phòng đã chọn vì đang chứa ${msgParts.join(' và ')}. Vui lòng chuyển dữ liệu trước khi xóa.`,
+                    },
+                    { status: 400 }
+                );
+            }
+
+            const result = await prisma.$transaction(
+                async (tx) => {
+                    const targetDepts = await tx.department.findMany({
+                        where: { ma_khoa: { in: selectedIds } },
+                    });
+                    const snap = await createDeleteSnapshot({
+                        tx,
+                        tableName: 'Department',
+                        displayName: `Khoa/Phòng đã chọn (${targetDepts.length})`,
+                        actionType: 'BULK_DELETE',
+                        filterSummary: `${selectedIds.length} mã khoa đã chọn`,
+                        recordsCount: targetDepts.length,
+                        data: targetDepts,
+                        user: auth.user,
+                    });
+                    const deleted = await tx.department.deleteMany({
+                        where: { ma_khoa: { in: selectedIds } },
+                    });
+                    return { count: deleted.count, snapshotId: snap.snapshotId };
+                },
+                { timeout: 30000 }
+            );
+
+            return NextResponse.json({ success: true, ...result });
         }
 
         if (!ma_khoa) return NextResponse.json({ error: 'Missing ma_khoa' }, { status: 400 });
@@ -111,6 +198,9 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error("Delete department error:", error);
+        if (error instanceof SnapshotLimitError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         const errStr = String(error?.message || '');
         if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001') || errStr.includes('Foreign key constraint')) {
             return NextResponse.json({ error: 'Không thể xóa Khoa/Phòng này vì đang có Nhân sự hoặc dữ liệu liên quan!' }, { status: 400 });

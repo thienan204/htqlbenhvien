@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Input, message, Modal, Tag, Space, Typography } from 'antd';
+import { Card, Table, Button, Input, message, Tag, Space, Typography, Popconfirm } from 'antd';
 import { DeleteOutlined, SearchOutlined, ReloadOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -19,6 +20,7 @@ export default function QuanLyLichSuDichVuPage() {
     const [search, setSearch] = useState('');
     
     const [deleting, setDeleting] = useState(false);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
     useEffect(() => {
         fetchData();
@@ -27,7 +29,7 @@ export default function QuanLyLichSuDichVuPage() {
     const fetchData = async (searchParam = search) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/doctor-service-mapping?page=${page}&limit=${limit}&search=${encodeURIComponent(searchParam)}`);
+            const res = await fetch(`${getBasePath()}/api/doctor-service-mapping?page=${page}&limit=${limit}&search=${encodeURIComponent(searchParam)}`);
             const json = await res.json();
             
             if (json.data) {
@@ -50,41 +52,34 @@ export default function QuanLyLichSuDichVuPage() {
         fetchData(value);
     };
 
-    const handleDeleteAll = () => {
-        Modal.confirm({
-            title: <span className="text-red-600">Xóa toàn bộ Lịch sử Dịch vụ?</span>,
-            content: (
-                <div>
-                    <p>Bạn có chắc chắn muốn xóa <b>toàn bộ {total}</b> bản ghi lịch sử này không?</p>
-                    <p className="text-red-500 italic text-xs mt-2">Lưu ý: Hành động này không thể hoàn tác. Các dữ liệu này chỉ dùng để xem lịch sử, không ảnh hưởng đến việc phân quyền Phạm vi chuyên môn ở Tầng 1.</p>
-                </div>
-            ),
-            okText: 'Xóa Tất Cả',
-            okType: 'danger',
-            cancelText: 'Hủy',
-            onOk: async () => {
-                setDeleting(true);
-                try {
-                    const res = await fetch('/api/doctor-service-mapping?ids=all', {
-                        method: 'DELETE'
-                    });
-                    const json = await res.json();
-                    
-                    if (json.success) {
-                        message.success(json.message || 'Đã xóa toàn bộ dữ liệu thành công!');
-                        setPage(1);
-                        fetchData();
-                    } else {
-                        message.error(json.error || 'Lỗi khi xóa dữ liệu');
-                    }
-                } catch (error) {
-                    console.error(error);
-                    message.error('Lỗi kết nối máy chủ');
-                } finally {
-                    setDeleting(false);
-                }
+    const handleDeleteSelected = async () => {
+        if (selectedRowKeys.length === 0) return;
+        setDeleting(true);
+        try {
+            const res = await fetch(`${getBasePath()}/api/doctor-service-mapping`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedRowKeys }),
+            });
+            const json = await res.json();
+
+            if (res.ok && json.success) {
+                message.success(
+                    json.snapshotId
+                        ? `Đã xóa ${json.count ?? selectedRowKeys.length} bản ghi đã chọn (đã lưu Snapshot dự phòng).`
+                        : `Đã xóa ${json.count ?? selectedRowKeys.length} bản ghi đã chọn!`
+                );
+                setSelectedRowKeys([]);
+                fetchData();
+            } else {
+                message.error(json.error || 'Lỗi khi xóa dữ liệu');
             }
-        });
+        } catch (error) {
+            console.error(error);
+            message.error('Lỗi kết nối máy chủ');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     if (!hasPermission('MENU_CHUYEN_DE')) {
@@ -153,20 +148,33 @@ export default function QuanLyLichSuDichVuPage() {
                             style={{ width: 300 }}
                         />
                         <Button icon={<ReloadOutlined />} onClick={() => fetchData()} />
-                        <Button 
-                            type="primary" 
-                            danger 
-                            icon={<DeleteOutlined />} 
-                            onClick={handleDeleteAll}
-                            loading={deleting}
-                            disabled={total === 0}
+                        <Popconfirm
+                            title={`Xóa ${selectedRowKeys.length} bản ghi đã chọn?`}
+                            description="Hệ thống sẽ tự động chụp Snapshot dự phòng trước khi xóa."
+                            onConfirm={handleDeleteSelected}
+                            okText="Xóa đã chọn"
+                            cancelText="Hủy"
+                            okButtonProps={{ danger: true }}
+                            disabled={selectedRowKeys.length === 0}
                         >
-                            Xóa toàn bộ dữ liệu
-                        </Button>
+                            <Button
+                                type="primary"
+                                danger
+                                icon={<DeleteOutlined />}
+                                loading={deleting}
+                                disabled={selectedRowKeys.length === 0}
+                            >
+                                Xóa đã chọn{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
+                            </Button>
+                        </Popconfirm>
                     </Space>
                 }
             >
                 <Table
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: (keys) => setSelectedRowKeys(keys),
+                    }}
                     columns={columns}
                     dataSource={data}
                     rowKey="id"

@@ -290,7 +290,15 @@ export default function ExcelTemplateBuilderPage() {
             render: (_: any, __: any, index: number) => (
                 <Space>
                     <Button type="link" size="small" onClick={() => handleOpenRuleForm(index)}>Sửa</Button>
-                    <Button type="link" size="small" danger onClick={() => handleDeleteRule(index)}>Xóa</Button>
+                    <Popconfirm
+                        title="Xóa quy tắc kiểm tra này?"
+                        onConfirm={() => handleDeleteRule(index)}
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        okButtonProps={{ danger: true }}
+                    >
+                        <Button type="link" size="small" danger>Xóa</Button>
+                    </Popconfirm>
                 </Space>
             ) 
         }

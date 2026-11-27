@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { authorizeApiRequest } from "@/lib/deleteProtection";
 
 export async function GET(
   req: Request,
@@ -63,6 +64,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authorizeApiRequest(req, { allowAuthenticated: true });
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { id } = await params;
     
     // Check constraints manually to provide specific error message

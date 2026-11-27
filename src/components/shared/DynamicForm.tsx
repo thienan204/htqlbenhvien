@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Input, Select, DatePicker, Row, Col, message, Button, Space, Tooltip, InputNumber, Switch, AutoComplete, Card } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, Row, Col, message, Button, Space, Tooltip, InputNumber, Switch, AutoComplete, Card, Popconfirm } from 'antd';
 import { SettingOutlined, CheckOutlined, DragOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import dayjs from 'dayjs';
@@ -573,7 +573,15 @@ export default function DynamicForm({ formId, title, open, onClose, onSubmit, fi
                                             </div>
                                             <div className="flex items-center gap-0.5">
                                                 {field.isCustomField && (
-                                                    <Button size="small" type="text" danger icon={<DeleteOutlined className="text-[12px]" />} onClick={() => deleteCustomField(index)} title="Xóa trường tự tạo" />
+                                                    <Popconfirm
+                                                        title="Xóa trường tự tạo này?"
+                                                        onConfirm={() => deleteCustomField(index)}
+                                                        okText="Xóa"
+                                                        cancelText="Hủy"
+                                                        okButtonProps={{ danger: true }}
+                                                    >
+                                                        <Button size="small" type="text" danger icon={<DeleteOutlined className="text-[12px]" />} title="Xóa trường tự tạo" />
+                                                    </Popconfirm>
                                                 )}
                                                 <div 
                                                     data-drag-handle="true"
