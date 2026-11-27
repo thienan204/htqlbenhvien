@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Space, Tag, Input, Button, Select, Modal, Tabs } from 'antd';
-import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, IdcardOutlined, EditOutlined, CheckCircleOutlined, UploadOutlined, CloseCircleOutlined, DatabaseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CertificatesModal from '@/app/staff/components/CertificatesModal';
 import BulkUpdateCchnModal from './components/BulkUpdateCchnModal';
+import RestoreFromMau02Modal from './components/RestoreFromMau02Modal';
 import ExpandedStaffServices from './components/ExpandedStaffServices';
+import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 
 export default function PracticingCertificatesPage() {
+    const { user } = useAuth();
     const [certificates, setCertificates] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
@@ -18,6 +22,7 @@ export default function PracticingCertificatesPage() {
     const [isCertModalOpen, setIsCertModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<{ id: string, ho_ten: string } | null>(null);
     const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+    const [isRestoreMau02Open, setIsRestoreMau02Open] = useState(false);
     const [tableParams, setTableParams] = useState({ current: 1, pageSize: 15 });
 
     // Manage Scope Modal
@@ -31,7 +36,7 @@ export default function PracticingCertificatesPage() {
         setIsScopeModalOpen(true);
         setLoadingServices(true);
         try {
-            const res = await fetch(`/api/pham-vi-chuyen-mon/mapped-services?ma_pham_vi=${scope.ma_pham_vi}`);
+            const res = await fetch(`${getBasePath()}/api/pham-vi-chuyen-mon/mapped-services?ma_pham_vi=${scope.ma_pham_vi}`);
             if (res.ok) {
                 const data = await res.json();
                 setScopeServices(data);
@@ -55,7 +60,7 @@ export default function PracticingCertificatesPage() {
     const fetchCertificates = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/practicing-certificates');
+            const res = await fetch(`${getBasePath()}/api/practicing-certificates`);
             if (res.ok) {
                 const data = await res.json();
                 setCertificates(data);
@@ -190,14 +195,27 @@ export default function PracticingCertificatesPage() {
                         <p className="text-slate-500 m-0">Tra cứu và quản lý chứng chỉ hành nghề của toàn bộ nhân viên.</p>
                     </div>
                 </div>
-                <Button 
-                    type="primary" 
-                    size="large" 
-                    icon={<UploadOutlined />} 
-                    onClick={() => setIsBulkUpdateOpen(true)}
-                >
-                    Cập nhật hàng loạt (Excel)
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    {user?.role === 'ADMIN' && (
+                        <Button
+                            type="default"
+                            size="large"
+                            icon={<DatabaseOutlined />}
+                            className="border-emerald-500 text-emerald-700 hover:text-emerald-800 hover:border-emerald-600"
+                            onClick={() => setIsRestoreMau02Open(true)}
+                        >
+                            Khôi phục từ Mẫu 02
+                        </Button>
+                    )}
+                    <Button 
+                        type="primary" 
+                        size="large" 
+                        icon={<UploadOutlined />} 
+                        onClick={() => setIsBulkUpdateOpen(true)}
+                    >
+                        Cập nhật hàng loạt (Excel)
+                    </Button>
+                </div>
             </div>
 
             <Tabs
@@ -281,6 +299,15 @@ export default function PracticingCertificatesPage() {
                 onClose={() => setIsBulkUpdateOpen(false)}
                 onSuccess={() => {
                     setIsBulkUpdateOpen(false);
+                    fetchCertificates();
+                }}
+            />
+
+            <RestoreFromMau02Modal
+                open={isRestoreMau02Open}
+                onClose={() => setIsRestoreMau02Open(false)}
+                onSuccess={() => {
+                    setIsRestoreMau02Open(false);
                     fetchCertificates();
                 }}
             />

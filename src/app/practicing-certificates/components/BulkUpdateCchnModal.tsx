@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Checkbox, Button, Upload, message, Alert, Typography, Space } from 'antd';
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
+import { getBasePath } from '@/utils/config';
 
 const { Text } = Typography;
 
@@ -127,7 +128,7 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
                                     const parts = val.toString().split(';');
                                     const ids: string[] = [];
                                     parts.forEach((p: string) => {
-                                        const match = p.trim().match(/^(\d+)/);
+                                        const match = p.trim().match(/^([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*)/);
                                         if (match && match[1]) ids.push(match[1]);
                                     });
                                     if (ids.length > 0) {
@@ -168,7 +169,7 @@ export default function BulkUpdateCchnModal({ open, onClose, onSuccess }: BulkUp
                 }
 
                 // Gọi API Bulk Update
-                const res = await fetch('/api/practicing-certificates/bulk-update', {
+                const res = await fetch(`${getBasePath()}/api/practicing-certificates/bulk-update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ updates })

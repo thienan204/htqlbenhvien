@@ -9,9 +9,9 @@ export async function GET(request: Request) {
         const user = await getCurrentUserFromRequest(request);
         const whereClause: any = {};
         
-        // Các vai trò quản trị hoặc hỗ trợ kỹ thuật toàn viện (ADMIN, CNTT, VTYT, HCQT)
-        // được phép xem danh sách nhân sự toàn viện để tiếp nhận & nhập sự cố thay khoa phòng.
-        const isSupportOrAdmin = user?.role ? ['ADMIN', 'CNTT', 'VTYT', 'HCQT'].includes(user.role) : false;
+        // Các vai trò quản trị, TCCB hoặc hỗ trợ kỹ thuật toàn viện (ADMIN, PTCCB, TCCB, CNTT, VTYT, HCQT)
+        // được phép xem danh sách nhân sự toàn viện.
+        const isSupportOrAdmin = user?.role ? ['ADMIN', 'PTCCB', 'TCCB', 'CNTT', 'VTYT', 'HCQT'].includes(user.role) : false;
 
         if (user && !isSupportOrAdmin) {
             if (user.role === 'KHOA_PHONG' && user.staffId) {
@@ -238,12 +238,22 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    let isDeleteAllRequest = false;
     try {
+        const user = await getCurrentUserFromRequest(request);
+        if (!user) {
+            return NextResponse.json({ error: 'Vui lòng đăng nhập để thực hiện thao tác xóa.' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
         const idsParam = searchParams.get('ids');
+        const confirmDeleteAll = searchParams.get('confirmDeleteAll');
 
         if (idsParam) {
+            if (!['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user.role)) {
+                return NextResponse.json({ error: 'Bạn không có quyền xóa danh sách nhân sự.' }, { status: 403 });
+            }
             // Bulk delete
             const ids = idsParam.split(',').filter(Boolean);
             if (ids.length > 0) {
@@ -255,13 +265,29 @@ export async function DELETE(request: Request) {
         }
 
         if (!id && !idsParam) {
-            // Delete ALL staff
-            // First delete dependent tables like PracticingCertificate
-            await prisma.practicingCertificate.deleteMany();
-            
-            // Delete all staff
-            const deleted = await prisma.staff.deleteMany();
+            isDeleteAllRequest = true;
+            if (user.role !== 'ADMIN') {
+                return NextResponse.json({ error: 'Chỉ ADMIN mới có quyền xóa toàn bộ danh sách nhân sự.' }, { status: 403 });
+            }
+            if (confirmDeleteAll !== 'true') {
+                return NextResponse.json(
+                    { error: 'Thiếu xác nhận confirmDeleteAll=true. Đã chặn thao tác xóa toàn bộ để bảo vệ dữ liệu CCHN & nhân sự.' },
+                    { status: 400 }
+                );
+            }
+
+            // Bọc trong transaction để nếu Staff bị chặn xóa bởi khóa ngoại (chấm công, nghỉ phép...)
+            // thì toàn bộ giao dịch rollback, tuyệt đối không làm mất dữ liệu PracticingCertificate.
+            const deleted = await prisma.$transaction(async (tx) => {
+                await tx.practicingCertificate.deleteMany();
+                return tx.staff.deleteMany();
+            }, { timeout: 30000 });
+
             return NextResponse.json({ success: true, count: deleted.count });
+        }
+
+        if (!['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user.role)) {
+            return NextResponse.json({ error: 'Bạn không có quyền xóa nhân sự.' }, { status: 403 });
         }
 
         if (!id) {
@@ -277,7 +303,11 @@ export async function DELETE(request: Request) {
         console.error('Error deleting staff:', error);
         const errStr = String(error?.message || '');
         if (error?.code === 'P2003' || errStr.includes('foreign key constraint') || errStr.includes('23001')) {
-            return NextResponse.json({ error: 'Không thể xóa vì Nhân sự này đang được dùng bởi dữ liệu khác!' }, { status: 400 });
+            return NextResponse.json({
+                error: isDeleteAllRequest
+                    ? 'Không thể xóa toàn bộ nhân sự vì đang có dữ liệu liên kết (chấm công, nghỉ phép, yêu cầu...). Toàn bộ dữ liệu nhân sự và CCHN đã được giữ nguyên.'
+                    : 'Không thể xóa vì Nhân sự này đang được dùng bởi dữ liệu khác!'
+            }, { status: 400 });
         }
         return NextResponse.json({ error: 'Lỗi khi xóa: ' + (error?.message || 'Unknown error') }, { status: 500 });
     }

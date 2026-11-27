@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs, Table, Spin, Alert, Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
+import { getBasePath } from '@/utils/config';
 
 export default function ExpandedStaffServices({ certId }: { certId: string }) {
     const [staffServices, setStaffServices] = useState<{ mappedServices: any[], otherServices: any[] } | null>(null);
@@ -14,7 +15,7 @@ export default function ExpandedStaffServices({ certId }: { certId: string }) {
         const fetchServices = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`/api/practicing-certificates/services?id=${certId}`);
+                const res = await fetch(`${getBasePath()}/api/practicing-certificates/services?id=${certId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setStaffServices(data);

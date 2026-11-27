@@ -11,8 +11,9 @@ export async function GET(request: Request) {
         
         const user = await getCurrentUserFromRequest(request);
         const whereClause: any = {};
-        
-        if (user && user.role !== 'ADMIN') {
+        const canViewAll = user?.role ? ['ADMIN', 'PTCCB', 'TCCB', 'CNTT'].includes(user.role) : false;
+
+        if (user && !canViewAll) {
             if (user.role === 'KHOA_PHONG' && user.staffId) {
                 whereClause.staffId = user.staffId;
             } else if (user.ma_khoa) {

@@ -13,6 +13,7 @@ import BulkUpdateStaffModal from './components/BulkUpdateStaffModal';
 import StaffDetailsModal from './components/StaffDetailsModal';
 import TemplateConfigModal from './components/TemplateConfigModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBasePath } from '@/utils/config';
 import { SettingOutlined } from '@ant-design/icons';
 
 export default function StaffPage() {
@@ -58,7 +59,7 @@ export default function StaffPage() {
     const handleSyncMau02 = async () => {
         try {
             setIsSyncing(true);
-            const res = await fetch('/api/staff/sync-mau02', { 
+            const res = await fetch(`${getBasePath()}/api/staff/sync-mau02`, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ staffIds: selectedRowKeys })
@@ -80,7 +81,7 @@ export default function StaffPage() {
     const fetchStaff = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/staff');
+            const res = await fetch(`${getBasePath()}/api/staff`);
             if (res.ok) {
                 const data = await res.json();
                 setStaffList(data);
@@ -95,7 +96,7 @@ export default function StaffPage() {
     const handleGenerateUsers = async () => {
         try {
             setIsGeneratingUsers(true);
-            const res = await fetch('/api/staff/generate-users', { method: 'POST' });
+            const res = await fetch(`${getBasePath()}/api/staff/generate-users`, { method: 'POST' });
             if (res.ok) {
                 const result = await res.json();
                 if (result.count === 0 && result.failed === undefined) {
@@ -117,13 +118,14 @@ export default function StaffPage() {
     const handleDeleteAll = async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/staff', { method: 'DELETE' });
+            const res = await fetch(`${getBasePath()}/api/staff?confirmDeleteAll=true`, { method: 'DELETE' });
             if (res.ok) {
                 const result = await res.json();
                 message.success(`Đã xóa thành công ${result.count} nhân sự.`);
                 fetchStaff();
             } else {
-                message.error('Xóa toàn bộ thất bại');
+                const err = await res.json().catch(() => ({}));
+                message.error(err.error || 'Xóa toàn bộ thất bại');
             }
         } catch (error) {
             message.error('Lỗi khi xóa toàn bộ');
