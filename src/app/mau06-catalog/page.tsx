@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined, DiffOutlined, SettingOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Popconfirm, message, Upload, Card, Tooltip, Row, Col, Switch, Select, Tabs, Tag, Radio } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, SyncOutlined, DesktopOutlined, ContainerOutlined, SwapOutlined, DiffOutlined, SettingOutlined, TagsOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import { getBasePath } from '@/utils/config';
@@ -19,8 +19,12 @@ export default function Mau06CatalogPage() {
     const [editingRecord, setEditingRecord] = useState<any>(null);
     const [selectedMachineForLocation, setSelectedMachineForLocation] = useState<any>(null);
     const [departments, setDepartments] = useState<any[]>([]);
+    const [requiredServices, setRequiredServices] = useState<{ MA_DICH_VU: string; TEN_DICH_VU: string }[]>([]);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [isBulkServiceModalOpen, setIsBulkServiceModalOpen] = useState(false);
+    const [bulkServiceCodes, setBulkServiceCodes] = useState<string[]>([]);
+    const [bulkServiceMergeMode, setBulkServiceMergeMode] = useState<'APPEND' | 'REPLACE'>('APPEND');
     const [form] = Form.useForm();
     const [locationForm] = Form.useForm();
     const [searchText, setSearchText] = useState('');
@@ -87,10 +91,11 @@ export default function Mau06CatalogPage() {
                 url += `?ma_khoa=${user.ma_khoa}`;
             }
 
-            const [res, typeRes, deptRes] = await Promise.all([
+            const [res, typeRes, deptRes, svcRes] = await Promise.all([
                 fetch(url),
                 fetch(`${getBasePath()}/api/system-categories?type=LOAI_MAY`),
-                fetch(`${getBasePath()}/api/departments`)
+                fetch(`${getBasePath()}/api/departments`),
+                fetch(`${getBasePath()}/api/xml-checker/machine-audit-data`)
             ]);
             
             if (!res.ok) throw new Error('Failed to fetch data');
@@ -104,6 +109,12 @@ export default function Mau06CatalogPage() {
             if (deptRes.ok) {
                 const depts = await deptRes.json();
                 setDepartments(depts);
+            }
+            if (svcRes.ok) {
+                const svcJson = await svcRes.json();
+                if (Array.isArray(svcJson?.requiredServices)) {
+                    setRequiredServices(svcJson.requiredServices);
+                }
             }
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu');
@@ -119,7 +130,13 @@ export default function Mau06CatalogPage() {
     useEffect(() => {
         if (isModalOpen) {
             if (editingRecord) {
-                form.setFieldsValue(editingRecord);
+                const parsedCodes = editingRecord.ma_dich_vu_thuc_hien
+                    ? String(editingRecord.ma_dich_vu_thuc_hien).split(/[;,\n]+/).map((s: string) => s.trim()).filter(Boolean)
+                    : [];
+                form.setFieldsValue({
+                    ...editingRecord,
+                    ma_dich_vu_thuc_hien: parsedCodes
+                });
             } else {
                 form.resetFields();
             }
@@ -254,10 +271,17 @@ export default function Mau06CatalogPage() {
             const url = editingRecord ? `${getBasePath()}/api/mau06-catalog/${editingRecord.id}` : `${getBasePath()}/api/mau06-catalog`;
             const method = editingRecord ? 'PUT' : 'POST';
 
+            const payload = {
+                ...values,
+                ma_dich_vu_thuc_hien: Array.isArray(values.ma_dich_vu_thuc_hien)
+                    ? values.ma_dich_vu_thuc_hien.map((s: string) => String(s).trim()).filter(Boolean).join(', ')
+                    : (values.ma_dich_vu_thuc_hien || null)
+            };
+
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
@@ -268,6 +292,32 @@ export default function Mau06CatalogPage() {
                 message.error('Lỗi khi lưu');
             }
         } catch (error) {
+            message.error('Lỗi hệ thống');
+        }
+    };
+
+    const handleSaveBulkServices = async () => {
+        if (selectedRowKeys.length === 0) return;
+        try {
+            const res = await fetch(`${getBasePath()}/api/mau06-catalog/bulk`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ids: selectedRowKeys,
+                    ma_dich_vu_thuc_hien: bulkServiceCodes,
+                    mergeMode: bulkServiceMergeMode
+                })
+            });
+            if (res.ok) {
+                message.success(`Đã cập nhật Mã DV thực hiện cho ${selectedRowKeys.length} thiết bị`);
+                setIsBulkServiceModalOpen(false);
+                setBulkServiceCodes([]);
+                setSelectedRowKeys([]);
+                fetchData();
+            } else {
+                message.error('Không thể cập nhật hàng loạt Mã DV');
+            }
+        } catch {
             message.error('Lỗi hệ thống');
         }
     };
@@ -299,7 +349,7 @@ export default function Mau06CatalogPage() {
     const handleDownloadTemplate = () => {
         const headers = [
             'TEN_TB', 'TEN_BV', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX', 'NAM_SX', 'NAM_SD',
-            'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB', 'loai_may_code'
+            'MA_MAY', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB', 'loai_may_code', 'ma_dich_vu_thuc_hien'
         ];
 
         const wb = XLSX.utils.book_new();
@@ -311,7 +361,7 @@ export default function Mau06CatalogPage() {
     const handleExportData = () => {
         const exportHeaders = [
             'STT', 'MA_MAY', 'TEN_TB', 'TEN_BV', 'KHOA_PHONG',
-            'PHAN_LOAI_MAY', 'MA_LOAI_MAY', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX',
+            'PHAN_LOAI_MAY', 'MA_LOAI_MAY', 'MA_DICH_VU_THUC_HIEN', 'KY_HIEU', 'CONGTY_SX', 'NUOC_SX',
             'NAM_SX', 'NAM_SD', 'SO_LUU_HANH', 'HD_TU', 'HD_DEN', 'TU_NGAY', 'DEN_NGAY', 'MA_CSKCB'
         ];
 
@@ -335,6 +385,7 @@ export default function Mau06CatalogPage() {
                 item.ten_khoa_su_dung || '',
                 matchedType ? matchedType.name : (item.loai_may_code || ''),
                 item.loai_may_code || '',
+                item.ma_dich_vu_thuc_hien || '',
                 item.KY_HIEU || '',
                 item.CONGTY_SX || '',
                 item.NUOC_SX || '',
@@ -397,6 +448,22 @@ export default function Mau06CatalogPage() {
         return false;
     };
 
+    const serviceOptions = React.useMemo(
+        () => requiredServices.map(s => ({
+            value: s.MA_DICH_VU,
+            label: `${s.MA_DICH_VU}${s.TEN_DICH_VU ? ` - ${s.TEN_DICH_VU}` : ''}`
+        })),
+        [requiredServices]
+    );
+
+    const serviceNameMap = React.useMemo(() => {
+        const map = new Map<string, string>();
+        requiredServices.forEach(s => {
+            if (s.MA_DICH_VU) map.set(s.MA_DICH_VU, s.TEN_DICH_VU || '');
+        });
+        return map;
+    }, [requiredServices]);
+
     const columns = [
         { title: 'STT', key: 'stt', width: 60, align: 'center' as const, render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1 },
         { title: 'Mã Máy', dataIndex: 'MA_MAY', width: 150 },
@@ -440,6 +507,46 @@ export default function Mau06CatalogPage() {
                         }
                         options={machineTypes.map(t => ({ value: t.code, label: t.name }))}
                     />
+                );
+            }
+        },
+        {
+            title: 'Mã DV thực hiện',
+            dataIndex: 'ma_dich_vu_thuc_hien',
+            width: 240,
+            render: (val: string) => {
+                const codes = val
+                    ? String(val).split(/[;,\n]+/).map(s => s.trim()).filter(Boolean)
+                    : [];
+                if (codes.length === 0) {
+                    return <span className="text-slate-400 italic text-xs">Chưa gắn mã DV</span>;
+                }
+                const visibleCodes = codes.slice(0, 3);
+                const hiddenCount = codes.length - visibleCodes.length;
+                return (
+                    <Tooltip
+                        title={
+                            <div className="text-xs max-h-60 overflow-y-auto space-y-1">
+                                {codes.map(c => (
+                                    <div key={c}>
+                                        <b className="font-mono">{c}</b>
+                                        {serviceNameMap.get(c) ? ` - ${serviceNameMap.get(c)}` : ''}
+                                    </div>
+                                ))}
+                            </div>
+                        }
+                    >
+                        <div className="flex flex-wrap gap-1">
+                            {visibleCodes.map(c => (
+                                <Tag key={c} color="cyan" className="font-mono text-xs m-0">
+                                    {c}
+                                </Tag>
+                            ))}
+                            {hiddenCount > 0 && (
+                                <Tag color="blue" className="text-xs m-0">+{hiddenCount}</Tag>
+                            )}
+                        </div>
+                    </Tooltip>
                 );
             }
         },
@@ -489,10 +596,12 @@ export default function Mau06CatalogPage() {
     const uniqueDepartments = Array.from(new Set(data.map(item => item.ten_khoa_su_dung))).filter(Boolean);
 
     const filteredData = data.filter(item => {
-        const matchText = (item.TEN_TB?.toLowerCase().includes(searchText.toLowerCase())) ||
-                          (item.MA_MAY?.toLowerCase().includes(searchText.toLowerCase())) ||
-                          (item.KY_HIEU?.toLowerCase().includes(searchText.toLowerCase())) ||
-                          (item.TEN_BV?.toLowerCase().includes(searchText.toLowerCase()));
+        const q = searchText.toLowerCase();
+        const matchText = (item.TEN_TB?.toLowerCase().includes(q)) ||
+                          (item.MA_MAY?.toLowerCase().includes(q)) ||
+                          (item.KY_HIEU?.toLowerCase().includes(q)) ||
+                          (item.TEN_BV?.toLowerCase().includes(q)) ||
+                          (item.ma_dich_vu_thuc_hien?.toLowerCase().includes(q));
         
         const matchDept = filterDept ? item.ten_khoa_su_dung === filterDept : true;
         
@@ -543,6 +652,17 @@ export default function Mau06CatalogPage() {
                         <Button icon={<SyncOutlined />} onClick={fetchData}>Làm mới</Button>
                         {canEdit && selectedRowKeys.length > 0 && (
                             <>
+                                <Button
+                                    icon={<TagsOutlined />}
+                                    className="bg-indigo-600 text-white border-none hover:bg-indigo-700"
+                                    onClick={() => {
+                                        setBulkServiceCodes([]);
+                                        setBulkServiceMergeMode('APPEND');
+                                        setIsBulkServiceModalOpen(true);
+                                    }}
+                                >
+                                    Gắn Mã DV ({selectedRowKeys.length})
+                                </Button>
                                 <Button className="bg-green-500 text-white border-none hover:bg-green-600" onClick={() => handleBulkUpdateStatus(true)}>
                                     Đánh dấu Đang dùng ({selectedRowKeys.length})
                                 </Button>
@@ -647,6 +767,25 @@ export default function Mau06CatalogPage() {
                                     <Col span={8}><Form.Item name="NUOC_SX" label="Nước sản xuất"><Input size="large" /></Form.Item></Col>
                                     <Col span={8}><Form.Item name="NAM_SX" label="Năm SX"><InputNumber className="w-full" size="large" /></Form.Item></Col>
                                     <Col span={8}><Form.Item name="NAM_SD" label="Năm Sử dụng"><InputNumber className="w-full" size="large" /></Form.Item></Col>
+
+                                    <Col span={24}>
+                                        <Form.Item
+                                            name="ma_dich_vu_thuc_hien"
+                                            label="Mã dịch vụ thực hiện trên máy (MA_DICH_VU - Dùng để đề xuất mã máy XML3 theo Khoa)"
+                                            tooltip="Chọn từ danh mục Mẫu 05 hoặc nhập trực tiếp mã dịch vụ (VD: 01.0281.1510) rồi nhấn Enter"
+                                        >
+                                            <Select
+                                                mode="tags"
+                                                size="large"
+                                                allowClear
+                                                showSearch
+                                                placeholder="Tìm theo Mã DV / Tên DV hoặc nhập trực tiếp (VD: 01.0281.1510)..."
+                                                optionFilterProp="label"
+                                                options={serviceOptions}
+                                                tokenSeparators={[',', ';']}
+                                            />
+                                        </Form.Item>
+                                    </Col>
                                 </Row>
                             </div>
 
@@ -703,6 +842,41 @@ export default function Mau06CatalogPage() {
                     onClose={() => setIsReconciliationModalOpen(false)}
                     dbMachines={data}
                 />
+                <Modal
+                    title={<span className="text-lg font-bold text-indigo-700">Gắn hàng loạt Mã DV thực hiện ({selectedRowKeys.length} thiết bị)</span>}
+                    open={isBulkServiceModalOpen}
+                    onCancel={() => setIsBulkServiceModalOpen(false)}
+                    onOk={handleSaveBulkServices}
+                    okText="Lưu gắn Mã DV"
+                    cancelText="Hủy"
+                    width={640}
+                >
+                    <div className="space-y-4 py-2">
+                        <div>
+                            <div className="text-sm font-medium text-slate-700 mb-1">Chọn hoặc nhập Mã dịch vụ (VD: 01.0281.1510):</div>
+                            <Select
+                                mode="tags"
+                                size="large"
+                                allowClear
+                                showSearch
+                                className="w-full"
+                                value={bulkServiceCodes}
+                                onChange={setBulkServiceCodes}
+                                placeholder="Tìm theo Mã DV / Tên DV hoặc gõ mã rồi nhấn Enter..."
+                                optionFilterProp="label"
+                                options={serviceOptions}
+                                tokenSeparators={[',', ';']}
+                            />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium text-slate-700 mb-1">Chế độ cập nhật:</div>
+                            <Radio.Group value={bulkServiceMergeMode} onChange={e => setBulkServiceMergeMode(e.target.value)}>
+                                <Radio value="APPEND">Gắn thêm vào mã DV đang có của các máy</Radio>
+                                <Radio value="REPLACE">Ghi đè thay thế toàn bộ mã DV</Radio>
+                            </Radio.Group>
+                        </div>
+                    </div>
+                </Modal>
             </Card>
         </div>
     );

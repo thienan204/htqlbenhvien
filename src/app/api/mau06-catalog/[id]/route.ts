@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { authorizeMau06Action } from '../_auth';
+import { authorizeMau06Action, normalizeMaDichVuList } from '../_auth';
 
 const prisma = new PrismaClient();
 
@@ -32,6 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         if (body.DEN_NGAY !== undefined) updateData.DEN_NGAY = body.DEN_NGAY ? String(body.DEN_NGAY).trim().substring(0, 8) : null;
         if (body.MA_CSKCB !== undefined) updateData.MA_CSKCB = body.MA_CSKCB ? String(body.MA_CSKCB).trim().substring(0, 5) : null;
         if (body.loai_may_code !== undefined) updateData.loai_may_code = body.loai_may_code ? String(body.loai_may_code).trim() : null;
+        if (body.ma_dich_vu_thuc_hien !== undefined) updateData.ma_dich_vu_thuc_hien = normalizeMaDichVuList(body.ma_dich_vu_thuc_hien);
 
         const updated = await prisma.mau06Catalog.update({
             where: { id },

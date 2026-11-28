@@ -20,7 +20,7 @@ import {
     MachineAuditSummary,
     auditMachineRecords
 } from './machineAuditCalculator';
-import { MachineCatalogItem } from '@/app/api/xml-checker/machine-audit-data/route';
+import { MachineCatalogItem, RequiredServiceItem } from '@/app/api/xml-checker/machine-audit-data/route';
 import type { ValidationRule } from '@/lib/validation';
 
 const { Text } = Typography;
@@ -45,6 +45,7 @@ export default function MachineAuditModal({
     const [loading, setLoading] = useState<boolean>(false);
     const [mau06List, setMau06List] = useState<MachineCatalogItem[]>([]);
     const [requiredServiceCodes, setRequiredServiceCodes] = useState<Set<string>>(new Set());
+    const [requiredServices, setRequiredServices] = useState<RequiredServiceItem[]>([]);
 
     // Filters
     const [filterErrorType, setFilterErrorType] = useState<string>('ALL');
@@ -85,6 +86,7 @@ export default function MachineAuditModal({
             if (data.success) {
                 setMau06List(data.mau06List || []);
                 setRequiredServiceCodes(new Set(data.requiredServiceCodes || []));
+                setRequiredServices(data.requiredServices || []);
             } else {
                 message.error('Không thể tải danh mục Mẫu 06 & Mẫu 05.');
             }
@@ -122,9 +124,10 @@ export default function MachineAuditModal({
             removeMiddle,
             applyRules,
             mau06Rule,
-            mau05Rule
+            mau05Rule,
+            requiredServices
         });
-    }, [records, mau06List, requiredServiceCodes, departments, isOpen, trimEnds, removeMiddle, applyRules, mau06Rule, mau05Rule]);
+    }, [records, mau06List, requiredServiceCodes, requiredServices, departments, isOpen, trimEnds, removeMiddle, applyRules, mau06Rule, mau05Rule]);
 
     const { items: allAuditItems, summary } = auditResult;
 
@@ -570,7 +573,7 @@ export default function MachineAuditModal({
         {
             title: 'Mã máy đề xuất (Mẫu 06)',
             key: 'suggestedMaMay',
-            width: 220,
+            width: 240,
             render: (_: any, r: MachineAuditItem) => {
                 if (!r.suggestedMaMay) {
                     return (
@@ -579,21 +582,32 @@ export default function MachineAuditModal({
                         </span>
                     );
                 }
+                const candidates = (r.suggestedCandidates && r.suggestedCandidates.length > 0)
+                    ? r.suggestedCandidates
+                    : [{ maMay: r.suggestedMaMay, tenTb: r.suggestedTenTb, kyHieu: r.suggestedKyHieu }];
+
                 return (
-                    <div className="bg-emerald-50 p-2 rounded border border-emerald-200">
-                        <div className="flex items-center gap-1">
-                            <Tag color="success" className="font-mono font-bold text-sm m-0">
-                                {r.suggestedMaMay}
-                            </Tag>
-                        </div>
-                        <div className="text-xs text-emerald-800 font-medium mt-1 truncate" title={r.suggestedTenTb}>
-                            {r.suggestedTenTb}
-                        </div>
-                        {r.suggestedKyHieu && (
-                            <div className="text-[11px] text-slate-600 mt-0.5">
-                                Serial/Model: <span className="font-semibold text-slate-800 font-mono">{r.suggestedKyHieu}</span>
+                    <div className="bg-emerald-50 p-2 rounded border border-emerald-200 space-y-1.5">
+                        {candidates.map((c, idx) => (
+                            <div key={`${c.maMay}_${idx}`} className={idx > 0 ? 'pt-1.5 border-t border-emerald-200/80' : ''}>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                    <Tag color="success" className="font-mono font-bold text-xs m-0">
+                                        {c.maMay}
+                                    </Tag>
+                                    {candidates.length > 1 && (
+                                        <span className="text-[10px] text-emerald-700 font-semibold">#{idx + 1}</span>
+                                    )}
+                                </div>
+                                <div className="text-xs text-emerald-800 font-medium mt-0.5 truncate" title={c.tenTb}>
+                                    {c.tenTb}
+                                </div>
+                                {c.kyHieu && (
+                                    <div className="text-[11px] text-slate-600">
+                                        Serial/Model: <span className="font-semibold text-slate-800 font-mono">{c.kyHieu}</span>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        ))}
                     </div>
                 );
             }

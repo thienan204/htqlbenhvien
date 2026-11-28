@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserFromRequest } from '@/actions/auth';
 import { getSystemConfig } from '@/lib/systemConfig';
-import { authorizeMau06Action, hasMau06MenuPermission } from './_auth';
+import { authorizeMau06Action, hasMau06MenuPermission, normalizeMaDichVuList } from './_auth';
 import { createDeleteSnapshot, SnapshotLimitError } from '@/lib/deleteProtection';
 
 export const dynamic = 'force-dynamic';
@@ -259,6 +259,7 @@ export async function POST(request: Request) {
                     const rawDenNgay = getRowValue(row, 'DEN_NGAY', 'Đến ngày', 'Den ngay');
                     const rawMaCskcb = getRowValue(row, 'MA_CSKCB', 'Mã CSKCB', 'Ma CSKCB');
                     const rawLoaiMay = getRowValue(row, 'loai_may_code', 'Loại máy', 'Loại Máy', 'Loai may', 'Phân loại', 'Phân loại máy', 'PHAN_LOAI_MAY', 'Phân loại (Loại máy)');
+                    const rawMaDichVuThucHien = getRowValue(row, 'ma_dich_vu_thuc_hien', 'MA_DICH_VU_THUC_HIEN', 'Mã DV thực hiện', 'Mã dịch vụ thực hiện', 'MA_DICH_VU', 'Mã DV');
                     const rawStt = getRowValue(row, 'STT', 'Số thứ tự', 'So thu tu');
 
                     // Helper so sánh & kế thừa thông minh: chỉ coi là thay đổi khi người dùng có cung cấp giá trị mới khác với giá trị cũ
@@ -308,6 +309,7 @@ export async function POST(request: Request) {
                             DEN_NGAY: rawDenNgay ? String(rawDenNgay).trim().substring(0, 8) : null,
                             MA_CSKCB: rawMaCskcb ? String(rawMaCskcb).trim().substring(0, 5) : null,
                             loai_may_code: rawLoaiMay ? String(rawLoaiMay).trim() : null,
+                            ma_dich_vu_thuc_hien: normalizeMaDichVuList(rawMaDichVuThucHien),
                             isActive: true,
                         };
                         const newRec = await tx.mau06Catalog.create({ data: createData });
@@ -329,6 +331,8 @@ export async function POST(request: Request) {
                         const finalDenNgay = checkStr(rawDenNgay, existing.DEN_NGAY, 8);
                         const finalMaCskcb = checkStr(rawMaCskcb, existing.MA_CSKCB, 5);
                         const finalLoaiMay = checkStr(rawLoaiMay, existing.loai_may_code);
+                        const normalizedNewDv = rawMaDichVuThucHien ? normalizeMaDichVuList(rawMaDichVuThucHien) : null;
+                        const finalMaDichVuThucHien = checkStr(normalizedNewDv, existing.ma_dich_vu_thuc_hien);
                         const finalStt = checkNum(rawStt, existing.STT);
 
                         if (!hasFieldChange) {
@@ -361,6 +365,7 @@ export async function POST(request: Request) {
                                 DEN_NGAY: finalDenNgay,
                                 MA_CSKCB: finalMaCskcb,
                                 loai_may_code: finalLoaiMay,
+                                ma_dich_vu_thuc_hien: finalMaDichVuThucHien,
                                 isActive: true,
                             }
                         });
@@ -399,6 +404,7 @@ export async function POST(request: Request) {
                 DEN_NGAY: body.DEN_NGAY ? String(body.DEN_NGAY).substring(0, 8) : null,
                 MA_CSKCB: body.MA_CSKCB ? String(body.MA_CSKCB).substring(0, 5) : null,
                 loai_may_code: body.loai_may_code ? String(body.loai_may_code) : null,
+                ma_dich_vu_thuc_hien: normalizeMaDichVuList(body.ma_dich_vu_thuc_hien),
                 isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
             }
         });

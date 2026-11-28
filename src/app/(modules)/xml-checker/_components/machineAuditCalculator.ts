@@ -1,8 +1,14 @@
 import { HosoRecord, getXmlDataList } from '@/lib/xml';
-import { MachineCatalogItem } from '@/app/api/xml-checker/machine-audit-data/route';
+import { MachineCatalogItem, RequiredServiceItem } from '@/app/api/xml-checker/machine-audit-data/route';
 import type { ValidationRule } from '@/lib/validation';
 
 export type MachineAuditErrorType = 'NOT_IN_MAU06' | 'MISSING_REQUIRED';
+
+export interface SuggestedMachineCandidate {
+    maMay: string;
+    tenTb: string;
+    kyHieu: string;
+}
 
 export interface MachineAuditItem {
     stt?: number;
@@ -26,6 +32,7 @@ export interface MachineAuditItem {
     suggestedMaMay: string;
     suggestedTenTb: string;
     suggestedKyHieu: string;
+    suggestedCandidates?: SuggestedMachineCandidate[];
     suggestedReason: string;
     soLuong: number;
     donGia: number;
@@ -153,22 +160,92 @@ const DEVICE_KEYWORD_GROUPS: { keywords: string[]; deviceMatch: string[] }[] = [
     {
         keywords: ['chay than', 'loc mau', 'than nhan tao'],
         deviceMatch: ['chay than', 'than nhan tao', 'loc mau', 'dialysis']
+    },
+    {
+        keywords: ['duong mau mao mach', 'duong huyet', 'duong mau tai giuong'],
+        deviceMatch: ['duong huyet', 'duong mau', 'glucose', 'accu', 'onetouch', 'test duong']
+    },
+    {
+        keywords: ['khi mau', 'khi mau dong mach'],
+        deviceMatch: ['khi mau', 'blood gas', 'abl', 'gem']
+    },
+    {
+        keywords: ['tho may', 'thong khi nhan tao'],
+        deviceMatch: ['may tho', 'tho', 'ventilator']
+    },
+    {
+        keywords: ['bom tiem dien', 'truyen dich', 'may truyen dich'],
+        deviceMatch: ['bom tiem', 'truyen dich']
+    },
+    {
+        keywords: ['monitor', 'theo doi benh nhan', 'do spo2'],
+        deviceMatch: ['monitor', 'theo doi', 'spo2']
+    },
+    {
+        keywords: ['khi dung', 'xong khi dung'],
+        deviceMatch: ['khi dung', 'nebulizer']
+    },
+    {
+        keywords: ['soc dien', 'pha rung'],
+        deviceMatch: ['soc dien', 'pha rung', 'defibrillator']
     }
 ];
 
+function buildSuggestionResult(
+    machines: MachineCatalogItem[],
+    suggestedReason: string
+): {
+    suggestedMaMay: string;
+    suggestedTenTb: string;
+    suggestedKyHieu: string;
+    suggestedCandidates: SuggestedMachineCandidate[];
+    suggestedReason: string;
+} {
+    // Loại bỏ trùng lặp theo MA_MAY và sắp xếp ổn định
+    const uniqueMap = new Map<string, MachineCatalogItem>();
+    machines.forEach(m => {
+        if (m.MA_MAY && !uniqueMap.has(m.MA_MAY)) {
+            uniqueMap.set(m.MA_MAY, m);
+        }
+    });
+    const uniqueList = Array.from(uniqueMap.values());
+    const candidates: SuggestedMachineCandidate[] = uniqueList.map(m => ({
+        maMay: m.MA_MAY,
+        tenTb: m.TEN_TB || '',
+        kyHieu: m.KY_HIEU || ''
+    }));
+    return {
+        suggestedMaMay: candidates.map(c => c.maMay).join('; '),
+        suggestedTenTb: Array.from(new Set(candidates.map(c => c.tenTb).filter(Boolean))).join('; '),
+        suggestedKyHieu: Array.from(new Set(candidates.map(c => c.kyHieu).filter(Boolean))).join('; '),
+        suggestedCandidates: candidates,
+        suggestedReason
+    };
+}
+
+export interface MachineSuggestContext {
+    machineServiceMap: Map<string, Set<string>>;
+    serviceMachineTypeMap: Map<string, string>;
+    learnedDeptServiceMap: Map<string, MachineCatalogItem[]>;
+}
+
 /**
  * Tìm đề xuất mã máy Mẫu 06 cho 1 dòng dịch vụ XML3
+ * - Hỗ trợ đề xuất nhiều máy nếu khoa có >= 2 máy cùng đáp ứng dịch vụ
+ * - Chỉ tìm trong đúng MA_KHOA của XML3 (nếu khoa không có thì để trống để người dùng tự gắn)
  */
 export function findSuggestedMachine(
     maMayXml: string,
     maDichVu: string,
     tenDichVu: string,
     maKhoa: string,
-    mau06List: MachineCatalogItem[]
+    mau06List: MachineCatalogItem[],
+    ctx?: MachineSuggestContext
 ): {
     suggestedMaMay: string;
     suggestedTenTb: string;
     suggestedKyHieu: string;
+    suggestedCandidates: SuggestedMachineCandidate[];
     suggestedReason: string;
 } {
     const rawXmlMachine = maMayXml.trim();
@@ -178,22 +255,18 @@ export function findSuggestedMachine(
     // Cấp 1: Khớp chính xác Ký hiệu / Serial (KY_HIEU)
     // =========================================================================
     if (normXmlMachine.length >= 2) {
-        // Ưu tiên máy cùng khoa nếu có nhiều máy cùng serial/ký hiệu
         const exactMatches = mau06List.filter(m => {
             const normKyHieu = normalizeSerial(m.KY_HIEU);
             return normKyHieu && normKyHieu === normXmlMachine;
         });
 
         if (exactMatches.length > 0) {
-            // Nếu có máy trùng khoa thực hiện, ưu tiên trước
-            const sameDept = exactMatches.find(m => m.ma_khoa_su_dung === maKhoa);
-            const chosen = sameDept || exactMatches[0];
-            return {
-                suggestedMaMay: chosen.MA_MAY,
-                suggestedTenTb: chosen.TEN_TB,
-                suggestedKyHieu: chosen.KY_HIEU,
-                suggestedReason: `Khớp chính xác Serial/Ký hiệu (${chosen.KY_HIEU})`
-            };
+            const sameDeptMatches = maKhoa ? exactMatches.filter(m => m.ma_khoa_su_dung === maKhoa) : [];
+            const chosen = sameDeptMatches.length > 0 ? sameDeptMatches : [exactMatches[0]];
+            return buildSuggestionResult(
+                chosen,
+                `Khớp chính xác Serial/Ký hiệu (${chosen[0].KY_HIEU})`
+            );
         }
     }
 
@@ -201,7 +274,6 @@ export function findSuggestedMachine(
     // Cấp 2: Khớp tương đối / chuỗi con Serial / Model (KY_HIEU)
     // =========================================================================
     if (normXmlMachine.length >= 4) {
-        // Tìm máy mà ký hiệu chứa chuỗi XML hoặc chuỗi XML chứa ký hiệu
         const subMatches = mau06List.filter(m => {
             const normKyHieu = normalizeSerial(m.KY_HIEU);
             if (!normKyHieu || normKyHieu.length < 3) return false;
@@ -209,78 +281,102 @@ export function findSuggestedMachine(
         });
 
         if (subMatches.length > 0) {
-            const sameDept = subMatches.find(m => m.ma_khoa_su_dung === maKhoa);
-            const chosen = sameDept || subMatches[0];
-            return {
-                suggestedMaMay: chosen.MA_MAY,
-                suggestedTenTb: chosen.TEN_TB,
-                suggestedKyHieu: chosen.KY_HIEU,
-                suggestedReason: `Khớp tương đối Serial/Ký hiệu (${chosen.KY_HIEU})`
-            };
+            const sameDeptMatches = maKhoa ? subMatches.filter(m => m.ma_khoa_su_dung === maKhoa) : [];
+            const chosen = sameDeptMatches.length > 0 ? sameDeptMatches : [subMatches[0]];
+            return buildSuggestionResult(
+                chosen,
+                `Khớp tương đối Serial/Ký hiệu (${chosen[0].KY_HIEU})`
+            );
+        }
+    }
+
+    // Các cấp tiếp theo dựa theo Khoa phòng (MA_KHOA của XML3) — nếu không có ở đúng khoa thì để trống
+    const deptMachines = maKhoa ? mau06List.filter(m => m.ma_khoa_su_dung === maKhoa) : [];
+
+    // =========================================================================
+    // Cấp 3: Khớp đích danh Mã dịch vụ gắn trên Mẫu 06 (ma_dich_vu_thuc_hien) & đúng Khoa
+    // =========================================================================
+    if (maKhoa && maDichVu && ctx) {
+        const directMatched = deptMachines.filter(m => {
+            const dvSet = ctx.machineServiceMap.get(m.id);
+            return dvSet ? dvSet.has(maDichVu) : false;
+        });
+        if (directMatched.length > 0) {
+            return buildSuggestionResult(
+                directMatched,
+                `Khớp trực tiếp Mã DV (${maDichVu}) & Khoa (${maKhoa})${directMatched.length > 1 ? ` - ${directMatched.length} máy` : ''}`
+            );
         }
     }
 
     // =========================================================================
-    // Cấp 3: Khớp theo Khoa phòng & Tên thiết bị tương đồng loại dịch vụ
+    // Cấp 4: Khớp theo Loại máy (Mau05.yeu_cau_may_moc = Mau06.loai_may_code) & đúng Khoa
     // =========================================================================
-    const normTenDv = removeVietnameseTones(tenDichVu);
-    const matchedGroup = DEVICE_KEYWORD_GROUPS.find(grp =>
-        grp.keywords.some(kw => normTenDv.includes(kw))
-    );
-
-    if (matchedGroup) {
-        // 3.1. Tìm trong các máy thuộc đúng khoa chỉ định
-        const deptMachines = mau06List.filter(m => m.ma_khoa_su_dung === maKhoa);
-        const deptMatchedMachine = deptMachines.find(m => {
-            const normTb = removeVietnameseTones(m.TEN_TB || '');
-            return matchedGroup.deviceMatch.some(dm => normTb.includes(dm));
-        });
-
-        if (deptMatchedMachine) {
-            return {
-                suggestedMaMay: deptMatchedMachine.MA_MAY,
-                suggestedTenTb: deptMatchedMachine.TEN_TB,
-                suggestedKyHieu: deptMatchedMachine.KY_HIEU,
-                suggestedReason: `Khớp Khoa (${maKhoa}) & Loại thiết bị (${deptMatchedMachine.TEN_TB})`
-            };
-        }
-
-        // 3.2. Nếu cùng khoa không có, tìm trong toàn viện xem có loại máy tương ứng không
-        const allMatchedMachine = mau06List.find(m => {
-            const normTb = removeVietnameseTones(m.TEN_TB || '');
-            return matchedGroup.deviceMatch.some(dm => normTb.includes(dm));
-        });
-
-        if (allMatchedMachine) {
-            return {
-                suggestedMaMay: allMatchedMachine.MA_MAY,
-                suggestedTenTb: allMatchedMachine.TEN_TB,
-                suggestedKyHieu: allMatchedMachine.KY_HIEU,
-                suggestedReason: `Khớp loại thiết bị theo dịch vụ (${allMatchedMachine.TEN_TB})`
-            };
+    if (maKhoa && maDichVu && ctx) {
+        const requiredTypeCode = ctx.serviceMachineTypeMap.get(maDichVu);
+        if (requiredTypeCode) {
+            const typeMatched = deptMachines.filter(m => m.loai_may_code === requiredTypeCode);
+            if (typeMatched.length > 0) {
+                return buildSuggestionResult(
+                    typeMatched,
+                    `Khớp Loại máy (${requiredTypeCode}) & Khoa (${maKhoa})${typeMatched.length > 1 ? ` - ${typeMatched.length} máy` : ''}`
+                );
+            }
         }
     }
 
     // =========================================================================
-    // Cấp 4: Nếu máy chỉ có 1 máy duy nhất ở khoa đó
+    // Cấp 5: Tham chiếu từ các dòng XML3 hợp lệ cùng Khoa & Mã dịch vụ trong lô hồ sơ
     // =========================================================================
-    if (maKhoa) {
-        const deptMachines = mau06List.filter(m => m.ma_khoa_su_dung === maKhoa);
-        if (deptMachines.length === 1) {
-            const only = deptMachines[0];
-            return {
-                suggestedMaMay: only.MA_MAY,
-                suggestedTenTb: only.TEN_TB,
-                suggestedKyHieu: only.KY_HIEU,
-                suggestedReason: `Khoa (${maKhoa}) chỉ có 01 thiết bị trong Mẫu 06`
-            };
+    if (maKhoa && maDichVu && ctx) {
+        const learned = ctx.learnedDeptServiceMap.get(`${maKhoa}|||${maDichVu}`);
+        if (learned && learned.length > 0) {
+            return buildSuggestionResult(
+                learned,
+                `Tham chiếu hồ sơ hợp lệ cùng Khoa (${maKhoa}) & Mã DV (${maDichVu})`
+            );
         }
+    }
+
+    // =========================================================================
+    // Cấp 6: Khớp từ khóa tên dịch vụ & tên thiết bị TRONG ĐÚNG KHOA XML3
+    // =========================================================================
+    if (maKhoa && deptMachines.length > 0) {
+        const normTenDv = removeVietnameseTones(tenDichVu);
+        const matchedGroup = DEVICE_KEYWORD_GROUPS.find(grp =>
+            grp.keywords.some(kw => normTenDv.includes(kw))
+        );
+
+        if (matchedGroup) {
+            const deptMatchedMachines = deptMachines.filter(m => {
+                const normTb = removeVietnameseTones(m.TEN_TB || '');
+                return matchedGroup.deviceMatch.some(dm => normTb.includes(dm));
+            });
+
+            if (deptMatchedMachines.length > 0) {
+                return buildSuggestionResult(
+                    deptMatchedMachines,
+                    `Khớp Khoa (${maKhoa}) & Loại thiết bị (${deptMatchedMachines[0].TEN_TB})`
+                );
+            }
+        }
+    }
+
+    // =========================================================================
+    // Cấp 7: Nếu Khoa đó chỉ có duy nhất 01 thiết bị trong Mẫu 06
+    // =========================================================================
+    if (maKhoa && deptMachines.length === 1) {
+        return buildSuggestionResult(
+            [deptMachines[0]],
+            `Khoa (${maKhoa}) chỉ có 01 thiết bị trong Mẫu 06`
+        );
     }
 
     return {
         suggestedMaMay: '',
         suggestedTenTb: '',
         suggestedKyHieu: '',
+        suggestedCandidates: [],
         suggestedReason: 'Chưa xác định được máy phù hợp'
     };
 }
@@ -395,6 +491,7 @@ export interface MachineAuditOptions {
     applyRules?: boolean;
     mau06Rule?: ValidationRule;
     mau05Rule?: ValidationRule;
+    requiredServices?: RequiredServiceItem[];
 }
 
 /**
@@ -415,14 +512,72 @@ export function auditMachineRecords(
     const removeMiddle = Boolean(options.removeMiddle);
     const applyRules = options.applyRules !== undefined ? options.applyRules : true;
 
-    // 1. Tạo tập hợp mã máy hợp lệ trong Mẫu 06 theo cấu hình khoảng trắng
+    // 1. Tạo tập hợp mã máy hợp lệ trong Mẫu 06 theo cấu hình khoảng trắng & ánh xạ hỗ trợ đề xuất
     const mau06MaMaySet = new Set<string>();
+    const mau06ByNormalizedCode = new Map<string, MachineCatalogItem>();
+    const machineServiceMap = new Map<string, Set<string>>();
+
     mau06List.forEach(m => {
         if (m.MA_MAY !== undefined && m.MA_MAY !== null) {
             const normalized = normalizeMachineWhitespace(m.MA_MAY, trimEnds, removeMiddle);
-            if (normalized !== '') mau06MaMaySet.add(normalized);
+            if (normalized !== '') {
+                mau06MaMaySet.add(normalized);
+                if (!mau06ByNormalizedCode.has(normalized)) {
+                    mau06ByNormalizedCode.set(normalized, m);
+                }
+            }
+        }
+        if (m.ma_dich_vu_thuc_hien) {
+            const codes = String(m.ma_dich_vu_thuc_hien)
+                .split(/[;,\n]+/)
+                .map(s => s.trim())
+                .filter(Boolean);
+            if (codes.length > 0) {
+                machineServiceMap.set(m.id, new Set(codes));
+            }
         }
     });
+
+    // Ánh xạ Mã DV -> Loại máy yêu cầu (từ Mẫu 05)
+    const serviceMachineTypeMap = new Map<string, string>();
+    (options.requiredServices || []).forEach(svc => {
+        if (svc.MA_DICH_VU && svc.yeu_cau_may_moc) {
+            serviceMachineTypeMap.set(svc.MA_DICH_VU, svc.yeu_cau_may_moc);
+        }
+    });
+
+    // Học tự động các máy hợp lệ đã được sử dụng đúng theo (MA_KHOA + MA_DICH_VU) trong chính lô XML
+    const learnedDeptServiceMap = new Map<string, MachineCatalogItem[]>();
+    for (const record of records) {
+        const xml3Group = record.groups?.find(g => g.type === 'XML3');
+        if (!xml3Group) continue;
+        const xml3List = getXmlDataList(xml3Group);
+        if (!Array.isArray(xml3List)) continue;
+
+        for (const item of xml3List) {
+            const maDichVu = String(item.MA_DICH_VU || '').trim();
+            const maKhoa = String(item.MA_KHOA || record.summary?.MA_KHOA || '').trim();
+            const rawMaMay = item.MA_MAY !== undefined && item.MA_MAY !== null ? String(item.MA_MAY) : '';
+            const comparedMaMay = normalizeMachineWhitespace(rawMaMay, trimEnds, removeMiddle);
+            if (maKhoa && maDichVu && comparedMaMay && mau06MaMaySet.has(comparedMaMay)) {
+                const matchedMachine = mau06ByNormalizedCode.get(comparedMaMay);
+                if (matchedMachine && (!matchedMachine.ma_khoa_su_dung || matchedMachine.ma_khoa_su_dung === maKhoa)) {
+                    const key = `${maKhoa}|||${maDichVu}`;
+                    const arr = learnedDeptServiceMap.get(key) || [];
+                    if (!arr.some(x => x.MA_MAY === matchedMachine.MA_MAY)) {
+                        arr.push(matchedMachine);
+                        learnedDeptServiceMap.set(key, arr);
+                    }
+                }
+            }
+        }
+    }
+
+    const suggestContext: MachineSuggestContext = {
+        machineServiceMap,
+        serviceMachineTypeMap,
+        learnedDeptServiceMap
+    };
 
     const errorItems: MachineAuditItem[] = [];
     let totalXml3Scanned = 0;
@@ -502,7 +657,8 @@ export function auditMachineRecords(
                     maDichVu,
                     tenDichVu,
                     maKhoa,
-                    mau06List
+                    mau06List,
+                    suggestContext
                 );
 
                 errorItems.push({
@@ -526,6 +682,7 @@ export function auditMachineRecords(
                     suggestedMaMay: suggestion.suggestedMaMay,
                     suggestedTenTb: suggestion.suggestedTenTb,
                     suggestedKyHieu: suggestion.suggestedKyHieu,
+                    suggestedCandidates: suggestion.suggestedCandidates,
                     suggestedReason: suggestion.suggestedReason,
                     soLuong,
                     donGia,

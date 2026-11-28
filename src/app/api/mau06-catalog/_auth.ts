@@ -3,6 +3,18 @@ import { getCurrentUserFromRequest, UserPayload } from '@/actions/auth';
 import { getSystemConfig } from '@/lib/systemConfig';
 
 /**
+ * Chuẩn hóa danh sách Mã dịch vụ thực hiện (ngăn cách bởi dấu phẩy, chấm phẩy hoặc xuống dòng)
+ */
+export function normalizeMaDichVuList(input: any): string | null {
+    if (input === null || input === undefined) return null;
+    const arr = Array.isArray(input)
+        ? input.map(v => String(v).trim())
+        : String(input).split(/[;,\n]+/).map(v => v.trim());
+    const unique = Array.from(new Set(arr.filter(Boolean)));
+    return unique.length > 0 ? unique.join(', ') : null;
+}
+
+/**
  * Kiểm tra quyền từ cấu hình Menu (/roles) hỗ trợ cả MENU_CATALOG_06 và MENU_MAU01_CATALOG
  */
 export function hasMau06MenuPermission(user: UserPayload | null, action: 'VIEW' | 'EDIT' | 'DELETE'): boolean {

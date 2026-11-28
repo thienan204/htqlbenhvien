@@ -21,6 +21,14 @@ export interface MachineCatalogItem {
     isActive: boolean;
     ma_khoa_su_dung?: string | null;
     ten_khoa_su_dung?: string | null;
+    loai_may_code?: string | null;
+    ma_dich_vu_thuc_hien?: string | null;
+}
+
+export interface RequiredServiceItem {
+    MA_DICH_VU: string;
+    TEN_DICH_VU: string;
+    yeu_cau_may_moc?: string | null;
 }
 
 export async function GET() {
@@ -41,7 +49,9 @@ export async function GET() {
                 HD_DEN: true,
                 TU_NGAY: true,
                 DEN_NGAY: true,
-                isActive: true
+                isActive: true,
+                loai_may_code: true,
+                ma_dich_vu_thuc_hien: true
             },
             orderBy: { MA_MAY: 'asc' }
         });
@@ -89,25 +99,38 @@ export async function GET() {
                 DEN_NGAY: r.DEN_NGAY,
                 isActive: r.isActive,
                 ma_khoa_su_dung: ma_khoa || null,
-                ten_khoa_su_dung: ten_khoa || null
+                ten_khoa_su_dung: ten_khoa || null,
+                loai_may_code: r.loai_may_code || null,
+                ma_dich_vu_thuc_hien: r.ma_dich_vu_thuc_hien || null
             };
         });
 
-        // 3. Lấy danh sách dịch vụ Mẫu 05 yêu cầu bắt buộc mã máy
+        // 3. Lấy danh sách dịch vụ Mẫu 05 yêu cầu bắt buộc mã máy (kèm tên & loại máy yêu cầu nếu có)
         const requiredServicesRaw: any[] = await prisma.$queryRaw`
-            SELECT DISTINCT "MA_DICH_VU", "TEN_DICH_VU"
+            SELECT DISTINCT ON ("MA_DICH_VU") "MA_DICH_VU", "TEN_DICH_VU", "yeu_cau_may_moc"
             FROM "Mau05Catalog"
             WHERE "isActive" = true AND "bat_buoc_co_ma_may" = true AND "MA_DICH_VU" IS NOT NULL
+            ORDER BY "MA_DICH_VU" ASC, "createdAt" DESC
         `;
 
-        const requiredServiceCodes = requiredServicesRaw
-            .map(s => s.MA_DICH_VU ? String(s.MA_DICH_VU).trim() : '')
-            .filter(Boolean);
+        const requiredServices: RequiredServiceItem[] = [];
+        const requiredServiceCodes: string[] = [];
+        for (const s of requiredServicesRaw) {
+            const code = s.MA_DICH_VU ? String(s.MA_DICH_VU).trim() : '';
+            if (!code) continue;
+            requiredServiceCodes.push(code);
+            requiredServices.push({
+                MA_DICH_VU: code,
+                TEN_DICH_VU: s.TEN_DICH_VU ? String(s.TEN_DICH_VU).trim() : '',
+                yeu_cau_may_moc: s.yeu_cau_may_moc ? String(s.yeu_cau_may_moc).trim() : null
+            });
+        }
 
         return NextResponse.json({
             success: true,
             mau06List,
-            requiredServiceCodes
+            requiredServiceCodes,
+            requiredServices
         });
     } catch (error: any) {
         console.error('Error fetching machine audit data:', error);

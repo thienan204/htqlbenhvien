@@ -578,10 +578,11 @@ model Mau06Catalog {
   TU_NGAY       String?  @db.VarChar(8)
   DEN_NGAY      String?  @db.VarChar(8)
   MA_CSKCB      String?  @db.VarChar(5)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  loai_may_code String?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  loai_may_code         String?
+  ma_dich_vu_thuc_hien  String?
 }
 
 model MachineLocationHistory {
